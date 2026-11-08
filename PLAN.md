@@ -673,3 +673,33 @@ Type detour worth keeping: lucide v1 ships LEGACY component classes (plain
 `Component<any,any>`, and `typeof SvelteComponent` all reject them
 structurally; the honest annotation is the concrete union
 `typeof FileCog | typeof SlidersHorizontal`.
+
+### 2026-11-08 — tablet & mobile shell round (planned session, executed)
+
+Three shipped calls from the owner review of the phone/iPad surfaces:
+
+1. **Topbar was structurally fragile at md** (iPad screenshot: breadcrumb text
+   under the search pill). The pill was `absolute left-1/2` — absolute centering
+   reserves no space, so siblings slide beneath it. Now a three-zone flow grid
+   `minmax(0,1fr) auto minmax(0,1fr)`: breadcrumb truncates BEFORE the pill,
+   pill stays optically centered, actions right. Collision-free at every width.
+2. **Hamburger drawer below lg**: the mobile icon strip is gone; the topbar's
+   left zone gains a Menu button, summoning a left slide-in drawer (slide|local
+   x-axis + backdrop fade, X/Esc/backdrop close, close on navigation, focus
+   return, body scroll-lock while open, safe-area padding). Deliberately NO
+   drag-to-dismiss — nav drawers are tap-to-dismiss idiom; the thumb-pull
+   gesture stays with the bottom sheets. No focus ping-pong on navigation
+   close (plain state clear, not closeNav()).
+3. **Editor/preview tabs below lg** (the agreed plan): top `write|preview`
+   segment under the meta bar, roving tabindex (Tab lands on the selected tab,
+   arrows + Home/End walk), panels mounted permanently — inactive hidden via
+   `max-lg:invisible/opacity-0` (visibility removes it from tab order and a11y
+   tree WITHOUT JS media queries: desktop semantics untouched by mobile state,
+   and hydration-safe since SSR always renders the `write` default). Preview
+   stays live on mobile (`previewLive` keeps rendering into the hidden tab —
+   switches are instant). Pane box `h-[calc(100svh-13.5rem)]` — the offset is
+   the one number to tune in real-device QA. Eye toggle goes lg-only; the
+   dirty-dot pill stays in the meta bar for both layouts.
+
+Tailwind lesson reused on purpose: state-driven classes must exist as LITERAL
+strings for the scanner — the ternaries spell `max-lg:invisible` in full.

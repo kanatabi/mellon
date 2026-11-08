@@ -1,17 +1,22 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { cubicOut } from 'svelte/easing';
+	import { fade, slide } from 'svelte/transition';
 	import {
 		Command as CommandIcon,
 		FileText,
 		House,
 		Images,
 		KeyRound,
+		Menu,
 		PanelLeftClose,
 		PanelLeftOpen,
-		Settings
+		Settings,
+		X
 	} from 'lucide-svelte';
 	import Palette from '#lib/components/Palette.svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
+	import { focusOnMount } from '#lib/actions.ts';
 	import { navRail } from '#lib/rails.svelte.ts';
 	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import { baseCommands, recentCommands, type Command } from '#lib/commands.ts';
@@ -77,6 +82,38 @@
 		}
 	];
 
+	// ── Mobile nav drawer (owner call 2026-11-08): below lg the icon strip is
+	// replaced by a hamburger in the topbar, sliding a sidebar in from the
+	// left. Same dismissal contract as the bottom sheets: X / Esc / backdrop,
+	// close on navigation, focus returns to the trigger. No drag-to-dismiss —
+	// nav drawers live in the tap-to-dismiss idiom, not the thumb-pull one.
+	let navOpen = $state(false);
+	let burger = $state<HTMLButtonElement | undefined>();
+	// Guarded: $derived evaluates during SSR too, where window is absent.
+	const reduced = $derived(
+		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+	);
+	function closeNav(returnFocus = true) {
+		navOpen = false;
+		if (returnFocus) burger?.focus();
+	}
+	$effect(() => {
+		void page.url.pathname; // navigation dismisses the drawer (no focus ping-pong)
+		navOpen = false;
+	});
+	$effect(() => {
+		if (!navOpen) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') closeNav();
+		};
+		window.addEventListener('keydown', onKey);
+		document.documentElement.style.overflow = 'hidden';
+		return () => {
+			window.removeEventListener('keydown', onKey);
+			document.documentElement.style.overflow = '';
+		};
+	});
+
 	const crumb = $derived(page.url.pathname.split('/').filter(Boolean).slice(0, 2));
 </script>
 
@@ -86,7 +123,7 @@
 	     labels fade rather than snap. -->
 	<nav
 		aria-label="Portal navigation"
-		class="flex gap-6 border-border px-4 py-3 transition-[width] duration-200 ease-out lg:flex-col lg:border-r lg:px-3 lg:pt-4 {navRail.collapsed
+		class="hidden gap-6 border-border px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:border-r lg:px-3 lg:pt-4 {navRail.collapsed
 			? 'lg:w-[4.25rem]'
 			: 'lg:w-60'}"
 	>
@@ -168,26 +205,41 @@
 	</nav>
 
 	<div class="flex min-w-0 flex-1 flex-col">
-		<!-- Top bar: breadcrumb / centered ⌘K / actions-right (§11.1). -->
+		<!-- Top bar: three-zone flow grid (§11.1) — the centered ⌘K pill reserves
+		     its space instead of floating over the breadcrumb (the collision your
+		     iPad shot caught: absolute centering doesn't truncate siblings).
+		     Below lg the left zone gains the hamburger that summons the drawer. -->
 		<header
-			class="relative flex h-14 items-center justify-between gap-4 border-b border-border px-6"
+			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-4 lg:px-6"
 		>
-			<nav class="min-w-0 truncate font-mono text-xs" aria-label="Breadcrumb">
-				{#each crumb as part, i (part + i)}
-					{#if i > 0}<span aria-hidden="true" class="mx-1 text-muted-foreground">/</span>{/if}
-					{#if i === crumb.length - 1}
-						<span aria-current="page" class="text-foreground">{part}</span>
+			<div class="flex min-w-0 items-center gap-1.5 justify-self-start">
+				<button
+					type="button"
+					bind:this={burger}
+					onclick={() => (navOpen = true)}
+					aria-label="Open navigation"
+					aria-expanded={navOpen}
+					class="-ml-2 shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+				>
+					<Menu class="size-5" />
+				</button>
+				<nav class="min-w-0 truncate font-mono text-xs" aria-label="Breadcrumb">
+					{#each crumb as part, i (part + i)}
+						{#if i > 0}<span aria-hidden="true" class="mx-1 text-muted-foreground">/</span>{/if}
+						{#if i === crumb.length - 1}
+							<span aria-current="page" class="text-foreground">{part}</span>
+						{:else}
+							<a
+								href={'/' + crumb.slice(0, i + 1).join('/')}
+								class="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+								>{part}</a
+							>
+						{/if}
 					{:else}
-						<a
-							href={'/' + crumb.slice(0, i + 1).join('/')}
-							class="text-muted-foreground transition-colors hover:text-foreground hover:underline"
-							>{part}</a
-						>
-					{/if}
-				{:else}
-					<span aria-current="page" class="text-foreground">dashboard</span>
-				{/each}
-			</nav>
+						<span aria-current="page" class="text-foreground">dashboard</span>
+					{/each}
+				</nav>
+			</div>
 			<button
 				type="button"
 				onclick={() => {
@@ -195,7 +247,7 @@
 						document.activeElement instanceof HTMLElement ? document.activeElement : null;
 					paletteOpen = true;
 				}}
-				class="absolute left-1/2 hidden w-72 max-w-[42vw] -translate-x-1/2 items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:flex"
+				class="hidden w-72 max-w-[42vw] items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:flex md:justify-self-center"
 				aria-label="Open command palette"
 			>
 				<span class="flex items-center gap-2">
@@ -204,7 +256,7 @@
 				</span>
 				<kbd class="rounded border border-border px-1.5 py-0.5 text-[10px]">⌘K</kbd>
 			</button>
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-2 justify-self-end">
 				<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
 			</div>
 		</header>
@@ -214,6 +266,72 @@
 		</main>
 	</div>
 </div>
+
+{#if navOpen}
+	<div
+		class="fixed inset-0 z-30 bg-background/60 backdrop-blur-[2px]"
+		role="presentation"
+		aria-hidden="true"
+		transition:fade={{ duration: reduced ? 0 : 150 }}
+		onclick={() => closeNav()}
+	></div>
+	<div
+		role="dialog"
+		aria-modal="true"
+		aria-label="Portal navigation"
+		tabindex="-1"
+		class="fixed inset-y-0 left-0 z-30 flex w-64 max-w-[80vw] flex-col gap-4 border-r border-border bg-card px-4 pt-4 pb-[calc(1.25rem+env(safe-area-inset-left))] shadow-2xl"
+		style="padding-left: max(1rem, env(safe-area-inset-left))"
+		transition:slide|local={{ axis: 'x', duration: reduced ? 0 : 240, easing: cubicOut }}
+	>
+		<div class="flex items-center justify-between">
+			<a
+				href="/"
+				class="font-brand text-2xl font-semibold tracking-tight"
+				aria-label="mellon dashboard">mellon<span class="text-brand">;</span></a
+			>
+			<button
+				type="button"
+				onclick={() => closeNav()}
+				aria-label="Close navigation"
+				class="rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+				use:focusOnMount
+			>
+				<X class="size-4" />
+			</button>
+		</div>
+		{#each navGroups as group (group.label)}
+			<div class="flex flex-col gap-1">
+				<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+					{group.label}
+				</p>
+				{#each group.items as item (item.href)}
+					{@const Icon = item.icon}
+					{@const current =
+						item.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(item.href)}
+					<a
+						href={item.href}
+						aria-current={current ? 'page' : undefined}
+						class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {current
+							? 'bg-accent font-medium text-foreground'
+							: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
+					>
+						<Icon class="size-4 shrink-0 {current ? 'text-brand' : ''}" />
+						{item.label}
+					</a>
+				{/each}
+			</div>
+		{/each}
+		<form method="POST" action="/logout" class="mt-auto">
+			<button
+				type="submit"
+				class="font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+			>
+				end session
+			</button>
+		</form>
+	</div>
+{/if}
 
 {#if paletteOpen}
 	<Palette {commands} onClose={closePalette} />

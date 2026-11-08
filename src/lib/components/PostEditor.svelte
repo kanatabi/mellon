@@ -11,7 +11,7 @@
 		PanelRightOpen,
 		Printer
 	} from 'lucide-svelte';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
@@ -105,6 +105,28 @@ flowchart LR
 		}
 	});
 
+	// ── Mobile pane tabs (owner call 2026-11-08): below lg, editor and preview
+	// swap as tabs instead of stacking — a long post must never force a scroll
+	// to read the render. Both panes stay MOUNTED (instant switch, selection
+	// and diagrams survive); `max-lg:` classes hide the inactive one so the
+	// state is viewport-independent and hydration-safe (no media-query JS), and
+	// visibility:hidden removes it from tab order and the a11y tree.
+	let editorTab = $state<'write' | 'preview'>('write');
+	let writeTabBtn = $state<HTMLButtonElement | undefined>();
+	let previewTabBtn = $state<HTMLButtonElement | undefined>();
+	function setTab(t: 'write' | 'preview', refocus = true) {
+		editorTab = t;
+		localStorage.setItem('mellon.tab.editor', t);
+		if (refocus) (t === 'write' ? writeTabBtn : previewTabBtn)?.focus();
+	}
+	onMount(() => {
+		const stored = localStorage.getItem('mellon.tab.editor');
+		if (stored === 'preview') editorTab = 'preview'; // adopt AFTER hydration
+	});
+	// Preview stays live while visible on desktop OR on mobile (the hidden tab
+	// keeps rendering ahead of the switch — that's what makes it instant).
+	const previewLive = $derived(showPreview || editorTab === 'preview');
+
 	// Debounced near-real-time preview (server endpoint = the vendored pipeline).
 	// 120ms: reads as "while typing" but batches a burst of keystrokes into one
 	// render round-trip — the pipeline runs Shiki, not a regex.
@@ -112,7 +134,7 @@ flowchart LR
 	let previewEl: HTMLDivElement | undefined = $state();
 	$effect(() => {
 		const md = draft.content;
-		if (!showPreview) return;
+		if (!previewLive) return;
 		clearTimeout(previewTimer);
 		previewTimer = setTimeout(async () => {
 			try {
@@ -130,14 +152,14 @@ flowchart LR
 	// get stuck, because leaving it only requires a SUCCESSFUL render.
 	let mermaidTimer: ReturnType<typeof setTimeout>;
 	$effect(() => {
-		if (!previewEl || !showPreview || !html) return;
+		if (!previewEl || !previewLive || !html) return;
 		const el = previewEl;
 		clearTimeout(mermaidTimer);
 		mermaidTimer = setTimeout(() => void renderMermaid(el), 450);
 	});
 	$effect(() => {
 		void themeState.theme; // flip: re-diagram from the surviving sources
-		if (!previewEl || !showPreview || !html) return;
+		if (!previewEl || !previewLive || !html) return;
 		const el = previewEl;
 		void tick().then(() => renderMermaid(el, true));
 	});
@@ -395,7 +417,7 @@ flowchart LR
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
-					class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {showPreview
+					class="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors lg:flex {showPreview
 						? 'border-brand bg-brand/10 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-pressed={showPreview}
@@ -420,27 +442,87 @@ flowchart LR
 			</p>
 		{/if}
 
-		<!-- Preview toggle (item #1): the pane is ALWAYS mounted and the grid's
-		     second column animates 1fr↔0fr — an owned outro transition reflows
-		     the ghost below the editor (old bug), while a clipped permanent
-		     child can only slide sideways. Inner keeps its width during the
-		     collapse (min-w) so text never re-wraps mid-animation. Below lg the
-		     pane is simply present/absent — mobile has no room to slide into. -->
+		<!-- Phones & tablets below lg: editor and preview swap as tabs (owner
+		     call 2026-11-08) — reading a long post's render should never cost a
+		     scroll. Panels stay mounted; the inactive one is visibility-hidden
+		     via max-lg: variants so desktop semantics (split + eye toggle) are
+		     untouched by the mobile state. Roving tabindex: Tab lands on the
+		     selected pane's tab, arrows walk between them. -->
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
 		<div
-			class="grid min-h-0 flex-1 transition-[grid-template-columns,gap] duration-200 ease-out {showPreview
-				? 'gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
-				: 'gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)]'}"
+			class="flex w-fit gap-1 self-start rounded-full border border-border bg-card p-1 lg:hidden"
+			role="tablist"
+			aria-label="Editor pane"
+			onkeydown={(e) => {
+				if (e.key === 'ArrowRight' || e.key === 'End') {
+					e.preventDefault();
+					setTab('preview');
+				} else if (e.key === 'ArrowLeft' || e.key === 'Home') {
+					e.preventDefault();
+					setTab('write');
+				}
+			}}
+		>
+			<button
+				type="button"
+				id="tab-write"
+				role="tab"
+				aria-selected={editorTab === 'write'}
+				aria-controls="pane-write"
+				tabindex={editorTab === 'write' ? 0 : -1}
+				bind:this={writeTabBtn}
+				onclick={() => setTab('write', false)}
+				class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'write'
+					? 'bg-brand/15 text-foreground'
+					: 'text-muted-foreground hover:text-foreground'}"
+			>
+				write
+			</button>
+			<button
+				type="button"
+				id="tab-preview"
+				role="tab"
+				aria-selected={editorTab === 'preview'}
+				aria-controls="pane-preview"
+				tabindex={editorTab === 'preview' ? 0 : -1}
+				bind:this={previewTabBtn}
+				onclick={() => setTab('preview', false)}
+				class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
+					? 'bg-brand/15 text-foreground'
+					: 'text-muted-foreground hover:text-foreground'}"
+			>
+				preview
+			</button>
+		</div>
+
+		<!-- Pane area. lg+: the split grid with the 1fr↔0fr curtain animation —
+		     the pane never leaves layout, so nothing can reflow (old ghost bug).
+		     Below lg: a viewport-height box with the two panes layered, tabs
+		     deciding which is visible; 13.5rem ≈ the chrome above+below it. -->
+		<div
+			class="relative h-[calc(100svh-13.5rem)] min-h-0 flex-1 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-auto {showPreview
+				? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-4'
+				: 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-0'}"
 		>
 			<div
-				class="min-h-[50vh] flex-1 overflow-hidden rounded-lg border border-border bg-card lg:min-h-0"
+				id="pane-write"
+				role="tabpanel"
+				aria-labelledby="tab-write"
+				class="absolute inset-0 overflow-hidden rounded-lg border border-border bg-card transition-opacity duration-150 lg:static lg:min-h-0 {editorTab ===
+				'preview'
+					? 'max-lg:invisible max-lg:opacity-0'
+					: ''}"
 			>
 				<CodeMirrorEditor bind:value={draft.content} onchange={touch} {vim} class="h-full" />
 			</div>
 
 			<div
-				class="min-h-0 min-w-0 overflow-hidden {showPreview ? '' : 'hidden lg:block'}"
-				aria-hidden={!showPreview}
-				inert={!showPreview}
+				id="pane-preview"
+				role="tabpanel"
+				aria-labelledby="tab-preview"
+				class="absolute inset-0 min-h-0 min-w-0 overflow-hidden transition-opacity duration-150 lg:static {showPreview
+					? ''
+					: 'hidden lg:block'} {editorTab === 'write' ? 'max-lg:invisible max-lg:opacity-0' : ''}"
 			>
 				<div
 					bind:this={previewEl}

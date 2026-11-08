@@ -185,11 +185,16 @@ tool, a different posture. Every rule below serves that sentence.
 
 - **Left nav**: grouped sections — `content` (posts · photos · tags), `ops` (secrets; the
   future infra tab joins here). Section labels are the blog's `CardTitle` voice: mono,
-  uppercase, `text-xs tracking-widest`. Collapses to an icon rail below `lg`; theme +
+  uppercase, `text-xs tracking-widest`. At `lg+` a persistent rail (collapsible to
+  icons); **below `lg` the strip is gone — a hamburger in the topbar slides the same
+  menu in as a left drawer** (X/Esc/backdrop dismiss, closes on navigation). Theme +
   session live pinned at the base.
-- **Top bar**: context left, the **⌘K affordance centered** (a VS Code/Raycast convention —
-  the shell _advertises_ the keyboard-first promise rather than burying it), page actions
-  right. The palette itself is global chrome, rendered from the §7 command registry.
+- **Top bar**: a three-zone flow grid — context left (hamburger below `lg`, then the
+  breadcrumb, truncating BEFORE the middle zone), the **⌘K affordance centered** (a
+  VS Code/Raycast convention — the shell _advertises_ the keyboard-first promise
+  rather than burying it; it reserves its space, never floats over content), page
+  actions right. The palette itself is global chrome, rendered from the §7 command
+  registry.
 - **Content area**: full-bleed; forms constrained to their measure (max ~72ch), lists
   allowed the width.
 
@@ -244,7 +249,11 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   `unpublish`), and a quiet `delete`. (Owner call 2026-11-08: actions live with
   settings, like Ghost's publish box — but labeled as their own section; publish
   verbs are not "settings".)
-  `/posts/new` opens the editor directly — no intermediate form.
+  `/posts/new` opens the editor directly — no intermediate form. Below `lg`, the
+  two panes swap as **top tabs** (`write` / `preview`, roving tabindex) instead of
+  stacking — reading the render of a long post must never cost a scroll. Both
+  panes stay mounted, so switching is instant and the hidden preview keeps
+  rendering ahead of the visit. (Owner call 2026-11-08.)
 - **Secrets**: presented as what it is — a config file with version control. Masked mono
   values, reveal on press (never "show all values" as a resting state), **version history
   as a side sheet** (springs from the right, reusing the drawer motion), diff between
