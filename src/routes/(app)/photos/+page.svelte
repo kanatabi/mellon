@@ -422,13 +422,17 @@
 					{@const sel = selection.has(p.id)}
 					<figure class="flex flex-col gap-2">
 						<div class="relative">
-							<img
-								src={p.src}
-								alt={p.alt}
-								width={p.width}
-								height={p.height}
-								class="aspect-[4/3] w-full rounded-lg border border-border object-cover"
-							/>
+							<!-- the image is the door to the detail page; the overlay
+							     keys (absolute, later in DOM) keep click priority -->
+							<a href="/photos/{p.id}" aria-label="Open {p.alt} in detail view">
+								<img
+									src={p.src}
+									alt={p.alt}
+									width={p.width}
+									height={p.height}
+									class="aspect-[4/3] w-full rounded-lg border border-border object-cover transition-opacity hover:opacity-90"
+								/>
+							</a>
 							<!-- checkbox key -->
 							<button
 								type="button"
@@ -558,7 +562,9 @@
 								/>
 							</span>
 							<span role="cell" class="min-w-0 truncate font-mono text-xs text-muted-foreground">
-								{p.alt}
+								<a href="/photos/{p.id}" class="transition-colors hover:text-foreground">
+									{p.alt}
+								</a>
 							</span>
 							<div role="cell" class="w-44">
 								<Combobox

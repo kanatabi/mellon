@@ -966,8 +966,10 @@ flowchart LR
 
 	{#if confirmDelete}
 		<DeleteDialog
-			title={draft.title || 'Untitled'}
-			slug={draft.slug}
+			heading={`Delete “${draft.title || 'Untitled'}”?`}
+			description="This removes the post for good — drafts and published pages alike. To confirm, type the complete slug below."
+			confirmText={draft.slug}
+			submitText="Delete this post"
 			onConfirm={remove}
 			onClose={() => (confirmDelete = false)}
 		/>

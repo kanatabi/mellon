@@ -113,6 +113,16 @@ async function route(ctx: Ctx) {
 	if (p[0] === 'photos' && p.length === 2 && request.method === 'PATCH') {
 		return json(await api.updatePhoto(p[1], await body()));
 	}
+	if (p[0] === 'photos' && p.length === 2 && request.method === 'GET') {
+		return json(await api.getPhoto(p[1]));
+	}
+	if (p[0] === 'photos' && p.length === 3 && p[2] === 'references' && request.method === 'GET') {
+		return json(await api.listPhotoReferences(p[1]));
+	}
+	if (p[0] === 'photos' && p.length === 2 && request.method === 'DELETE') {
+		await api.deletePhoto(p[1]);
+		return json({ ok: true });
+	}
 
 	// --- collections (curation vocabulary, admin-internal) ---
 	if (p[0] === 'collections' && p.length === 1) {

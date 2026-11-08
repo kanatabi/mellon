@@ -185,6 +185,16 @@ export interface AdminApi {
 		id: string,
 		patch: { alt?: string; collection?: string | null; gallery?: boolean }
 	): Promise<AdminPhoto>;
+	/** Detail-page fetch (404 honest). Phase B: GET /admin/photos/:id. */
+	getPhoto(id: string): Promise<AdminPhoto>;
+	/** Posts whose body embeds this photo's src — the content scan that makes
+	 *  delete-informed possible. Phase B: LIKE over Post.content. */
+	listPhotoReferences(id: string): Promise<{ slug: string; title: string }[]>;
+	/** Removes the photo from the library; the BYTES outlive the row until
+	 *  storage GC (Phase B object-store lifecycle). Irreversible for the
+	 *  admin: referencing posts show a broken picture afterwards — warn,
+	 *  never block (owner call 2026-11-08). */
+	deletePhoto(id: string): Promise<void>;
 
 	listCollections(): Promise<CollectionCount[]>;
 	/** Same vocabulary semantics as tags: eager, slugified, 409 on duplicates. */

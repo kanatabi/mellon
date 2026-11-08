@@ -4,21 +4,39 @@
 	import { focusOnMount } from '#lib/actions.ts';
 
 	interface Props {
-		title: string;
-		slug: string;
+		/** Full question, e.g. `Delete "my title"?` — the caller owns the noun. */
+		heading: string;
+		/** The honest consequence, in plain words (owner call: warn loudly). */
+		description: string;
+		/** The string retyped to arm the button (post slug, photo id…). */
+		confirmText: string;
+		confirmLabel?: string;
+		submitText?: string;
+		/** Things that will break — listed, never blocking (warn-vs-block:
+		 *  the choice stays the human's, with full information). */
+		references?: { slug: string; title: string }[];
 		/** Resolves once the deletion is done; errors may reject. */
 		onConfirm: () => Promise<void>;
 		onClose: () => void;
 	}
 
-	let { title, slug, onConfirm, onClose }: Props = $props();
+	let {
+		heading,
+		description,
+		confirmText,
+		confirmLabel = 'confirm slug',
+		submitText = 'Delete',
+		references,
+		onConfirm,
+		onClose
+	}: Props = $props();
 
 	// GitHub's pattern, applied to posts (owner call 2026-11-08): destructive
 	// actions need MORE than a click — the name retyped is the confirmation.
 	let typed = $state('');
 	let busy = $state(false);
 	let failed = $state('');
-	const ready = $derived(typed === slug && !busy);
+	const ready = $derived(typed === confirmText && !busy);
 
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -65,28 +83,42 @@
 			<div class="mb-3 flex items-start gap-3">
 				<TriangleAlert class="mt-0.5 size-5 shrink-0 text-danger" />
 				<h2 id="delete-title" class="font-brand text-xl leading-snug font-semibold tracking-tight">
-					Delete &ldquo;{title}&rdquo;?
+					{heading}
 				</h2>
 			</div>
-			<p class="text-sm leading-relaxed text-muted-foreground">
-				This removes the post for good — drafts and published pages alike. To confirm, type the
-				complete slug below.
-			</p>
+			<p class="text-sm leading-relaxed text-muted-foreground">{description}</p>
+			{#if references?.length}
+				<div class="mt-3">
+					<p class="mb-1.5 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						used in · {references.length}
+					</p>
+					<ul
+						class="max-h-36 overflow-y-auto rounded-md border border-border bg-muted/30 px-3 py-2"
+					>
+						{#each references as ref (ref.slug)}
+							<li class="truncate py-0.5 text-sm">
+								<span class="text-foreground">{ref.title}</span>
+								<span class="ml-1.5 font-mono text-[10px] text-muted-foreground">{ref.slug}</span>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 			<p
 				class="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-sm select-all"
 			>
-				{slug}
+				{confirmText}
 			</p>
 			<label class="mt-3 flex flex-col gap-1.5">
 				<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-					confirm slug
+					{confirmLabel}
 				</span>
 				<input
 					type="text"
 					class="rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm outline-none focus-visible:border-danger"
 					autocomplete="off"
 					spellcheck="false"
-					placeholder={slug}
+					placeholder={confirmText}
 					bind:value={typed}
 					disabled={busy}
 					use:focusOnMount
@@ -109,7 +141,7 @@
 					disabled={!ready}
 					class="rounded-full bg-danger px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 				>
-					{busy ? 'Deleting…' : 'Delete this post'}
+					{busy ? 'Deleting…' : submitText}
 				</button>
 			</div>
 		</form>

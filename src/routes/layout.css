@@ -245,6 +245,13 @@
 	}
 }
 
+/* The photo-detail preview canvas: a permanently-dark inset so any image —
+   including a white one — still reads against it. Deliberately NOT themed
+   (a lightbox backdrop, not a surface); owner call 2026-11-08. */
+.photo-canvas {
+	background: #0b0b0f;
+}
+
 /* The login aura — the ONE sanctioned radial gradient (§11.3 exception,
    owner color-round decision). Positioned before the content in DOM, so the
    later `relative` h1/form paint above it without z-index games. */

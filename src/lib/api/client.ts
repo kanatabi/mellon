@@ -88,6 +88,10 @@ export const client: AdminApi = {
 	addPhoto: (p) => call<AdminPhoto>('/photos', { method: 'POST', body: JSON.stringify(p) }),
 	updatePhoto: (id, patch) =>
 		call<AdminPhoto>(`/photos/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+	getPhoto: (id) => call<AdminPhoto>(`/photos/${id}`),
+	listPhotoReferences: (id) => call<{ slug: string; title: string }[]>(`/photos/${id}/references`),
+	deletePhoto: (id) =>
+		call<{ ok: true }>(`/photos/${id}`, { method: 'DELETE' }).then(() => undefined),
 
 	listCollections: () => call<CollectionCount[]>('/collections'),
 	createCollection: (name) =>

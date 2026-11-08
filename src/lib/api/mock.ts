@@ -50,11 +50,15 @@ sequenceDiagram
 | --- | --- | --- |
 | memory | queue_depth | sustained growth |
 | latency | oldest_message_age | > SLO |
+
+![Night market steam under a single bulb](https://picsum.photos/seed/night-market/700/900)
 `;
 
 const DRAFT_POST = `# Queues, unacked (draft)
 
 Notes toward the next post. Still thinking about exactly-once as a *claim*.
+
+![Night market steam under a single bulb](https://picsum.photos/seed/night-market/700/900)
 `;
 
 type StoredPost = PostDetailAdmin;
@@ -408,6 +412,30 @@ export function createMockApi(): AdminApi {
 				p.collection = patch.collection;
 			}
 			return clone(p);
+		},
+
+		async getPhoto(id) {
+			const p = photos.find((x) => x.id === id);
+			if (!p) throw new AdminApiError(404, `photo not found: ${id}`);
+			return clone(p);
+		},
+
+		async listPhotoReferences(id) {
+			const p = photos.find((x) => x.id === id);
+			if (!p) throw new AdminApiError(404, `photo not found: ${id}`);
+			// the honest Phase-A stand-in for lumen's content scan: substring
+			// over raw markdown — embeds keep src verbatim by doctrine
+			return posts
+				.filter((post) => post.content.includes(p.src))
+				.map((post) => ({ slug: post.slug, title: post.title }));
+		},
+
+		async deletePhoto(id) {
+			const i = photos.findIndex((x) => x.id === id);
+			if (i === -1) throw new AdminApiError(404, `photo not found: ${id}`);
+			photos.splice(i, 1);
+			// mediaStore bytes deliberately KEPT — the GC-window semantics of
+			// Phase B (object survives until lifecycle sweep) made tangible
 		},
 
 		async listCollections() {

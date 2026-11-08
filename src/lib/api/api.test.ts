@@ -250,6 +250,20 @@ describe('mock AdminApi contract', () => {
 		expect(r3).toEqual({ posts: [], photos: [] });
 	});
 
+	it('photo detail verbs: getPhoto 404s honestly, references scan content, delete keeps bytes', async () => {
+		const api = createMockApi();
+		const p = await api.getPhoto('p2');
+		expect(p.alt).toContain('Night market');
+		// both fixture posts embed p2's src — the USED-IN list is real
+		const refs = await api.listPhotoReferences('p2');
+		expect(refs.map((r) => r.slug).sort()).toEqual(['queues-unacked', 'shape-of-a-useful-queue']);
+		await expect(api.getPhoto('nope')).rejects.toThrow(/not found/);
+		await api.deletePhoto('p2');
+		await expect(api.getPhoto('p2')).rejects.toThrow(/not found/);
+		const list = await api.listPhotos();
+		expect(list.items.map((x) => x.id)).not.toContain('p2');
+	});
+
 	it('login demands non-empty credentials (lumen will actually check)', async () => {
 		const api = createMockApi();
 		await expect(api.login('', 'x')).rejects.toBeInstanceOf(AdminApiError);
