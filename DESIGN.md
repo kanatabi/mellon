@@ -240,8 +240,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   affordance in the admin either."_ Filter/tool rows use the `Pill` chip language.
 - **Post editor**: split view — CodeMirror left, true-to-prod preview right (**toggle
   button + palette command**, owner call 2026-11-08); a collapsible **settings rail**
-  (title/subtitle, slug — auto from title until authored, date, tags, featured, export
-  block, timeline of created/published/updated) at the content's right —
+  (title/subtitle, slug — auto from title until authored, date, tags as a
+  search-and-create combobox over the vocabulary, media — cover preview + set/change/
+  clear and insert-image via the shared ImagePicker, export block, timeline of
+  created/published/updated) at the content's right —
   Ghost's shape, not Notion's sprawl. The meta bar above the editor holds ONLY the
   preview toggle; the rail is headed **post** and its first labeled section,
   **actions**, carries the verbs — quiet `save draft`

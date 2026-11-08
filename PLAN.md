@@ -222,18 +222,21 @@ preview matches (checklist in PR); publish lands through real lumen → earendil
 
 ## M5 — `media` · 1 day
 
-**Context:** lumen §5 (D1 resolved), §8 upload; earendil `routes/api/[...path]` relay.
-**Branches:** lumen `milestone/5-media`, mellon `milestone/5-media`, earendil
-`milestone/5-media-relay`, [vortex] PVC/manifest notes deferred to M7.
+**Context:** lumen §5 (**D1 revised**: object storage + CDN, backend-relay upload —
+2026-11-08 second pass), §8 upload. Earendil's planned `/media/*` relay work is
+CANCELLED by that revision — browsers fetch CDN URLs directly.
+**Branches:** lumen `milestone/5-media`, mellon `milestone/5-media`; [vortex] gains
+the media-provider ExternalSecret refs, no relay manifests.
 
 Tasks:
 
-- [ ] [lumen] multipart upload → `/media` store (PVC path from env), dimension + EXIF
-      strip (image lib: Go stdlib `image` decode per format — pin format list to what
-      Shiki-free gallery needs: jpeg/png/webp), returns `Photo` shape; GC window for
-      soft-deleted.
-- [ ] [earendil] + [mellon] add `/media/*` to relay (same handler pattern; keep
-      `allowedHosts`, timeouts, and 404 semantics).
+- [ ] [lumen] multipart upload → **object store** (bucket/endpoint/CDN base from
+      env — values in Bao, HUMAN-GATE #9 for the provider), dimension + EXIF strip
+      BEFORE the object is public (image lib: Go stdlib `image` decode per format —
+      pin format list to what the gallery needs: jpeg/png/webp), returns `Photo`
+      with the absolute CDN src; GC window for soft-deleted.
+- [ ] ~~[earendil] + [mellon] add `/media/*` to relay~~ **cancelled by D1-rev** —
+      the mock-era `/api/media/:id` local route retires when the CDN src arrives.
 - [x] [mellon] photos page: upload drop-zone (button-first — keyboard doctrine: real
       `<input type=file>` with label, `has-[input:focus-visible]` ring on the chip),
       alt editing deferred (§11 says caption from filename in mock), dims display;
@@ -334,11 +337,13 @@ gates green; no open `HUMAN-GATE` left unresolved. **P0 CLOSED** only on owner's
 | 6   | Staging→production promotion runs                                                           | M7        |
 | 7   | Any doctrine/AGENTS/INFRA amendment                                                         | any       |
 | 8   | P0 exit declaration                                                                         | M8        |
+| 9   | Media provider choice (S3 / R2 / Wasabi / …) — bucket, endpoint, CDN base, keys to Bao      | M5-B      |
 
 ## Parked (do not build without re-planning)
 
-Infra/GitOps tab · shared-theme package · multi-user/RBAC · WYSIWYG · client-side
-mermaid in mellon preview (deviation logged in M4a).
+Infra/GitOps tab · shared-theme package · multi-user/RBAC · WYSIWYG.
+(Crossed off: client-side mermaid in the mellon preview — shipped; presigned-direct
+media upload — recorded as lumen §5's future scale option.)
 
 ---
 
@@ -791,3 +796,34 @@ would need SvelteKit `+pending` skeletons — the bar answers "the portal is
 working", not "what is loading". If Phase B loads crawl, +pending is the
 next layer, deliberately un-shipped for now (mock loads are instant; a
 skeleton for zero-latency is theater).
+
+### 2026-11-08 — media & vocabulary round: tags become first-class, one picker to rule them
+
+Owner session, five parts (four code commits + docs):
+
+1. **Tags are a vocabulary now, not a derivation.** `createTag` joins AdminApi
+   (slugified, 409 on duplicates, lumen §8 mirrored). The rail's chip wall
+   becomes a `TagPicker` combobox: search, roving arrow-key options with
+   checkbox states, and EAGER creation — the create-row POSTs immediately
+   then selects, so saves never guess which names are new. Selected chips
+   keep the house look, keyboard-removable.
+2. **Mock media store + `/api/media/:id`** — uploads now get a _serving URL_
+   (`AdminPhoto.src`), bytes in a process store, the route marked a
+   mellon-local deviating endpoint (like `/api/preview`, same retirement
+   class: when Phase B's CDN src arrives, both vanish without UI churn).
+3. **`ImagePicker` — one dialog, three modes** (thumbnail/insert/upload):
+   drop zone as bonus over the real labeled file input, per-file queue,
+   library grid, copy-link row action. Single upload in thumbnail mode picks
+   itself; in insert mode it embeds itself — `insertAtCursor` on the CM
+   wrapper writes `![alt](src)` through the NORMAL docChanged path, so
+   value/dirty/preview all update for free. Alt = filename, no prompt.
+4. **Photos page folds into the picker** — one upload path in the portal.
+5. **D1 REVISED (docs):** media = object storage + CDN, **backend-relay
+   upload** (lumen probes + strips EXIF before public). Presigned-direct
+   recorded as the future scale option — the portal contract was shaped so
+   the swap touches zero UI code. Earendil's `/media/*` relay work is
+   cancelled; provider choice enters the ledger as HUMAN-GATE #9.
+
+Gates per commit: lint 0 standalone, check 0/0, 19 tests (media round-trip
+pinned: upload → serve bytes → gallery URL shape), builds + SSR/relay smoke
+(401 on media unauthed, 404 unknown, 409 dup tag, vocab count-0 listing).
