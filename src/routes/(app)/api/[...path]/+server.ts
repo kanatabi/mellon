@@ -88,14 +88,19 @@ async function route(ctx: Ctx) {
 	// --- photos ---
 	if (p[0] === 'photos' && p.length === 1) {
 		if (request.method === 'GET') {
-			const col = url.searchParams.get('collection');
+			const col = url.searchParams.getAll('collection');
 			const gal = url.searchParams.get('gallery');
 			const sort = url.searchParams.get('sort');
 			const dir = url.searchParams.get('dir');
+			const from = url.searchParams.get('from');
+			const to = url.searchParams.get('to');
+			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 			return json(
 				await api.listPhotos({
-					collection: col ?? undefined,
+					collections: col.length ? col : undefined,
 					gallery: gal === '1' ? true : gal === '0' ? false : undefined,
+					from: from && DATE_RE.test(from) ? from : undefined,
+					to: to && DATE_RE.test(to) ? to : undefined,
 					sort: sort === 'title' || sort === 'collection' || sort === 'created' ? sort : undefined,
 					dir: dir === 'asc' || dir === 'desc' ? dir : undefined
 				})

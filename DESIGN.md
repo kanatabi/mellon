@@ -262,7 +262,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
 - **Photos (the darkroom)**: presented as a working library, not a moodboard.
   Two views — tiles (the default; phones only ever see tiles) and a sortable
   table (`photo · alt · collection · gallery · size · created`, headers linking
-  `?sort=&dir=` through the API). Every tile and row carries the same two
+  `?sort=&dir=` through the API). A right sidebar (inline at `lg+`, bottom sheet
+  below, same curtain/collapse/snippet architecture as posts) holds **sort,
+  date range, and collections (OR toggles)**; the always-visible strip keeps
+  only the gallery axes + select-all, with a badge-counted filters key. Every tile and row carries the same two
   controls: an **eye key** toggling the `gallery` flag (uploads default OFF —
   publishing to the blog's Gallery is a deliberate act; the public list serves
   only gallery=true photos, collection-agnostic), and a single-select

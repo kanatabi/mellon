@@ -73,8 +73,10 @@ export const client: AdminApi = {
 
 	listPhotos: (opts) => {
 		const params = new URLSearchParams();
-		if (opts?.collection) params.set('collection', opts.collection);
+		for (const c of opts?.collections ?? []) params.append('collection', c);
 		if (opts?.gallery !== undefined) params.set('gallery', opts.gallery ? '1' : '0');
+		if (opts?.from) params.set('from', opts.from);
+		if (opts?.to) params.set('to', opts.to);
 		if (opts?.sort) params.set('sort', opts.sort);
 		if (opts?.dir) params.set('dir', opts.dir);
 		const qs = params.toString();

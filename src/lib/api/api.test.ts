@@ -180,9 +180,13 @@ describe('mock AdminApi contract', () => {
 		const api = createMockApi();
 		// seeds exercise every state
 		expect((await api.listPhotos({ gallery: true })).map((p) => p.id).sort()).toEqual(['p1', 'p3']);
-		expect((await api.listPhotos({ collection: 'uncategorized' })).map((p) => p.id)).toEqual([
+		expect((await api.listPhotos({ collections: ['uncategorized'] })).map((p) => p.id)).toEqual([
 			'p3'
 		]);
+		// inclusive createdAt window
+		expect(
+			(await api.listPhotos({ from: '2024-04-01', to: '2024-04-30' })).map((p) => p.id).sort()
+		).toEqual(['p1', 'p2']);
 		// collection must exist in the vocabulary to be assignable
 		await expect(api.updatePhoto('p2', { collection: 'nope' })).rejects.toMatchObject({
 			status: 400

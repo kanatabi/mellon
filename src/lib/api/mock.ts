@@ -323,15 +323,18 @@ export function createMockApi(): AdminApi {
 			posts = posts.filter((p) => p.slug !== slug);
 		},
 
-		async listPhotos({ collection, gallery, sort = 'created', dir = 'desc' } = {}) {
+		async listPhotos({ collections, gallery, from, to, sort = 'created', dir = 'desc' } = {}) {
 			return photos
 				.filter(
 					(p) =>
-						(collection === undefined ||
-							(collection === 'uncategorized'
-								? p.collection === null
-								: p.collection === collection)) &&
-						(gallery === undefined || p.gallery === gallery)
+						(!collections?.length ||
+							collections.some((c) =>
+								c === 'uncategorized' ? p.collection === null : p.collection === c
+							)) &&
+						(gallery === undefined || p.gallery === gallery) &&
+						// inclusive window on the day portion (ISO compares lexicographically)
+						(!from || p.createdAt.slice(0, 10) >= from) &&
+						(!to || p.createdAt.slice(0, 10) <= to)
 				)
 				.sort((a, b) => {
 					const key = (p: AdminPhoto) =>

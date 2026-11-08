@@ -70,9 +70,13 @@ export interface CollectionCount {
 
 /** Photo list filters — relayed like posts'; the page never sorts itself. */
 export interface PhotoListOpts {
-	/** Collection name, or the literal 'uncategorized' for the null bucket. */
-	collection?: string;
+	/** Collection names (OR semantics); the literal 'uncategorized' matches
+	 *  the null bucket. */
+	collections?: string[];
 	gallery?: boolean;
+	/** Inclusive YYYY-MM-DD window on createdAt. */
+	from?: string;
+	to?: string;
 	sort?: 'created' | 'title' | 'collection';
 	dir?: 'asc' | 'desc';
 }

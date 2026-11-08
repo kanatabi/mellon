@@ -894,3 +894,16 @@ sort?, dir?})`. Uploads land `gallery:false, collection:null` — publishing
    table is `hidden md:flex` even if the saved view says otherwise: seven
    columns lie at 390px.
 4. **docs**: §6 page table + §11.4 darkroom anatomy.
+
+### 2026-11-08 — photos sidebar: the posts architecture, transplanted
+
+Owner ask: date-range + collections (+sort) in a filter sidebar. Built as a
+carbon copy of the posts pattern — inline curtain rail at lg+, bottom sheet
+below (RailDrawer + badge-counted key), ONE `filtersBody` snippet serving
+both, DateRange reused verbatim. The contract grew the list to match:
+`listPhotos` now takes `{collections?: string[] (repeated ?collection=, OR,
+'uncategorized' = null bucket), gallery?, from?, to?, sort?, dir?}` —
+createdAt windows inclusive, ISO-lexicographic; tests pinned; lumen §8
+gained the explicit `GET /admin/photos` verb line it was missing. The strip
+slimmed to the always-visible axes (gallery state, select-all) — collection
+chips moved behind the sidebar where the dates already live.
