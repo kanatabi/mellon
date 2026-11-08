@@ -235,7 +235,7 @@ describe('mock AdminApi contract', () => {
 		expect(byTitle.items[0].alt).toBe('Alpine ridge at dawn, fog in the valley');
 	});
 
-	it('search: one call, both content groups (posts by title/subtitle/tags, photos by alt/collection)', async () => {
+	it('search: one call, all content groups (posts by title/subtitle/tags, photos by alt/collection, tags by vocabulary prefix)', async () => {
 		const api = createMockApi();
 		const r1 = await api.search('queue');
 		expect(r1.posts.map((p) => p.slug).sort()).toEqual([
@@ -243,11 +243,15 @@ describe('mock AdminApi contract', () => {
 			'shape-of-a-useful-queue'
 		]);
 		expect(r1.photos).toHaveLength(0);
+		// 'queue' prefixes the tag vocabulary name 'queues' — the name lookup
+		// door the owner asked for (/ → posts filtered by tag)
+		expect(r1.tags.map((t) => t.name)).toEqual(['queues']);
+		expect(r1.tags[0].posts).toBe(1); // published corpus only: shape-of-a-useful-queue
 		const r2 = await api.search('market');
 		expect(r2.photos.map((p) => p.id)).toEqual(['p2']);
 		expect(r2.posts).toHaveLength(0);
 		const r3 = await api.search('');
-		expect(r3).toEqual({ posts: [], photos: [] });
+		expect(r3).toEqual({ posts: [], photos: [], tags: [] });
 	});
 
 	it('photo detail verbs: getPhoto 404s honestly, references scan content, delete keeps bytes', async () => {

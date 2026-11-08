@@ -143,6 +143,10 @@ export interface PostListOpts {
 export interface SearchResults {
 	posts: PostSummaryAdmin[];
 	photos: AdminPhoto[];
+	/** Vocabulary matches — a NAME prefix lookup (lumen: Postgres, not
+	 *  Meilisearch), not a relevance search. Selecting one filters the post
+	 *  list (`/posts?tag=`), it never opens a "tag page". */
+	tags: TagCount[];
 }
 
 export class AdminApiError extends Error {
@@ -201,7 +205,7 @@ export interface AdminApi {
 	createCollection(name: string): Promise<CollectionCount>;
 
 	listTags(): Promise<TagCount[]>;
-	/** One call serves BOTH content groups for the palette (≤8 each). */
+	/** One call serves ALL content groups for the palette (≤8 each). */
 	search(q: string): Promise<SearchResults>;
 	/** Vocabulary is a first-class store (not derived): a tag exists once
 	 *  created, used or not. Name is slugified; 409 on duplicates. */

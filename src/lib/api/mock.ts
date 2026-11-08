@@ -476,7 +476,7 @@ export function createMockApi(): AdminApi {
 			const q = String(qRaw ?? '')
 				.trim()
 				.toLowerCase();
-			if (!q) return { posts: [], photos: [] };
+			if (!q) return { posts: [], photos: [], tags: [] };
 			const matched = posts
 				.filter((p) => `${p.title} ${p.subtitle} ${p.tags.join(' ')}`.toLowerCase().includes(q))
 				.slice(0, 8)
@@ -496,7 +496,18 @@ export function createMockApi(): AdminApi {
 				.filter((p) => `${p.alt} ${p.collection ?? ''}`.toLowerCase().includes(q))
 				.slice(0, 8)
 				.map(clone);
-			return { posts: matched, photos: pics };
+			// tags are a VOCABULARY prefix match (name lookup, not relevance
+			// search) — lumen serves it from Postgres, not Meilisearch
+			const tagHits = [...vocab]
+				.filter((t) => t.startsWith(q))
+				.sort()
+				.slice(0, 8)
+				.map((name) => ({
+					name,
+					// same counting rule as listTags: published corpus
+					posts: posts.filter((p) => p.status === 'published' && p.tags.includes(name)).length
+				}));
+			return { posts: matched, photos: pics, tags: tagHits };
 		},
 
 		async listSecretPaths(): Promise<SecretPath[]> {
