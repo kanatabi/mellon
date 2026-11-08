@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Command } from 'lucide-svelte';
+	import { Command, ChevronRight, Hash, Search } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
@@ -9,11 +9,25 @@
 	import {
 		acceptsGroup,
 		armMode,
-		MODE_GLYPH,
 		MODE_LABEL,
 		usesApi,
 		type PaletteMode
 	} from '#lib/palette-mode.ts';
+
+	/* Text sigils (`❯ ⌕`) don't exist in mono font stacks — the browser
+	 * silently substitutes another face and the baseline drifts (owner
+	 * screenshot: the pill looked off-center). SVG icons align by flex
+	 * and never touch a font. Lucide v1 ships legacy class constructors:
+	 * the union must be concrete for svelte-check to accept the dynamic
+	 * component prop. */
+	const MODE_ICON: Record<
+		Exclude<PaletteMode, 'all'>,
+		typeof ChevronRight | typeof Search | typeof Hash
+	> = {
+		commands: ChevronRight,
+		content: Search,
+		pages: Hash
+	};
 
 	interface Props {
 		commands: Cmd[];
@@ -29,6 +43,7 @@
 	   into the pill — mode is explicit state, never re-parsed from the value,
 	   which keeps IME and caret semantics boring (plain input all the way). */
 	let mode = $state<PaletteMode>('all');
+	const modeIcon = $derived(mode === 'all' ? undefined : MODE_ICON[mode]);
 
 	// The palette searches CONTENT (owner doctrine, 2026-11-08): commands and
 	// navigation are portal-side; "what matches?" comes from the API — one
@@ -205,14 +220,14 @@
 	>
 		<label class="flex items-center gap-3 border-b border-border px-4 focus-within:border-brand">
 			<Command class="size-4 shrink-0 text-muted-foreground" />
-			{#if mode !== 'all'}
+			{#if modeIcon}
 				<!-- The chip: the consumed prefix, now a named mode. aria-hidden —
 				     the input's label already speaks the mode for AT. -->
 				<span
 					aria-hidden="true"
-					class="flex shrink-0 items-center gap-1 rounded-md border border-brand/40 bg-brand/10 px-1.5 py-1 font-mono text-[10px] tracking-widest text-brand uppercase select-none"
+					class="flex shrink-0 items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 px-2 py-1 font-mono text-[10px] leading-none tracking-widest text-brand uppercase select-none"
 				>
-					{MODE_GLYPH[mode]}
+					<modeIcon class="size-3 shrink-0"></modeIcon>
 					{MODE_LABEL[mode]}
 				</span>
 			{/if}
@@ -282,9 +297,13 @@
 			<div
 				class="flex items-center gap-4 border-t border-border px-4 py-2 font-mono text-[10px] text-muted-foreground/70"
 			>
-				<span class="flex items-center gap-1"><span class="text-foreground">❯</span> commands</span>
-				<span class="flex items-center gap-1"><span class="text-foreground">⌕</span> content</span>
-				<span class="flex items-center gap-1"><span class="text-foreground">#</span> pages</span>
+				<span class="flex items-center gap-1.5"
+					><ChevronRight class="size-3 text-foreground" /> commands</span
+				>
+				<span class="flex items-center gap-1.5"
+					><Search class="size-3 text-foreground" /> content</span
+				>
+				<span class="flex items-center gap-1.5"><Hash class="size-3 text-foreground" /> pages</span>
 			</div>
 		{/if}
 	</div>

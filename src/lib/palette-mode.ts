@@ -14,13 +14,6 @@ type Group = 'actions' | 'go to' | 'open recent' | 'posts' | 'photos' | 'tags';
 
 const PREFIXES: Record<string, PaletteMode> = { '>': 'commands', '/': 'content', '#': 'pages' };
 
-export const MODE_GLYPH: Record<PaletteMode, string> = {
-	all: '',
-	commands: '❯',
-	content: '⌕',
-	pages: '#'
-};
-
 export const MODE_LABEL: Record<PaletteMode, string> = {
 	all: '',
 	commands: 'commands',
