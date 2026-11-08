@@ -27,6 +27,7 @@
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
 	import { setPageCommands, setPhotoTask } from '#lib/page-commands.svelte.ts';
+	import { editField, stateToggle, vocabSubmenu } from '#lib/command-kit.ts';
 	import type { Command } from '#lib/commands.ts';
 	import type {
 		AdminPhoto,
@@ -474,106 +475,80 @@ flowchart LR
 		   change may live beyond ⌘K's reach). Every commit below closes over
 		   the SAME setters the inputs use: no second implementation to rot. ── */
 		cmds.push(
-			{
+			editField({
 				id: 'editor.field.title',
 				title: 'Set title',
-				group: 'actions',
-				edit: true,
+				pill: 'title',
 				seed: draft.title,
-				pillLabel: 'title',
-				run: () => {},
 				commit: (v) => {
 					draft.title = v;
 					touch();
 				}
-			},
-			{
+			}),
+			editField({
 				id: 'editor.field.subtitle',
 				title: 'Set subtitle',
-				group: 'actions',
-				edit: true,
+				pill: 'subtitle',
 				seed: draft.subtitle,
-				pillLabel: 'subtitle',
-				run: () => {},
 				commit: (v) => {
 					draft.subtitle = v;
 					touch();
 				}
-			},
+			}),
 			// slug exists only pre-creation; a shipped slug never moves
 			// (URLs never move) — the palette honors the same freeze
 			...(isNew
 				? [
-						{
+						editField({
 							id: 'editor.field.slug',
 							title: 'Set slug',
-							group: 'actions' as const,
-							edit: true,
+							pill: 'slug',
 							seed: draft.slug,
-							pillLabel: 'slug',
-							commit: (v: string) => {
-								const s = slugify(v);
-								if (!s) return false; // empty after slugify: reject, keep buffer
-								draft.slug = s;
+							commit: (v) => {
+								const sl = slugify(v);
+								if (!sl) return false; // empty after slugify: reject, keep buffer
+								draft.slug = sl;
 								slugTouched = true; // freezes auto-derivation, like typing it
 								touch();
 							}
-						}
+						})
 					]
 				: []),
-			{
+			editField({
 				id: 'editor.field.date',
 				title: 'Set date',
-				group: 'actions',
-				edit: true,
-				editKind: 'date',
+				pill: 'date',
+				date: true,
 				seed: draft.date,
-				pillLabel: 'date',
-				run: () => {},
 				commit: (v) => {
 					draft.date = v;
 					touch();
 				}
-			}
+			})
 		);
-		cmds.push({
-			id: 'editor.tags',
-			title: 'Edit tags',
-			group: 'actions',
-			// live children (the submenu re-reads THIS array after every
-			// toggle — ✓ marks flip without closing), eager-create from the
-			// filter text exactly like the combobox does
-			children: tagVocab.map((t) => ({
-				id: `editor.tag.${t.name}`,
-				title: t.name,
-				group: 'actions' as const,
-				shortcut: draft.tags.includes(t.name) ? '✓ on' : `${t.posts} posts`,
-				keepOpen: true,
-				run: () => toggleTag(t.name)
-			})),
-			createChild: (raw) => {
-				const q = raw.trim().toLowerCase();
-				if (!q || tagVocab.some((t) => t.name === slugify(q))) return null;
-				return {
-					id: 'editor.tag.create',
-					title: `+ create “${raw.trim()}”`,
-					group: 'actions',
-					shortcut: 'then added',
-					keepOpen: true,
-					run: () => {
-						const name = slugify(q);
-						// eager vocabulary: the tag exists from creation, used or not
-						void client
-							.createTag(name)
-							.then((t) => {
-								createdTags = [...createdTags, t]; // the submenu row flips ✓ live
-								toggleTag(name);
-							})
-							.catch(() => {});
-					}
-				};
-			}
-		});
+		cmds.push(
+			vocabSubmenu({
+				id: 'editor.tags',
+				title: 'Edit tags',
+				vocab: tagVocab.map((t) => ({
+					name: t.name,
+					hint: `${t.posts} ${t.posts === 1 ? 'post' : 'posts'}`
+				})),
+				isOn: (n) => draft.tags.includes(n),
+				pick: toggleTag,
+				create: (raw) => {
+					const q = raw.trim().toLowerCase();
+					if (!q || tagVocab.some((t) => t.name === slugify(q))) return null;
+					return { name: slugify(q), ride: client.createTag(slugify(q)) };
+				},
+				onCreated: (name) => {
+					// eager vocabulary: the tag exists from creation, used or not —
+					// ride it locally so the submenu row flips ✓ without a reload
+					createdTags = [...createdTags, { name, posts: 0 }];
+					toggleTag(name);
+				}
+			})
+		);
 		cmds.push({
 			id: 'editor.cover',
 			title: 'Cover image',
@@ -619,13 +594,14 @@ flowchart LR
 			}
 		);
 		// reads `wrapped` for the state hint — re-registers on every flip
-		cmds.push({
-			id: 'editor.wrap',
-			title: 'Toggle word wrap',
-			group: 'actions',
-			shortcut: wrapped ? 'on' : 'off',
-			run: () => toggleWrap()
-		});
+		cmds.push(
+			stateToggle({
+				id: 'editor.wrap',
+				title: 'Toggle word wrap',
+				on: wrapped,
+				run: () => toggleWrap()
+			})
+		);
 		// the insertion door for the palette's INSERT mode — same lifecycle
 		// contract as the commands themselves: mounted editor owns the cursor,
 		// leaving it must never leave a stale door behind

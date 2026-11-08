@@ -16,7 +16,9 @@
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import { client } from '#lib/api/client.ts';
+	import type { CollectionCount } from '#lib/api/types.ts';
 	import { photoRail } from '#lib/rails.svelte.ts';
+	import { editField, stateToggle, vocabSubmenu } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
 	import type { PageData } from './$types';
@@ -115,8 +117,20 @@
 		return () => window.removeEventListener('keydown', onKey);
 	});
 
-	/* ── Page-context palette commands ─────────────────────────────────────── */
+	/* ── Page-context palette commands (control-center round 2): the whole
+	   metadata pane is ⌘K-reachable. Every commit writes the DRAFT — the
+	   palette reaches the form, never around it: persistence stays the
+	   explicit Save-changes (⌘S), dirty marks light up exactly as typing
+	   does. Built with the command kit: the same shapes as the editor, the
+	   same behavior on every page. ──────────────────────────────────────── */
+	// Eager vocabulary ride (the Combobox contract, palette edition): a just-
+	// created collection lists its own row before any reload.
+	let createdCollections = $state<CollectionCount[]>([]);
 	$effect(() => {
+		const vocab = [
+			...data.collections,
+			...createdCollections.filter((c) => !data.collections.some((d) => d.name === c.name))
+		];
 		const cmds: Command[] = [
 			{
 				id: 'photo.save',
@@ -125,6 +139,54 @@
 				shortcut: dirty ? '⌘S' : 'saved',
 				run: () => void save()
 			},
+			editField({
+				id: 'photo.alt',
+				title: 'Set alt text',
+				pill: 'alt',
+				seed: draft.alt,
+				commit: (v) => {
+					draft.alt = v;
+				}
+			}),
+			vocabSubmenu({
+				id: 'photo.collection',
+				title: 'Set collection',
+				// single-home vocabulary: picking SETS, 'uncategorized' clears
+				vocab: [
+					{ name: 'uncategorized' },
+					...vocab.map((c) => ({
+						name: c.name,
+						hint: `${c.photos} ${c.photos === 1 ? 'photo' : 'photos'}`
+					}))
+				],
+				isOn: (n) => draft.collection === (n === 'uncategorized' ? null : n),
+				pick: (n) => {
+					draft.collection = n === 'uncategorized' ? null : n;
+				},
+				create: (raw) => {
+					const q = raw.trim().toLowerCase();
+					if (!q || q === 'uncategorized') return null;
+					const name = slugify(q);
+					if (!name || vocab.some((c) => c.name === name)) return null;
+					return { name, ride: client.createCollection(name) };
+				},
+				onCreated: (name) => {
+					createdCollections = [...createdCollections, { name, photos: 0 }];
+					draft.collection = name;
+				}
+			}),
+			stateToggle({
+				id: 'photo.gallery',
+				title: 'Toggle gallery',
+				on: draft.gallery,
+				onHint: 'in gallery',
+				offHint: 'hidden',
+				keepOpen: true, // form edit: flip, verify, chain into Save — one session
+				run: () => {
+					draft.gallery = !draft.gallery;
+				}
+			}),
+			{ id: 'photo.link', title: 'Copy link', group: 'actions', run: () => void copyLink() },
 			{
 				id: 'photo.download',
 				title: 'Download image',
@@ -140,6 +202,7 @@
 		];
 		setPageCommands(cmds);
 		return () => setPageCommands([]);
+		// reads draft fields for seeds/hints — re-registers as they change;
 		// dirty keeps the ⌘S hint honest (save-vs-saved in the hint column)
 	});
 
