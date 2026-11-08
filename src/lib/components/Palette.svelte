@@ -48,7 +48,11 @@
 	   into the pill — mode is explicit state, never re-parsed from the value,
 	   which keeps IME and caret semantics boring (plain input all the way). */
 	let mode = $state<PaletteMode>('all');
-	const modeIcon = $derived(mode === 'all' ? undefined : MODE_ICON[mode]);
+	/* Capitalized on purpose: Svelte compiles lowercase tags as HTML ELEMENTS —
+	 * `<modeIcon>` was an empty custom element, so the pill showed a hollow
+	 * gap before its label (the svelte-check "self-closing HTML tag" warning
+	 * was the bug report). Dynamic components need an uppercase binding. */
+	const ModeIcon = $derived(mode === 'all' ? undefined : MODE_ICON[mode]);
 	/* Submenu (owner call 2026-11-08): Enter on a parent row drills IN — the
 	   palette doesn't close, it goes deeper. The stack unwinds one layer per
 	   Esc: insert-mode → submenu → palette ("walk back out the way you came"). */
@@ -293,14 +297,14 @@
 	>
 		<label class="flex items-center gap-3 border-b border-border px-4 focus-within:border-brand">
 			<Command class="size-4 shrink-0 text-muted-foreground" />
-			{#if modeIcon}
+			{#if ModeIcon}
 				<!-- The chip: the consumed prefix, now a named mode. aria-hidden —
 				     the input's label already speaks the mode for AT. -->
 				<span
 					aria-hidden="true"
 					class="flex shrink-0 items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 px-2 py-1 font-mono text-[10px] leading-none tracking-widest text-brand uppercase select-none"
 				>
-					<modeIcon class="size-3 shrink-0"></modeIcon>
+					<ModeIcon class="size-3 shrink-0" />
 					{MODE_LABEL[mode]}
 				</span>
 			{/if}

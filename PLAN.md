@@ -1093,3 +1093,22 @@ post` = a task with two doors: `Upload new image…` (picker in upload mode,
   vs inferred context), §11.4 the pill/submenu anatomy.
 
 vitest 33 → 35 (insert routing, Esc-stack precedence), gates 0/0 per commit.
+
+### 2026-11-08 — pill icon Refined: the lowercase tag was never a component
+
+Owner's screenshots pinned it: the pill showed an EMPTY GAP before
+`COMMANDS`. Root cause is the compiler's naming rule — `<modeIcon>`
+(lowercase) is an HTML ELEMENT, not a component: Svelte emitted an empty
+custom element inside the pill, occupying the flex gap with zero glyph.
+The bug shipped wearing a warning: svelte-check's "self-closing HTML tags
+for non-void elements are ambiguous" was the bug report itself, and I read
+it as a style nit, "fixed" the self-close syntax, and kept the element
+alive. Headless captures then measured the PILL (it rendered!) but never
+the GLYPH (it didn't) — verified the wrong pixel.
+
+`740dc87`+`fix` chain lesson, restated where it bites hardest:
+
+- a checker calling your tag an HTML element means it IS an HTML element —
+  dynamic components need UPPERCASE bindings (`const ModeIcon = $derived(...)`);
+- when verifying a render, assert the smallest thing that can break — the
+  DOM dump / bounding box of the icon, not the row containing it.
