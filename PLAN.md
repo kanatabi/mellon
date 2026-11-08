@@ -955,3 +955,69 @@ renders") existed only for static nav; now it's a mechanism:
   shared picker once per arrival flag (uploadSeen latch — closing must not be
   fought by a re-opening effect). One upload door, many handles.
 - §7 amended with the lifecycle contract.
+
+### 2026-11-08 — the visibility round: settings appearance, palette toggles, end-session, search doctrine, photo detail (6 commits)
+
+Owner walked in with four observations that were really one theme — controls
+that exist but hide, and content that can't be found: _where is the theme
+setting_, _the end-session button is ugly_, _images must be searchable by
+ALT_, _a clicked image should land on its own page_. All four landed.
+
+- **`6210277` feat(settings)**: Appearance section with a `[light | dark]`
+  segment (radiogroup), writing through a NEW extracted `setTheme()` — the
+  single write path (store + cookie + View Transition) now shared by the
+  topbar toggle, the settings segment and the palette. The stale footnote
+  ("theme follows the toggle in the top bar") was deleted: a control with
+  documentation pretending to be a setting was the actual bug. One behavior,
+  three doors, zero forked logic.
+- **`a6eab3f` feat(palette)**: global toggles `Toggle theme` + `Toggle vim
+editing`, state shown IN THE HINT COLUMN (light/dark, on/off) — the palette
+  answers "what mode am I in?" before you flip. Vim writes the same
+  non-httpOnly cookie as the settings action, then `invalidateAll()` → the
+  layout load re-reads it and the CodeMirror compartment reconfigures WITHOUT
+  a page reload. `Toggle word wrap` registered as an EDITOR-CONTEXT command
+  (exists only where wrapping exists — the register/cleanup lifecycle doing
+  its job). Lesson relearned the hard way: lint flagged an unused import and
+  my `&&`-chained gate script let the commit slide anyway — amended; run
+  gates to completion BEFORE staging anything.
+- **`454897f` fix(nav)**: end session became a nav row — hairline separator,
+  LogOut icon, danger tint on hover only, and the collapse fix that matters:
+  the old label fade left an INVISIBLE FOCUSABLE BUTTON in the tab order when
+  the rail folded. Icon always visible, `aria-label` carries the name, one
+  `navFooter(rail)` snippet for rail/strip/drawer.
+- **`c452f94` feat(search)**: the doctrine line drawn — **portal-side**:
+  commands/nav/toggles; **API-side**: `search(q) → {posts, photos}`, one
+  debounced call for both content groups, ranked ABOVE actions (searching
+  "alpine" should find the photo, not the word "actions"). Photos match on
+  ALT + collection — the curation vocabulary people actually remember; the
+  mock does honest substring, lumen §4/§8 mirror Meilisearch + the admin-only
+  `photos` index for Phase B. The old palette hack (`listPosts({q})`) is
+  gone; the contract now says what the backend will actually serve.
+- **`ab01190` feat(photo-detail)**: `/photos/[id]` — the photo's own page,
+  and the owner's correction steered it: "by save image I mean save the
+  METADATA" — so metadata is a **classic dirty-state form** (draft vs
+  baseline, per-field dots, Save disabled until dirty, ⌘S, commit-all PATCH,
+  failure keeps edits) with the editor's unsaved-navigation guards lifted
+  whole. Download (blob same-origin → open-tab fallback, honest about CORS),
+  delete **WARNED NEVER BLOCKED**: `listPhotoReferences` content-scan runs
+  SERVER-side with the page load (a delete warning that hydrates late is
+  advice already acted upon), the generalized DeleteDialog
+  (`heading/description/confirmText/references`) lists the citing posts and
+  demands the photo id retyped. `deletePhoto` keeps bytes in the mock media
+  store — Phase B's GC window made tangible. The metadata pane is a hideable
+  curtain (`photoRail`) lg+ / RailDrawer sheet below — with the form state
+  living in the PAGE so closing the sheet hides the UI, never the edits.
+  Fixture corpus amended so references are REAL: both queue posts now embed
+  p2 (the USED-IN list must be exercisable from first boot).
+- **Docs** (this commit): §6 gains the `/photos/[id]` row + the settings
+  correction; §7 rewritten around the search doctrine (portal vs API side) +
+  toggles-with-state + photo-results-one-destination (the context-magic idea
+  died when the detail page was born — a click always means "show me this
+  photo"); §11.1 end-session anatomy + the invisible-focus lesson; §11.4 the
+  full photo-detail entry.
+
+Semi-colons stayed out of the copy; they live only in the `mellon;` wordmark.
+Gates per commit: prettier → lint(0) → check 0/0 → vitest (24 → 26) → build.
+lumen mirrors pushed (`42ce0b5` search, `8624abe` photo verbs) on
+`feature/admin-api-and-portal`; mellon remains HUMAN-GATE #1 paused (no
+remote) — commits accumulate on local `main`.

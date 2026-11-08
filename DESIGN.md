@@ -110,27 +110,39 @@ published ⇄ unpublished`; a shipped post NEVER returns to draft.** Slug is fix
 
 Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view anatomy in §11.4.
 
-| route           | content                                                                                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`        | single-user session start                                                                                                                                           |
-| `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                            |
-| `/posts`        | list (status pills, roving-tabindex rows, `n` = new)                                                                                                                |
-| `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                     |
-| `/photos`       | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker (owner calls 2026-11-08)          |
-| `/secrets`      | app/env picker (from policy-scoped list), values masked by default (click/keyboard reveal), version history + diff + CAS save, rollback = pin-an-older-version flow |
-| `/settings`     | vim toggle, session                                                                                                                                                 |
+| route           | content                                                                                                                                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`        | single-user session start                                                                                                                                                                      |
+| `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                                                       |
+| `/posts`        | list (status pills, roving-tabindex rows, `n` = new)                                                                                                                                           |
+| `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                                                |
+| `/photos`       | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker (owner calls 2026-11-08)                                     |
+| `/photos/[id]`  | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08) |
+| `/secrets`      | app/env picker (from policy-scoped list), values masked by default (click/keyboard reveal), version history + diff + CAS save, rollback = pin-an-older-version flow                            |
+| `/settings`     | appearance (theme segment), vim toggle, session                                                                                                                                                |
 
 ## 7. Keyboard-first
 
-- **Command palette**: ⌘K / Ctrl+K (aliases of one binding). Sections: `go to`, `actions`
-  (new post, save, publish, theme), `open recent`. Shortcut-hint column. Built on a
+- **Command palette**: ⌘K / Ctrl+K (aliases of one binding). Sections, ranked in order:
+  `photos`, `posts` (API content results), `actions` (new post, save, publish, toggles),
+  `go to`, `open recent`. Shortcut-hint column. Built on a
   **command registry** (`commands.ts`: `{ id, title, shortcut?, run }`) — pages register,
   the palette renders (the rail kit's plug-and-play contract, applied to navigation).
   Context registration is real (`page-commands.svelte.ts`): a page publishes its verbs in
   an effect whose cleanup unregisters — the editor's save/publish/unpublish/delete… appear
   ONLY while the editor is mounted; leaving the page cannot leave stale commands behind.
+  The photo detail page registers its own set (Save metadata ⌘S / Download / Delete…).
   Contextual delete opens the confirm dialog, never deletes from the palette directly.
   Focus management + Esc + focus return reuse the `SearchDialog` recipe.
+- **Search doctrine** (owner call, 2026-11-08): the palette is DUMB about content.
+  Commands, navigation and toggles are portal-side; "what matches?" is served by the API —
+  one debounced `search(q)` call (`GET /admin/search?q`) returns BOTH groups, `{ posts,
+photos }` (posts match title/subtitle/tags incl. drafts; photos match alt + collection —
+  images are findable by their ALT text). Phase B: Meilisearch behind the same verb
+  (lumen §4 indexes `photos` for the admin door); the palette never changes. Toggles show
+  CURRENT STATE in the hint column (`light`/`dark`, `on`/`off`) — the palette answers
+  "what mode am I in?" before you flip it. A photo result always opens `/photos/[id]`:
+  one destination, no context-magic.
 - Roving tabindex for list rows; every table action keyboard-reachable; visible
   `focus-visible` rings (house style); forms fully labeled (native focus/announce);
   `Ctrl+Enter` save/publish convention in the editor.
@@ -191,8 +203,13 @@ tool, a different posture. Every rule below serves that sentence.
   future infra tab joins here). Section labels are the blog's `CardTitle` voice: mono,
   uppercase, `text-xs tracking-widest`. At `lg+` a persistent rail (collapsible to
   icons); **below `lg` the strip is gone — a hamburger in the topbar slides the same
-  menu in as a left drawer** (X/Esc/backdrop dismiss, closes on navigation). Theme +
-  session live pinned at the base.
+  menu in as a left drawer** (X/Esc/backdrop dismiss, closes on navigation). The
+  rail's base carries the **end session** row (owner call 2026-11-08): nav-row grammar —
+  hairline separator, `LogOut` icon + label, danger tint ON HOVER ONLY (logout is the
+  last thing you take, not the loudest) — and when the rail collapses the ICON STAYS
+  VISIBLE with an `aria-label`: the old fade-to-`opacity-0` shipped an invisible
+  focusable button in the tab order, an a11y trap wearing a style bug. One
+  `navFooter(rail)` snippet serves rail, collapsed strip and drawer alike.
 - **Top bar**: a three-zone flow grid — context left (hamburger below `lg`, then the
   breadcrumb, truncating BEFORE the middle zone), the **⌘K affordance centered** (a
   VS Code/Raycast convention — the shell _advertises_ the keyboard-first promise
@@ -287,6 +304,34 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   bar** materializes only while a selection lives: set collection / in / out
   across N photos, optimistic with per-id overlays so the grid never reloads
   mid-cursor. Filters ride the URL like posts'; the vocabulary is admin-internal.
+  The tile IMAGE and the table ALT cell are links to the photo's own page — the curation
+  keys stay on top (absolute, later in DOM) so both doors coexist.
+- **Photo detail** (`/photos/[id]`, owner calls 2026-11-08): the image's dedicated page.
+  Left: a **`.photo-canvas` preview** — permanently dark inset (`#0b0b0f`, deliberately
+  un-themed; a white photo must still read; lightbox backdrop, not a surface), image
+  contained and centered. Right: the **hideable metadata pane** — the established curtain
+  (`photoRail`, `w-80` ↔ `w-9` vertical-label strip, persisted; the collapsed label shows
+  `· edit` while the form is dirty), and below `lg` the same snippet rides a **RailDrawer
+  sheet** behind an Info key. The sheet UNMOUNTS when closed, so the draft form state
+  lives in the PAGE — hiding the UI never hides the edits.
+  Metadata is a **FORM WITH EXPLICIT SAVE** (owner correction: not auto-patched fields):
+  an editable copy of `{alt, collection, gallery}` against a saved baseline; per-field
+  dirty dots; `Save changes` (violet, disabled until dirty, **⌘S** like the editor)
+  commits all three in one PATCH; success re-baselines + `saved` flash, failure KEEPS
+  the edits (a save error never silently reverts you). Unsaved-guards lifted from the
+  editor: `beforeunload` + `beforeNavigate` confirm.
+  The pane also carries: **used in** — posts whose content embeds this src, loaded
+  server-side WITH the photo (a delete warning that hydrates late is advice already
+  acted upon), each linking into its post editor; read-only facts (dims, created,
+  mono src + copy-link); and the pinned action band — `Save changes`,
+  `Download` (blob save-as named from the alt text; open-in-tab as the honest
+  cross-origin fallback), `Delete image` (danger-outline → red on hover).
+  Delete is **WARNED, NEVER BLOCKED** (owner ruling): the shared DeleteDialog —
+  generalized to `{heading, description, confirmText, references?}`, one destructive
+  grammar for posts and photos alike — names the consequence in plain words ("citing
+  posts will show a broken picture"; "the file keeps being served until storage GC"),
+  lists the referencing posts, and demands the PHOTO ID retyped. The mock keeps the
+  bytes after the row dies: the Phase B GC-window, made tangible.
 - **Secrets**: presented as what it is — a config file with version control. Masked mono
   values, reveal on press (never "show all values" as a resting state), **version history
   as a side sheet** (springs from the right, reusing the drawer motion), diff between
@@ -294,7 +339,12 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   decoration needed.
 - **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
   the charm is free.
-- **Settings**: max-width form, same voice.
+- **Settings**: max-width form, same voice (owner call 2026-11-08: the theme became an
+  ACTUAL setting — an **appearance** segment `[☀ light | ☾ dark]` above the editor group,
+  radiogroup semantics, writing through the ONE `setTheme()` (store + cookie + View
+  Transition) that the topbar toggle and the palette command share; three doors, zero
+  forked logic. The stale "theme follows the toggle in the top bar" footnote died with it
+  — a control with documentation pretending to be a setting was the bug).
 - **Login**: the brand moment — centered gate, the sanctioned aura radial behind
   it (§11.3), theme toggle reachable in the corner. Nothing else on the screen
   competes.
