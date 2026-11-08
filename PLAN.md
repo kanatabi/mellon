@@ -1057,3 +1057,39 @@ prefix requires the committing space (bare `>` stays literal).
 Live-verified: `/api/search?q=latency` → tag 'latency · 0 posts' — the
 eager vocabulary shows UNUSED names, exactly as the vocabulary doctrine
 promises (a tag exists from creation, used or not).
+
+### 2026-11-08 — palette pills, submenus, and the INSERT task
+
+Owner opened with a screenshot (the pill's text sigil sat visibly off-center)
+and a behavior sketch (Import image should become upload-THEN-apply, with a
+nested choice). Both landed as grammar, not one-offs.
+
+- **`740dc87` fix(palette)**: pills + legend render Lucide SVGs, never text
+  glyphs — mono font stacks lack ❯/⌕, browser fallback drifted the baseline.
+  Flex-centered icons can't misalign; `leading-none` as insurance; pure
+  `palette-mode.ts` sheds its glyph table (node module stays icon-free).
+  Gate lesson restated: `tail -1` on svelte-check HID a warning while the
+  commit chain ran — amended; 0/0 means BOTH numbers.
+- **`acfa266` feat(palette-submenu)**: `Command` grows declarative shape —
+  `children?` (Enter drills in, palette never closes, `← parent` back row,
+  typing filters children) and `arm?` (Enter arms a mode instead of
+  running). `insert` joins the mode table as the odd one out: NO SIGIL —
+  tasks are destinations, sigils stay the user's vocabulary; its rows are
+  API photos running the page-published handle. Esc unwinds ONE layer per
+  press (insert→submenu→palette, `escapeAction` pure + tested); typed modes
+  keep closing straight through — pre-submenu semantics honored.
+  `page-commands` gains `setPhotoInsert` under the same lifecycle contract:
+  unmounting an editor cannot leave a stale insertion door.
+- **`b66836b` feat(editor-import)**: the doctrine split the owner named —
+  global `Import image` = library upload only; editor `Import image into
+post` = a task with two doors: `Upload new image…` (picker in upload mode,
+  `onUploaded` wired straight to insertAtCursor — upload THEN apply, dialog
+  stays open for multi-upload, library rows mid-flow insert instead of
+  silently closing) and `Search library` (INSERT mode, no dialog). The
+  mouse doors (toolbar/rail keys) keep the full picker — palette paths
+  ADD, never replace.
+- **Docs** (this commit): §7 gains the submenu/INSERT doctrine (including
+  the one honest exception to "photo rows always navigate": declared intent
+  vs inferred context), §11.4 the pill/submenu anatomy.
+
+vitest 33 → 35 (insert routing, Esc-stack precedence), gates 0/0 per commit.

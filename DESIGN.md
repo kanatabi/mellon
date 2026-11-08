@@ -144,8 +144,9 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   (lumen §4 indexes `photos` for the admin door; tags come from Postgres); the palette
   never changes. Toggles show CURRENT STATE in the hint column (`light`/`dark`,
   `on`/`off`) — the palette answers "what mode am I in?" before you flip it. A photo
-  result always opens `/photos/[id]`: one destination, no context-magic. A TAG result
-  enters `/posts?tag=<name>`: a filter axis, not a page.
+  result always opens `/photos/[id]`: one destination, no context-magic (the one
+  exception is the declared INSERT task below — declared intent, never inferred context).
+  A TAG result enters `/posts?tag=<name>`: a filter axis, not a page.
 - **Mode grammar** (owner call, 2026-11-08): the palette also knows WHERE to look.
   A position-0 prefix + space commits a MODE, rendered as a pill inside the search row —
   the sigil characters are CONSUMED (mode is explicit state, never re-parsed text, so a
@@ -157,7 +158,26 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   Backspace disarms; sigils elsewhere stay literal (`C++ > foo` still searches); pasted
   `prefix + argument` commits in one keystroke. The grammar is a legend footer while
   idle — a keyboard-first UI shows its sigils. Pure logic lives in `palette-mode.ts`
-  (armed/disarmed/group-routing/API-gating all unit-tested in node).
+  (armed/disarmed/group-routing/API-gating all unit-tested in node). Pills and legend
+  render SVG icons (ChevronRight/Search/Hash), never text glyphs — mono stacks lack
+  `❯ ⌕` and font fallback drifts the baseline.
+- **Submenus & the INSERT task** (owner calls, 2026-11-08): the palette can go DEEPER
+  without closing. `Command` is declarative all the way down: `children?: Command[]`
+  makes a row a parent (Enter swaps the list to its options under a `← parent` back
+  row; typing filters children locally), `arm?: PaletteMode` makes a row enter a mode
+  instead of running — pages describe shapes, the palette interprets, nobody sniffs ids.
+  `insert` is the task mode that closes the ⌘K→cursor gap: **no sigil arms it** (typed
+  grammar stays the user-facing vocabulary; `insert` exists only as a command's
+  destination); its rows are API photos whose Enter runs the page-published handle
+  (`setPhotoInsert`, same register/cleanup lifecycle as commands — leaving the editor
+  cannot leave a stale door). Escape unwinds ONE layer per press: insert → submenu →
+  palette; typed modes are grammar, not a path, so Esc closes straight through them.
+  The import split states the doctrine: **global `Import image` = upload into the
+  library and that's it; the editor's `Import image into post` = a task with two
+  doors** — `Upload new image…` (picker in upload mode, every finished upload inserts
+  `![alt](src)` at the cursor behind the still-open dialog) or `Search library`
+  (INSERT mode, no dialog at all). Upload THEN apply is the editor's promise; the
+  mouse doors (toolbar/rail keys) keep the full picker.
 - Roving tabindex for list rows; every table action keyboard-reachable; visible
   `focus-visible` rings (house style); forms fully labeled (native focus/announce);
   `Ctrl+Enter` save/publish convention in the editor.
@@ -353,13 +373,16 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   versions, CAS-save. The masked-mono table is naturally beautiful in this palette; no
   decoration needed.
 - **Command palette** (the §7 grammar, made visible): search row = `⌘` mark, an optional
-  MODE PILL (`❯ commands` / `⌕ content` / `# pages`, brand-tinted mono micro-chip,
+  MODE PILL (icon + word — `› commands` `⌕ content` `# pages` `⌐ insert`, rendered as
+  flex-centered Lucide SVGs at `leading-none`, brand-tinted mono micro-chip,
   aria-hidden because the input's own label speaks the mode), then the plain input,
   then the `esc` kbd. Results keep the hint column for state (toggles show
   `light/dark`/`on/off`, photos show dims, posts show status, tags show published
-  counts). GROUP chips prefix each row only while MULTIPLE kinds share the list — a
-  forced mode already says what the rows are. Idle shows the legend footer
-  (`❯ commands · ⌕ content · # pages`) — sigils documented, not folklore.
+  counts). GROUP chips prefix each row only while MULTIPLE kinds share the plain
+  list — a forced mode, a submenu, or the legend's own silence says what rows are.
+  Submenu view: back row first (`← parent` · `esc` hint), children below in declared
+  order. Idle shows the legend footer (`› commands · ⌕ content · # pages`) — sigils
+  documented, not folklore.
 - **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
   the charm is free.
 - **Settings**: max-width form, same voice (owner call 2026-11-08: the theme became an
