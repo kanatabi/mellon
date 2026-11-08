@@ -9,6 +9,7 @@
 		EyeOff,
 		Images,
 		LayoutGrid,
+		Link,
 		Plus,
 		Table,
 		X
@@ -69,6 +70,19 @@
 		const ids = selectedIds;
 		if (!ids.length) return;
 		for (const id of ids) await patch(id, next);
+	}
+
+	/** Copy the serving URL — the same door the picker's row action offers,
+	 *  now on both photos views (owner call). Relative mock-era src becomes
+	 *  absolute so what lands on the clipboard is always paste-ready. */
+	async function copyLink(p: AdminPhoto) {
+		try {
+			await navigator.clipboard.writeText(new URL(p.src, location.origin).href);
+			message = 'link copied';
+		} catch {
+			message = 'clipboard blocked by the browser';
+		}
+		setTimeout(() => (message = ''), 2500);
 	}
 
 	/* ── Filters ride the URL (the API filters, never this page) ───────────── */
@@ -357,6 +371,16 @@
 						>
 							<Check class="size-3.5" />
 						</button>
+						<!-- copy-link key, beside the gallery eye -->
+						<button
+							type="button"
+							onclick={() => void copyLink(p)}
+							aria-label={`Copy link for ${p.alt}`}
+							title="Copy link"
+							class="absolute top-2 right-10 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+						>
+							<Link class="size-3.5" />
+						</button>
 						<!-- gallery eye key: pressed = published to the blog Gallery -->
 						<button
 							type="button"
@@ -398,7 +422,7 @@
 			<div role="table" aria-label="Photos" class="hidden flex-col md:flex">
 				<div
 					role="row"
-					class="mb-1 grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_2.75rem_5.5rem_7rem] items-center gap-4 border-b border-border pb-2"
+					class="mb-1 grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border pb-2"
 				>
 					{#each photoCols as col (col.label)}
 						{#if col.field}
@@ -438,7 +462,7 @@
 					{@const sel = selection.has(p.id)}
 					<div
 						role="row"
-						class="grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_2.75rem_5.5rem_7rem] items-center gap-4 border-b border-border py-2.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40"
+						class="grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border py-2.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40"
 					>
 						<span role="cell">
 							<button
@@ -477,7 +501,7 @@
 								onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
 							/>
 						</div>
-						<span role="cell">
+						<span role="cell" class="flex items-center gap-1.5">
 							<button
 								type="button"
 								onclick={() => void patch(p.id, { gallery: !p.gallery })}
@@ -488,6 +512,15 @@
 									: 'border-border text-muted-foreground hover:text-foreground'}"
 							>
 								{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
+							</button>
+							<button
+								type="button"
+								onclick={() => void copyLink(p)}
+								aria-label={`Copy link for ${p.alt}`}
+								title="Copy link"
+								class="flex size-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:text-foreground"
+							>
+								<Link class="size-3.5" />
 							</button>
 						</span>
 						<span role="cell" class="font-mono text-[11px] text-muted-foreground tabular-nums">
