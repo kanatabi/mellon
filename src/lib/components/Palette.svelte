@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { Command } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
+	import { client } from '#lib/api/client.ts';
+	import type { PostSummaryAdmin } from '#lib/api/types.ts';
 	import type { Command as Cmd } from '#lib/commands.ts';
 
 	interface Props {
@@ -14,11 +17,50 @@
 	let query = $state('');
 	let active = $state(0);
 
+	// The palette searches POSTS, not just commands (owner call 2026-11-08):
+	// 2+ chars triggers a debounced listPosts({q}) through the same relay the
+	// API doctrine demands — the palette stays the portal's single "find
+	// anything" door, and the mobile search key has something real to open.
+	let postResults = $state<PostSummaryAdmin[]>([]);
+	let searchSeq = 0;
+	let searchTimer: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		const q = query.trim();
+		clearTimeout(searchTimer);
+		if (q.length < 2) {
+			postResults = [];
+			return;
+		}
+		searchTimer = setTimeout(async () => {
+			const seq = ++searchSeq;
+			try {
+				const res = await client.listPosts({ q });
+				if (seq === searchSeq) postResults = res.slice(0, 5);
+			} catch {
+				if (seq === searchSeq) postResults = [];
+			}
+		}, 200);
+		return () => clearTimeout(searchTimer);
+	});
+
+	const postCommands = $derived<Cmd[]>(
+		postResults.map((p) => ({
+			id: `post.${p.slug}`,
+			title: p.title,
+			group: 'posts' as const,
+			shortcut: p.status,
+			run: () => void goto(`/posts/${p.slug}`)
+		}))
+	);
+
 	const filtered = $derived.by(() => {
 		const q = query.trim().toLowerCase();
-		const list = q ? commands.filter((c) => c.title.toLowerCase().includes(q)) : commands;
-		// group order: actions, go to, open recent
-		const order = { actions: 0, 'go to': 1, 'open recent': 2 };
+		// post results already went through the server-side q filter — they
+		// join verbatim; static commands filter locally as before
+		const list = q
+			? [...commands.filter((c) => c.title.toLowerCase().includes(q)), ...postCommands]
+			: commands;
+		const order = { actions: 0, posts: 1, 'go to': 2, 'open recent': 3 };
 		return [...list].sort(
 			(a, b) => order[a.group] - order[b.group] || a.title.localeCompare(b.title)
 		);

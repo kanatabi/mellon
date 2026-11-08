@@ -11,6 +11,7 @@
 		Menu,
 		PanelLeftClose,
 		PanelLeftOpen,
+		Search,
 		Settings,
 		X
 	} from 'lucide-svelte';
@@ -87,6 +88,11 @@
 		paletteOpen = false;
 		paletteTrigger?.focus();
 		paletteTrigger = null;
+	}
+
+	function openPalette() {
+		paletteTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		paletteOpen = true;
 	}
 
 	const navGroups = [
@@ -268,21 +274,27 @@
 			</div>
 			<button
 				type="button"
-				onclick={() => {
-					paletteTrigger =
-						document.activeElement instanceof HTMLElement ? document.activeElement : null;
-					paletteOpen = true;
-				}}
+				onclick={openPalette}
 				class="hidden w-72 max-w-[42vw] items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:col-start-2 md:flex md:justify-self-center"
 				aria-label="Open command palette"
 			>
 				<span class="flex items-center gap-2">
 					<CommandIcon class="size-3.5" />
-					search commands…
+					search posts, commands…
 				</span>
 				<kbd class="rounded border border-border px-1.5 py-0.5 text-[10px]">⌘K</kbd>
 			</button>
 			<div class="col-start-3 flex items-center gap-2 justify-self-end">
+				<!-- Phones: the palette door the ⌘K pill is on desktop — same
+				     round-key language as the theme toggle. -->
+				<button
+					type="button"
+					onclick={openPalette}
+					aria-label="Search"
+					class="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted md:hidden"
+				>
+					<Search class="size-4" />
+				</button>
 				<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
 			</div>
 		</header>
