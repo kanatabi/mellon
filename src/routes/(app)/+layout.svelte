@@ -155,7 +155,7 @@
 	     labels fade rather than snap. -->
 	<nav
 		aria-label="Portal navigation"
-		class="hidden gap-6 border-border px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:border-r lg:px-3 lg:pt-4 {navRail.collapsed
+		class="hidden gap-6 border-border bg-chrome px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:border-r lg:px-3 lg:pt-4 {navRail.collapsed
 			? 'lg:w-[4.25rem]'
 			: 'lg:w-60'}"
 	>
@@ -242,7 +242,7 @@
 		     iPad shot caught: absolute centering doesn't truncate siblings).
 		     Below lg the left zone gains the hamburger that summons the drawer. -->
 		<header
-			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-4 lg:px-6"
+			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border bg-chrome px-4 lg:px-6"
 		>
 			<div class="col-start-1 flex min-w-0 items-center gap-1.5 justify-self-start">
 				<button
@@ -318,7 +318,7 @@
 		aria-modal="true"
 		aria-label="Portal navigation"
 		tabindex="-1"
-		class="fixed inset-y-0 left-0 z-30 flex w-64 max-w-[80vw] flex-col gap-4 border-r border-border bg-card px-4 pt-4 pb-[calc(1.25rem+env(safe-area-inset-left))] shadow-2xl"
+		class="fixed inset-y-0 left-0 z-30 flex w-64 max-w-[80vw] flex-col gap-4 border-r border-border bg-chrome px-4 pt-4 pb-[calc(1.25rem+env(safe-area-inset-left))] shadow-2xl"
 		style="padding-left: max(1rem, env(safe-area-inset-left))"
 		transition:slide|local={{ axis: 'x', duration: reduced ? 0 : 240, easing: cubicOut }}
 	>

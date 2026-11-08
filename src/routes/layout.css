@@ -5,20 +5,32 @@
 @import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/fraunces/wonk-italic.css';
 
-/* Semantic color tokens — the shared contract with earendil. Values are copied
-   (the semantic layer is the contract); mellon-only needs are ADDITIVE tokens
-   below, never divergent values. (mellon/DESIGN.md §3, §11.3) */
+/* Semantic color tokens — names are the shared contract with earendil; the
+   VALUES here diverge by owner decision (2026-11-08 color round): mellon's
+   neutrals carry a whisper of indigo so the shell feels layered rather than
+   flat white/black. The semantic mapping is still the contract (§3); the
+   tint is mellon's own voice (§11.3 wayfinding doctrine). */
 :root {
-	--background: #ffffff;
-	--foreground: #09090b;
+	/* tinted zinc → whisper-indigo */
+	--background: #f8f7fb;
+	--foreground: #171521;
+	/* cards sit lighter than the page — the cheap elevation trick */
 	--card: #ffffff;
-	--primary: #18181b;
-	--muted: #f4f4f5;
-	--muted-foreground: #71717a;
-	--accent: #f4f4f5;
-	--border: #e4e4e7;
+	--primary: #1c1a29;
+	--muted: #edeaf6;
+	--muted-foreground: #6f6a80;
+	--accent: #ece8f4;
+	--border: #dcd6e9;
+	/* the shell surface: rail + topbar sit a step apart from the canvas */
+	--chrome: #f1eef8;
 	/* Brand accent — the semicolon violet; the single loud voice. */
 	--brand: #7c3aed;
+	/* Wayfinding hues (owner cast 2026-11-08): one hue, one job, equal
+	   chroma/lightness band — icons, pills and washes only, never body text. */
+	--accent-blue: #6366f1; /* posts / periwinkle */
+	--accent-teal: #0d9488; /* photos / gallery-visible */
+	--accent-amber: #d97706; /* drafts / secrets */
+	--accent-slate: #64748b; /* settings — deliberately quiet */
 	/* The ASCII glyph field (mellon/static/profile/) for watermarks. */
 	--ascii-ink: var(--foreground);
 	--ascii-mask: url('/profile/ascii-glyphs-640.webp');
@@ -30,15 +42,22 @@
 }
 
 [data-theme='dark'] {
-	--background: #09090b;
-	--foreground: #fafafa;
-	--card: #09090b;
-	--primary: #fafafa;
-	--muted: #27272a;
-	--muted-foreground: #a1a1aa;
-	--accent: #27272a;
-	--border: #27272a;
+	--background: #0f0e17;
+	--foreground: #eae8f2;
+	/* one step above the page — depth without shadows (§11.3 holds) */
+	--card: #171522;
+	--primary: #eae8f2;
+	--muted: #262336;
+	--muted-foreground: #9d97b3;
+	--accent: #221f31;
+	--border: #2b2740;
+	/* chrome goes DEEPER than the canvas: the wall, behind the lit panel */
+	--chrome: #0a0911;
 	--brand: #a78bfa;
+	--accent-blue: #a5b4fc;
+	--accent-teal: #5eead4;
+	--accent-amber: #fcd34d;
+	--accent-slate: #94a3b8;
 	/* Terminal sage, sampled from the mask's bright glyphs (earendil parity). */
 	--ascii-ink: #d8e0d6;
 	--danger: #f87171;
@@ -64,7 +83,12 @@
 	--color-muted-foreground: var(--muted-foreground);
 	--color-accent: var(--accent);
 	--color-border: var(--border);
+	--color-chrome: var(--chrome);
 	--color-brand: var(--brand);
+	--color-accent-blue: var(--accent-blue);
+	--color-accent-teal: var(--accent-teal);
+	--color-accent-amber: var(--accent-amber);
+	--color-accent-slate: var(--accent-slate);
 	--color-danger: var(--danger);
 	--color-diff-add: var(--diff-add);
 	--color-diff-del: var(--diff-del);
