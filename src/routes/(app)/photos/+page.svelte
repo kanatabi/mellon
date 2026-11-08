@@ -66,6 +66,12 @@
 	/* ── Bulk selection ─────────────────────────────────────────────────────── */
 	const selection = new SvelteSet<string>();
 	const selectedIds = $derived([...selection]);
+	// selection is a per-page context: any query change (filter, sort, page)
+	// clears it so a bulk apply can never hit invisible rows
+	$effect(() => {
+		void page.url.search;
+		selection.clear();
+	});
 	function toggleSelect(id: string) {
 		if (selection.has(id)) selection.delete(id);
 		else selection.add(id);
@@ -102,8 +108,12 @@
 		to?: string | null;
 		sort?: PhotoSort;
 		dir?: 'asc' | 'desc';
+		page?: number;
 	}): string {
 		const sp = new SvelteURLSearchParams(page.url.searchParams.toString());
+		// any filter/sort change resets pagination (owner rule — a stale page
+		// behind new filters is an empty void that feels broken)
+		let touchesQuery = false;
 		if (opts.toggleCollection) {
 			const cur = sp.getAll('collection');
 			sp.delete('collection');
@@ -111,19 +121,23 @@
 				? cur.filter((c) => c !== opts.toggleCollection)
 				: [...cur, opts.toggleCollection];
 			for (const c of next) sp.append('collection', c);
+			touchesQuery = true;
 		}
 		if ('gallery' in opts) {
 			if (opts.gallery === true) sp.set('gallery', '1');
 			else if (opts.gallery === false) sp.set('gallery', '0');
 			else sp.delete('gallery');
+			touchesQuery = true;
 		}
 		if ('from' in opts) {
 			if (opts.from) sp.set('from', opts.from);
 			else sp.delete('from');
+			touchesQuery = true;
 		}
 		if ('to' in opts) {
 			if (opts.to) sp.set('to', opts.to);
 			else sp.delete('to');
+			touchesQuery = true;
 		}
 		if (opts.sort) {
 			const dir = opts.dir ?? 'desc';
@@ -134,7 +148,12 @@
 				sp.set('sort', opts.sort);
 				sp.set('dir', dir);
 			}
+			touchesQuery = true;
 		}
+		if (opts.page) {
+			if (opts.page > 1) sp.set('page', String(opts.page));
+			else sp.delete('page');
+		} else if (touchesQuery) sp.delete('page');
 		const qs = sp.toString();
 		return `/photos${qs ? `?${qs}` : ''}`;
 	}
@@ -577,6 +596,31 @@
 					{/each}
 				</div>
 			{/if}
+		{/if}
+
+		<!-- Pager: links, not fetch logic. Hidden when everything fits one page. -->
+		{#if data.totalPages > 1}
+			<div class="flex items-center justify-between gap-4 font-mono text-xs">
+				{#if data.page > 1}
+					<a
+						href={buildUrl({ page: data.page - 1 })}
+						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+						>← prev</a
+					>
+				{:else}
+					<span class="px-3 py-1 text-muted-foreground/40">← prev</span>
+				{/if}
+				<span class="text-muted-foreground">page {data.page} / {data.totalPages}</span>
+				{#if data.page < data.totalPages}
+					<a
+						href={buildUrl({ page: data.page + 1 })}
+						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+						>next →</a
+					>
+				{:else}
+					<span class="px-3 py-1 text-muted-foreground/40">next →</span>
+				{/if}
+			</div>
 		{/if}
 	</div>
 

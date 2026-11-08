@@ -66,11 +66,16 @@
 		dir?: 'asc' | 'desc';
 		from?: string | null;
 		to?: string | null;
+		page?: number;
 	}): string {
 		const sp = new SvelteURLSearchParams(page.url.searchParams.toString());
+		// ANY filter/sort change resets pagination — a stale ?page behind a new
+		// filter shows an empty void and feels broken (owner pagination rule).
+		let touchesQuery = false;
 		if ('status' in opts) {
 			if (opts.status) sp.set('status', opts.status);
 			else sp.delete('status');
+			touchesQuery = true;
 		}
 		if (opts.toggleTag) {
 			const cur = sp.getAll('tag');
@@ -79,10 +84,20 @@
 				? cur.filter((t) => t !== opts.toggleTag)
 				: [...cur, opts.toggleTag];
 			for (const t of next) sp.append('tag', t);
+			touchesQuery = true;
+		}
+		if ('from' in opts) {
+			if (opts.from) sp.set('from', opts.from);
+			else sp.delete('from');
+			touchesQuery = true;
+		}
+		if ('to' in opts) {
+			if (opts.to) sp.set('to', opts.to);
+			else sp.delete('to');
+			touchesQuery = true;
 		}
 		if (opts.sort) {
 			const dir = opts.dir ?? 'desc';
-			// the default pair stays implicit — clean URLs
 			if (opts.sort === 'updated' && dir === 'desc') {
 				sp.delete('sort');
 				sp.delete('dir');
@@ -90,16 +105,12 @@
 				sp.set('sort', opts.sort);
 				sp.set('dir', dir);
 			}
+			touchesQuery = true;
 		}
-		// null = drop the bound, string = set it; undefined = leave as-is
-		if ('from' in opts) {
-			if (opts.from) sp.set('from', opts.from);
-			else sp.delete('from');
-		}
-		if ('to' in opts) {
-			if (opts.to) sp.set('to', opts.to);
-			else sp.delete('to');
-		}
+		if (opts.page) {
+			if (opts.page > 1) sp.set('page', String(opts.page));
+			else sp.delete('page');
+		} else if (touchesQuery) sp.delete('page');
 		const qs = sp.toString();
 		return `/posts${qs ? `?${qs}` : ''}`;
 	}
@@ -296,6 +307,32 @@
 				</p>
 			{/each}
 		</div>
+
+		<!-- Pager: links, not fetch logic — shareable, back-button honest,
+		     keyboard-native. Hidden when the corpus fits one page. -->
+		{#if data.totalPages > 1}
+			<div class="flex items-center justify-between gap-4 font-mono text-xs">
+				{#if data.page > 1}
+					<a
+						href={buildUrl({ page: data.page - 1 })}
+						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+						>← prev</a
+					>
+				{:else}
+					<span class="px-3 py-1 text-muted-foreground/40">← prev</span>
+				{/if}
+				<span class="text-muted-foreground">page {data.page} / {data.totalPages}</span>
+				{#if data.page < data.totalPages}
+					<a
+						href={buildUrl({ page: data.page + 1 })}
+						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+						>next →</a
+					>
+				{:else}
+					<span class="px-3 py-1 text-muted-foreground/40">next →</span>
+				{/if}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Right rail: tags + sort (earendil's kit roles, admin shape). Folds to
