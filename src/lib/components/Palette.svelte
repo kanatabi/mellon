@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Command, ChevronRight, CornerDownLeft, Hash, Pencil, Search } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { fade, fly } from 'svelte/transition';
+	import { tick } from 'svelte';
 	import { focusOnMount } from '#lib/actions.ts';
 	import { client } from '#lib/api/client.ts';
 	import { parseDateExpr, shiftDate, todayISO } from '#lib/date-expr.ts';
@@ -250,9 +252,10 @@
 		if (!a) return '';
 		if (a.editKind === 'date') {
 			const w = parseDateExpr(query);
-			if (!w) return 'not a date — try: today · -3d · nov 12 · 2026-11-12 · ←→ ±1d ↑↓ ±1w';
-			if (w.from !== w.to) return `${w.from} .. ${w.to} — this field takes ONE date`;
-			return `${w.from}${w.from === a.seed ? ' · unchanged' : ' — ⏎ saves'} · esc cancels`;
+			if (!w) return 'not a date — try: today · -3d · nov 12 · last week · a..b · ←→ ±1d ↑↓ ±1w';
+			const label = w.from === w.to ? w.from : `${w.from} .. ${w.to}`;
+			if (w.from !== w.to && !a.editRange) return `${label} — this field takes ONE date`;
+			return `${label}${query === (a.seed ?? '') ? ' · unchanged' : ' — ⏎ saves'} · esc cancels`;
 		}
 		return `⏎ saves to ${a.pillLabel ?? 'field'}${query === (a.seed ?? '') ? ' · buffer unchanged' : ' — buffer edited'} · esc cancels`;
 	});
@@ -273,8 +276,11 @@
 		if (!a?.commit) return disarm();
 		if (a.editKind === 'date') {
 			const w = parseDateExpr(query);
-			if (!w || w.from !== w.to) return; // hint row already says "not a date"
-			if (a.commit(w.from) === false) return;
+			if (!w) return; // hint row already says "not a date"
+			if (w.from !== w.to && !a.editRange) return; // single fields reject windows
+			// re-serialize canonically: the page re-parses one honest grammar
+			const value = w.from === w.to ? w.from : `${w.from}..${w.to}`;
+			if (a.commit(value) === false) return;
 		} else if (a.commit(query) === false) {
 			return;
 		}
@@ -344,8 +350,14 @@
 								: null;
 			if (step) {
 				e.preventDefault();
-				const base = parseDateExpr(query)?.from ?? armed.seed ?? todayISO();
-				query = shiftDate(base, step);
+				const w = parseDateExpr(query);
+				if (w && w.from !== w.to && armed.editRange) {
+					// a window slides whole — both endpoints move
+					query = `${shiftDate(w.from, step)}..${shiftDate(w.to, step)}`;
+				} else {
+					const base = w?.from ?? parseDateExpr(armed.seed ?? '')?.from ?? armed.seed ?? todayISO();
+					query = shiftDate(base, step);
+				}
 				return;
 			}
 		}
@@ -382,6 +394,19 @@
 			el.children[active]?.scrollIntoView({ block: 'nearest' });
 		});
 	}
+
+	/* Focus is part of the contract (keyboard-first): keepOpen picks NAVIGATE
+	   under the still-open palette (status/tag/sort chains), and SvelteKit's
+	   re-render can drop the focus outside the dialog — then keys (even Esc)
+	   hit deaf ears. While the palette is mounted, the input reclaims focus
+	   on every URL change; no-op when it already holds it. */
+	let inputEl = $state<HTMLInputElement | undefined>();
+	$effect(() => {
+		void page.url.href;
+		tick().then(() => {
+			if (inputEl && document.activeElement !== inputEl) inputEl.focus();
+		});
+	});
 </script>
 
 <!-- Modal scrim like the blog's palette (dim + blur); sheet is command-first.
@@ -417,6 +442,7 @@
 			{/if}
 			<input
 				type="text"
+				bind:this={inputEl}
 				class="w-full bg-transparent py-3 font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
 				{placeholder}
 				bind:value={query}

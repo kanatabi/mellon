@@ -27,6 +27,10 @@
 	import Watermark from '#lib/components/Watermark.svelte';
 	import { client } from '#lib/api/client.ts';
 	import { photosRail } from '#lib/rails.svelte.ts';
+	import { editField, stateToggle, vocabSubmenu } from '#lib/command-kit.ts';
+	import { setPageCommands } from '#lib/page-commands.svelte.ts';
+	import { parseDateExpr } from '#lib/date-expr.ts';
+	import type { Command } from '#lib/commands.ts';
 	import type { AdminPhoto } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
 
@@ -173,6 +177,83 @@
 			data.sort !== 'created' ||
 			data.dir !== 'desc'
 	);
+
+	/* ── Palette = this page's control surface (§7 parity, control-center
+	   round 3 — the photos twin of the posts registrations): filters, sort,
+	   dates AND the view segment, all closing over buildUrl/setView. Bulk
+	   SELECTION stays out — spatial state has no palette shape (exemption). ── */
+	$effect(() => {
+		const galNow = data.gallery === undefined ? 'any' : data.gallery ? 'in gallery' : 'hidden';
+		const colsNow = data.activeCollections;
+		const sortNow = `${data.sort}·${data.dir}`;
+		const cmds: Command[] = [
+			vocabSubmenu({
+				id: 'photos.gallery',
+				title: 'Filter gallery',
+				vocab: [{ name: 'any' }, { name: 'in gallery' }, { name: 'hidden' }],
+				isOn: (n) => galNow === n,
+				pick: (n) =>
+					void goto(buildUrl({ gallery: n === 'any' ? null : n === 'in gallery' ? true : false }))
+			}),
+			vocabSubmenu({
+				id: 'photos.collection',
+				title: 'Filter collections',
+				vocab: data.collections.map((c) => ({
+					name: c.name,
+					hint: `${c.photos} ${c.photos === 1 ? 'photo' : 'photos'}`
+				})),
+				isOn: (n) => colsNow.includes(n),
+				pick: (n) => void goto(buildUrl({ toggleCollection: n }))
+			}),
+			editField({
+				id: 'photos.dates',
+				title: 'Set date range',
+				pill: 'dates',
+				date: true,
+				range: true,
+				seed:
+					data.from && data.to && data.from !== data.to
+						? `${data.from}..${data.to}`
+						: (data.from ?? data.to ?? ''),
+				commit: (v) => {
+					const w = parseDateExpr(v);
+					if (!w) return false;
+					void goto(buildUrl({ from: w.from, to: w.to }));
+				}
+			}),
+			vocabSubmenu({
+				id: 'photos.sort',
+				title: 'Sort by',
+				vocab: sortChips.map((c) => ({ name: c.label })),
+				isOn: (n) => sortChips.some((c) => c.label === n && `${c.sort}·${c.dir}` === sortNow),
+				pick: (n) => {
+					const c = sortChips.find((x) => x.label === n);
+					if (c) void goto(buildUrl({ sort: c.sort, dir: c.dir }));
+				}
+			}),
+			stateToggle({
+				id: 'photos.view',
+				title: 'Toggle view',
+				on: view === 'table',
+				onHint: 'table',
+				offHint: 'tiles',
+				keepOpen: true,
+				run: () => setView(view === 'table' ? 'tiles' : 'table')
+			}),
+			...(hasFilters
+				? [
+						{
+							id: 'photos.clear',
+							title: 'Clear filters',
+							group: 'actions' as const,
+							run: () => void goto('/photos')
+						}
+					]
+				: [])
+		];
+		setPageCommands(cmds);
+		return () => setPageCommands([]);
+	});
 	// The sheet badge counts what the strip's chips can't show: collections +
 	// the date window (gallery chips and sort are visible controls).
 	const sheetCount = $derived(

@@ -26,6 +26,9 @@ export interface Command {
 	/** 'date' turns the buffer into the date grammar (typed expressions +
 	 *  arrow-key stepper); anything else is plain text. */
 	editKind?: 'text' | 'date';
+	/** A date buffer that accepts RANGE results (filter windows); the default
+	 *  date field REJECTS them — one field, one date. */
+	editRange?: boolean;
 	/** The buffer's seed — the field's CURRENT value (registration re-runs
 	 *  keep it honest; the palette re-arms fresh on every entry). */
 	seed?: string;

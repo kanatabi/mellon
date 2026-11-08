@@ -20,6 +20,9 @@ export function editField(opts: {
 	seed: string;
 	/** Date grammar buffer (typed expressions + arrow stepper). */
 	date?: boolean;
+	/** Date buffer that ACCEPTS ranges (`nov 1..nov 12`, `last week`) —
+	 *  filter fields take windows, content fields take one date. */
+	range?: boolean;
 	/** Return false to REJECT the commit (the buffer stays open). */
 	commit: (value: string) => boolean | void;
 }): Command {
@@ -29,6 +32,7 @@ export function editField(opts: {
 		group: 'actions',
 		edit: true,
 		...(opts.date ? { editKind: 'date' as const } : {}),
+		...(opts.range ? { editRange: true } : {}),
 		seed: opts.seed,
 		pillLabel: opts.pill,
 		commit: opts.commit

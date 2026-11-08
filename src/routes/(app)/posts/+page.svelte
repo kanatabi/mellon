@@ -16,6 +16,10 @@
 	import DateRange from '#lib/components/DateRange.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import { postsRail } from '#lib/rails.svelte.ts';
+	import { editField, vocabSubmenu } from '#lib/command-kit.ts';
+	import { setPageCommands } from '#lib/page-commands.svelte.ts';
+	import { parseDateExpr } from '#lib/date-expr.ts';
+	import type { Command } from '#lib/commands.ts';
 	import type { PostStatus } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
 
@@ -136,6 +140,79 @@
 			data.sort !== 'updated' ||
 			data.dir !== 'desc'
 	);
+
+	/* ── Palette = this page's control surface (§7 parity, control-center
+	   round 3): everything the filter sidebar chips do, ⌘K does — and every
+	   command closes over buildUrl, the ONE query-string truth the API
+	   filters read. State is read EAGERLY at the top of the effect so the
+	   registrations re-run when a filter flips: the ✓ marks must be live,
+	   not closure-lucky. ─────────────────────────────────────────────── */
+	$effect(() => {
+		const statusNow = data.statusFilter ?? 'all';
+		const tagsNow = data.tag;
+		const sortNow = `${data.sort}·${data.dir}`;
+		const cmds: Command[] = [
+			vocabSubmenu({
+				id: 'posts.status',
+				title: 'Filter by status',
+				vocab: [{ name: 'all' }, { name: 'draft' }, { name: 'published' }, { name: 'unpublished' }],
+				isOn: (n) => statusNow === n,
+				// single home: picking SETS the segment (rows close the palette —
+				// the navigation IS the commit)
+				pick: (n) => void goto(buildUrl({ status: n === 'all' ? null : (n as PostStatus) }))
+			}),
+			vocabSubmenu({
+				id: 'posts.tag',
+				title: 'Filter by tags',
+				vocab: data.tags.map((t) => ({
+					name: t.name,
+					hint: `${t.posts} ${t.posts === 1 ? 'post' : 'posts'}`
+				})),
+				isOn: (n) => tagsNow.includes(n),
+				// OR semantics, like the sidebar chips: toggle keeps the palette
+				// open so tag→tag→date chains in one session
+				pick: (n) => void goto(buildUrl({ toggleTag: n }))
+			}),
+			editField({
+				id: 'posts.dates',
+				title: 'Set date range',
+				pill: 'dates',
+				date: true,
+				range: true, // the range grammar's first consumer
+				seed:
+					data.from && data.to && data.from !== data.to
+						? `${data.from}..${data.to}`
+						: (data.from ?? data.to ?? ''),
+				commit: (v) => {
+					const w = parseDateExpr(v);
+					if (!w) return false;
+					void goto(buildUrl({ from: w.from, to: w.to }));
+				}
+			}),
+			vocabSubmenu({
+				id: 'posts.sort',
+				title: 'Sort by',
+				vocab: sortChips.map((c) => ({ name: c.label })),
+				isOn: (n) => sortChips.some((c) => c.label === n && `${c.sort}·${c.dir}` === sortNow),
+				pick: (n) => {
+					const c = sortChips.find((x) => x.label === n);
+					if (c) void goto(buildUrl({ sort: c.sort, dir: c.dir }));
+				}
+			}),
+			...(hasFilters
+				? [
+						{
+							id: 'posts.clear',
+							title: 'Clear filters',
+							group: 'actions' as const,
+							run: () => void goto('/posts')
+						}
+					]
+				: [])
+		];
+		setPageCommands(cmds);
+		return () => setPageCommands([]);
+	});
 
 	// Sheet trigger rides the status row's far edge (phones only) — no
 	// floating FAB (owner call 2026-11-08). The count badges tags + the
