@@ -313,3 +313,39 @@ gates green; no open `HUMAN-GATE` left unresolved. **P0 CLOSED** only on owner's
 
 Infra/GitOps tab · shared-theme package · multi-user/RBAC · WYSIWYG · client-side
 mermaid in mellon preview (deviation logged in M4a).
+
+---
+
+## Journal
+
+### 2026-11-08 — execution order revised (owner decision): portal first, backend last
+
+The tracks swap sequence, not content — the plan already decouples them via the
+mock-first invariant (§1: mellon builds against its in-process fixtures; M2's API
+layer). Revised order:
+
+**Phase A — the portal (Track P, mock mode):**
+1. M0 `[mellon-only]` — scaffold, theme parity, gates. *(HUMAN-GATE #1 repo creation
+   can stay pending; local git proceeds, push retro-fits.)*
+2. M2 — shell + palette + mock `AdminApi` layer.
+3. M4a → M4b — preview pipeline, then editor (mock-backed).
+4. M5 `[mellon UI]` + M6 `[mellon UI]` — photos & secrets pages against fixtures.
+   Their verify blocks that need real servers (uploads through relays, Bao round-trip,
+   threat-note gate) DEFER to Phase B — UI acceptance in Phase A is mock-mode:
+   keyboard tour, §11.5 visual bar, interaction completeness.
+
+**Phase B — the backend (Track L):**
+5. M1 read-api → M3 admin-api → M5 `[lumen]` → M6 `[lumen]` — **lumen now implements
+   the surface mellon's `src/lib/api/client.ts` already encodes**: the mirror
+   relationship flips to the exact pattern earendil↔lumen already runs (client is the
+   contract's executable spec; §8 in lumen's DESIGN stays normative — they reconcile in
+   one commit set per the ritual).
+6. Deferred verifies execute here: admin smoke scripts, compose-backed Bao integration,
+   HUMAN-GATE #5 threat note, drift check.
+
+**Phase C — convergence:**
+7. M5 `[earendil relay]`, M7 deploy & cutover, M8 harden (P0 exit unchanged).
+
+Consequences, noted honestly: HUMAN-GATE #2 (Go router) now waits until Phase B starts;
+lumen scaffold moves out of M0; and the editor's "publish lands on real earendil" check
+lands in Phase C instead of M4 — everything else in the plan stands as written.
