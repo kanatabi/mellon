@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import { cubicOut } from 'svelte/easing';
 	import { fade, slide } from 'svelte/transition';
 	import {
@@ -26,6 +26,31 @@
 
 	let paletteOpen = $state(false);
 	let paletteTrigger: HTMLElement | null = null;
+
+	// Route-progress bar — ported from earendil's shell: a three-phase state
+	// machine (active sweep → guaranteed finishing beat → idle). Preloaded
+	// navigations resolve in ~1 frame; the sweep-to-full + fade still runs so
+	// slow loads get honest feedback and fast ones never flash awkwardly.
+	// Hash-only jumps load nothing — don't bar for them.
+	const navLoading = $derived(
+		navigating.to !== null &&
+			!(
+				navigating.from !== null &&
+				navigating.to.url.pathname === navigating.from.url.pathname &&
+				navigating.to.url.hash !== ''
+			)
+	);
+	let barState = $state<'idle' | 'active' | 'finishing'>('idle');
+	let finishTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		if (navLoading) {
+			clearTimeout(finishTimer);
+			barState = 'active';
+		} else if (barState === 'active') {
+			barState = 'finishing';
+			finishTimer = setTimeout(() => (barState = 'idle'), 280);
+		}
+	});
 
 	const commands = $derived<Command[]>([
 		...baseCommands,
@@ -118,6 +143,7 @@
 </script>
 
 <div class="flex min-h-svh flex-col lg:flex-row">
+	<div class="route-progress" data-phase={barState} aria-hidden="true"></div>
 	<!-- Left nav: column at lg, top strip below. Folds to an icon rail (item
 	     #6) — the width transition is GPU-cheap on this small layer, and the
 	     labels fade rather than snap. -->

@@ -774,3 +774,20 @@ the editor screen (scoped to this page, NOT the global drawer-nav):
 - Status band (mode · Ln/Col · words) stays inside the write pane, directly
   above the thumb bar: readouts stack above inputs, VS Code order, no
   overlap since both hold layout (the FAB lesson, applied).
+
+### 2026-11-08 — route-progress bar ported from earendil's shell
+
+Navigation latency (real in Phase B when loads hit lumen) deserves honest
+feedback: the portal now paints earendil's 2px violet bar — the same
+three-phase machine (active sweep capped at 94% → guaranteed finishing beat
+→ fade), hash-jump exclusion, preloaded-fast-navs still get a visible
+pulse. Ported verbatim, including the raw-CSS exception (fixed overlay,
+phase-driven keyframes) — z-60 so it rides above the palette (z-40) and the
+delete dialog (z-50); 2px and pointer-transparent, it never blocks.
+
+Known limits, stated: the FIRST document load can't show a bar that ships
+inside the document (browser spinner covers that), and per-route slow DATA
+would need SvelteKit `+pending` skeletons — the bar answers "the portal is
+working", not "what is loading". If Phase B loads crawl, +pending is the
+next layer, deliberately un-shipped for now (mock loads are instant; a
+skeleton for zero-latency is theater).
