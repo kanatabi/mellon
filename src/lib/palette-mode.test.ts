@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptsGroup, armMode, usesApi } from './palette-mode.ts';
+import { acceptsGroup, armMode, escapeAction, usesApi } from './palette-mode.ts';
 
 describe('palette mode grammar', () => {
 	it('prefix + space at position 0 arms the mode and consumes both characters', () => {
@@ -50,5 +50,31 @@ describe('palette mode grammar', () => {
 		// reserved for content (§7 doctrine)
 		expect(usesApi('commands')).toBe(false);
 		expect(usesApi('pages')).toBe(false);
+	});
+
+	it('insert is a TASK mode: photos only, API-driven, and NO sigil arms it', () => {
+		expect(acceptsGroup('insert', 'photos')).toBe(true);
+		expect(acceptsGroup('insert', 'posts')).toBe(false);
+		expect(acceptsGroup('insert', 'tags')).toBe(false);
+		expect(acceptsGroup('insert', 'actions')).toBe(false);
+		expect(usesApi('insert')).toBe(true);
+		// untypeable by design — it exists only as a command's destination
+		expect(armMode('> ')).not.toEqual({ mode: 'insert', arg: '' });
+		for (const raw of ['> ', '/ ', '# ', '@ ', '~ ']) expect(armMode(raw)?.mode).not.toBe('insert');
+	});
+
+	it('Escape unwinds ONE layer: insert → submenu → palette; sigil modes close', () => {
+		// task mode on top of a submenu: first Esc walks out of the task
+		expect(escapeAction({ mode: 'insert', inSubmenu: true })).toBe('disarm');
+		// then out of the submenu
+		expect(escapeAction({ mode: 'all', inSubmenu: true })).toBe('close-submenu');
+		// then the palette itself
+		expect(escapeAction({ mode: 'all', inSubmenu: false })).toBe('close');
+		// typed sigil modes are grammar, not a path — Esc closes straight
+		// through them (the pre-submenu behavior stands)
+		expect(escapeAction({ mode: 'commands', inSubmenu: false })).toBe('close');
+		expect(escapeAction({ mode: 'content', inSubmenu: false })).toBe('close');
+		// task mode without a submenu underneath (defensive) still disarms first
+		expect(escapeAction({ mode: 'insert', inSubmenu: false })).toBe('disarm');
 	});
 });

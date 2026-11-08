@@ -1,14 +1,16 @@
 <script lang="ts">
-	import { Command, ChevronRight, Hash, Search } from 'lucide-svelte';
+	import { Command, ChevronRight, CornerDownLeft, Hash, Search } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import { client } from '#lib/api/client.ts';
 	import type { AdminPhoto, PostSummaryAdmin, TagCount } from '#lib/api/types.ts';
 	import type { Command as Cmd } from '#lib/commands.ts';
+	import { photoInsert } from '#lib/page-commands.svelte.ts';
 	import {
 		acceptsGroup,
 		armMode,
+		escapeAction,
 		MODE_LABEL,
 		usesApi,
 		type PaletteMode
@@ -22,11 +24,14 @@
 	 * component prop. */
 	const MODE_ICON: Record<
 		Exclude<PaletteMode, 'all'>,
-		typeof ChevronRight | typeof Search | typeof Hash
+		typeof ChevronRight | typeof Search | typeof Hash | typeof CornerDownLeft
 	> = {
 		commands: ChevronRight,
 		content: Search,
-		pages: Hash
+		pages: Hash,
+		// the task mode: a row here lands at the cursor, not a page —
+		// corner-down-left says "insert here" without words
+		insert: CornerDownLeft
 	};
 
 	interface Props {
@@ -44,6 +49,20 @@
 	   which keeps IME and caret semantics boring (plain input all the way). */
 	let mode = $state<PaletteMode>('all');
 	const modeIcon = $derived(mode === 'all' ? undefined : MODE_ICON[mode]);
+	/* Submenu (owner call 2026-11-08): Enter on a parent row drills IN — the
+	   palette doesn't close, it goes deeper. The stack unwinds one layer per
+	   Esc: insert-mode → submenu → palette ("walk back out the way you came"). */
+	let submenu = $state<Cmd | null>(null);
+	const backCmd = $derived<Cmd | null>(
+		submenu
+			? {
+					id: 'submenu.back',
+					title: `← ${submenu.title}`,
+					group: 'actions' as const,
+					shortcut: 'esc'
+				}
+			: null
+	);
 
 	// The palette searches CONTENT (owner doctrine, 2026-11-08): commands and
 	// navigation are portal-side; "what matches?" comes from the API — one
@@ -121,6 +140,25 @@
 
 	const filtered = $derived.by(() => {
 		const q = query.trim().toLowerCase();
+		// The stack, in priority order: TASK mode > submenu list > global list.
+		if (mode === 'insert') {
+			const handle = photoInsert();
+			if (!handle) return [];
+			return photoResults.map((p) => ({
+				id: `insert.${p.id}`,
+				title: p.alt,
+				group: 'photos' as const,
+				shortcut: `${p.width}×${p.height}`,
+				// rows HERE insert — the task was declared through the
+				// submenu, so no context-magic: this is not navigation
+				run: () => handle(p)
+			}));
+		}
+		if (backCmd && submenu)
+			return [
+				backCmd,
+				...(submenu.children ?? []).filter((c) => !q || c.title.toLowerCase().includes(q))
+			];
 		// API results already went through the server-side q filter — they join
 		// verbatim; static commands filter locally as before. Mode gates which
 		// groups exist at all.
@@ -143,13 +181,17 @@
 	});
 
 	const placeholder = $derived(
-		mode === 'all'
-			? 'Type a command or search…'
-			: mode === 'commands'
-				? 'Filter commands…'
-				: mode === 'content'
-					? 'Search posts, photos, tags…'
-					: 'Jump to a page…'
+		mode === 'insert'
+			? 'Search the library — Enter inserts at the cursor…'
+			: submenu && mode === 'all'
+				? 'Filter the options…'
+				: mode === 'all'
+					? 'Type a command or search…'
+					: mode === 'commands'
+						? 'Filter commands…'
+						: mode === 'content'
+							? 'Search posts, photos, tags…'
+							: 'Jump to a page…'
 	);
 
 	// The active row resets whenever the query (the only input to `filtered`)
@@ -158,7 +200,9 @@
 	// then we try to commit a prefix.
 	function onInput() {
 		active = 0;
-		if (mode === 'all') {
+		// sigils arm only from the plain palette — inside a submenu the text
+		// is a child filter, and a typed grammar never interrupts a task
+		if (mode === 'all' && !submenu) {
 			const armed = armMode(query);
 			if (armed) {
 				mode = armed.mode;
@@ -169,8 +213,30 @@
 
 	function run(cmd: Cmd | undefined) {
 		if (!cmd) return;
+		// back rows and drill-parents never close the palette — they move it
+		if (cmd === backCmd) {
+			submenu = null;
+			query = '';
+			active = 0;
+			return;
+		}
+		if (cmd.children) {
+			submenu = cmd;
+			mode = 'all';
+			query = '';
+			active = 0;
+			return;
+		}
+		if (cmd.arm) {
+			// declarative arming (a task mode entered through a command);
+			// the palette interprets, the page never reaches in
+			mode = cmd.arm;
+			query = '';
+			active = 0;
+			return;
+		}
 		onClose();
-		cmd.run();
+		cmd.run?.();
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -185,10 +251,17 @@
 			run(filtered[active]);
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
-			onClose();
+			// the stack unwinds ONE layer per Esc — task mode, then submenu,
+			// then the palette itself ("walk back out the way you came")
+			const step = escapeAction({ mode, inSubmenu: submenu !== null });
+			if (step === 'disarm') mode = 'all';
+			else if (step === 'close-submenu') submenu = null;
+			else onClose();
+			query = '';
+			active = 0;
 		} else if (e.key === 'Backspace' && query === '' && mode !== 'all') {
 			// an empty backspace disarms the chip — the mode was a detour,
-			// Backspace walks you back out of it (Escape still closes, plain)
+			// Backspace walks you back out of it
 			mode = 'all';
 		}
 	}
@@ -264,8 +337,9 @@
 					>
 						<span class="min-w-0 truncate">
 							<!-- group chips only earn their noise when MULTIPLE kinds
-							     share the list — a forced mode already says what rows are -->
-							{#if mode === 'all'}
+							     share the list — a forced mode or a submenu already
+							     says what rows are -->
+							{#if mode === 'all' && !submenu}
 								<span
 									class="mr-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase"
 								>
@@ -285,6 +359,8 @@
 				<li class="px-3 py-6 text-center font-mono text-xs text-muted-foreground">
 					{#if mode === 'content' && query.trim().length < 2}
 						type at least two characters — posts, photos &amp; tags
+					{:else if mode === 'insert' && query.trim().length < 2}
+						type at least two characters — library photos
 					{:else}
 						nothing matches &ldquo;{query}&rdquo;
 					{/if}
@@ -293,7 +369,7 @@
 		</ul>
 		<!-- The legend: the grammar must be SEEN to be believed — a
 		     keyboard-first UI documents its sigils (shown while unmoded/idle). -->
-		{#if mode === 'all' && !query}
+		{#if mode === 'all' && !query && !submenu}
 			<div
 				class="flex items-center gap-4 border-t border-border px-4 py-2 font-mono text-[10px] text-muted-foreground/70"
 			>

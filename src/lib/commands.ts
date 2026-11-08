@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import type { PaletteMode } from './palette-mode.ts';
 
 /**
  * The command registry (DESIGN §7): pages/sections declare commands, the
@@ -10,7 +11,15 @@ export interface Command {
 	title: string;
 	group: 'go to' | 'actions' | 'open recent' | 'posts' | 'photos' | 'tags';
 	shortcut?: string;
-	run: () => void;
+	/** Enter drills into these rows IN THE PALETTE instead of closing it —
+	 *  the submenu doctrine (§7). A parent with children is never `run`. */
+	children?: Command[];
+	/** Enter arms a palette mode instead of closing — declarative, so pages
+	 *  never reach into the palette and the palette never sniffs ids.
+	 *  Only task modes are armed this way; typed sigils stay user grammar. */
+	arm?: PaletteMode;
+	/** Omit for parent (children) and arm rows — everything else must run. */
+	run?: () => void;
 }
 
 const nav = (id: string, title: string, href: string, shortcut?: string): Command => ({
