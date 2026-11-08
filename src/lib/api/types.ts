@@ -44,6 +44,9 @@ export interface PostDetailAdmin extends PostDraft {
 
 export interface AdminPhoto {
 	id: string;
+	/** Where the bytes live, as served: mock era = mellon-local `/api/media/<id>`;
+	 *  Phase B = absolute CDN URL from lumen's object-storage relay. Markdown
+	 *  embeds this verbatim — the portal never constructs it. */
 	src: string;
 	alt: string;
 	width: number;
@@ -112,7 +115,16 @@ export interface AdminApi {
 	deletePost(slug: string): Promise<void>;
 
 	listPhotos(): Promise<AdminPhoto[]>;
-	addPhoto(p: { src: string; alt: string; width: number; height: number }): Promise<AdminPhoto>;
+	/** Upload entry point. `dataUrl` stands in for the bytes during the mock
+	 *  era (journaled); Phase B transports multipart POST /admin/photos and
+	 *  lumen probes dims + strips EXIF server-side — this interface's output
+	 *  (an AdminPhoto whose src is the serving URL) is what survives both. */
+	addPhoto(p: {
+		name: string;
+		dataUrl: string;
+		width: number;
+		height: number;
+	}): Promise<AdminPhoto>;
 
 	listTags(): Promise<TagCount[]>;
 	/** Vocabulary is a first-class store (not derived): a tag exists once

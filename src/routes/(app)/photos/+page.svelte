@@ -40,12 +40,7 @@
 			r.readAsDataURL(file);
 		});
 		const { width, height } = await probe(src);
-		const created = await client.addPhoto({
-			src,
-			alt: file.name.replace(/\.[^.]+$/, ''),
-			width,
-			height
-		});
+		const created = await client.addPhoto({ name: file.name, dataUrl: src, width, height });
 		photos = [created, ...photos];
 		busy = false;
 		message = 'stored;';

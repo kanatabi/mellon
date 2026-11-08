@@ -168,6 +168,14 @@ const SECRETS: Record<string, SecretPayload[]> = {
 
 const clone = <T>(v: T): T => structuredClone(v);
 
+/**
+ * Mock-era media bytes: id → data-URL. Module-level (the relay route reads
+ * it outside the API object) — the same process-lifetime singleton as the
+ * fixtures. Phase B replaces this whole path: bytes live in object storage,
+ * `src` is the CDN URL, and mellon serves nothing.
+ */
+export const mediaStore = new Map<string, string>();
+
 export function createMockApi(): AdminApi {
 	let posts = seedPosts();
 	let photos = clone(PHOTOS);
@@ -294,7 +302,18 @@ export function createMockApi(): AdminApi {
 		},
 
 		async addPhoto(p) {
-			const created: AdminPhoto = { id: `p${seq++}`, createdAt: now(), ...clone(p) };
+			// deviation (journal 2026-11-08): bytes as a data-URL in the mock;
+			// lumen takes multipart, probes dims + strips EXIF server-side.
+			const id = `m${seq++}`;
+			mediaStore.set(id, p.dataUrl);
+			const created: AdminPhoto = {
+				id,
+				src: `/api/media/${id}`,
+				alt: p.name.replace(/\.[^.]+$/, ''),
+				width: p.width,
+				height: p.height,
+				createdAt: now()
+			};
 			photos = [created, ...photos];
 			return clone(created);
 		},

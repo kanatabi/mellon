@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AdminApiError, type PostDraft } from './types.ts';
-import { createMockApi } from './mock.ts';
+import { createMockApi, mediaStore } from './mock.ts';
 
 /**
  * Contract tests for the mock AdminApi — the Phase A source of truth that the
@@ -142,6 +142,21 @@ describe('mock AdminApi contract', () => {
 		expect(tags.find((t2) => t2.name === 'latency')?.posts).toBe(0); // seeded-but-unpublished tag
 		for (let i = 1; i < tags.length; i++)
 			expect(tags[i - 1].posts).toBeGreaterThanOrEqual(tags[i].posts);
+	});
+
+	it('photos: uploads land bytes in the media store, src is a serving URL', async () => {
+		const api = createMockApi();
+		const created = await api.addPhoto({
+			name: 'alpine dawn.png',
+			dataUrl: 'data:image/png;base64,aW1hZ2U=',
+			width: 900,
+			height: 560
+		});
+		expect(created.src).toMatch(/^\/api\/media\/m\d+$/);
+		expect(created.alt).toBe('alpine dawn');
+		expect(mediaStore.get(created.id)).toBe('data:image/png;base64,aW1hZ2U=');
+		const list = await api.listPhotos();
+		expect(list[0].id).toBe(created.id); // newest first, seeded picsum follow
 	});
 
 	it('login demands non-empty credentials (lumen will actually check)', async () => {
