@@ -16,12 +16,12 @@
 	import { onMount, tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
+	import Combobox from '#lib/components/Combobox.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import ImagePicker from '#lib/components/ImagePicker.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
-	import TagPicker from '#lib/components/TagPicker.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
@@ -793,9 +793,12 @@ flowchart LR
 
 		<div class="flex flex-col gap-1.5">
 			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">tags</p>
-			<TagPicker
-				available={tags}
+			<Combobox
+				items={tags.map((t) => ({ name: t.name, count: t.posts }))}
+				multiple
 				selected={draft.tags}
+				emptyLabel="choose tags"
+				create={(n) => client.createTag(n)}
 				onchange={(t) => {
 					draft.tags = t;
 					touch();

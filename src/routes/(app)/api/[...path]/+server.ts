@@ -172,4 +172,5 @@ async function guarded(ctx: Ctx) {
 export const GET = guarded satisfies RequestHandler;
 export const POST = guarded satisfies RequestHandler;
 export const PUT = guarded satisfies RequestHandler;
+export const PATCH = guarded satisfies RequestHandler;
 export const DELETE = guarded satisfies RequestHandler;
