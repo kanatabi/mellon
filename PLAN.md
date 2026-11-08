@@ -50,8 +50,12 @@
 - **Contract is `earendil/src/lib/api/client.ts`** — lumen read endpoints serve its exact
   shapes; the earendil vitest suite run against real lumen IS the acceptance test (M1).
 - **Mock-first everywhere** — both new apps run fully with zero external services in dev.
-- **Exactly one public ingress** — earendil. mellon: ClusterIP, no Ingress, ever (P0).
-  `/api/*`, `/admin-api/*`, `/media/*` ride SSR relays.
+- ~~**Exactly one public ingress** — earendil. mellon: ClusterIP, no Ingress, ever (P0).~~
+  **Amended 2026-11-08** (owner decision, per §2-rule-3's own ritual): two sanctioned public
+  surfaces — `gofar.id` (content) and `console.gofar.id` (this portal; TLS + edge
+  middlewares + GATE #10 checklist, INFRA §2/Phase 3). THE RULE THAT SURVIVES: never a
+  public API — lumen/Meilisearch/Bao stay ClusterIP-only; browser→API bytes ride
+  same-origin relays only (`/api/*` surface; `/media/*` retired by D1-rev).
 - **No credentials in the UI, no values in git, no payloads in logs.** AppRole
   `fzr-portal` lives in lumen's env only (ESO-rendered). Bao audit devices are the trail.
 - **Drafts never leak** to the read API; published-only, always.
@@ -166,18 +170,37 @@ every nav item reachable, no hover-only control — grep-audit for `group-hover`
 
 Tasks:
 
-- [ ] Session mint endpoint (single-user; credentials from env/Bao; short-TTL bearer;
-      constant-time compare); middleware for `/admin/*`.
+- [ ] Session mint endpoint (**revised 2026-11-08 — JWT design, lumen §8**): single user;
+      credentials from `users.passhash` (argon2id + salt — env/Bao credential era
+      superseded, the Bao seed now holds only `SESSION_JWT_SECRET`); HS256 `exp`=12h,
+      claims `{sub,iat,exp,tv,jti}`, alg PINNED at library-config level; verification =
+      signature AND indexed `users.token_version` row read; `DELETE /admin/session`
+      bumps tv (real revocation — logout kills every outstanding token); NO refresh
+      tokens (owner ruling); login throttle (per-IP + per-account backoff — the public
+      console makes stuffing the attack; argon2id prices guesses, the throttle starves
+      them). Middleware for `/admin/*` checks both halves.
 - [ ] Posts CRUD + drafts (rev-checked PUT per §8), unpublish, soft-delete.
 - [ ] **Publish = §2 transaction**: readTime from final content, preview default,
       rank assignment, Meilisearch upsert, Postgres commit — one handler, idempotent
       (re-publish byte-stable; store `content_hash` and no-op on identical).
 - [ ] Meilisearch: `search` client with index bootstrapping (`cmd/index-init`), upsert +
-      delete hooks; dev via docker-compose addition.
+      delete hooks; dev via docker-compose addition. **Admin search door (lumen §8
+      `GET /admin/search`)**: second index `photos` (docs id/alt/collection/gallery —
+      admin-only, §1 never reads it); the `tags` group is a Postgres VOCABULARY prefix
+      lookup (a name, not a document — deliberately off the search engine); ≤8 each.
+- [ ] Admin photo verbs (lumen §8, from the contract audit): `GET /admin/posts/:slug`
+      (incl. drafts + rev — the editor's door, the mirror HAD no verb line),
+      `GET /admin/photos/:id`, `GET /admin/photos/:id/references` (content scan feeding
+      the delete warn-list), `DELETE /admin/photos/:id` (row dies, OBJECT serves until
+      GC). Session verbs reconcile against mellon's `client.ts` — api-sync round
+      (expiresIn, logout, `q` retired) is the executable spec; §8 stays normative.
 - [ ] Tests: unit for derivations; integration for publish transaction (compose-up in CI
       optional — at minimum a `//go:build integration` suite).
 
-**Verify:** scripted curl choreography (commit it as `scripts/admin-smoke.sh`):
+**Verify:** scripted curl choreography (commit it as `scripts/admin-smoke.sh`) — plus the
+session proofs: a JWT replayed from a second client AFTER logout must 401 (tv bump),
+`alg:none`/RS256-confusion tokens fail at the library, throttle returns 429 with audit
+line (no payload):
 login → create draft → §1 hides it → publish → §1 shows it, search finds it, byte-stable
 re-publish no-op; drafts absent from EVERY read endpoint (assert in contract spec).
 **PR:** lumen.
@@ -261,6 +284,8 @@ Tasks:
 - [ ] [lumen] `hashicorp/vault/api` client; AppRole login w/ token cache + re-login;
       expose ONLY: metadata list (policy-scoped), read (+`?version`), versions list, CAS
       write (require `cas` param — no unconditional puts); no `sys/` routes at all.
+      (2026-11-08 audit: these four are exactly the routes lumen §8 now enumerates —
+      `bao/paths`, `bao/:app/:env`, `bao/:app/:env/metadata`, `PUT bao/:app/:env`.)
 - [ ] [lumen] redaction middleware for admin access logs (op + path + version + actor;
       never values/body); tests assert body absence in logs (capture logger output).
 - [x] [mellon] `/secrets`: app/env picker (from policy-scoped list), masked mono table,
@@ -271,8 +296,12 @@ Tasks:
       (Implemented: LCS diff in `src/lib/diff.ts`, values MASKED in diffs too — the
       side-sheet is a review aid, Bao's audit holds the true bytes. "Save forward"
       rollback = pick old version → edit → CAS-save; no destructive path exists in UI.)
-- [ ] Seed procedure doc: add `kv/data/mellon/{staging,production}` + `fzr-portal`
-      role/policy creation lines to INFRA §5.6 checklist (doc change, not applied).
+- [ ] Seed procedure doc: `kv/data/lumen/{env}` gains **`SESSION_JWT_SECRET`** (32B,
+      bootstrap-generated); `kv/data/mellon/{env}` is API_BASE-only (the portal holds no
+      credentials in any era — with JWTs it holds not even a session secret); the owner
+      `users` row (argon2id passhash) seeded via one-time lumen CLI at bootstrap; the
+      `fzr-portal` role/policy creation lines + INFRA §5.6 checklist updates (doc change,
+      not applied). [amended 2026-11-08 to the session design]
 
 **HARD GATE (security):** before PR-merge, agent produces a short threat note in the
 journal: token placement, TTL, policy paths, what a stolen mellon session can and cannot
@@ -292,8 +321,12 @@ CAS, version list, redaction assert; drift check (§5.5) executes using the same
       deployment w/ node-pool affinity + anti-affinity where ×2, ClusterIP svc,
       resources per §1 rows, probes), `overlays/{staging,production}/…` (ExternalSecret
       CRs templated, no values), `apps/lumen-app.yaml` + `apps/mellon-app.yaml` CRs.
-- [ ] [vortex] **mellon has NO Ingress resource** — add a comment citing the access
-      matrix row (future-you grep protection).
+- [ ] ~~[vortex] **mellon has NO Ingress resource**~~ **amended 2026-11-08**: mellon
+      gains an **IngressRoute for `console.gofar.id`** with the Phase-3
+      `console-headers` + `console-ratelimit` middlewares attached; service stays
+      ClusterIP (Traefik routes to it); port-forward line becomes the documented
+      BREAK-GLASS (runbook in README). DNS record = GATE #10 (external resource +
+      checklist) — owner action, sequenced last.
 - [ ] [lumen/mellon] CI image bump wiring (kustomize edit images, existing pattern);
       `kubectl kustomize` every dir passes.
 - [ ] `HUMAN-GATE` apply sequence: owner runs §5.6 manual bootstrap steps (unseal,
@@ -302,9 +335,11 @@ CAS, version list, redaction assert; drift check (§5.5) executes using the same
 - [ ] [earendil] staging `API_BASE` switch via overlay env (no code); run the AGENTS §9
       preload-storm + relay QA checklist against staging URL.
 
-**Verify:** Phase 10 acceptance verbatim: publish via mellon→render on earendil;
-secrets round-trip audited; `curl <any external probe> mellon` = unreachable; driftcheck
-CI green for all apps; §1 budget: live `kubectl top` within requests; pins bumped.
+**Verify:** Phase 10 acceptance (as amended): publish via mellon→render on earendil;
+secrets round-trip audited; **console answers over public TLS with GATE #10 checked,
+`tv`-revocation proven by replay**; `curl <any external probe> lumen/meili/bao ports` =
+unreachable (the rule the amendment never touched); port-forward break-glass still works;
+driftcheck CI green for all apps; §1 budget: live `kubectl top` within requests; pins bumped.
 **PRs:** vortex (+ possibly earendil staging overlay PR — infra-owned, HUMAN merge).
 
 ## M8 — `harden` · P0 exit · 1 day
@@ -315,7 +350,10 @@ CI green for all apps; §1 budget: live `kubectl top` within requests; pins bump
       (Partial: settings page DONE in M6; hover-only audit run this round — fixed
       palette input ring via `focus-within`, secrets value cell `focus-visible:bg-muted`,
       dashboard rows + upload chip got focus-visible twins; no `group-hover` without a
-      `group-focus` twin anywhere. Remaining: CSP headers, port-forward runbook line.)
+      `group-focus` twin anywhere. Remaining: CSP headers — DEFERRED with reason (the
+      rail hues ride inline `style=` by design; a tight `style-src` fights the color
+      system — refactor to CSS custom properties first, mellon §8 records the tradeoff),
+      port-forward runbook line → break-glass runbook line.)
 - [ ] Journal finalization: `mellon/PLAN.md` P0 close entry; every `HUMAN-GATE` decision
       recorded with date + owner.
 
@@ -327,17 +365,18 @@ gates green; no open `HUMAN-GATE` left unresolved. **P0 CLOSED** only on owner's
 
 ## HUMAN-GATE ledger (the agent never resolves these alone)
 
-| #   | gate                                                                                        | milestone |
-| --- | ------------------------------------------------------------------------------------------- | --------- |
-| 1   | Create + push `kanatabi/mellon` (private), submodule registration                           | M0        |
-| 2   | lumen router choice (stdlib vs chi)                                                         | M0        |
-| 3   | PR merges (every repo, every PR)                                                            | all       |
-| 4   | OpenBao bootstrap seeds: `fzr-portal` role/policy creation, `kv/data/mellon/*` first values | M6/M7     |
-| 5   | Security threat-note ack before secrets merge                                               | M6        |
-| 6   | Staging→production promotion runs                                                           | M7        |
-| 7   | Any doctrine/AGENTS/INFRA amendment                                                         | any       |
-| 8   | P0 exit declaration                                                                         | M8        |
-| 9   | Media provider choice (S3 / R2 / Wasabi / …) — bucket, endpoint, CDN base, keys to Bao      | M5-B      |
+| #   | gate                                                                                                                                                                                                                                                                                                                | milestone |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 1   | Create + push `kanatabi/mellon` (private), submodule registration                                                                                                                                                                                                                                                   | M0        |
+| 2   | lumen router choice (stdlib vs chi)                                                                                                                                                                                                                                                                                 | M0        |
+| 3   | PR merges (every repo, every PR)                                                                                                                                                                                                                                                                                    | all       |
+| 4   | OpenBao bootstrap seeds: `fzr-portal` role/policy creation, `kv/data/mellon/*` first values                                                                                                                                                                                                                         | M6/M7     |
+| 5   | Security threat-note ack before secrets merge                                                                                                                                                                                                                                                                       | M6        |
+| 6   | Staging→production promotion runs                                                                                                                                                                                                                                                                                   | M7        |
+| 7   | Any doctrine/AGENTS/INFRA amendment                                                                                                                                                                                                                                                                                 | any       |
+| 8   | P0 exit declaration                                                                                                                                                                                                                                                                                                 | M8        |
+| 9   | Media provider choice (S3 / R2 / Wasabi / …) — bucket, endpoint, CDN base, keys to Bao                                                                                                                                                                                                                              | M5-B      |
+| 10  | **Console go-public**: DNS for `console.gofar.id` flips only after the checklist verifies — edge middlewares live (Phase 3 CRDs), lumen login throttle + argon2id credentials, `tv`-revocation PROVEN (logout kills an outstanding JWT replayed from a second client), `Secure` cookie over TLS, Bao audit trail on | M7        |
 
 ## Parked (do not build without re-planning)
 
@@ -1254,3 +1293,59 @@ trigger; rendering was.
 
 Lesson for the kit: any callback the palette evaluates during RENDER must be
 a decision, never an effect. Rendering the word "create" must not create.
+
+### 2026-11-08 — API sync + JWT sessions + the console amendment: Phase B/C executions revised
+
+Owner opened an audit ("sync the API we need with the lumen design doc — nothing
+missing") that surfaced five findings, and made three decisions on the way
+through: **JWT sessions (option B: token-version)**, **12h TTL, no refresh
+tokens**, **credentials later as argon2id+salt in the DB** — and one that
+re-draws the map: **the portal goes public at `console.gofar.id`**.
+
+- **The audit found** (crosswalk of all 24 AdminApi verbs vs lumen §8/§9):
+  `GET /admin/posts/:slug` had NO verb line (the editor could not open a draft
+  from §8 alone); the bao passthrough was one vague `POST /admin/bao/…` while
+  §9 defines four GET/PUT operations; `login` shapes disagreed (`expires_in`
+  promised, never consumed — the cookie hardcoded 12h while the settings page
+  _claimed lumen decided_); logout was cookie-deletion theater — no verb, no
+  revocation, a stolen bearer outliving its own logout by 12h; and `q` in
+  `PostListOpts` was dead surface (the palette's pre-`search()` hack, zero
+  call sites).
+- **lumen mirror** (`7f5bd59`): §8 gets the JWT design in full — HS256 pinned
+  (no alg negotiation; None/RS-confusion fail at library-config, not at
+  review), claims `{sub,iat,exp,tv,jti}`, verification = signature AND the
+  indexed `users.token_version` read, `DELETE /admin/session` bumping tv =
+  REAL revocation, `SESSION_JWT_SECRET` from Bao alone, login throttle as a
+  §8 rule (single user + public URL = stuffing is _the_ attack), the missing
+  post verb, the four bao operations enumerated, `expires_in` named as the
+  cookie driver. §6 gains `users(passhash argon2id, token_version)` — the
+  env-credential era formally superseded.
+- **mellon contract** (`a1aa70a`): `login → {token, expiresIn}` (mock honest
+  stand-in, no fake crypto), `logout()` — the /logout action revokes server
+  side FIRST, clears the cookie regardless; cookie Max-Age from the server's
+  number (verified live: `Max-Age=43200`); `q` retired everywhere; tests 50.
+- **Doctrine amendments, written where they live** (the file's own ritual —
+  mellon §2 rule 3 prescribed "a written decision, never a quiet convenience"
+  for exactly this day): mellon §8 posture (GATE #10 checklist, honest CSP
+  deferral — inline-style hues are a design decision, a header that lies
+  about protection is worse); root INFRA (access matrix row, §3A record,
+  Phase 2 no-new-listener note, Phase 3 runnable console middlewares, Phase
+  10 IngressRoute + seeds + inverted acceptance, commit `aa196a1`); root
+  AGENTS rule 2 rewritten; earendil's stale workspace line fixed on branch
+  `docs/console-amendment-sync` (`b446610`, pushed — owner merge per ritual).
+- **Phase B/C revisions (this commit's checklist edits, the requested
+  "update the phase executions")**: §1 invariant struck-to-amended; ledger
+  gains **#10 console go-public gate**; M3's session task rewritten to the
+  JWT design + the search/photo-detail/verb tasks + revocation-PROOF verify
+  lines (replay-after-logout 401, alg-confusion rejection, 429 audit); M5/M6
+  reconciled against the enumerated §8 surface (M6's four bao ops confirmed
+  already exactly right, seed task rewritten: JWT key to lumen alone, mellon
+  env shrinks to API_BASE, users-row CLI seed); M7's "NO Ingress resource"
+  struck to IngressRoute + middlewares + break-glass port-forward + its
+  acceptance inverted; M8's remaining-CSP item recorded with its reason.
+  The Phase B/C prose in the old journal entry stays (append-only); THIS
+  entry is its revision note.
+- What survives every amendment unamended: **never a public API** — the
+  probe `curl <external> :9090/:7700/:8200/:6443` = unreachable is still the
+  line in the acceptance, and the relay remains the only byte-path from UI
+  to lumen.
