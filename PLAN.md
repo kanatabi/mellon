@@ -107,7 +107,7 @@ source), `api.test.ts` (the harness to clone).
 
 Tasks:
 
-- [ ] Postgres schema per §6 (posts **with `status ENUM('draft','published')`**, rev for
+- [ ] Postgres schema per §6 (posts **with `status ENUM('draft','published','unpublished')`**, rev for
       CAS-ish optimistic lock, tags, post_tags, photos); migrations as plain SQL files.
 - [ ] Seed importer: `cmd/seed` reads a JSON translation of earendil's 12-post corpus
       (commit it as `testdata/earendil-fixture.json` — the contract twin).
@@ -434,3 +434,51 @@ action (earendil lesson #7 — `autofocus` no-ops on dynamic mounts).
 
 **Next:** Phase B awaits owner go + lumen repo (HUMAN-GATE #1 also gates GitHub
 targets for CI). M8 leftovers (CSP, runbook) can ride the first lumen PR round.
+
+### 2026-11-08 — owner review round 1: eight calls, all executed
+
+1. **Settings save "unchecked itself" — real bug, found and fixed.** The cookie
+   was always written; SvelteKit's `enhance` resets form elements after a
+   successful action, and that reset (DOM → `bind:checked`) snapped the toggle
+   back to its pre-save default. Fix: `update({ reset: false })` + a quiet
+   `saved;` confirmation. Lesson for the family: never pair `bind:` with a
+   server-truth form without thinking about the reset.
+2. **New post = editor, immediately.** The standalone create-form page is gone;
+   `/posts/new` renders the editor with an unsaved starter doc (rail shows an
+   `unsaved` marker instead of a status pill). First save POSTs create; publish
+   from unsaved runs create+publish as one intent before adopting the URL.
+   Slug moved into the settings rail, auto-derived from the title until authored
+   by hand — and **fixed at creation** (URL stability; lumen §8 has no rename
+   verb, so the input goes read-only with "URLs never move;" after creation).
+3. **Dates**: `createdAt` + `publishedAt` (null until first publish) joined the
+   contract; shown on dashboard rows, list rows, and the editor timeline block.
+4. **Three-state machine** `DRAFT → PUBLISHED ⇄ UNPUBLISHED` (no path back to
+   draft once shipped): status type, mock transitions (409 on illegal unpublish,
+   idempotent republish), pill skins (violet / outlined / dashed), filter chips,
+   verbs per state, and contract tests. lumen/DESIGN §8 mirror updated in the
+   same commit set per the ritual.
+5. **List filtering moved to a right rail**: tags (OR semantics — relayed as
+   repeated `?tag=`, never filtered client-side; doctrine #1 respected: the
+   load parses params into `PostListOpts`, the API does the work) + sort
+   newest/oldest/title. Filters live in the URL — shareable, back-button clean.
+6. **Every sidebar folds to the side** — left nav (rail: icons + `m;` mark),
+   posts filters, editor settings — via `src/lib/rails.svelte.ts`
+   (localStorage; a pure client preference, deliberately NOT a cookie —
+   nothing server-side reads it). SSR renders expanded, `init()` adopts the
+   stored value on mount; one-frame settle, no FOUC class of problem.
+7. **Preview toggle** stays a visible toolbar button (eye icon, pressed state),
+   not palette-only; debounced render skips work while off.
+8. **Motion where it moves, still where it reads**: rail fold = 200ms width
+   transition + content curtain; palette = fade backdrop + fly sheet; list
+   rows = 140ms local crossfade; message = slide; primary buttons =
+   `active:scale`; a global reduced-motion kill-switch added. §11.3's motion
+   clause amended to match the owner's call.
+9. **Topbar command field widened** to w-72 with the kbd pinned right.
+
+Smoke notes: `transition:local|fade` is **Svelte 4 lore** — the 5.x AST is
+`transition:fade|local` (modifier after the name; svelte-check only accepts
+the new order). Kit 3 renamed `$app/environment` → **`$app/env`** and the
+goto options → `{ replace, reset }` (`noScroll`/`keepFocus`/`replaceState` are
+gone — `reset:false` covers both scroll and focus). Both found by check, fixed
+before commit. Sort-direction sign bug caught by the smoke sweep, pinned by a
+new test assertion (newest[0] must be the just-touched draft).

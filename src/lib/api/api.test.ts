@@ -21,14 +21,54 @@ const draft = (over: Partial<PostDraft> = {}): PostDraft => ({
 });
 
 describe('mock AdminApi contract', () => {
-	it('seeds the corpus: 2 posts (1 published, 1 draft), mermaid fence intact', async () => {
+	it('seeds the corpus: 3 posts (published, draft, unpublished), mermaid fence intact', async () => {
 		const api = createMockApi();
 		const posts = await api.listPosts();
-		expect(posts).toHaveLength(2);
+		expect(posts).toHaveLength(3);
 		expect(posts.filter((p) => p.status === 'published')).toHaveLength(1);
+		expect(posts.filter((p) => p.status === 'unpublished')).toHaveLength(1);
 		const pub = await api.getPost('shape-of-a-useful-queue');
 		expect(pub.content).toContain('```mermaid'); // Route B: raw fences stored
+		expect(pub.createdAt).toBe('2024-04-28T15:03:00Z');
+		expect(pub.publishedAt).toBe('2024-05-14T09:12:00Z');
+		const never = await api.getPost('queues-unacked');
+		expect(never.publishedAt).toBeNull();
 		await expect(api.getPost('nope')).rejects.toMatchObject({ status: 404 });
+	});
+
+	it('§4 state machine: draft→published→unpublished→published, never back to draft', async () => {
+		const api = createMockApi();
+		const pub = await api.publishPost('queues-unacked'); // draft → published
+		expect(pub.status).toBe('published');
+		expect(pub.publishedAt).toBeTruthy();
+		const off = await api.unpublishPost('queues-unacked'); // published → unpublished
+		expect(off.status).toBe('unpublished');
+		const back = await api.publishPost('queues-unacked'); // unpublished → published
+		expect(back.status).toBe('published');
+		// no verb returns a shipped post to draft
+		await expect(api.unpublishPost('shape-of-a-useful-queue')).resolves.toMatchObject({
+			status: 'unpublished'
+		});
+		await expect(api.unpublishPost('latency-as-product-decision')).rejects.toMatchObject({
+			status: 409 // seeded unpublished — only live posts come down
+		});
+	});
+
+	it('list filters relay server-side: status, tag OR, sort', async () => {
+		const api = createMockApi();
+		const drafts = await api.listPosts({ status: 'draft' });
+		expect(drafts.map((p) => p.slug)).toEqual(['queues-unacked']);
+		const orTags = await api.listPosts({ tag: ['latency', 'backpressure'] });
+		expect(orTags.map((p) => p.slug).sort()).toEqual([
+			'latency-as-product-decision',
+			'shape-of-a-useful-queue'
+		]);
+		const newest = await api.listPosts({ sort: 'newest' });
+		const oldest = await api.listPosts({ sort: 'oldest' });
+		expect(oldest[0].slug).toBe(newest[newest.length - 1].slug);
+		// queues-unacked was touched "now" — it heads newest, tails oldest
+		expect(newest[0].slug).toBe('queues-unacked');
+		expect(oldest[oldest.length - 1].slug).toBe('queues-unacked');
 	});
 
 	it('update is CAS-checked on rev (lumen §8 optimistic lock)', async () => {

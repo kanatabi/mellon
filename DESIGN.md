@@ -101,7 +101,10 @@ The editor's chrome follows §11.4: split view, meta rail, two verbs.
   readTime (BE-computed at publish — display only), tags (multi-assign from lumen's tag
   vocabulary), featured photo (thumbnail picker deferred with lumen's upload pipeline).
 - **Publish button** = the §2-lumen unit of work: derivations + Postgres + Meilisearch
-  upsert fire server-side; the UI shows state (`draft;` / `published;` pills).
+  upsert fire server-side; the UI shows state (`draft;` / `published;` / `unpublished;`
+  pills). **State machine (owner decision 2026-11-08): three states — `draft →
+published ⇄ unpublished`; a shipped post NEVER returns to draft.** Slug is fixed at
+  creation (URLs never move; auto-derived from the title until authored by hand).
 
 ## 6. Pages (P0)
 
@@ -206,15 +209,19 @@ comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 - The zinc scale + **one violet** (`--brand`): active/published/primary verb. **Red exists
   only for destructive** actions — an admin that never needs red for anything else.
 - Statuses stay monochrome by default: `published` = violet-filled pill, `draft` = outlined
-  neutral pill, danger = outlined red. No green/amber/blue status soup.
+  neutral pill, `unpublished` = dashed neutral pill ("off the shelf"), danger = outlined
+  red. No green/amber/blue status soup.
 - Tokens: everything rides the existing semantic set (`--background/--card/--muted/--border/
 --brand/--*-foreground`). Admin-only needs enter as **additive tokens** (`--danger`,
   future `--diff-add/--diff-del`); **existing tokens are never forked in value** — light/dark
   parity per §3 applies to every pixel here.
 - Anti-rules, as binding as the rules: no gradients on headers, `rounded-lg` is the roundest
   anything gets, shadows **only** on overlays (palette, menus, sheets), and motion lives
-  exclusively in overlays (150–200ms transforms/opacity — the drawer transitions);
-  tables and forms never animate. Reduced-motion: everything instant. If a screen starts
+  in overlays (150–200ms transforms/opacity — the drawer transitions) plus the **rails**:
+  sidebars fold to the side with a 200ms width transition and curtain the content behind
+  them (owner call 2026-11-08 — "smooth where it moves, still where it reads"); list rows
+  may crossfade 140ms on filter change. Buttons get one micro-interaction: `active:scale`.
+  Forms themselves never animate. Reduced-motion: everything instant. If a screen starts
   resembling a ThemeForest preview, it is wrong.
 
 ### 11.4 Per-view anatomy
@@ -222,10 +229,13 @@ comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 - **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
   on row focus** — the AGENTS §10.5 lesson, restated for keyboards: _"no mouse-only
   affordance in the admin either."_ Filter/tool rows use the `Pill` chip language.
-- **Post editor**: split view — CodeMirror left, true-to-prod preview right (toggle via
-  palette); a **meta rail** (status, slug, date, tags, featured) at the content's right —
-  Ghost's shape, not Notion's sprawl. The toolbar holds exactly two verbs:
-  `save draft` (quiet, outlined) and `publish` (violet, filled).
+- **Post editor**: split view — CodeMirror left, true-to-prod preview right (**toggle
+  button + palette command**, owner call 2026-11-08); a collapsible **settings rail**
+  (title/subtitle, slug — auto from title until authored, date, tags, featured, timeline
+  of created/published/updated) at the content's right —
+  Ghost's shape, not Notion's sprawl. The toolbar holds quiet `save draft` (outlined)
+  and the one violet verb the state machine allows: `publish` / `unpublish`.
+  `/posts/new` opens the editor directly — no intermediate form.
 - **Secrets**: presented as what it is — a config file with version control. Masked mono
   values, reveal on press (never "show all values" as a resting state), **version history
   as a side sheet** (springs from the right, reusing the drawer motion), diff between

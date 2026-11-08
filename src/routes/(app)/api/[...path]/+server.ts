@@ -44,10 +44,16 @@ async function route(ctx: Ctx) {
 	if (p[0] === 'posts') {
 		if (p.length === 1 && request.method === 'GET') {
 			const status = url.searchParams.get('status');
+			const sort = url.searchParams.get('sort');
 			return json(
 				await api.listPosts({
-					status: status === 'draft' || status === 'published' ? status : undefined,
-					q: url.searchParams.get('q') ?? undefined
+					status:
+						status === 'draft' || status === 'published' || status === 'unpublished'
+							? status
+							: undefined,
+					q: url.searchParams.get('q') ?? undefined,
+					tag: url.searchParams.getAll('tag'),
+					sort: sort === 'oldest' || sort === 'title' ? sort : 'newest'
 				})
 			);
 		}

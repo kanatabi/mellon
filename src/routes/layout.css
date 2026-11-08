@@ -142,4 +142,11 @@
 	::view-transition-new(root) {
 		animation: none;
 	}
+	/* portal rails/transitions — snap instead of slide */
+	*,
+	*::before,
+	*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
 }

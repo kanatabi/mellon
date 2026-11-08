@@ -49,6 +49,8 @@ export const client: AdminApi = {
 		const params = new URLSearchParams();
 		if (opts?.status) params.set('status', opts.status);
 		if (opts?.q) params.set('q', opts.q);
+		for (const t of opts?.tag ?? []) params.append('tag', t);
+		if (opts?.sort && opts.sort !== 'newest') params.set('sort', opts.sort);
 		const qs = params.toString();
 		return call<PostSummaryAdmin[]>(`/posts${qs ? `?${qs}` : ''}`);
 	},

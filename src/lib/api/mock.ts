@@ -65,6 +65,8 @@ function seedPosts(): StoredPost[] {
 		status: 'published',
 		readTime: 8,
 		rev: 3,
+		createdAt: '2024-04-28T15:03:00Z',
+		publishedAt: '2024-05-14T09:12:00Z',
 		updatedAt: '2024-05-14T09:12:00Z'
 	};
 	const draft: PostDetailAdmin = {
@@ -79,9 +81,28 @@ function seedPosts(): StoredPost[] {
 		status: 'draft',
 		readTime: 2,
 		rev: 1,
+		createdAt: '2026-11-07T22:40:00Z',
+		publishedAt: null,
 		updatedAt: now()
 	};
-	return [structuredClone(pub), structuredClone(draft)];
+	// third state, seeded so the UNPUBLISHED skin is exercisable from first boot
+	const retired: PostDetailAdmin = {
+		slug: 'latency-as-product-decision',
+		title: 'When latency becomes a product decision',
+		subtitle: 'a sequence diagram of promises, taken off the shelf',
+		preview: 'Latency budgets are promises; someone has to sign.',
+		date: '2024-02-02',
+		tags: ['latency', 'product'],
+		content: '# When latency becomes a product decision\n\nRetired pending a rewrite.\n',
+		thumbnail: null,
+		status: 'unpublished',
+		readTime: 6,
+		rev: 5,
+		createdAt: '2024-01-20T08:00:00Z',
+		publishedAt: '2024-02-02T11:30:00Z',
+		updatedAt: '2026-10-19T17:25:00Z'
+	};
+	return [structuredClone(pub), structuredClone(draft), structuredClone(retired)];
 }
 
 const PHOTOS: AdminPhoto[] = [
@@ -166,12 +187,14 @@ export function createMockApi(): AdminApi {
 			return { token: `mock.${seq++}.${btoa(username).slice(0, 8)}` };
 		},
 
-		async listPosts({ status, q } = {}) {
+		async listPosts({ status, q, tag, sort = 'newest' } = {}) {
 			const sum = (p: PostDetailAdmin): PostSummaryAdmin => ({
 				slug: p.slug,
 				title: p.title,
 				subtitle: p.subtitle,
 				status: p.status,
+				createdAt: p.createdAt,
+				publishedAt: p.publishedAt,
 				updatedAt: p.updatedAt,
 				rev: p.rev
 			});
@@ -179,9 +202,16 @@ export function createMockApi(): AdminApi {
 				.filter(
 					(p) =>
 						(!status || p.status === status) &&
-						(!q || `${p.title} ${p.subtitle}`.toLowerCase().includes(q.toLowerCase()))
+						(!q || `${p.title} ${p.subtitle}`.toLowerCase().includes(q.toLowerCase())) &&
+						// OR semantics on tags, mirroring the public list contract
+						(!tag?.length || p.tags.some((t) => tag.includes(t)))
 				)
-				.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+				.sort((a, b) => {
+					if (sort === 'title') return a.title.localeCompare(b.title);
+					return sort === 'oldest'
+						? a.updatedAt.localeCompare(b.updatedAt)
+						: b.updatedAt.localeCompare(a.updatedAt);
+				})
 				.map(sum);
 		},
 
@@ -197,6 +227,8 @@ export function createMockApi(): AdminApi {
 				status: 'draft',
 				readTime: Math.max(1, Math.round(draft.content.split(/\s+/).length / 200)),
 				rev: 1,
+				createdAt: now(),
+				publishedAt: null,
 				updatedAt: now()
 			};
 			posts.push(created);
@@ -215,8 +247,10 @@ export function createMockApi(): AdminApi {
 
 		async publishPost(slug) {
 			const p = find(slug);
-			// the §2 unit of work, mocked: preview default + status flip. byte-stable
-			// re-publish: same content ⇒ same derived fields, still a new rev-free op.
+			// the §2 unit of work, mocked: preview default + status flip. Reachable
+			// from draft or unpublished ONLY — the §4 state machine has no other
+			// inbound edge and none out of published back to draft.
+			if (p.status === 'published') return clone(p); // idempotent republish
 			if (!p.preview)
 				p.preview =
 					p.content
@@ -224,6 +258,7 @@ export function createMockApi(): AdminApi {
 						.trim()
 						.split(/\n\s*\n/)[0] ?? '';
 			p.status = 'published';
+			p.publishedAt = now();
 			p.rev += 1;
 			p.updatedAt = now();
 			return clone(p);
@@ -231,7 +266,11 @@ export function createMockApi(): AdminApi {
 
 		async unpublishPost(slug) {
 			const p = find(slug);
-			p.status = 'draft';
+			// §4 state machine: published → unpublished (terminal-ish). A post
+			// never travels back to draft once it has shipped.
+			if (p.status !== 'published')
+				throw new AdminApiError(409, `only a published post can be unpublished (is ${p.status})`);
+			p.status = 'unpublished';
 			p.rev += 1;
 			p.updatedAt = now();
 			return clone(p);

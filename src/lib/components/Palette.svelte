@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Command } from 'lucide-svelte';
+	import { fade, fly } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import type { Command as Cmd } from '#lib/commands.ts';
 
@@ -58,6 +59,7 @@
 <!-- Modal scrim like the blog's palette (dim + blur); sheet is command-first.
      Escape/outside close; focus returns to the opener (shell owns that half). -->
 <div
+	transition:fade={{ duration: 120 }}
 	class="fixed inset-0 z-40 flex items-start justify-center bg-background/70 p-4 pt-[12vh] backdrop-blur-sm"
 	role="presentation"
 	onclick={(e) => {
@@ -66,6 +68,7 @@
 	onkeydown={onKey}
 >
 	<div
+		transition:fly={{ y: -10, duration: 160 }}
 		class="w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
 		role="dialog"
 		aria-modal="true"

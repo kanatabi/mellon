@@ -5,13 +5,17 @@
  * UI cannot tell the difference (mock-first doctrine, inherited from earendil).
  */
 
-export type PostStatus = 'draft' | 'published';
+/** §4 state machine: draft → published ⇄ unpublished. No path back to draft. */
+export type PostStatus = 'draft' | 'published' | 'unpublished';
 
 export interface PostSummaryAdmin {
 	slug: string;
 	title: string;
 	subtitle: string;
 	status: PostStatus;
+	createdAt: string;
+	/** ISO instant of the latest publish; null until the first one. */
+	publishedAt: string | null;
 	updatedAt: string;
 	rev: number;
 }
@@ -33,6 +37,8 @@ export interface PostDetailAdmin extends PostDraft {
 	status: PostStatus;
 	readTime: number;
 	rev: number;
+	createdAt: string;
+	publishedAt: string | null;
 	updatedAt: string;
 }
 
@@ -69,6 +75,16 @@ export interface SecretPath {
 	env: string;
 }
 
+/** Admin-side list filters — relayed to lumen in Phase B, never filtered in UI. */
+export interface PostListOpts {
+	status?: PostStatus;
+	q?: string;
+	/** OR semantics on tags, mirroring earendil's §3 list contract. */
+	tag?: string[];
+	/** Sort key; default newest-updated. */
+	sort?: 'newest' | 'oldest' | 'title';
+}
+
 export class AdminApiError extends Error {
 	constructor(
 		readonly status: number,
@@ -83,7 +99,7 @@ export interface AdminApi {
 	// session (mock: any non-empty identity; lumen: real credentials)
 	login(username: string, password: string): Promise<{ token: string }>;
 
-	listPosts(opts?: { status?: PostStatus; q?: string }): Promise<PostSummaryAdmin[]>;
+	listPosts(opts?: PostListOpts): Promise<PostSummaryAdmin[]>;
 	getPost(slug: string): Promise<PostDetailAdmin>;
 	/** create ⇒ rev starts at 1. update ⇒ CAS on `rev`, 412-style on mismatch. */
 	createPost(draft: PostDraft): Promise<PostDetailAdmin>;
