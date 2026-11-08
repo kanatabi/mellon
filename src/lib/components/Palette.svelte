@@ -220,7 +220,10 @@
 	// plain, user-mutated $state. Arming lives HERE: bind:value lands first,
 	// then we try to commit a prefix.
 	function onInput() {
-		active = 0;
+		// in a SUBMENU LIST, selection starts on the first meaningful row,
+		// not the back row — but a task/edit mode riding above the submenu
+		// has no back row: it selects from the top, always
+		active = mode === 'all' && submenu ? 1 : 0;
 		// sigils arm only from the plain palette — inside a submenu the text
 		// is a child filter, and a typed grammar never interrupts a task
 		if (mode === 'all' && !submenu) {
@@ -294,7 +297,8 @@
 			mode = 'all';
 			armed = null;
 			query = '';
-			active = 0;
+			// land on the first option, never on `← back`
+			active = 1;
 			return;
 		}
 		if (cmd.edit) {
@@ -310,14 +314,14 @@
 			armed = cmd;
 			mode = cmd.arm;
 			query = '';
-			active = 0;
+			active = 0; // a task mode selects from the top — no back row here
 			return;
 		}
 		if (cmd.keepOpen) {
-			// toggles inside a submenu: run, stay, watch the ✓ flip on the
-			// LIVE re-registered children — the next tag is already typed
+			// toggles inside a submenu: run, stay, and KEEP THE SELECTION on
+			// this row — declaration order is stable, so the ✓ the user just
+			// flipped is exactly where their eyes are
 			cmd.run?.();
-			active = 0;
 			return;
 		}
 		onClose();

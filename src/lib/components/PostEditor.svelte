@@ -149,7 +149,7 @@ flowchart LR
 	// from the editor bands or the rail media section. `insert` mode writes
 	// through the CodeMirror handle — the docChanged listener does the rest
 	// (value, dirty, preview — all for free).
-	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | null>(null);
+	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | 'upload-cover' | null>(null);
 	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
 	// keeps rendering ahead of the switch — that's what makes it instant).
@@ -284,6 +284,25 @@ flowchart LR
 	// Deletion is intentional (item #5): GitHub's name-retype pattern via a real
 	// dialog — native confirm() trusted a single click for permanent loss.
 	let confirmDelete = $state(false);
+	/** Tag toggle shared by the rail combobox and the palette submenu — one
+	 *  draft mutation path (the parity rule: commands close over the SAME
+	 *  setters the inputs use, never a second implementation). */
+	// Eager vocabulary the palette submenu can't wait for a reload for: a
+	// just-created tag rides here until the next server load folds it in —
+	// same "locally created entries survive" contract as the Combobox.
+	let createdTags = $state<TagCount[]>([]);
+	const tagVocab = $derived([
+		...tags,
+		...createdTags.filter((c) => !tags.some((t) => t.name === c.name))
+	]);
+
+	function toggleTag(name: string) {
+		draft.tags = draft.tags.includes(name)
+			? draft.tags.filter((t) => t !== name)
+			: [...draft.tags, name];
+		touch();
+	}
+
 	async function remove() {
 		await client.deletePost(draft.slug);
 		dirty = false; // deliberate exit — skip the SPA guard
@@ -450,6 +469,155 @@ flowchart LR
 				}
 			]
 		});
+		/* ── The rail, palette-reachable (owner doctrine 2026-11-08: the
+		   command palette is the control center — nothing the rail lets you
+		   change may live beyond ⌘K's reach). Every commit below closes over
+		   the SAME setters the inputs use: no second implementation to rot. ── */
+		cmds.push(
+			{
+				id: 'editor.field.title',
+				title: 'Set title',
+				group: 'actions',
+				edit: true,
+				seed: draft.title,
+				pillLabel: 'title',
+				run: () => {},
+				commit: (v) => {
+					draft.title = v;
+					touch();
+				}
+			},
+			{
+				id: 'editor.field.subtitle',
+				title: 'Set subtitle',
+				group: 'actions',
+				edit: true,
+				seed: draft.subtitle,
+				pillLabel: 'subtitle',
+				run: () => {},
+				commit: (v) => {
+					draft.subtitle = v;
+					touch();
+				}
+			},
+			// slug exists only pre-creation; a shipped slug never moves
+			// (URLs never move) — the palette honors the same freeze
+			...(isNew
+				? [
+						{
+							id: 'editor.field.slug',
+							title: 'Set slug',
+							group: 'actions' as const,
+							edit: true,
+							seed: draft.slug,
+							pillLabel: 'slug',
+							commit: (v: string) => {
+								const s = slugify(v);
+								if (!s) return false; // empty after slugify: reject, keep buffer
+								draft.slug = s;
+								slugTouched = true; // freezes auto-derivation, like typing it
+								touch();
+							}
+						}
+					]
+				: []),
+			{
+				id: 'editor.field.date',
+				title: 'Set date',
+				group: 'actions',
+				edit: true,
+				editKind: 'date',
+				seed: draft.date,
+				pillLabel: 'date',
+				run: () => {},
+				commit: (v) => {
+					draft.date = v;
+					touch();
+				}
+			}
+		);
+		cmds.push({
+			id: 'editor.tags',
+			title: 'Edit tags',
+			group: 'actions',
+			// live children (the submenu re-reads THIS array after every
+			// toggle — ✓ marks flip without closing), eager-create from the
+			// filter text exactly like the combobox does
+			children: tagVocab.map((t) => ({
+				id: `editor.tag.${t.name}`,
+				title: t.name,
+				group: 'actions' as const,
+				shortcut: draft.tags.includes(t.name) ? '✓ on' : `${t.posts} posts`,
+				keepOpen: true,
+				run: () => toggleTag(t.name)
+			})),
+			createChild: (raw) => {
+				const q = raw.trim().toLowerCase();
+				if (!q || tagVocab.some((t) => t.name === slugify(q))) return null;
+				return {
+					id: 'editor.tag.create',
+					title: `+ create “${raw.trim()}”`,
+					group: 'actions',
+					shortcut: 'then added',
+					keepOpen: true,
+					run: () => {
+						const name = slugify(q);
+						// eager vocabulary: the tag exists from creation, used or not
+						void client
+							.createTag(name)
+							.then((t) => {
+								createdTags = [...createdTags, t]; // the submenu row flips ✓ live
+								toggleTag(name);
+							})
+							.catch(() => {});
+					}
+				};
+			}
+		});
+		cmds.push({
+			id: 'editor.cover',
+			title: 'Cover image',
+			group: 'actions',
+			children: [
+				{
+					id: 'editor.cover.upload',
+					title: 'Upload new cover…',
+					group: 'actions',
+					shortcut: 'dialog',
+					run: () => (pickerMode = 'upload-cover')
+				},
+				{
+					id: 'editor.cover.library',
+					title: 'Search library',
+					group: 'actions',
+					shortcut: 'sets cover',
+					arm: 'insert',
+					task: 'cover',
+					pillLabel: 'cover'
+				}
+			]
+		});
+		// the export trio — same handlers as the rail's buttons
+		cmds.push(
+			{
+				id: 'editor.export.download',
+				title: 'Download markdown',
+				group: 'actions',
+				run: () => exportMd()
+			},
+			{
+				id: 'editor.export.pdf',
+				title: 'Save as PDF',
+				group: 'actions',
+				run: () => void exportPdf()
+			},
+			{
+				id: 'editor.export.copy',
+				title: 'Copy markdown',
+				group: 'actions',
+				run: () => void copyMd()
+			}
+		);
 		// reads `wrapped` for the state hint — re-registers on every flip
 		cmds.push({
 			id: 'editor.wrap',
@@ -463,6 +631,11 @@ flowchart LR
 		// leaving it must never leave a stale door behind
 		setPageCommands(cmds);
 		setPhotoTask('insert', (p) => editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`));
+		// the cover door: same picker engine, different destination
+		setPhotoTask('cover', (p) => {
+			draft.thumbnail = p.src;
+			touch();
+		});
 		return () => {
 			setPageCommands([]);
 			setPhotoTask('insert', null);
@@ -1011,6 +1184,9 @@ flowchart LR
 				if (pickerMode === 'thumbnail') {
 					draft.thumbnail = p.src;
 					touch();
+				} else if (pickerMode === 'upload-cover') {
+					draft.thumbnail = p.src;
+					touch();
 				} else if (pickerMode === 'insert' || pickerMode === 'upload') {
 					// upload mode's "library (now)" rows are pickable too —
 					// choosing one mid-flow obviously means "use this one"
@@ -1023,6 +1199,12 @@ flowchart LR
 			// (multi-upload sessions are normal), close is the user's call
 			onUploaded={(p) => {
 				if (pickerMode === 'upload') editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`);
+				// a cover is singular: the first finished upload IS the job — set and close
+				else if (pickerMode === 'upload-cover') {
+					draft.thumbnail = p.src;
+					touch();
+					pickerMode = null;
+				}
 			}}
 		/>
 	{/if}

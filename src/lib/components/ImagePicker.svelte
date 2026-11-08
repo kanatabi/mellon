@@ -9,7 +9,7 @@
 		/** thumbnail: single-pick for the post cover. insert: pick/upload into
 		 *  the markdown body. upload: the photos page's upload-only mode —
 		 *  ONE upload path in the portal (owner call). */
-		mode: 'thumbnail' | 'insert' | 'upload';
+		mode: 'thumbnail' | 'insert' | 'upload' | 'upload-cover';
 		photos: AdminPhoto[];
 		onClose: () => void;
 		/** thumbnail/insert: choose a photo (uploads auto-route through it). */
@@ -70,7 +70,7 @@
 				const created = await client.addPhoto({ name: file.name, dataUrl, width, height });
 				grid = [created, ...grid];
 				settle({ status: 'done' });
-				if (mode === 'upload') onUploaded?.(created);
+				if (mode === 'upload' || mode === 'upload-cover') onUploaded?.(created);
 				// A single upload answers the dialog's question directly: the
 				// thumbnail picks itself; the insert embeds itself. Batches of
 				// inserts land in the grid, chosen row-by-row (deterministic
@@ -96,7 +96,13 @@
 
 	const busy = $derived(queue.some((q) => q.status === 'reading' || q.status === 'uploading'));
 	const title = $derived(
-		mode === 'thumbnail' ? 'Cover image' : mode === 'insert' ? 'Insert image' : 'Upload images'
+		mode === 'thumbnail'
+			? 'Cover image'
+			: mode === 'insert'
+				? 'Insert image'
+				: mode === 'upload-cover'
+					? 'Upload cover'
+					: 'Upload images'
 	);
 
 	// Esc close (never during an upload batch — mid-flight abandonment).
@@ -210,7 +216,7 @@
 			{#if mode !== 'upload' || grid.length}
 				<div class="flex flex-col gap-2">
 					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						{mode === 'upload' ? 'library (now)' : 'choose one'}
+						{mode === 'upload' || mode === 'upload-cover' ? 'library (now)' : 'choose one'}
 					</p>
 					<div class="grid grid-cols-3 gap-3 sm:grid-cols-4">
 						{#each grid as p (p.id)}
@@ -265,7 +271,7 @@
 			{/if}
 		</div>
 
-		{#if mode === 'upload'}
+		{#if mode === 'upload' || mode === 'upload-cover'}
 			<div class="flex justify-end gap-2 border-t border-border px-5 py-3.5">
 				<button
 					type="button"
