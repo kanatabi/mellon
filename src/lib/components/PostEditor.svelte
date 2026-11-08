@@ -6,7 +6,7 @@
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
-	import { markMermaidPending, renderMermaid } from '#lib/mermaid-preview.ts';
+	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
 	import type {
@@ -111,29 +111,22 @@ flowchart LR
 		return () => clearTimeout(previewTimer);
 	});
 
-	// Mermaid lifecycle per owner call 2026-11-08: EVERY preview swap re-shimmers
-	// the fences (typing shows motion, not raw code), and the actual render fires
-	// only 450ms after the keystroke burst settles — half-typed blocks never
-	// flash an error. Theme flips re-run the same cycle (sources survive in the
-	// DOM; earendil's Route B contract).
+	// Mermaid lifecycle: render fences 450ms after the keystroke burst settles.
+	// There is NO pending/shimmer state by design (mermaid-preview.ts): while
+	// typing, the dashed source block IS the honest waiting state — it can never
+	// get stuck, because leaving it only requires a SUCCESSFUL render.
 	let mermaidTimer: ReturnType<typeof setTimeout>;
-	function scheduleMermaid(el: HTMLElement) {
-		markMermaidPending(el);
+	$effect(() => {
+		if (!previewEl || !showPreview || !html) return;
+		const el = previewEl;
 		clearTimeout(mermaidTimer);
 		mermaidTimer = setTimeout(() => void renderMermaid(el), 450);
-	}
-	// Reads `html` on purpose: it is the dependency meaning "the pane got new
-	// DOM" — and `previewEl` so the first mount hydrates too.
-	$effect(() => {
-		if (!previewEl || !showPreview || !html) return;
-		const el = previewEl;
-		void tick().then(() => scheduleMermaid(el));
 	});
 	$effect(() => {
-		void themeState.theme;
+		void themeState.theme; // flip: re-diagram from the surviving sources
 		if (!previewEl || !showPreview || !html) return;
 		const el = previewEl;
-		void tick().then(() => scheduleMermaid(el));
+		void tick().then(() => renderMermaid(el, true));
 	});
 
 	function touch() {

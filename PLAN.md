@@ -549,3 +549,34 @@ Verified API facts against mermaid@12.2.0's shipped .d.ts (parse resolves
 `{diagramType}` when valid / `false` with suppressErrors / throws without).
 Half-typed fences never flash errors: they simply stay pending until the
 typing pauses.
+
+### 2026-11-08 — shimmer removed: a pending state that needs JS to leave is a trap
+
+Two-step lesson, same hour:
+
+1. The previous message rewrote `mermaid-preview.ts` but the round was cut
+   before `PostEditor.svelte` and `layout.css` followed — a half-applied edit
+   is a broken app (the AGENTS "verify edits landed" rule, biting our own
+   portal). The screenshot showed it: empty pending boxes that no code path
+   could leave.
+2. The design itself was wrong: the shimmer box was an intermediate DOM state
+   removable ONLY by the async chain (dynamic import → parse → render). When
+   mermaid's load failed — e.g. the dev server predating the dependency
+   install — every box shimmered forever. "Remove the shimmering feature" is
+   the correct call: **never build a waiting state whose escape hatch is the
+   thing you're waiting on.**
+
+Final cycle: while typing, the dashed `.mermaid-src` block IS the waiting
+state (server-rendered ground truth, zero JS required to exist — and nothing
+hides it unless a render SUCCEEDS). 450ms after the burst settles,
+`renderMermaid` attempts each fence: parse-first (suppressErrors — mermaid
+never paints; our `parseError` hook captures the message, with a deliberate
+re-parse to guarantee one), render, svg content-guard as last belt. Success →
+`.mermaid-box`; failure → `.mermaid-error` panel (headline + parser line +
+source in `<details>`). Theme flip re-renders from the surviving sources
+(force); if mermaid fails to load at all, everything just stays as source
+with one console warning. Worst case = source, never a stuck lie.
+
+Gates green (lint 0, check 0/0, 18 tests, build). NOTE for the owner: restart
+`npm run dev` — Vite optimized mermaid (114 pkgs) mid-session and a stale
+dep cache explains the failed dynamic import behind the stuck shimmer.
