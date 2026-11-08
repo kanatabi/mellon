@@ -8,6 +8,7 @@
 		House,
 		Images,
 		KeyRound,
+		LogOut,
 		Menu,
 		PanelLeftClose,
 		PanelLeftOpen,
@@ -216,17 +217,8 @@
 			</button>
 		</div>
 		{@render navItems(true)}
-		<div class="hidden flex-1 items-end pb-6 lg:flex">
-			<form method="POST" action="/logout">
-				<button
-					type="submit"
-					class="overflow-hidden font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground {navRail.collapsed
-						? 'lg:opacity-0'
-						: 'lg:opacity-100'}"
-				>
-					end session
-				</button>
-			</form>
+		<div class="flex flex-1 flex-col justify-end pb-6">
+			{@render navFooter(true)}
 		</div>
 	</nav>
 
@@ -333,14 +325,7 @@
 			</button>
 		</div>
 		{@render navItems(false)}
-		<form method="POST" action="/logout" class="mt-auto">
-			<button
-				type="submit"
-				class="font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
-			>
-				end session
-			</button>
-		</form>
+		{@render navFooter(false)}
 	</div>
 {/if}
 
@@ -397,4 +382,28 @@
 			</div>
 		</div>
 	{/each}
+{/snippet}
+
+<!-- End-session: nav-row grammar, danger only on hover (logout is the last
+     thing you take, not the loudest). rail=true keeps the collapse fade on
+     the label but the icon ALWAYS stays visible — the old opacity-0 label
+     left a focusable invisible button in the tab order (trap, fixed). -->
+{#snippet navFooter(rail: boolean)}
+	<form method="POST" action="/logout" class={rail ? '' : 'mt-auto'}>
+		<div class="mx-3 mb-1 border-t border-border/70" aria-hidden="true"></div>
+		<button
+			type="submit"
+			aria-label="End session"
+			class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+		>
+			<LogOut class="size-4 shrink-0" />
+			<span
+				class={rail
+					? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+					: ''}
+			>
+				end session
+			</span>
+		</button>
+	</form>
 {/snippet}
