@@ -15,14 +15,22 @@
 	<title>login · mellon</title>
 </svelte:head>
 
-<section class="flex flex-1 flex-col items-center justify-center gap-6 px-6">
-	<div class="absolute top-4 right-4">
+<section
+	class="relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-6"
+>
+	<!-- The login is the portal's brand moment: a soft brand aura behind the
+	     gate. This is the ONE sanctioned radial (§11.3 exception, owner
+	     decision 2026-11-08) — all other chrome stays flat. -->
+	<div class="login-aura" aria-hidden="true"></div>
+	<div class="absolute top-4 right-4 z-10">
 		<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
 	</div>
-	<h1 class="font-brand text-4xl font-semibold tracking-tight">Speak, friend, and enter</h1>
+	<h1 class="relative font-brand text-4xl font-semibold tracking-tight">
+		Speak, friend, and enter
+	</h1>
 	<form
 		method="POST"
-		class="flex w-full max-w-sm flex-col gap-4"
+		class="relative flex w-full max-w-sm flex-col gap-4"
 		use:enhance={() => {
 			return ({ update }) => update();
 		}}

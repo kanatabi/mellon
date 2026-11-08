@@ -245,6 +245,21 @@
 	}
 }
 
+/* The login aura — the ONE sanctioned radial gradient (§11.3 exception,
+   owner color-round decision). Positioned before the content in DOM, so the
+   later `relative` h1/form paint above it without z-index games. */
+.login-aura {
+	position: absolute;
+	inset: -15% -10% auto;
+	height: 65svh;
+	background: radial-gradient(
+		closest-side,
+		color-mix(in oklab, var(--brand) 15%, transparent),
+		transparent
+	);
+	pointer-events: none;
+}
+
 /* View Transitions theme swap: cross-fade only (earendil parity). */
 @media (prefers-reduced-motion: reduce) {
 	::view-transition-old(root),
