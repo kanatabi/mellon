@@ -177,7 +177,7 @@ every nav item reachable, no hover-only control — grep-audit for `group-hover`
 
 Tasks:
 
-- [ ] Session mint endpoint (**revised 2026-11-08 — JWT design, lumen §8**): single user;
+- [x] Session mint endpoint (**revised 2026-11-08 — JWT design, lumen §8**): single user;
       credentials from `users.passhash` (argon2id + salt — env/Bao credential era
       superseded, the Bao seed now holds only `SESSION_JWT_SECRET`); HS256 `exp`=12h,
       claims `{sub,iat,exp,tv,jti}`, alg PINNED at library-config level; verification =
@@ -185,24 +185,33 @@ Tasks:
       bumps tv (real revocation — logout kills every outstanding token); NO refresh
       tokens (owner ruling); login throttle (per-IP + per-account backoff — the public
       console makes stuffing the attack; argon2id prices guesses, the throttle starves
-      them). Middleware for `/admin/*` checks both halves.
-- [ ] Posts CRUD + drafts (rev-checked PUT per §8), unpublish, soft-delete.
-- [ ] **Publish = §2 transaction**: readTime from final content, preview default,
+      them). Middleware for `/admin/*` checks both halves. (lumen `4786b08`:
+      tests forge alg:none and replay a revoked token — both refused; the
+      battery runs login→use→logout→401 over the wire.)
+- [x] Posts CRUD + drafts (rev-checked PUT per §8), unpublish, soft-delete. (CAS
+      verifies RowsAffected; soft delete frees the slug via partial unique; the
+      publish machine 409s draft→unpublish; integration battery covers it all.)
+- [x] **Publish = §2 transaction**: readTime from final content, preview default,
       rank assignment, Meilisearch upsert, Postgres commit — one handler, idempotent
       (re-publish byte-stable; store `content_hash` and no-op on identical).
-- [ ] Meilisearch: `search` client with index bootstrapping (`cmd/index-init`), upsert +
-      delete hooks; dev via docker-compose addition. **Admin search door (lumen §8
+- [x] Meilisearch: search client with index bootstrap — delivered EARLY via M2.5
+      (the serving-model ruling moved all list/search reads onto it); upsert+delete
+      hooks are the river queue jobs; compose addition landed with `cmd/seed`'s
+      drain-pipeline; `cmd/index-init` = seed's enqueue-all + `cmd/reindex` is the
+      reconcile entry point. **Admin search door (lumen §8
       `GET /admin/search`)**: second index `photos` (docs id/alt/collection/gallery —
       admin-only, §1 never reads it); the `tags` group is a Postgres VOCABULARY prefix
       lookup (a name, not a document — deliberately off the search engine); ≤8 each.
-- [ ] Admin photo verbs (lumen §8, from the contract audit): `GET /admin/posts/:slug`
+- [x] Admin photo verbs (lumen §8, from the contract audit): `GET /admin/posts/:slug`
       (incl. drafts + rev — the editor's door, the mirror HAD no verb line),
       `GET /admin/photos/:id`, `GET /admin/photos/:id/references` (content scan feeding
       the delete warn-list), `DELETE /admin/photos/:id` (row dies, OBJECT serves until
       GC). Session verbs reconcile against mellon's `client.ts` — api-sync round
       (expiresIn, logout, `q` retired) is the executable spec; §8 stays normative.
-- [ ] Tests: unit for derivations; integration for publish transaction (compose-up in CI
-      optional — at minimum a `//go:build integration` suite).
+- [x] Tests: derivations unit-tested (preview default, word count, idempotent
+      re-publish via content_hash, rank unmoved); integration suite RUNS against
+      real pg+meili+embedded-S3+dev-vault (`make test-integration`), env-gated like
+      the read harness — run-to-run idempotent by harness hygiene.
 
 **Verify:** scripted curl choreography (commit it as `scripts/admin-smoke.sh`) — plus the
 session proofs: a JWT replayed from a second client AFTER logout must 401 (tv bump),
@@ -260,7 +269,7 @@ the media-provider ExternalSecret refs, no relay manifests.
 
 Tasks:
 
-- [ ] [lumen] multipart upload → **object store** (bucket/endpoint/CDN base from
+- [x] [lumen] multipart upload → **object store** (bucket/endpoint/CDN base from
       env — values in Bao, HUMAN-GATE #9 for the provider), dimension + EXIF strip
       BEFORE the object is public (image lib: Go stdlib `image` decode per format —
       pin format list to what the gallery needs: jpeg/png/webp), returns `Photo`
@@ -288,12 +297,12 @@ src/ touch).
 
 Tasks:
 
-- [ ] [lumen] `hashicorp/vault/api` client; AppRole login w/ token cache + re-login;
+- [x] [lumen] `hashicorp/vault/api` client; AppRole login w/ token cache + re-login;
       expose ONLY: metadata list (policy-scoped), read (+`?version`), versions list, CAS
       write (require `cas` param — no unconditional puts); no `sys/` routes at all.
       (2026-11-08 audit: these four are exactly the routes lumen §8 now enumerates —
       `bao/paths`, `bao/:app/:env`, `bao/:app/:env/metadata`, `PUT bao/:app/:env`.)
-- [ ] [lumen] redaction middleware for admin access logs (op + path + version + actor;
+- [x] [lumen] redaction middleware for admin access logs (op + path + version + actor;
       never values/body); tests assert body absence in logs (capture logger output).
 - [x] [mellon] `/secrets`: app/env picker (from policy-scoped list), masked mono table,
       reveal-on-press-and-hold (`pointerdown`/`up` + `Space` keydown/keyup parity),
@@ -303,7 +312,7 @@ Tasks:
       (Implemented: LCS diff in `src/lib/diff.ts`, values MASKED in diffs too — the
       side-sheet is a review aid, Bao's audit holds the true bytes. "Save forward"
       rollback = pick old version → edit → CAS-save; no destructive path exists in UI.)
-- [ ] Seed procedure doc: `kv/data/lumen/{env}` gains **`SESSION_JWT_SECRET`** (32B,
+- [x] Seed procedure doc: `kv/data/lumen/{env}` gains **`SESSION_JWT_SECRET`** (32B,
       bootstrap-generated); `kv/data/mellon/{env}` is API_BASE-only (the portal holds no
       credentials in any era — with JWTs it holds not even a session secret); the owner
       `users` row (argon2id passhash) seeded via one-time lumen CLI at bootstrap; the
@@ -1410,3 +1419,85 @@ Next in Phase B: **M3 admin-api** — JWT sessions (HS256 pinned, tv-revocation,
 argon2id users row finally gets its code), posts CRUD + the §2 publish
 transaction, Meilisearch (swapping the Go-scored interim), the four bao
 operations. GATE #9 (media provider) still gates M5-B.
+
+### 2026-11-08/09 — PHASE B executed: M1 + M2.5 + M3 + M5 + M6 on lumen, in one delegated run
+
+Owner: _"directly continue on all milestone of Phase B. I will review later"_ — batch
+authorization taken at face value: **no gate was bypassed** (#3 merges, #5 threat-note
+ack, #9 provider all remain owner-side; this run PREPARED #5's note, did not resolve it).
+
+- **M2.5 — serving model** (`3284e24`/`8617b85`/`970e42a`, branch `milestone/1-read-api`):
+  Meilisearch v1.56.1 answers EVERY list and search (rank/day/readTime as sortable
+  attributes → determinism survives the engine; relevance is engine-owned — contract
+  assertions split strict-twin vs rules at both tiers, offline twin keeps byte-parity);
+  Postgres hydrates and RE-CHECKS truth (lagging index can shorten a page, never leak
+  a draft); pure-engine posture (503 when down — no fallback to rot); river v0.51.1
+  queue (Postgres tables — the §2 publish enqueue is transactional by construction,
+  ids-only jobs converge, uniqueness coalesces bursts); seed drains the REAL pipeline.
+  Caught: the harness must not touch siblings' rows (suite-isolation), and the read
+  integration found `Photos` hydration silently mapping everything to key 0 — no id
+  selected. Run the binary.
+- **M3 — admin-api** (`4786b08`): JWT sessions exactly as ruled (pinned HS256 — the
+  test FORGES an alg:none token with perfect claims and Parse refuses; `tv` row check
+  — logout→replay-the-same-token→401 proven over the wire); argon2id credentials +
+  `cmd/userctl` (password via env, never argv); indistinguishable auth failures;
+  throttle per-IP+per-account with Retry-After (12-guess battery answered 429);
+  publish = the §2 transaction (derivations, first-paragraph preview, rank assign,
+  content_hash idempotence — re-publish unmoved rank verified; the guard was widened
+  after finding published→changed-content republish was wrongly 409ed); CAS with
+  RowsAffected verification (TOCTOU closes); soft delete + PARTIAL slug unique —
+  a DESIGN bug the suite's own residue exposed (deleting must free the slug); the
+  admin search door sees drafts (the leak-bait draft surfacing there and nowhere
+  public is now a tested FEATURE).
+- **M5 — media** (`7ab4d8a`): multipart → decode-and-REBUILD (EXIF dies by
+  construction; a spliced APP1/Exif fixture proves the absence) → content-addressed
+  S3 key (`media/<sha>/<sha>.<ext>` — immutable cache-control is now honest) → row +
+  GC ledger + index job in one tx; fresh photos gallery=false by doctrine; formats
+  pinned jpeg|png, loud 415. The registry rug-pull documented: MinIO's public images
+  are gone, LocalStack v4+ wants an auth token — dev endpoint is gofakes3 (embedded
+  in the battery, `cmd/devs3` manual), so **gate #9 stays a values decision** — the
+  code never learned a vendor.
+- **M6 — secrets plane** (`c8d5bb0`): the §9 relay is exactly four routes (no sys/
+  by construction); AppRole env-rendered, lazy re-login (dev TTL 5m exercises it);
+  version pin via ReadWithData (splicing `?version=` into an SDK path is a 404);
+  write version parsed from the TOP level (a metadata-only parse 500s AFTER
+  persisting — the worst shape, caught live); stale cas → 409; **redaction is now
+  tested, not promised** (capturing slog across reads/writes, demanding the marked
+  value never appears while op lines do); dev plane = vault:1.19 stand-in (OpenBao
+  registry unreachable from this box — wire API shared lineage; the test bootstraps
+  the exact §5.6 shape: kv-v2 mount, policy over kv/* ONLY, approle, no sys).
+  Plus `cmd/driftcheck` (§5.5 consumer two — key names/counts only, never values;
+  aligned 0 / drift 1 both proven) and the distroless Dockerfile (runs nonroot,
+  fail-fasts its config contract; CI wiring itself remains INFRA Phase 8, stated
+  not skipped).
+- **The milestone's ugliest bug was in OUR git**: `.gitignore`'s artifact lines read
+  `lumen`/`seed` UNANCHORED — and unanchored patterns match ANY depth, so
+  `cmd/lumen/` and `cmd/seed/`, the service's MAIN packages, were silently excluded
+  from every `git add -A` all milestone. Builds/tests/containers passed — from the
+  dirty working tree; a fresh clone would not compile. `git ls-tree -r` caught it
+  during branch audit. Fix `638345f` (anchored, force-added, story commented).
+  **Doctrine: a branch is what `git ls-tree` says it is — gates prove the working
+  tree, only the tree proves the branch.**
+- **HUMAN-GATE #5 — THREAT NOTE (prepared for owner review; M6 PRs are NOT merge-ready
+  until personally acked):** (1) _token placement_ — Bao role/secret ids: lumen pod env
+  only (ESO-rendered from `bao-approle-credentials`), TTL 5m dev/≤1h prod, re-login
+  agent-side; session JWT: never stored by mellon (HttpOnly cookie is a carrier),
+  signing key in `lumen/{env}`; the portal UI holds NOTHING. (2) _what a stolen mellon
+  session CAN do_ — everything an admin can, including reading secret VALUES through
+  the relay (server-side masking is UI-only by design — an authenticated bearer is an
+  admin); window bounded by 12h TTL, tv-revocation makes it instant on detection.
+  (3) _what it CANNOT_ — reach Bao directly (AppRole bound to cluster CIDRs; lumen is
+  the only door), write git, or survive logout. (4) _exposure surface_ — the console
+  is the ONLY public door to any of this (gofar.id content plane holds no credentials);
+  ingress TLS + HSTS + throttle + argon2id are the layers. (5) _residual risks_ —
+  in-memory throttle is per-replica (2× tolerance budget at ×2 replicas — documented
+  tradeoff); dev stand-ins (vault/gofakes3) never meet prod values. **Owner action:
+  review, then merge decisions follow.**
+- Branches (all pushed, merge = GATE #3): lumen `milestone/1-read-api` (M1→M6, nine
+  commits — deliberately stacked; splitting per-milestone PRs after the fact is the
+  owner's call), `feature/admin-api-and-portal` (docs lineage, `0a7cdb5`); earendil
+  `milestone/1-contract-harness` (`8e11c10`). Root pins NOT bumped — pins track `main`,
+  nothing is merged yet.
+- Battery (final state): `go test ./...` offline green; `make test-integration` = twin
+  - real pg/meili + embedded S3 + dev vault + 401-replay + throttle, run 2× idempotent;
+    earendil contract.spec 13/13 against the live binary; mellon gates untouched and green.
