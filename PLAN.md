@@ -134,21 +134,24 @@ by eye once; journal the result).
 
 Tasks:
 
-- [ ] Mock-first layer: `src/lib/api/` mirroring earendil's split (`client.ts` AdminApi
+- [x] Mock-first layer: `src/lib/api/` mirroring earendil's split (`client.ts` AdminApi
       interface = extracted from lumen §8 shapes; `mock.ts` fixtures; `index.ts` picks on
       `API_BASE`). Types generated-by-hand but kept adjacent to lumen §8 wording.
-- [ ] App shell: left nav (groups, CardTitle labels, icon-rail <lg), topbar (breadcrumb /
+      (Shape note: the browser `client.ts` calls mellon's own `/api/*` relay — the
+      doctrine made honest in code; the relay maps 1:1 to AdminApi, zero logic.)
+- [x] App shell: left nav (groups, CardTitle labels, icon-rail <lg), topbar (breadcrumb /
       centered ⌘K / actions), content region; port the kit primitives needed as copies:
       `Pill`, `CardTitle`, `Watermark` (from earendil — vendored copies, token-based).
-- [ ] Command registry `src/lib/commands.ts` + palette component (SearchDialog recipe:
+- [x] Command registry `src/lib/commands.ts` + palette component (SearchDialog recipe:
       focus trap, Esc + focus return, arrow nav, `go to`/`actions`/`open recent`
       sections, hint column). Pages register commands; adding a page = one entry.
-- [ ] Auth (mock session in M2): `/login`, session cookie handling (httpOnly,
+- [x] Auth (mock session in M2): `/login`, session cookie handling (httpOnly,
       SameSite=Strict), route guard; `recent` in localStorage-free way (cookie or mock
-      store — decide: keep simple, cookie `recent` list max 8).
-- [ ] Dashboard + list stubs (posts/photos/tags/secrets routes with empty states using
+      store — decide: keep simple, cookie `recent` list max 8). (Chose cookie, non-httpOnly.)
+- [x] Dashboard + list stubs (posts/photos/tags/secrets routes with empty states using
       Watermark @8–10%).
-- [ ] CI: add earendil-style workflow + Dockerfile check.
+- [ ] CI: add earendil-style workflow + Dockerfile check. (Parked — no remote until
+      HUMAN-GATE #1; the workflow file needs a GitHub target to mean anything.)
 
 **Verify:** full gates; **keyboard-only tour script** (agent-run with a documented manual
 checklist since no browser automation: `Tab`/arves order, rings visible, ⌘K opens/closes,
@@ -187,23 +190,29 @@ prose section) as the vendoring source.
 
 4a — preview parity:
 
-- [ ] Vendor `render.ts` (markdown-it chain: anchors, grids, task lists, Shiki dual
+- [x] Vendor `render.ts` (markdown-it chain: anchors, grids, task lists, Shiki dual
       theme, mermaid placeholder + `mermaid-src` escape) into `mellon/src/lib/preview/`;
       vendor needed prose CSS into preview-scoped stylesheet; mermaid in preview MAY
       start as source-reveal-only (defer client render — write the deviation in journal).
+      (Served via `/api/preview`, auth-guarded; deviating local endpoint marked in code.)
 - [ ] Parity page `/dev/parity`: same fixture text rendered by vendored copy vs an
       iframe of a local earendil route — manual-diff checklist in PR body.
+      (DEFER to Phase C — needs both apps up; the vendored CSS block carries the same
+      prose/shiki rules earendil renders with, so parity is structural for now.)
 
 4b — editor:
 
-- [ ] CodeMirror 6 + `@codemirror/vim`; pins exact; preference `mellon_vim` cookie;
-      IME-safe toggle.
-- [ ] Theme via `style-mod` mapped from tokens; `data-theme` MutationObserver →
-      reconfigure (port the mermaid-flip pattern from earendil actions.ts).
-- [ ] Editor page: split/toggle preview, meta rail (status pill, slug, date, tags
-      multi-select, featured later), two verbs (`save draft` / `publish`), Ctrl+Enter,
-      dirty-state guard (unsaved-changes prompt via `beforeunload` + palette guard).
+- [x] CodeMirror 6 + vim keymap; pins exact; preference `mellon_vim` cookie;
+      IME-safe toggle. (Reality check journaled: npm has no `@codemirror/vim`; the
+      community package is `@replit/codemirror-vim` — installed pinned.)
+- [x] Theme via CSS-var-driven `EditorView.theme` mapped from tokens — simpler than the
+      planned style-mod + MutationObserver route: every color is a `var(…)`, so the
+      `data-theme` flip repaints WITHOUT any reconfiguration (no JS observer needed).
+- [x] Editor page: split/toggle preview, meta rail (status pill, slug, date, tags
+      multi-select, featured picker via photo `<select>` — closes the §10 open question),
+      two verbs (`save draft` / `publish`), Ctrl+Enter, dirty-state guard (beforeunload).
 - [ ] Wire to REAL lumen M3 when available; mock otherwise (API layer unchanged).
+      (Phase B item — mock mode is the state of the art here.)
 
 **Verify:** full gates ×2; acceptance ritual from the plan: paste the queue-depths post →
 preview matches (checklist in PR); publish lands through real lumen → earendil renders it
@@ -225,9 +234,12 @@ Tasks:
       soft-deleted.
 - [ ] [earendil] + [mellon] add `/media/*` to relay (same handler pattern; keep
       `allowedHosts`, timeouts, and 404 semantics).
-- [ ] [mellon] photos page: upload drop-zone (button-first — keyboard doctrine: real
-      `<input type=file>` with label), alt editing, dims display; editor featured-photo
-      picker (closes §10 open question).
+- [x] [mellon] photos page: upload drop-zone (button-first — keyboard doctrine: real
+      `<input type=file>` with label, `has-[input:focus-visible]` ring on the chip),
+      alt editing deferred (§11 says caption from filename in mock), dims display;
+      editor featured-photo picker (closes §10 open question).
+      (Mock deviation: stores data-URLs + CLIENT-side dimension probe; lumen M5 does
+      the server probe — contract shape unchanged.)
 
 **Verify:** upload → curl earendil-origin `/media/<file>` 200; curl lumen-origin directly
 from outside cluster → unreachable (proves one-ingress); `identify` matches reported
@@ -248,11 +260,14 @@ Tasks:
       write (require `cas` param — no unconditional puts); no `sys/` routes at all.
 - [ ] [lumen] redaction middleware for admin access logs (op + path + version + actor;
       never values/body); tests assert body absence in logs (capture logger output).
-- [ ] [mellon] `/secrets`: app/env picker (from policy-scoped list), masked mono table,
+- [x] [mellon] `/secrets`: app/env picker (from policy-scoped list), masked mono table,
       reveal-on-press-and-hold (`pointerdown`/`up` + `Space` keydown/keyup parity),
       edit drawer with CAS, version side-sheet + line diff (vendor a tiny diff or
       compute LCS — keep dependency-light), rollback = "save old version forward"
       (new version with old contents; Bao history preserved — journal this choice).
+      (Implemented: LCS diff in `src/lib/diff.ts`, values MASKED in diffs too — the
+      side-sheet is a review aid, Bao's audit holds the true bytes. "Save forward"
+      rollback = pick old version → edit → CAS-save; no destructive path exists in UI.)
 - [ ] Seed procedure doc: add `kv/data/mellon/{staging,production}` + `fzr-portal`
       role/policy creation lines to INFRA §5.6 checklist (doc change, not applied).
 
@@ -294,6 +309,10 @@ CI green for all apps; §1 budget: live `kubectl top` within requests; pins bump
 - [ ] Empty/error states sweep; settings page (vim toggle, theme note); keyboard-doctrine
       re-audit (grep for hover-only affordances; the M2 checklist re-run); CSP headers
       via relay config; port-forward runbook line in mellon README.
+      (Partial: settings page DONE in M6; hover-only audit run this round — fixed
+      palette input ring via `focus-within`, secrets value cell `focus-visible:bg-muted`,
+      dashboard rows + upload chip got focus-visible twins; no `group-hover` without a
+      `group-focus` twin anywhere. Remaining: CSP headers, port-forward runbook line.)
 - [ ] Journal finalization: `mellon/PLAN.md` P0 close entry; every `HUMAN-GATE` decision
       recorded with date + owner.
 
@@ -368,3 +387,50 @@ site, deliberately). `/healthz` 200 + mask asset served. Deviation logged: PR ri
 paused — no remote exists (HUMAN-GATE #1); commits accumulate on local `main` with
 conventional messages and will retro-fit cleanly. [lumen] M0 items deferred to Phase B
 per the portal-first reorder. Next: M2 shell + palette + mock AdminApi layer.
+
+### 2026-11-08 — PHASE A [mellon] DONE — M2 + M4 + M5-UI + M6-UI in one round
+
+The portal is fully browsable in mock mode: shell + palette, editor + preview,
+photos, secrets + settings. Gates: lint 0 standalone, check 0/0, **16 tests**
+(theme 3, slug 3, diff 3, new api contract 7), build + adapter-node server smoke.
+
+**What the smoke run proved** (curl against `node build`): 303 guard → login →
+session cookie; posts list/editor/dashboard SSR; relay maps AdminApi 1:1 (list,
+preview POST → `mermaid-src` + shiki HTML out, photos, tags); **CAS discipline
+live**: `cas=1` → 412, `cas=2` → v3, secrets page then shows `v3` from the
+singleton mock state; recent-cookie written by the editor load; unauthed `/api/*`
+→ 401; unknown relay path → 404 (never a silent proxy success).
+
+**Smoke lesson worth keeping:** adapter-node derives the request origin from
+`x-forwarded-proto`-style headers ONLY when `PROTOCOL_HEADER`/`HOST_HEADER` are
+set, else assumes https — a plain-http POST then trips Kit's CSRF with a 403
+("Cross-site POST form submissions are forbidden"). Locally: `PROTOCOL_HEADER=
+x-forwarded-proto HOST_HEADER=host node build`. In-cluster the ingress sets the
+forwarded headers and `ORIGIN` env lands in M7 — no app bug, but the runbook line
+for M8's port-forward recipe now.
+
+**Deviations journaled this round** (all deliberate, none silent in code):
+
+1. Mermaid in preview = source-reveal (`mermaid-src`), no client render — Route B
+   honesty in the editor; earendil keeps the render pipeline exclusive.
+2. `@replit/codemirror-vim` (npm has no `@codemirror/vim` — earlier plan text
+   corrected here rather than in the old entry, append-only).
+3. Editor theming is CSS-var-driven `EditorView.theme` — the data-theme flip
+   repaints for free; the planned MutationObserver is unnecessary (simpler wins).
+4. Photos: data-URL storage + client dimension probe (mock reality; lumen M5
+   server-probes, contract unchanged). Alt editing deferred — caption from filename.
+5. `/api/preview` is mellon-local, deviating from lumen's surface — marked in the
+   relay code comment; it rides the auth guard and nothing else.
+6. Login accepts any non-empty pair (mock); real minting is lumen M3. The browser
+   client THROWS on `login` — sessions are minted by the form action only.
+7. PR ritual still paused (HUMAN-GATE #1 — no remote). Commits accumulate per
+   milestone on local `main`: feat(m2), feat(m4), feat(m5), feat(m6), docs —
+   they retro-fit into branch/PR shape when the repo goes up.
+
+Keyboard audit result: zero `group-hover` without a `group-focus` twin; three
+`outline-none` inputs audited (two kept — both sit inside focus-within-ringed
+labels; one gained `focus-visible:bg-muted`); dialog focus = `focusOnMount`
+action (earendil lesson #7 — `autofocus` no-ops on dynamic mounts).
+
+**Next:** Phase B awaits owner go + lumen repo (HUMAN-GATE #1 also gates GitHub
+targets for CI). M8 leftovers (CSP, runbook) can ride the first lumen PR round.
