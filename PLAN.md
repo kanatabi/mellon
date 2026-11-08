@@ -656,3 +656,20 @@ Owner screenshot flagged the misleading grouping — publish verbs sat under
 the rail's SETTINGS heading. The rail is now headed **post**; **actions** is
 its own labeled section (save/publish/delete), ahead of the fields, export
 and timeline. Collapse/expand aria labels follow the rename. §11.4 amended.
+
+### 2026-11-08 — phones get bottom sheets (earendil's RailDrawer ported)
+
+The right-side rails (posts filters, editor post rail) are inline at `lg+`
+and render as a **bottom sheet** below that — earendil's recipe ported
+verbatim: floating circular trigger above the safe area, modal sheet capped
+at 80svh with grab-band drag-to-dismiss (1:1 downward, rubber-band upward,
+fling velocity decides), Esc/backdrop/X close, focus returns to the trigger,
+navigation closes it, reduced-motion honored. Markup is shared via Svelte 5
+snippets — the sheet and the desktop aside render the same `railBody` /
+`filtersBody`, so mobile is never a second-class copy.
+
+Type detour worth keeping: lucide v1 ships LEGACY component classes (plain
+`<script>`, class constructors invariant on their prop type) — `Component`,
+`Component<any,any>`, and `typeof SvelteComponent` all reject them
+structurally; the honest annotation is the concrete union
+`typeof FileCog | typeof SlidersHorizontal`.

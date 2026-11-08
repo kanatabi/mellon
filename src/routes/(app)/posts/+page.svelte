@@ -7,12 +7,14 @@
 		PanelRightClose,
 		PanelRightOpen,
 		Plus,
+		SlidersHorizontal,
 		X
 	} from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import DateRange from '#lib/components/DateRange.svelte';
+	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import { postsRail } from '#lib/rails.svelte.ts';
 	import type { PostStatus } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
@@ -161,7 +163,7 @@
 	<!-- Right rail: tags + sort (earendil's kit roles, admin shape). Folds to
 	     the side; content curtains behind the width transition (item #6). -->
 	<div
-		class="shrink-0 self-start overflow-hidden transition-[width] duration-200 ease-out {postsRail.collapsed
+		class="hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-out lg:block {postsRail.collapsed
 			? 'w-9'
 			: 'w-60'}"
 	>
@@ -195,68 +197,72 @@
 						<PanelRightClose class="size-4" />
 					</button>
 				</div>
-
-				<div class="flex flex-col gap-2">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						sort
-					</p>
-					<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
-						{#each sortChips as chip (chip.value)}
-							<a
-								href={buildUrl({ sort: chip.value })}
-								aria-current={data.sort === chip.value ? 'true' : undefined}
-								class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {data.sort ===
-								chip.value
-									? 'border-brand bg-brand/10 text-foreground'
-									: 'border-border text-muted-foreground hover:text-foreground'}"
-							>
-								{#if chip.Icon}
-									<chip.Icon class="size-3" />
-								{/if}
-								{chip.label}
-							</a>
-						{/each}
-					</div>
-				</div>
-
-				<div class="flex flex-col gap-2">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						dates
-					</p>
-					<DateRange
-						from={data.from}
-						to={data.to}
-						onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
-					/>
-				</div>
-
-				<div class="flex flex-col gap-1.5">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						tags{#if data.tag.length}
-							· {data.tag.length} on{/if}
-					</p>
-					<!-- OR semantics, matching the public list contract. -->
-					<div class="flex flex-wrap gap-1.5">
-						{#each data.tags as t (t.name)}
-							{@const on = data.tag.includes(t.name)}
-							<a
-								href={buildUrl({ toggleTag: t.name })}
-								aria-current={on ? 'true' : undefined}
-								class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
-									? 'border-brand bg-brand/10 text-foreground'
-									: 'border-border text-muted-foreground hover:text-foreground'}"
-							>
-								{t.name}
-								<span class="text-muted-foreground/60">{t.posts}</span>
-							</a>
-						{/each}
-					</div>
-				</div>
-
-				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
-					filters ride the URL — the API does the work, the page never sorts
-				</p>
+				{@render filtersBody()}
 			</aside>
 		{/if}
 	</div>
+
+	{#snippet filtersBody()}
+		<div class="flex flex-col gap-2">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">sort</p>
+			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
+				{#each sortChips as chip (chip.value)}
+					<a
+						href={buildUrl({ sort: chip.value })}
+						aria-current={data.sort === chip.value ? 'true' : undefined}
+						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {data.sort ===
+						chip.value
+							? 'border-brand bg-brand/10 text-foreground'
+							: 'border-border text-muted-foreground hover:text-foreground'}"
+					>
+						{#if chip.Icon}
+							<chip.Icon class="size-3" />
+						{/if}
+						{chip.label}
+					</a>
+				{/each}
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">dates</p>
+			<DateRange
+				from={data.from}
+				to={data.to}
+				onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
+			/>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+				tags{#if data.tag.length}
+					· {data.tag.length} on{/if}
+			</p>
+			<!-- OR semantics, matching the public list contract. -->
+			<div class="flex flex-wrap gap-1.5">
+				{#each data.tags as t (t.name)}
+					{@const on = data.tag.includes(t.name)}
+					<a
+						href={buildUrl({ toggleTag: t.name })}
+						aria-current={on ? 'true' : undefined}
+						class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
+							? 'border-brand bg-brand/10 text-foreground'
+							: 'border-border text-muted-foreground hover:text-foreground'}"
+					>
+						{t.name}
+						<span class="text-muted-foreground/60">{t.posts}</span>
+					</a>
+				{/each}
+			</div>
+		</div>
+
+		<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
+			filters ride the URL — the API does the work, the page never sorts
+		</p>
+	{/snippet}
+
+	<!-- Phones: filters arrive as a bottom sheet instead of the inline rail. -->
+	<RailDrawer label="Filters" icon={SlidersHorizontal}>
+		{@render filtersBody()}
+	</RailDrawer>
 </section>

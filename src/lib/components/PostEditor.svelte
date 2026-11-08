@@ -6,6 +6,7 @@
 		Download,
 		Eye,
 		EyeOff,
+		FileCog,
 		PanelRightClose,
 		PanelRightOpen,
 		Printer
@@ -15,6 +16,7 @@
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
+	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
@@ -458,7 +460,7 @@ flowchart LR
 	     The header names the whole rail; sections label themselves. The
 	     container animates its width; the content curtains inside it (item #6). -->
 	<div
-		class="shrink-0 overflow-hidden transition-[width] duration-200 ease-out {editorRail.collapsed
+		class="hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-out lg:block {editorRail.collapsed
 			? 'w-9'
 			: 'w-72'}"
 	>
@@ -492,204 +494,206 @@ flowchart LR
 					</button>
 				</div>
 
-				<!-- Actions block (owner call): save/publish/delete live at the
-				     top of the rail under their own label — the CMS "publish
-				     box" position, never under "settings". -->
-				<div class="flex flex-col gap-2">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						actions
-					</p>
-					<button
-						type="button"
-						disabled={saving}
-						onclick={() => void save()}
-						class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
-					>
-						{isNew ? 'create' : 'save draft'}<span class="ml-1.5 text-muted-foreground">⏎</span>
-					</button>
-					{#if status === 'published'}
-						<button
-							type="button"
-							disabled={saving}
-							onclick={() => void unpublish()}
-							class="w-full rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
-						>
-							unpublish
-						</button>
-					{:else}
-						<button
-							type="button"
-							disabled={saving}
-							onclick={() => void publish()}
-							class="w-full rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
-						>
-							publish
-						</button>
-					{/if}
-					{#if !isNew}
-						<button
-							type="button"
-							onclick={() => (confirmDelete = true)}
-							class="w-full rounded-full px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
-						>
-							delete
-						</button>
-					{/if}
-				</div>
-
-				<label class="flex flex-col gap-1">
-					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-						>title</span
-					>
-					<input
-						class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-border focus-visible:border-brand"
-						bind:value={draft.title}
-						oninput={touch}
-					/>
-				</label>
-				<label class="flex flex-col gap-1">
-					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-						>subtitle</span
-					>
-					<textarea
-						rows="3"
-						class="w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-snug outline-none hover:border-border focus-visible:border-brand"
-						bind:value={draft.subtitle}
-						oninput={touch}></textarea>
-				</label>
-				<label class="flex flex-col gap-1">
-					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-						>slug</span
-					>
-					{#if isNew}
-						<input
-							class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs outline-none hover:border-border focus-visible:border-brand"
-							placeholder="auto from title"
-							bind:value={draft.slug}
-							oninput={() => {
-								slugTouched = true;
-								touch();
-							}}
-						/>
-						<span class="font-mono text-[10px] text-muted-foreground/60">fixed at creation</span>
-					{:else}
-						<input
-							class="w-full rounded-md border border-border bg-muted/40 px-1 py-0.5 font-mono text-xs text-muted-foreground outline-none"
-							value={draft.slug}
-							disabled
-							aria-label="Slug (immutable after creation)"
-						/>
-						<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move</span>
-					{/if}
-				</label>
-
-				<div class="flex flex-col gap-1">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						date
-					</p>
-					<!-- earendil's calendar popover, single-pick shape (item #6): the
-					     native date input is stock, not ours. -->
-					<DatePicker
-						value={draft.date}
-						onchange={(iso) => {
-							draft.date = iso;
-							touch();
-						}}
-					/>
-				</div>
-
-				<div class="flex flex-col gap-1.5">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						tags
-					</p>
-					<div class="flex flex-wrap gap-1.5">
-						{#each tags as t (t.name)}
-							<button
-								type="button"
-								onclick={() => toggleTag(t.name)}
-								aria-pressed={draft.tags.includes(t.name)}
-								class="rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {draft.tags.includes(
-									t.name
-								)
-									? 'border-brand bg-brand/10 text-foreground'
-									: 'border-border text-muted-foreground hover:text-foreground'}"
-							>
-								{t.name}
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<label class="flex flex-col gap-1.5">
-					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-						>thumbnail</span
-					>
-					<select
-						class="rounded-md border border-border bg-card px-2 py-1 font-mono text-xs outline-none focus-visible:border-brand"
-						bind:value={draft.thumbnail}
-						onchange={touch}
-					>
-						<option value={null}>none</option>
-						{#each photos as p (p.id)}
-							<option value={p.src}>{p.alt.slice(0, 32)}</option>
-						{/each}
-					</select>
-				</label>
-
-				<div class="flex flex-col gap-1.5 border-t border-border pt-4">
-					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						export
-					</p>
-					<div class="flex flex-col gap-1.5">
-						<button
-							type="button"
-							onclick={exportMd}
-							class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
-						>
-							<Download class="size-3.5" />download markdown
-						</button>
-						<button
-							type="button"
-							onclick={exportPdf}
-							class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
-						>
-							<Printer class="size-3.5" />save as PDF
-						</button>
-						<button
-							type="button"
-							onclick={copyMd}
-							class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
-						>
-							<ClipboardCopy class="size-3.5" />copy markdown
-						</button>
-					</div>
-					{#if exportMsg}
-						<p
-							class="font-mono text-[10px] text-brand"
-							role="status"
-							transition:fade={{ duration: 150 }}
-						>
-							{exportMsg}
-						</p>
-					{/if}
-				</div>
-
-				{#if !isNew && seed}
-					<div
-						class="flex flex-col gap-1 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground"
-					>
-						<p class="mb-1 flex items-center gap-2 text-[10px] tracking-widest uppercase">
-							<Clock class="size-3" />timeline
-						</p>
-						<span>created · {fmtDay(seed.createdAt)}</span>
-						<span>published · {fmtDay(publishedAt)}</span>
-						<span>updated · {updatedAt ? fmtDay(updatedAt) : '—'}</span>
-						<span>rev {rev}</span>
-					</div>
-				{/if}
+				{@render railBody()}
 			</aside>
 		{/if}
 	</div>
+
+	{#snippet railBody()}
+		<!-- Actions block (owner call): save/publish/delete live at the
+				     top of the rail under their own label — the CMS "publish
+				     box" position, never under "settings". -->
+		<div class="flex flex-col gap-2">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">actions</p>
+			<button
+				type="button"
+				disabled={saving}
+				onclick={() => void save()}
+				class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
+			>
+				{isNew ? 'create' : 'save draft'}<span class="ml-1.5 text-muted-foreground">⏎</span>
+			</button>
+			{#if status === 'published'}
+				<button
+					type="button"
+					disabled={saving}
+					onclick={() => void unpublish()}
+					class="w-full rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+				>
+					unpublish
+				</button>
+			{:else}
+				<button
+					type="button"
+					disabled={saving}
+					onclick={() => void publish()}
+					class="w-full rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
+				>
+					publish
+				</button>
+			{/if}
+			{#if !isNew}
+				<button
+					type="button"
+					onclick={() => (confirmDelete = true)}
+					class="w-full rounded-full px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+				>
+					delete
+				</button>
+			{/if}
+		</div>
+
+		<label class="flex flex-col gap-1">
+			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+				>title</span
+			>
+			<input
+				class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-border focus-visible:border-brand"
+				bind:value={draft.title}
+				oninput={touch}
+			/>
+		</label>
+		<label class="flex flex-col gap-1">
+			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+				>subtitle</span
+			>
+			<textarea
+				rows="3"
+				class="w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-snug outline-none hover:border-border focus-visible:border-brand"
+				bind:value={draft.subtitle}
+				oninput={touch}></textarea>
+		</label>
+		<label class="flex flex-col gap-1">
+			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+				>slug</span
+			>
+			{#if isNew}
+				<input
+					class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs outline-none hover:border-border focus-visible:border-brand"
+					placeholder="auto from title"
+					bind:value={draft.slug}
+					oninput={() => {
+						slugTouched = true;
+						touch();
+					}}
+				/>
+				<span class="font-mono text-[10px] text-muted-foreground/60">fixed at creation</span>
+			{:else}
+				<input
+					class="w-full rounded-md border border-border bg-muted/40 px-1 py-0.5 font-mono text-xs text-muted-foreground outline-none"
+					value={draft.slug}
+					disabled
+					aria-label="Slug (immutable after creation)"
+				/>
+				<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move</span>
+			{/if}
+		</label>
+
+		<div class="flex flex-col gap-1">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">date</p>
+			<!-- earendil's calendar popover, single-pick shape (item #6): the
+					     native date input is stock, not ours. -->
+			<DatePicker
+				value={draft.date}
+				onchange={(iso) => {
+					draft.date = iso;
+					touch();
+				}}
+			/>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">tags</p>
+			<div class="flex flex-wrap gap-1.5">
+				{#each tags as t (t.name)}
+					<button
+						type="button"
+						onclick={() => toggleTag(t.name)}
+						aria-pressed={draft.tags.includes(t.name)}
+						class="rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {draft.tags.includes(
+							t.name
+						)
+							? 'border-brand bg-brand/10 text-foreground'
+							: 'border-border text-muted-foreground hover:text-foreground'}"
+					>
+						{t.name}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<label class="flex flex-col gap-1.5">
+			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+				>thumbnail</span
+			>
+			<select
+				class="rounded-md border border-border bg-card px-2 py-1 font-mono text-xs outline-none focus-visible:border-brand"
+				bind:value={draft.thumbnail}
+				onchange={touch}
+			>
+				<option value={null}>none</option>
+				{#each photos as p (p.id)}
+					<option value={p.src}>{p.alt.slice(0, 32)}</option>
+				{/each}
+			</select>
+		</label>
+
+		<div class="flex flex-col gap-1.5 border-t border-border pt-4">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">export</p>
+			<div class="flex flex-col gap-1.5">
+				<button
+					type="button"
+					onclick={exportMd}
+					class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
+				>
+					<Download class="size-3.5" />download markdown
+				</button>
+				<button
+					type="button"
+					onclick={exportPdf}
+					class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
+				>
+					<Printer class="size-3.5" />save as PDF
+				</button>
+				<button
+					type="button"
+					onclick={copyMd}
+					class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
+				>
+					<ClipboardCopy class="size-3.5" />copy markdown
+				</button>
+			</div>
+			{#if exportMsg}
+				<p
+					class="font-mono text-[10px] text-brand"
+					role="status"
+					transition:fade={{ duration: 150 }}
+				>
+					{exportMsg}
+				</p>
+			{/if}
+		</div>
+
+		{#if !isNew && seed}
+			<div
+				class="flex flex-col gap-1 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground"
+			>
+				<p class="mb-1 flex items-center gap-2 text-[10px] tracking-widest uppercase">
+					<Clock class="size-3" />timeline
+				</p>
+				<span>created · {fmtDay(seed.createdAt)}</span>
+				<span>published · {fmtDay(publishedAt)}</span>
+				<span>updated · {updatedAt ? fmtDay(updatedAt) : '—'}</span>
+				<span>rev {rev}</span>
+			</div>
+		{/if}
+	{/snippet}
+
+	<!-- Phones: the same rail arrives as a bottom sheet (earendil's
+	     RailDrawer recipe) — drag down, Esc, or the X dismisses it. -->
+	<RailDrawer label="Post actions and settings" icon={FileCog}>
+		{@render railBody()}
+	</RailDrawer>
 
 	{#if confirmDelete}
 		<DeleteDialog
