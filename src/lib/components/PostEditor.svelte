@@ -333,6 +333,10 @@ flowchart LR
 		if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 			e.preventDefault();
 			void save();
+		} else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+			// save must stay reachable with the actions rail collapsed
+			e.preventDefault();
+			void save();
 		}
 	}
 
@@ -360,7 +364,8 @@ flowchart LR
 
 <section class="flex min-h-full flex-1 gap-4">
 	<div class="flex min-w-0 grow flex-col gap-4">
-		<!-- Meta bar: entity title wears the serif; verbs live right. -->
+		<!-- Meta bar: entity title wears the serif; only the preview toggle
+		     lives here — verbs moved to the settings rail (owner call). -->
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<div class="flex min-w-0 items-center gap-3">
 				<h1 class="min-w-0 truncate font-brand text-2xl font-semibold tracking-tight">
@@ -375,6 +380,16 @@ flowchart LR
 				{/if}
 			</div>
 			<div class="flex items-center gap-2">
+				{#if dirty}
+					<span
+						transition:fade={{ duration: 140 }}
+						class="flex items-center gap-1.5 font-mono text-[10px] text-brand"
+						role="status"
+					>
+						<span class="size-1.5 rounded-full bg-brand"></span>
+						unsaved
+					</span>
+				{/if}
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
@@ -386,42 +401,6 @@ flowchart LR
 					{#if showPreview}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
 					preview
 				</button>
-				{#if !isNew}
-					<button
-						type="button"
-						onclick={() => (confirmDelete = true)}
-						class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-danger transition-colors hover:bg-danger/10"
-					>
-						delete
-					</button>
-				{/if}
-				<button
-					type="button"
-					disabled={saving}
-					onclick={() => void save()}
-					class="rounded-full border border-border px-4 py-1.5 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
-				>
-					{isNew ? 'create' : 'save draft'}<span class="text-muted-foreground">⏎</span>
-				</button>
-				{#if status === 'published'}
-					<button
-						type="button"
-						disabled={saving}
-						onclick={() => void unpublish()}
-						class="rounded-full border border-border px-4 py-1.5 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
-					>
-						unpublish
-					</button>
-				{:else}
-					<button
-						type="button"
-						disabled={saving}
-						onclick={() => void publish()}
-						class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
-					>
-						publish
-					</button>
-				{/if}
 			</div>
 		</div>
 
@@ -512,6 +491,47 @@ flowchart LR
 					>
 						<PanelRightClose class="size-4" />
 					</button>
+				</div>
+
+				<!-- Actions (owner call): save/publish/delete moved from the meta
+				     bar to the top of the rail — the CMS "publish box" position. -->
+				<div class="flex flex-col gap-2">
+					<button
+						type="button"
+						disabled={saving}
+						onclick={() => void save()}
+						class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
+					>
+						{isNew ? 'create' : 'save draft'}<span class="ml-1.5 text-muted-foreground">⏎</span>
+					</button>
+					{#if status === 'published'}
+						<button
+							type="button"
+							disabled={saving}
+							onclick={() => void unpublish()}
+							class="w-full rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+						>
+							unpublish
+						</button>
+					{:else}
+						<button
+							type="button"
+							disabled={saving}
+							onclick={() => void publish()}
+							class="w-full rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
+						>
+							publish
+						</button>
+					{/if}
+					{#if !isNew}
+						<button
+							type="button"
+							onclick={() => (confirmDelete = true)}
+							class="w-full rounded-full px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+						>
+							delete
+						</button>
+					{/if}
 				</div>
 
 				<label class="flex flex-col gap-1">

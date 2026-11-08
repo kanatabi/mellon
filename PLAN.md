@@ -636,3 +636,16 @@ transaction. Lesson: grep a library's DISPATCH site, not just the event name —
 Reload seed fix: `state.vim` is created lazily by the keymap, and my "nothing
 yet" fallback said INSERT — but vim opens in NORMAL (owner screenshot). The
 fallback now mirrors the truth; live reads correct it from the first key.
+
+### 2026-11-08 — actions join the rail; wrap joins the status bar
+
+Owner layout call: the meta bar above the editor keeps ONLY the preview
+toggle; `save draft` / `publish`-`unpublish` / quiet `delete` move to the top
+of the settings rail — Ghost's publish-box position, actions live with
+settings. A `dirty · unsaved` dot-in-pill appears beside the toggle, and
+⌘S joins ⌘Enter for save (the rail can be collapsed — the shortcut keeps the
+primary verb reachable either way; keyboard doctrine).
+
+CodeMirror status bar gained a `wrap` chip (aria-pressed; compartment
+reconfigure, no rebuild) persisted to localStorage like the rails — default
+on, matching the old behavior. §11.4 amended in place.

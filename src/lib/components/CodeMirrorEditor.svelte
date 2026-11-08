@@ -20,6 +20,9 @@
 	let host: HTMLDivElement | undefined = $state();
 	let view: EditorView | undefined;
 	const vimCompartment = new Compartment();
+	const wrapCompartment = new Compartment();
+	// line-wrap preference: localStorage (pure client view state, like rails)
+	let wrapped = $state(true);
 	// deliberate one-time capture: the editor doc is seeded from `value` at
 	// mount; later syncs run through the $effect pair below.
 	let emitted = value;
@@ -93,12 +96,13 @@
 
 	onMount(() => {
 		if (!host) return;
+		wrapped = localStorage.getItem('mellon.wrap') !== '0';
 		const state = EditorState.create({
 			doc: value,
 			extensions: [
 				basicSetup,
 				markdown({ base: markdownLanguage }),
-				EditorView.lineWrapping,
+				wrapCompartment.of(wrapped ? [EditorView.lineWrapping] : []),
 				theme,
 				vimCompartment.of(vimOn ? [vim()] : []),
 				EditorView.domEventHandlers({
@@ -147,6 +151,14 @@
 	});
 
 	onDestroy(() => view?.destroy());
+
+	function toggleWrap() {
+		wrapped = !wrapped;
+		view?.dispatch({
+			effects: wrapCompartment.reconfigure(wrapped ? [EditorView.lineWrapping] : [])
+		});
+		localStorage.setItem('mellon.wrap', wrapped ? '1' : '0');
+	}
 </script>
 
 <div class="flex h-full min-h-0 flex-col {cls}">
@@ -171,6 +183,18 @@
 			{/if}
 			<span>Ln {pos.line}, Col {pos.col}</span>
 		</span>
-		<span class="tabular-nums">{words} words</span>
+		<span class="flex items-center gap-2">
+			<button
+				type="button"
+				onclick={toggleWrap}
+				aria-pressed={wrapped}
+				class="rounded px-1.5 py-0.5 tracking-wider uppercase transition-colors {wrapped
+					? 'bg-muted text-foreground'
+					: 'text-muted-foreground/60 hover:text-foreground'}"
+			>
+				wrap
+			</button>
+			<span class="tabular-nums">{words} words</span>
+		</span>
 	</div>
 </div>
