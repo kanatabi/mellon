@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/fraunces/wonk-italic.css';
+
+/* Semantic color tokens — the shared contract with earendil. Values are copied
+   (the semantic layer is the contract); mellon-only needs are ADDITIVE tokens
+   below, never divergent values. (mellon/DESIGN.md §3, §11.3) */
+:root {
+	--background: #ffffff;
+	--foreground: #09090b;
+	--card: #ffffff;
+	--primary: #18181b;
+	--muted: #f4f4f5;
+	--muted-foreground: #71717a;
+	--accent: #f4f4f5;
+	--border: #e4e4e7;
+	/* Brand accent — the semicolon violet; the single loud voice. */
+	--brand: #7c3aed;
+	/* The ASCII glyph field (mellon/static/profile/) for watermarks. */
+	--ascii-ink: var(--foreground);
+	--ascii-mask: url('/profile/ascii-glyphs-640.webp');
+	/* ADDITIVE admin tokens (§11.3): red exists ONLY for destructive actions;
+	   diff tints are their own animals, confined to diff views. */
+	--danger: #b91c1c;
+	--diff-add: #15803d;
+	--diff-del: #b91c1c;
+}
+
+[data-theme='dark'] {
+	--background: #09090b;
+	--foreground: #fafafa;
+	--card: #09090b;
+	--primary: #fafafa;
+	--muted: #27272a;
+	--muted-foreground: #a1a1aa;
+	--accent: #27272a;
+	--border: #27272a;
+	--brand: #a78bfa;
+	/* Terminal sage, sampled from the mask's bright glyphs (earendil parity). */
+	--ascii-ink: #d8e0d6;
+	--danger: #f87171;
+	--diff-add: #4ade80;
+	--diff-del: #f87171;
+}
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+	--container-nav: 240px;
+	--container-nav-rail: 56px;
+	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	/* Display serif for entity titles only (§11.2) — never for chrome/body. */
+	--font-brand: 'Fraunces Variable', ui-serif, Georgia, 'Times New Roman', serif;
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-primary: var(--primary);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-border: var(--border);
+	--color-brand: var(--brand);
+	--color-danger: var(--danger);
+	--color-diff-add: var(--diff-add);
+	--color-diff-del: var(--diff-del);
+}
+
+@layer base {
+	html {
+		font-family: var(--font-sans);
+		background: var(--background);
+		color: var(--foreground);
+	}
+}

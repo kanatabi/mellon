@@ -5,7 +5,7 @@ content management for [earendil](https://github.com/kanatabi/earendil) and basi
 management for the cluster — one keyboard-first web app, talking only to
 [lumen](https://github.com/kanatabi/lumen).
 
-> *Speak, friend, and enter.* No public address; access via `kubectl port-forward`.
+> _Speak, friend, and enter._ No public address; access via `kubectl port-forward`.
 
 **Status: design only.** Read [`DESIGN.md`](DESIGN.md) first — the doctrine section is
 load-bearing (UI-only, no credentials, relay-forwards-never-decides).

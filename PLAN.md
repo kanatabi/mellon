@@ -6,7 +6,6 @@
 > plan (append-only — never rewrite history, same rule as earendil's PLAN.md).
 > Provenance: drafted as an agent-run execution plan on 2026-11-08.
 
-
 > **Executor: an AI agent.** Human = the owner, who reviews PRs and makes only the
 > decisions marked `HUMAN-GATE`. Every task below is written so an agent can run it
 > end-to-end without interpretation: read the listed context, execute, verify with the
@@ -71,19 +70,20 @@ lumen/DESIGN.md intro.
 **Branches:** `mellon: milestone/0-scaffold`, `lumen: milestone/0-scaffold`.
 
 Tasks:
+
 - [ ] `HUMAN-GATE` **mellon GitHub repo** — owner runs (no `gh` on this machine):
       create `kanatabi/mellon` **private** → push local repo → `git submodule add` at root
       → pin commit. (Steps pre-written in `mellon/README.md`.)
-- [ ] [mellon] Scaffold: SvelteKit 3 + Svelte 5 runes + TS strict + Tailwind v4 +
+- [x] [mellon] Scaffold: SvelteKit 3 + Svelte 5 runes + TS strict + Tailwind v4 +
       `adapter-node`, Node 22. Copy earendil's `package.json` dev-deps set,
       `eslint.config.js`, `prettier.config.js`, `vitest.config.ts`, `tsconfig.json`,
       `vite.config.ts` (rename app, strip blog-specific plugins; keep `allowedHosts`
       ngrok suffix pattern). Exact pins where earendil pins.
-- [ ] [mellon] Theme day one: `src/routes/layout.css` token block (copy values — the
+- [x] [mellon] Theme day one: `src/routes/layout.css` token block (copy values — the
       semantic contract, §3), `[data-theme='dark']` overrides, cookie + pre-paint script
       in `+layout.svelte` (copy recipe), `ThemeToggle` port. Additive admin tokens NOW
       (empty for P0): `--danger`, `--diff-add`, `--diff-del` with light/dark values.
-- [ ] [mellon] `/healthz` route (echo earendil proxy shape) + placeholder `/` shell page;
+- [x] [mellon] `/healthz` route (echo earendil proxy shape) + placeholder `/` shell page;
       `Dockerfile` (multi-stage non-root, copy earendil's); note GHCR workflow as M0.5.
 - [ ] [lumen] Go scaffold: `go.mod` (latest stable pinned), stdlib or `chi`
       — `HUMAN-GATE` router choice (offer: stdlib `net/http` + `ServeMux` = zero deps,
@@ -106,6 +106,7 @@ source), `api.test.ts` (the harness to clone).
 **Branch:** `lumen: milestone/1-read-api`.
 
 Tasks:
+
 - [ ] Postgres schema per §6 (posts **with `status ENUM('draft','published')`**, rev for
       CAS-ish optimistic lock, tags, post_tags, photos); migrations as plain SQL files.
 - [ ] Seed importer: `cmd/seed` reads a JSON translation of earendil's 12-post corpus
@@ -132,6 +133,7 @@ by eye once; journal the result).
 **Branch:** `mellon: milestone/2-shell`.
 
 Tasks:
+
 - [ ] Mock-first layer: `src/lib/api/` mirroring earendil's split (`client.ts` AdminApi
       interface = extracted from lumen §8 shapes; `mock.ts` fixtures; `index.ts` picks on
       `API_BASE`). Types generated-by-hand but kept adjacent to lumen §8 wording.
@@ -160,6 +162,7 @@ every nav item reachable, no hover-only control — grep-audit for `group-hover`
 **Branch:** `lumen: milestone/3-admin-api`.
 
 Tasks:
+
 - [ ] Session mint endpoint (single-user; credentials from env/Bao; short-TTL bearer;
       constant-time compare); middleware for `/admin/*`.
 - [ ] Posts CRUD + drafts (rev-checked PUT per §8), unpublish, soft-delete.
@@ -183,6 +186,7 @@ prose section) as the vendoring source.
 **Branches:** `mellon: milestone/4a-preview`, then `milestone/4b-editor`.
 
 4a — preview parity:
+
 - [ ] Vendor `render.ts` (markdown-it chain: anchors, grids, task lists, Shiki dual
       theme, mermaid placeholder + `mermaid-src` escape) into `mellon/src/lib/preview/`;
       vendor needed prose CSS into preview-scoped stylesheet; mermaid in preview MAY
@@ -191,6 +195,7 @@ prose section) as the vendoring source.
       iframe of a local earendil route — manual-diff checklist in PR body.
 
 4b — editor:
+
 - [ ] CodeMirror 6 + `@codemirror/vim`; pins exact; preference `mellon_vim` cookie;
       IME-safe toggle.
 - [ ] Theme via `style-mod` mapped from tokens; `data-theme` MutationObserver →
@@ -213,6 +218,7 @@ preview matches (checklist in PR); publish lands through real lumen → earendil
 `milestone/5-media-relay`, [vortex] PVC/manifest notes deferred to M7.
 
 Tasks:
+
 - [ ] [lumen] multipart upload → `/media` store (PVC path from env), dimension + EXIF
       strip (image lib: Go stdlib `image` decode per format — pin format list to what
       Shiki-free gallery needs: jpeg/png/webp), returns `Photo` shape; GC window for
@@ -236,6 +242,7 @@ src/ touch).
 **Branches:** lumen `milestone/6-bao-passthrough`, mellon `milestone/6-secrets`.
 
 Tasks:
+
 - [ ] [lumen] `hashicorp/vault/api` client; AppRole login w/ token cache + re-login;
       expose ONLY: metadata list (policy-scoped), read (+`?version`), versions list, CAS
       write (require `cas` param — no unconditional puts); no `sys/` routes at all.
@@ -298,16 +305,16 @@ gates green; no open `HUMAN-GATE` left unresolved. **P0 CLOSED** only on owner's
 
 ## HUMAN-GATE ledger (the agent never resolves these alone)
 
-| # | gate | milestone |
-| --- | --- | --- |
-| 1 | Create + push `kanatabi/mellon` (private), submodule registration | M0 |
-| 2 | lumen router choice (stdlib vs chi) | M0 |
-| 3 | PR merges (every repo, every PR) | all |
-| 4 | OpenBao bootstrap seeds: `fzr-portal` role/policy creation, `kv/data/mellon/*` first values | M6/M7 |
-| 5 | Security threat-note ack before secrets merge | M6 |
-| 6 | Staging→production promotion runs | M7 |
-| 7 | Any doctrine/AGENTS/INFRA amendment | any |
-| 8 | P0 exit declaration | M8 |
+| #   | gate                                                                                        | milestone |
+| --- | ------------------------------------------------------------------------------------------- | --------- |
+| 1   | Create + push `kanatabi/mellon` (private), submodule registration                           | M0        |
+| 2   | lumen router choice (stdlib vs chi)                                                         | M0        |
+| 3   | PR merges (every repo, every PR)                                                            | all       |
+| 4   | OpenBao bootstrap seeds: `fzr-portal` role/policy creation, `kv/data/mellon/*` first values | M6/M7     |
+| 5   | Security threat-note ack before secrets merge                                               | M6        |
+| 6   | Staging→production promotion runs                                                           | M7        |
+| 7   | Any doctrine/AGENTS/INFRA amendment                                                         | any       |
+| 8   | P0 exit declaration                                                                         | M8        |
 
 ## Parked (do not build without re-planning)
 
@@ -325,8 +332,9 @@ mock-first invariant (§1: mellon builds against its in-process fixtures; M2's A
 layer). Revised order:
 
 **Phase A — the portal (Track P, mock mode):**
-1. M0 `[mellon-only]` — scaffold, theme parity, gates. *(HUMAN-GATE #1 repo creation
-   can stay pending; local git proceeds, push retro-fits.)*
+
+1. M0 `[mellon-only]` — scaffold, theme parity, gates. _(HUMAN-GATE #1 repo creation
+   can stay pending; local git proceeds, push retro-fits.)_
 2. M2 — shell + palette + mock `AdminApi` layer.
 3. M4a → M4b — preview pipeline, then editor (mock-backed).
 4. M5 `[mellon UI]` + M6 `[mellon UI]` — photos & secrets pages against fixtures.
@@ -334,18 +342,29 @@ layer). Revised order:
    threat-note gate) DEFER to Phase B — UI acceptance in Phase A is mock-mode:
    keyboard tour, §11.5 visual bar, interaction completeness.
 
-**Phase B — the backend (Track L):**
-5. M1 read-api → M3 admin-api → M5 `[lumen]` → M6 `[lumen]` — **lumen now implements
-   the surface mellon's `src/lib/api/client.ts` already encodes**: the mirror
-   relationship flips to the exact pattern earendil↔lumen already runs (client is the
-   contract's executable spec; §8 in lumen's DESIGN stays normative — they reconcile in
-   one commit set per the ritual).
-6. Deferred verifies execute here: admin smoke scripts, compose-backed Bao integration,
-   HUMAN-GATE #5 threat note, drift check.
+**Phase B — the backend (Track L):** 5. M1 read-api → M3 admin-api → M5 `[lumen]` → M6 `[lumen]` — **lumen now implements
+the surface mellon's `src/lib/api/client.ts` already encodes**: the mirror
+relationship flips to the exact pattern earendil↔lumen already runs (client is the
+contract's executable spec; §8 in lumen's DESIGN stays normative — they reconcile in
+one commit set per the ritual). 6. Deferred verifies execute here: admin smoke scripts, compose-backed Bao integration,
+HUMAN-GATE #5 threat note, drift check.
 
-**Phase C — convergence:**
-7. M5 `[earendil relay]`, M7 deploy & cutover, M8 harden (P0 exit unchanged).
+**Phase C — convergence:** 7. M5 `[earendil relay]`, M7 deploy & cutover, M8 harden (P0 exit unchanged).
 
 Consequences, noted honestly: HUMAN-GATE #2 (Go router) now waits until Phase B starts;
 lumen scaffold moves out of M0; and the editor's "publish lands on real earendil" check
 lands in Phase C instead of M4 — everything else in the plan stands as written.
+
+### 2026-11-08 — M0 [mellon-only] DONE — the portal breathes
+
+Scaffold live: SvelteKit 3 + runes (forced via vite compiler), TS strict, Tailwind v4,
+adapter-node, Node 22 — earendil's gate ladder replicated exactly (`lint` standalone,
+`check` 0/0, vitest, build; all green first pass, 3 tests). Theme parity day one: full
+semantic token contract in `layout.css` (copied values, additive `--danger/--diff-add/
+--diff-del` light+dark), cookie-driven `resolveTheme` server load + pre-paint data-theme
+script (verified in SSR: light default, dark follows the cookie — no FOUC path),
+View-Transition toggle with `samesite=strict` (portal doctrine differs from the public
+site, deliberately). `/healthz` 200 + mask asset served. Deviation logged: PR ritual
+paused — no remote exists (HUMAN-GATE #1); commits accumulate on local `main` with
+conventional messages and will retro-fit cleanly. [lumen] M0 items deferred to Phase B
+per the portal-first reorder. Next: M2 shell + palette + mock AdminApi layer.

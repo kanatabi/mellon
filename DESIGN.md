@@ -6,7 +6,7 @@ env/secret management. It is a UI — the only server it ever talks to is
 [`lumen/`](../lumen/DESIGN.md), and the only thing it ever shows is what lumen's Admin API
 (§8 there) decides to expose.
 
-> *Speak, friend, and enter.* The name is the access doctrine: this door has no public
+> _Speak, friend, and enter._ The name is the access doctrine: this door has no public
 > address. It opens for a port-forward and a session, not for a URL anyone can find.
 
 Status: **design only** — implementation not started. Conventions (git discipline, gates,
@@ -27,7 +27,7 @@ branch-per-milestone, pinned versions) are inherited from `earendil`.
 **Deferred — deliberately:**
 
 - Infra/GitOps tab (Argo status/sync, vortex commit-writer) — low priority; when it comes,
-  it follows the GitOps-purity rule: write to *git*, never apply to the cluster (§2).
+  it follows the GitOps-purity rule: write to _git_, never apply to the cluster (§2).
 - Multi-user/RBAC (single operator today; lumen's session contract keeps the door open).
 - Public or mesh ingress (§2 access).
 
@@ -38,14 +38,14 @@ branch-per-milestone, pinned versions) are inherited from `earendil`.
 2. **The relay forwards; it never decides.** All logic, auth, credentials, and policy
    decisions live in lumen. Mellon holds **no secrets** — not Bao tokens, not GitHub
    tokens, not DB creds.
-3. **Private path only.** ClusterIP, no ingress (public *or* mesh). Access =
+3. **Private path only.** ClusterIP, no ingress (public _or_ mesh). Access =
    `kubectl port-forward svc/mellon 8080:8080`. Revisit as a written decision (never as a
    quiet convenience) if port-forwarding stops getting used.
 4. **Anything reachable by mouse is reachable by keyboard.** The palette + shortcuts are
    the vocabulary; this is the promise. No hover-only affordances (AGENTS §10.5 lesson,
    applied to the admin too).
-5. **GitOps purity (future infra tab):** the portal may *propose* (commit/PR to vortex) and
-   *trigger convergence* (Argo sync) — the cluster still takes orders only from Git.
+5. **GitOps purity (future infra tab):** the portal may _propose_ (commit/PR to vortex) and
+   _trigger convergence_ (Argo sync) — the cluster still takes orders only from Git.
 
 ## 3. Stack & house rules
 
@@ -58,7 +58,7 @@ Gates: `prettier --write` → `npm run lint` (standalone exit code) → `npm run
 `main`. Vitest in node env (no jsdom) — pure logic tested, UI verified manually.
 
 **Theme**: light/dark parity day one, no-flash pre-paint (`data-theme` cookie + inline
-script — copy of the earendil recipe). Tokens are the *semantic* contract
+script — copy of the earendil recipe). Tokens are the _semantic_ contract
 (`--background`, `--foreground`, `--border`, `--brand`, `--muted-*`) — values copied from
 earendil's `layout.css`; admin-specific colors (status green/red, diff tints) are
 **additive** mellon tokens, never divergent ones.
@@ -74,7 +74,7 @@ browser ──► mellon SSR (UI + session cookie) ──/admin-api/*──► l
 
 - **Session**: lumen mints it (single-user login → short-TTL token); mellon carries it in an
   httpOnly `SameSite=Strict; Secure` cookie and forwards. Mellon validates expiry
-  reactively, knows nothing about *who*.
+  reactively, knows nothing about _who_.
 - **Relay**: `routes/admin-api/[...path]/+server.ts` — same-origin passthrough, earendil's
   `/api` pattern. No business logic lives here (doctrine 2).
 - **Runtime env only**: `API_BASE` (lumen service URL) server-side; nothing build-inlined.
@@ -86,15 +86,15 @@ The editor's chrome follows §11.4: split view, meta rail, two verbs.
 - **Content model**: raw Markdown, ` ```mermaid ` fences and `:::` grids **intact** (Route
   B — the lumen contract). The editor edits the artifact that gets stored; no
   transformation layer, no WYSIWYG content model.
-- **Editor**: CodeMirror 6 + `@codemirror/vim` (a *preference*, persisted; IME-aware
+- **Editor**: CodeMirror 6 + `@codemirror/vim` (a _preference_, persisted; IME-aware
   toggle). Theme = `style-mod` map over the token set (JetBrains Mono, `--background`/
   `--foreground`, `--brand` markers; block caret in normal mode / bar in insert). Theme
   flip reconfigures via the `data-theme` observer — the mermaid re-render pattern.
   Pragmatic ladder: a well-typed `<textarea>` + preview may ship v0; the content model
   never changes either way.
 - **Preview**: vendored copy of earendil's `render.ts` pipeline (anchors, grids, task
-  lists, Shiki dual-theme, mermaid placeholder + shimmer). *The preview must look like
-  the product* — that's what makes this editor better than a generic CMS's. Sync strategy
+  lists, Shiki dual-theme, mermaid placeholder + shimmer). _The preview must look like
+  the product_ — that's what makes this editor better than a generic CMS's. Sync strategy
   (drift risk): snapshot + periodic reconcile; revisit as a shared package when a third
   consumer appears.
 - **Fields**: slug, title, subtitle, preview (explicit, default = first paragraph), date,
@@ -107,15 +107,15 @@ The editor's chrome follows §11.4: split view, meta rail, two verbs.
 
 Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view anatomy in §11.4.
 
-| route | content |
-| --- | --- |
-| `/login` | single-user session start |
-| `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions |
-| `/posts` | list (status pills, roving-tabindex rows, `n` = new) |
-| `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`) |
-| `/photos` | upload (drag-drop + file), alt + natural dims display (server-probed) |
-| `/secrets` | app/env picker (from policy-scoped list), values masked by default (click/keyboard reveal), version history + diff + CAS save, rollback = pin-an-older-version flow |
-| `/settings` | vim toggle, session |
+| route           | content                                                                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`        | single-user session start                                                                                                                                           |
+| `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                            |
+| `/posts`        | list (status pills, roving-tabindex rows, `n` = new)                                                                                                                |
+| `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                     |
+| `/photos`       | upload (drag-drop + file), alt + natural dims display (server-probed)                                                                                               |
+| `/secrets`      | app/env picker (from policy-scoped list), values masked by default (click/keyboard reveal), version history + diff + CAS save, rollback = pin-an-older-version flow |
+| `/settings`     | vim toggle, session                                                                                                                                                 |
 
 ## 7. Keyboard-first
 
@@ -148,7 +148,7 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   replica; budget row already reserved in `INFRA_ARCHITECTURE.md` §1
   (100m/192Mi → 300m/384Mi).
 - Env via ExternalSecret from `kv/data/mellon/{env}` (its only value: `API_BASE` +
-  session-secret material — *no* Bao credentials here; those belong to lumen's seed).
+  session-secret material — _no_ Bao credentials here; those belong to lumen's seed).
 - CI: earendil's GH Actions shape (build → `sha-<short>` → kustomize edit images).
 
 ## 10. Open questions
@@ -162,7 +162,7 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 
 ## 11. UI system — the look of the instrument
 
-The brief: *"like any other CMS, but simple and modern."* The resolution: earendil is an
+The brief: _"like any other CMS, but simple and modern."_ The resolution: earendil is an
 editorial artifact; mellon is an **instrument**. Not its antithesis — the same maker's
 tool, a different posture. Every rule below serves that sentence.
 
@@ -185,18 +185,18 @@ tool, a different posture. Every rule below serves that sentence.
   uppercase, `text-xs tracking-widest`. Collapses to an icon rail below `lg`; theme +
   session live pinned at the base.
 - **Top bar**: context left, the **⌘K affordance centered** (a VS Code/Raycast convention —
-  the shell *advertises* the keyboard-first promise rather than burying it), page actions
+  the shell _advertises_ the keyboard-first promise rather than burying it), page actions
   right. The palette itself is global chrome, rendered from the §7 command registry.
 - **Content area**: full-bleed; forms constrained to their measure (max ~72ch), lists
   allowed the width.
 
 ### 11.2 Type & voice
 
-| role | face | where |
-| --- | --- | --- |
-| chrome, labels, body | **Inter** | everywhere by default |
-| **entity titles** | **Fraunces** | table post titles, the editor's document title, page headers — and nowhere else. The author's voice greets you in the admin; one signature is enough |
-| anything data-like | **JetBrains Mono** | slugs, dates, readTime, tags, secret keys/versions/values, shortcut hints |
+| role                 | face               | where                                                                                                                                                |
+| -------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| chrome, labels, body | **Inter**          | everywhere by default                                                                                                                                |
+| **entity titles**    | **Fraunces**       | table post titles, the editor's document title, page headers — and nowhere else. The author's voice greets you in the admin; one signature is enough |
+| anything data-like   | **JetBrains Mono** | slugs, dates, readTime, tags, secret keys/versions/values, shortcut hints                                                                            |
 
 Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px. The instrument is
 comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
@@ -208,7 +208,7 @@ comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 - Statuses stay monochrome by default: `published` = violet-filled pill, `draft` = outlined
   neutral pill, danger = outlined red. No green/amber/blue status soup.
 - Tokens: everything rides the existing semantic set (`--background/--card/--muted/--border/
-  --brand/--*-foreground`). Admin-only needs enter as **additive tokens** (`--danger`,
+--brand/--*-foreground`). Admin-only needs enter as **additive tokens** (`--danger`,
   future `--diff-add/--diff-del`); **existing tokens are never forked in value** — light/dark
   parity per §3 applies to every pixel here.
 - Anti-rules, as binding as the rules: no gradients on headers, `rounded-lg` is the roundest
@@ -220,8 +220,8 @@ comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 ### 11.4 Per-view anatomy
 
 - **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
-  on row focus** — the AGENTS §10.5 lesson, restated for keyboards: *"no mouse-only
-  affordance in the admin either."* Filter/tool rows use the `Pill` chip language.
+  on row focus** — the AGENTS §10.5 lesson, restated for keyboards: _"no mouse-only
+  affordance in the admin either."_ Filter/tool rows use the `Pill` chip language.
 - **Post editor**: split view — CodeMirror left, true-to-prod preview right (toggle via
   palette); a **meta rail** (status, slug, date, tags, featured) at the content's right —
   Ghost's shape, not Notion's sprawl. The toolbar holds exactly two verbs:
