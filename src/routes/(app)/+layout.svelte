@@ -95,20 +95,23 @@
 		paletteOpen = true;
 	}
 
+	// Wayfinding cast (owner call 2026-11-08): one hue per destination, all at
+	// the same chroma/lightness band. Hues ride INLINE styles — Tailwind cannot
+	// generate dynamic utility names (the literal-scan lesson, again).
 	const navGroups = [
 		{
 			label: 'content',
 			items: [
-				{ href: '/', icon: House, label: 'dashboard' },
-				{ href: '/posts', icon: FileText, label: 'posts' },
-				{ href: '/photos', icon: Images, label: 'photos' }
+				{ href: '/', icon: House, label: 'dashboard', hue: 'var(--brand)' },
+				{ href: '/posts', icon: FileText, label: 'posts', hue: 'var(--accent-blue)' },
+				{ href: '/photos', icon: Images, label: 'photos', hue: 'var(--accent-teal)' }
 			]
 		},
 		{
 			label: 'ops',
 			items: [
-				{ href: '/secrets', icon: KeyRound, label: 'secrets' },
-				{ href: '/settings', icon: Settings, label: 'settings' }
+				{ href: '/secrets', icon: KeyRound, label: 'secrets', hue: 'var(--accent-amber)' },
+				{ href: '/settings', icon: Settings, label: 'settings', hue: 'var(--accent-slate)' }
 			]
 		}
 	];
@@ -185,43 +188,7 @@
 				{/if}
 			</button>
 		</div>
-		{#each navGroups as group (group.label)}
-			<div class="flex flex-col gap-1">
-				<p
-					class="hidden overflow-hidden text-xs font-medium tracking-widest text-muted-foreground uppercase transition-opacity duration-150 lg:block {navRail.collapsed
-						? 'lg:opacity-0'
-						: 'lg:opacity-100'}"
-				>
-					{navRail.collapsed ? '\u00A0' : group.label}
-				</p>
-				<div class="flex gap-1 lg:flex-col">
-					{#each group.items as item (item.href)}
-						{@const Icon = item.icon}
-						{@const current =
-							item.href === '/'
-								? page.url.pathname === '/'
-								: page.url.pathname.startsWith(item.href)}
-						<a
-							href={item.href}
-							aria-label={item.label}
-							aria-current={current ? 'page' : undefined}
-							class="flex items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-sm transition-colors {current
-								? 'bg-accent font-medium text-foreground'
-								: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
-						>
-							<Icon class="size-4 shrink-0 {current ? 'text-brand' : ''}" />
-							<span
-								class="hidden whitespace-nowrap transition-opacity duration-150 lg:inline {navRail.collapsed
-									? 'lg:opacity-0'
-									: 'lg:opacity-100'}"
-							>
-								{item.label}
-							</span>
-						</a>
-					{/each}
-				</div>
-			</div>
-		{/each}
+		{@render navItems(true)}
 		<div class="hidden flex-1 items-end pb-6 lg:flex">
 			<form method="POST" action="/logout">
 				<button
@@ -338,28 +305,7 @@
 				<X class="size-4" />
 			</button>
 		</div>
-		{#each navGroups as group (group.label)}
-			<div class="flex flex-col gap-1">
-				<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-					{group.label}
-				</p>
-				{#each group.items as item (item.href)}
-					{@const Icon = item.icon}
-					{@const current =
-						item.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(item.href)}
-					<a
-						href={item.href}
-						aria-current={current ? 'page' : undefined}
-						class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {current
-							? 'bg-accent font-medium text-foreground'
-							: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
-					>
-						<Icon class="size-4 shrink-0 {current ? 'text-brand' : ''}" />
-						{item.label}
-					</a>
-				{/each}
-			</div>
-		{/each}
+		{@render navItems(false)}
 		<form method="POST" action="/logout" class="mt-auto">
 			<button
 				type="submit"
@@ -374,3 +320,54 @@
 {#if paletteOpen}
 	<Palette {commands} onClose={closePalette} />
 {/if}
+
+<!-- One nav markup for both surfaces: rail=true carries the collapse fades
+     and lg: prefixes; rail=false (the mobile drawer) is always expanded.
+     Wayfinding hues ride INLINE styles — Tailwind can't generate dynamic
+     utility names, and washes use color-mix so they darken correctly with
+     the theme. -->
+{#snippet navItems(rail: boolean)}
+	{#each navGroups as group (group.label)}
+		<div class="flex flex-col gap-1">
+			<p
+				class={rail
+					? `hidden overflow-hidden text-xs font-medium tracking-widest text-muted-foreground uppercase transition-opacity duration-150 lg:block ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+					: 'text-xs font-medium tracking-widest text-muted-foreground uppercase'}
+			>
+				{rail && navRail.collapsed ? '\u00A0' : group.label}
+			</p>
+			<div class={rail ? 'flex gap-1 lg:flex-col' : 'flex flex-col gap-1'}>
+				{#each group.items as item (item.href)}
+					{@const Icon = item.icon}
+					{@const current =
+						item.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(item.href)}
+					<a
+						href={item.href}
+						aria-label={item.label}
+						aria-current={current ? 'page' : undefined}
+						style={current
+							? `background: color-mix(in oklab, ${item.hue} 14%, transparent)`
+							: undefined}
+						class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {rail
+							? 'overflow-hidden '
+							: ''}{current
+							? 'font-medium text-foreground'
+							: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
+					>
+						<Icon
+							class="size-4 shrink-0"
+							style={`color: ${item.hue}; opacity: ${current ? 1 : 0.72}`}
+						/>
+						<span
+							class={rail
+								? `hidden whitespace-nowrap transition-opacity duration-150 lg:inline ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+								: ''}
+						>
+							{item.label}
+						</span>
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/each}
+{/snippet}
