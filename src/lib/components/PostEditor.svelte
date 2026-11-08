@@ -549,7 +549,7 @@ flowchart LR
 					tabindex={editorTab === 'write' ? 0 : -1}
 					bind:this={writeTabBtn}
 					onclick={() => setTab('write', false)}
-					class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'write'
+					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {editorTab === 'write'
 						? 'bg-brand/15 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -564,7 +564,7 @@ flowchart LR
 					tabindex={editorTab === 'preview' ? 0 : -1}
 					bind:this={previewTabBtn}
 					onclick={() => setTab('preview', false)}
-					class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
+					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
 						? 'bg-brand/15 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -572,18 +572,19 @@ flowchart LR
 				</button>
 			</div>
 			<div class="ml-auto flex items-center gap-2">
-				{@render imageTrigger('flex')}
-				{@render wrapToggle('flex')}
+				{@render imageTrigger('flex', true)}
+				{@render wrapToggle('flex', true)}
 				<button
 					type="button"
 					bind:this={railSheetTrigger}
 					onclick={() => (railSheet = true)}
 					aria-haspopup="dialog"
 					aria-expanded={railSheet}
-					class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+					aria-label="Open post settings"
+					title="Post settings"
+					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 				>
-					<FileCog class="size-3.5" />
-					post
+					<FileCog class="size-4" />
 				</button>
 			</div>
 		</div>
@@ -632,30 +633,59 @@ flowchart LR
 		{/if}
 	</div>
 
-	{#snippet imageTrigger(cls: string)}
-		<button
-			type="button"
-			onclick={() => (pickerMode = 'insert')}
-			class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
-			aria-label="Insert image into the post"
-		>
-			<ImagePlus class="size-3.5" />
-			image
-		</button>
+	{#snippet imageTrigger(cls: string, iconOnly = false)}
+		{#if iconOnly}
+			<!-- Mobile key: 44px-wide rectangle, house form-control shape — circles
+			     were too small a target, labels didn't fit (owner calls). -->
+			<button
+				type="button"
+				onclick={() => (pickerMode = 'insert')}
+				class="{cls} h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+				aria-label="Insert image into the post"
+				title="Insert image"
+			>
+				<ImagePlus class="size-4" />
+			</button>
+		{:else}
+			<button
+				type="button"
+				onclick={() => (pickerMode = 'insert')}
+				class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				aria-label="Insert image into the post"
+			>
+				<ImagePlus class="size-3.5" />
+				image
+			</button>
+		{/if}
 	{/snippet}
 
-	{#snippet wrapToggle(cls: string)}
-		<button
-			type="button"
-			onclick={toggleWrap}
-			aria-pressed={wrapped}
-			class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
-				? 'border-brand bg-brand/10 text-foreground'
-				: 'text-muted-foreground hover:text-foreground'}"
-		>
-			<WrapText class="size-3.5" />
-			wrap
-		</button>
+	{#snippet wrapToggle(cls: string, iconOnly = false)}
+		{#if iconOnly}
+			<button
+				type="button"
+				onclick={toggleWrap}
+				aria-pressed={wrapped}
+				class="{cls} h-9 w-11 items-center justify-center rounded-md border bg-card transition-colors active:scale-[0.98] {wrapped
+					? 'border-brand bg-brand/10 text-foreground'
+					: 'border-border text-muted-foreground hover:text-foreground'}"
+				aria-label="Toggle line wrap"
+				title="Toggle wrap"
+			>
+				<WrapText class="size-4" />
+			</button>
+		{:else}
+			<button
+				type="button"
+				onclick={toggleWrap}
+				aria-pressed={wrapped}
+				class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
+					? 'border-brand bg-brand/10 text-foreground'
+					: 'text-muted-foreground hover:text-foreground'}"
+			>
+				<WrapText class="size-3.5" />
+				wrap
+			</button>
+		{/if}
 	{/snippet}
 
 	{#snippet railBody()}

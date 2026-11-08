@@ -827,3 +827,14 @@ Owner session, five parts (four code commits + docs):
 Gates per commit: lint 0 standalone, check 0/0, 19 tests (media round-trip
 pinned: upload → serve bytes → gallery URL shape), builds + SSR/relay smoke
 (401 on media unauthed, 404 unknown, 409 dup tag, vocab count-0 listing).
+
+### 2026-11-08 — thumb band keys: rectangles, not circles, not labels
+
+Owner screenshot showed the labeled chips overflowing (post clipped off-screen);
+icon-only was agreed, and the first draft's 36px circles were rightly rejected
+as too small to hit. Final form: `h-9 w-11` rounded-md keys — 44px-wide touch
+target, house form-control shape (cards round at lg, keys round at md), icons
+size-4, pressed states intact, `title`+`aria-label` for discovery. Snippets
+gained an `iconOnly` param — desktop meta band keeps the labeled pills, one
+markup source. Tab padding trimmed to px-3 for the ≤360px crowd. Math:
+segment ~120 + 3×44 + gaps ≈ 276px — fits 320.
