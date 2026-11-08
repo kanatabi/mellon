@@ -240,10 +240,19 @@ export function createMockApi(): AdminApi {
 		async login(username, password) {
 			if (!username || !password) throw new AdminApiError(401, 'credentials required');
 			// mock accepts anything non-empty; lumen will actually check (Phase B).
-			return { token: `mock.${seq++}.${btoa(username).slice(0, 8)}` };
+			// Phase B mints an HS256 JWT; the mock mints an honest stand-in —
+			// no fake crypto, no fake claims (the mock never verified anything)
+			return {
+				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
+				expiresIn: 60 * 60 * 12
+			};
+		},
+		async logout() {
+			// mock era: nothing verifies tokens, so there is nothing to revoke —
+			// resolves; Phase B this bumps lumen's token_version for real
 		},
 
-		async listPosts({ status, q, tag, from, to, sort = 'updated', dir = 'desc', page } = {}) {
+		async listPosts({ status, tag, from, to, sort = 'updated', dir = 'desc', page } = {}) {
 			const sum = (p: PostDetailAdmin): PostSummaryAdmin => ({
 				slug: p.slug,
 				title: p.title,
@@ -258,7 +267,6 @@ export function createMockApi(): AdminApi {
 				.filter(
 					(p) =>
 						(!status || p.status === status) &&
-						(!q || `${p.title} ${p.subtitle}`.toLowerCase().includes(q.toLowerCase())) &&
 						// OR semantics on tags, mirroring the public list contract
 						(!tag?.length || p.tags.some((t) => tag.includes(t))) &&
 						// inclusive editorial-date window (ISO compares lexicographically)

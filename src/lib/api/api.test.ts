@@ -273,4 +273,13 @@ describe('mock AdminApi contract', () => {
 		await expect(api.login('', 'x')).rejects.toBeInstanceOf(AdminApiError);
 		await expect(api.login('gofar', 'x')).resolves.toHaveProperty('token');
 	});
+
+	it('session contract: server decides the TTL (expiresIn seconds), logout resolves', async () => {
+		const api = createMockApi();
+		const s = await api.login('gofar', 'x');
+		// the login action sizes the cookie from THIS, not from a constant
+		expect(s.expiresIn).toBe(60 * 60 * 12);
+		// mock-era revoke is a documented no-op; Phase B bumps token_version
+		await expect(api.logout()).resolves.toBeUndefined();
+	});
 });

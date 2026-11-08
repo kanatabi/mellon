@@ -56,7 +56,6 @@ async function route(ctx: Ctx) {
 						status === 'draft' || status === 'published' || status === 'unpublished'
 							? status
 							: undefined,
-					q: url.searchParams.get('q') ?? undefined,
 					tag: url.searchParams.getAll('tag'),
 					page: Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1,
 					from: from && DATE_RE.test(from) ? from : undefined,

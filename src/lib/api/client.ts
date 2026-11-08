@@ -46,11 +46,15 @@ export const client: AdminApi = {
 		// only to satisfy the interface; never callable meaningfully here.
 		throw new ApiError(500, 'login is served by the form action, not the browser client');
 	},
+	logout: () => {
+		// symmetric with login: end-session is the /logout server action — the
+		// browser never learns the token, and never revokes with it either
+		throw new ApiError(500, 'logout is served by the /logout action, not the browser client');
+	},
 
 	listPosts: (opts) => {
 		const params = new URLSearchParams();
 		if (opts?.status) params.set('status', opts.status);
-		if (opts?.q) params.set('q', opts.q);
 		for (const t of opts?.tag ?? []) params.append('tag', t);
 		if (opts?.from) params.set('from', opts.from);
 		if (opts?.to) params.set('to', opts.to);

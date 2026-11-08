@@ -15,12 +15,14 @@ export const actions: Actions = {
 		const username = String(form.get('username') ?? '').trim();
 		const password = String(form.get('password') ?? '');
 		try {
-			const { token } = await createApi().login(username, password);
+			// the SERVER decides session length (expiresIn, seconds — lumen §8);
+			// the cookie follows the token, never the other way around
+			const { token, expiresIn } = await createApi().login(username, password);
 			cookies.set(SESSION_COOKIE, token, {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'strict',
-				maxAge: 60 * 60 * 12
+				maxAge: expiresIn
 			});
 		} catch (e) {
 			return fail(e instanceof AdminApiError ? e.status : 500, {

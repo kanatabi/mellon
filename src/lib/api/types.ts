@@ -123,8 +123,9 @@ export const PHOTOS_PAGE_SIZE = 24;
 /** Admin-side list filters — relayed to lumen in Phase B, never filtered in UI. */
 export interface PostListOpts {
 	status?: PostStatus;
-	q?: string;
-	/** OR semantics on tags, mirroring earendil's §3 list contract. */
+	/** OR semantics on tags, mirroring earendil's §3 list contract.
+	 *  (2026-11-08 audit: a `q` filter here was the palette's pre-search()
+	 *  hack — dead surface, retired; content search is search(q) alone.) */
 	tag?: string[];
 	/** Inclusive YYYY-MM-DD window on the editorial date. */
 	from?: string;
@@ -161,7 +162,14 @@ export class AdminApiError extends Error {
 
 export interface AdminApi {
 	// session (mock: any non-empty identity; lumen: real credentials)
-	login(username: string, password: string): Promise<{ token: string }>;
+	/** Phase B: `token` is an HS256 JWT (claims sub/iat/exp/tv/jti, 12h TTL —
+	 *  lumen §8); `expiresIn` is seconds, and the login action sizes the cookie
+	 *  from it — "session length is set by lumen" is a mechanism, not a slogan. */
+	login(username: string, password: string): Promise<{ token: string; expiresIn: number }>;
+	/** Revoke server-side (lumen bumps `token_version` — every outstanding
+	 *  token dies). Server-side verb: the /logout action calls it best-effort
+	 *  before clearing the cookie; the browser client throws like login. */
+	logout(): Promise<void>;
 
 	listPosts(opts?: PostListOpts): Promise<Paged<PostSummaryAdmin>>;
 	getPost(slug: string): Promise<PostDetailAdmin>;
@@ -170,6 +178,9 @@ export interface AdminApi {
 	updatePost(slug: string, draft: PostDraft, rev: number): Promise<PostDetailAdmin>;
 	publishPost(slug: string): Promise<PostDetailAdmin>;
 	unpublishPost(slug: string): Promise<PostDetailAdmin>;
+	/** Server soft-deletes (row hidden; media retained until the GC window —
+	 *  lumen §8). The portal's contract is just: it disappears from every
+	 *  list and read afterward. */
 	deletePost(slug: string): Promise<void>;
 
 	listPhotos(opts?: PhotoListOpts): Promise<Paged<AdminPhoto>>;
