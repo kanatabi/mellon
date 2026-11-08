@@ -26,6 +26,7 @@
 		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@tailwindcss/vite": "^4.3.0",
+		"@types/markdown-it": "^14.2.0",
 		"@types/node": "^24",
 		"eslint": "^10.4.1",
 		"eslint-config-prettier": "^10.1.8",
@@ -43,9 +44,20 @@
 		"vitest": "^5.0.5"
 	},
 	"dependencies": {
+		"@codemirror/lang-markdown": "^6.5.2",
 		"@fontsource-variable/fraunces": "^5.3.0",
 		"@fontsource-variable/inter": "^5.3.0",
 		"@fontsource/jetbrains-mono": "^5.3.0",
-		"lucide-svelte": "^1.0.1"
+		"@replit/codemirror-vim": "^6.4.0",
+		"@shikijs/markdown-it": "^4.6.0",
+		"@tailwindcss/typography": "^0.5.20",
+		"codemirror": "^6.0.2",
+		"isomorphic-dompurify": "^4.7.0",
+		"lucide-svelte": "^1.0.1",
+		"markdown-it": "^15.0.3",
+		"markdown-it-anchor": "^10.1.0",
+		"markdown-it-container": "^4.0.0",
+		"markdown-it-task-lists": "^2.1.1",
+		"shiki": "^4.6.0"
 	}
 }

@@ -1,25 +1,13 @@
 <script lang="ts">
 	import './layout.css';
-	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
+	import { syncThemeFromServer } from '#lib/theme-state.svelte.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
 
-	// Intentionally seed from the server-rendered cookie value; client toggles own the state afterwards.
-	// svelte-ignore state_referenced_locally
-	let theme = $state(data.theme);
-
-	function toggleTheme() {
-		const next = theme === 'dark' ? 'light' : 'dark';
-		const apply = () => {
-			theme = next;
-			document.documentElement.dataset.theme = next;
-			document.cookie = `theme=${next}; path=/; max-age=31536000; samesite=strict`;
-		};
-		// Palette swap via View Transitions (UA cross-fade; instant where unsupported).
-		if (document.startViewTransition) document.startViewTransition(apply);
-		else apply();
-	}
+	// Seed the runtime store from the server-resolved cookie value; the
+	// pre-paint inline script below applies it BEFORE first paint (no flash).
+	$effect(() => syncThemeFromServer(data.theme));
 </script>
 
 <svelte:head>
@@ -30,12 +18,4 @@
 
 <div class="flex min-h-svh flex-col bg-background text-foreground">
 	{@render children()}
-	<footer class="flex items-center justify-between gap-4 px-6 py-5 text-xs text-muted-foreground">
-		<span
-			>mellon · private portal — access by port-forward, never by URL<span class="text-brand"
-				>;</span
-			></span
-		>
-		<ThemeToggle {theme} onToggle={toggleTheme} />
-	</footer>
 </div>
