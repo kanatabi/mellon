@@ -26,7 +26,7 @@
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
-	import { setPageCommands, setPhotoInsert } from '#lib/page-commands.svelte.ts';
+	import { setPageCommands, setPhotoTask } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
 	import type {
 		AdminPhoto,
@@ -462,10 +462,11 @@ flowchart LR
 		// contract as the commands themselves: mounted editor owns the cursor,
 		// leaving it must never leave a stale door behind
 		setPageCommands(cmds);
-		setPhotoInsert((p) => editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`));
+		setPhotoTask('insert', (p) => editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`));
 		return () => {
 			setPageCommands([]);
-			setPhotoInsert(null);
+			setPhotoTask('insert', null);
+			setPhotoTask('cover', null);
 		};
 	});
 

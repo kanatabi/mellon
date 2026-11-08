@@ -10,7 +10,7 @@
  * cursor); `escapeAction` is the unwind precedence of the mode/submenu stack.
  */
 
-export type PaletteMode = 'all' | 'commands' | 'content' | 'pages' | 'insert';
+export type PaletteMode = 'all' | 'commands' | 'content' | 'pages' | 'insert' | 'edit';
 
 /** Command groups (mirrors commands.ts — kept literal to avoid a cycle). */
 type Group = 'actions' | 'go to' | 'open recent' | 'posts' | 'photos' | 'tags';
@@ -22,7 +22,8 @@ export const MODE_LABEL: Record<PaletteMode, string> = {
 	commands: 'commands',
 	content: 'content',
 	pages: 'pages',
-	insert: 'insert'
+	insert: 'insert',
+	edit: 'edit'
 };
 
 /**
@@ -53,11 +54,15 @@ export function acceptsGroup(mode: PaletteMode, group: Group): boolean {
 			// the editor's task mode: photos ONLY, and their rows insert at
 			// the cursor — intent declared through the grammar, never inferred
 			return group === 'photos';
+		case 'edit':
+			// the buffer mode holds no rows at all — the hint line IS the UI
+			return false;
 	}
 }
 
 /** Only these modes ask the API "what matches?" — commands/pages are
- *  portal-side routing; insert rides the same content door as `/`. */
+ *  portal-side routing; insert rides the same content door as `/`; edit
+ *  is a buffer, not a question. */
 export function usesApi(mode: PaletteMode): boolean {
 	return mode === 'all' || mode === 'content' || mode === 'insert';
 }
@@ -70,7 +75,7 @@ export type EscapeStep = 'disarm' | 'close-submenu' | 'close';
  * into — Esc closes straight through them, the pre-submenu behavior.
  */
 export function escapeAction(s: { mode: PaletteMode; inSubmenu: boolean }): EscapeStep {
-	if (s.mode === 'insert') return 'disarm';
+	if (s.mode === 'insert' || s.mode === 'edit') return 'disarm';
 	if (s.inSubmenu) return 'close-submenu';
 	return 'close';
 }

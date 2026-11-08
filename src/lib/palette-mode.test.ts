@@ -63,9 +63,12 @@ describe('palette mode grammar', () => {
 		for (const raw of ['> ', '/ ', '# ', '@ ', '~ ']) expect(armMode(raw)?.mode).not.toBe('insert');
 	});
 
-	it('Escape unwinds ONE layer: insert → submenu → palette; sigil modes close', () => {
+	it('Escape unwinds ONE layer: edit/insert → submenu → palette; sigil modes close', () => {
 		// task mode on top of a submenu: first Esc walks out of the task
 		expect(escapeAction({ mode: 'insert', inSubmenu: true })).toBe('disarm');
+		// the buffer mode unwinds the same way
+		expect(escapeAction({ mode: 'edit', inSubmenu: false })).toBe('disarm');
+		expect(escapeAction({ mode: 'edit', inSubmenu: true })).toBe('disarm');
 		// then out of the submenu
 		expect(escapeAction({ mode: 'all', inSubmenu: true })).toBe('close-submenu');
 		// then the palette itself
@@ -76,5 +79,13 @@ describe('palette mode grammar', () => {
 		expect(escapeAction({ mode: 'content', inSubmenu: false })).toBe('close');
 		// task mode without a submenu underneath (defensive) still disarms first
 		expect(escapeAction({ mode: 'insert', inSubmenu: false })).toBe('disarm');
+	});
+
+	it('edit is the buffer mode: no rows, no API, no sigil', () => {
+		// the hint line is the whole UI — nothing joins the list
+		for (const g of ['actions', 'posts', 'photos', 'tags', 'go to', 'open recent'] as const)
+			expect(acceptsGroup('edit', g)).toBe(false);
+		expect(usesApi('edit')).toBe(false);
+		for (const raw of ['> ', '/ ', '# ', '~ ', '@ ']) expect(armMode(raw)?.mode).not.toBe('edit');
 	});
 });

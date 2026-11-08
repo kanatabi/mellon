@@ -14,10 +14,33 @@ export interface Command {
 	/** Enter drills into these rows IN THE PALETTE instead of closing it —
 	 *  the submenu doctrine (§7). A parent with children is never `run`. */
 	children?: Command[];
+	/** A submenu may synthesize one row from the live filter text — the
+	 *  eager-vocabulary door (`+ create "xyz"`). Return null for nothing. */
+	createChild?: (query: string) => Command | null;
 	/** Enter arms a palette mode instead of closing — declarative, so pages
 	 *  never reach into the palette and the palette never sniffs ids.
 	 *  Only task modes are armed this way; typed sigils stay user grammar. */
 	arm?: PaletteMode;
+	/** Arms the EDIT buffer: Enter commits the buffer through `commit`. */
+	edit?: boolean;
+	/** 'date' turns the buffer into the date grammar (typed expressions +
+	 *  arrow-key stepper); anything else is plain text. */
+	editKind?: 'text' | 'date';
+	/** The buffer's seed — the field's CURRENT value (registration re-runs
+	 *  keep it honest; the palette re-arms fresh on every entry). */
+	seed?: string;
+	/** The edit buffer's destination. Return false to REJECT the commit —
+	 *  the buffer stays open (an invalid date must never eat a keystroke). */
+	commit?: (value: string) => boolean | void;
+	/** The row runs WITHOUT closing the palette — submenu toggles (✓ flips,
+	 *  the list re-reads live, the next tag is already typed). */
+	keepOpen?: boolean;
+	/** Pill override: `TITLE`/`DATE`/`COVER` says more than the mode's
+	 *  generic word when the task names the field. */
+	pillLabel?: string;
+	/** Which photo-task handler the pick rows call (insert mode; default
+	 *  'insert' — 'cover' lands the photo on the thumbnail field instead). */
+	task?: 'insert' | 'cover';
 	/** Omit for parent (children) and arm rows — everything else must run. */
 	run?: () => void;
 }

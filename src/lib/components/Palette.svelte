@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { Command, ChevronRight, CornerDownLeft, Hash, Search } from 'lucide-svelte';
+	import { Command, ChevronRight, CornerDownLeft, Hash, Pencil, Search } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import { client } from '#lib/api/client.ts';
+	import { parseDateExpr, shiftDate, todayISO } from '#lib/date-expr.ts';
 	import type { AdminPhoto, PostSummaryAdmin, TagCount } from '#lib/api/types.ts';
 	import type { Command as Cmd } from '#lib/commands.ts';
-	import { photoInsert } from '#lib/page-commands.svelte.ts';
+	import { photoTask } from '#lib/page-commands.svelte.ts';
 	import {
 		acceptsGroup,
 		armMode,
@@ -24,14 +25,16 @@
 	 * component prop. */
 	const MODE_ICON: Record<
 		Exclude<PaletteMode, 'all'>,
-		typeof ChevronRight | typeof Search | typeof Hash | typeof CornerDownLeft
+		typeof ChevronRight | typeof Search | typeof Hash | typeof CornerDownLeft | typeof Pencil
 	> = {
 		commands: ChevronRight,
 		content: Search,
 		pages: Hash,
 		// the task mode: a row here lands at the cursor, not a page —
 		// corner-down-left says "insert here" without words
-		insert: CornerDownLeft
+		insert: CornerDownLeft,
+		// the buffer mode: you are typing INTO a field, pencil says so
+		edit: Pencil
 	};
 
 	interface Props {
@@ -53,10 +56,19 @@
 	 * gap before its label (the svelte-check "self-closing HTML tag" warning
 	 * was the bug report). Dynamic components need an uppercase binding. */
 	const ModeIcon = $derived(mode === 'all' ? undefined : MODE_ICON[mode]);
+	/* The command that armed the current task/buffer mode — carries its
+	   pillLabel override and, for edit, the commit closure; for insert, the
+	   photo TASK whose handler the pick rows run. */
+	let armed = $state<Cmd | null>(null);
+	const pillLabel = $derived(armed?.pillLabel ?? MODE_LABEL[mode]);
 	/* Submenu (owner call 2026-11-08): Enter on a parent row drills IN — the
 	   palette doesn't close, it goes deeper. The stack unwinds one layer per
-	   Esc: insert-mode → submenu → palette ("walk back out the way you came"). */
-	let submenu = $state<Cmd | null>(null);
+	   Esc: edit/insert-mode → submenu → palette ("walk back out the way you
+	   came"). The submenu holds the parent's ID and reads LIVE children:
+	   toggling a tag re-registers the page's commands, and a snapshotted
+	   array would keep showing yesterday's ✓-marks. */
+	let submenuId = $state<string | null>(null);
+	const submenu = $derived(submenuId ? (commands.find((c) => c.id === submenuId) ?? null) : null);
 	const backCmd = $derived<Cmd | null>(
 		submenu
 			? {
@@ -145,24 +157,25 @@
 	const filtered = $derived.by(() => {
 		const q = query.trim().toLowerCase();
 		// The stack, in priority order: TASK mode > submenu list > global list.
+		if (mode === 'edit') return [];
 		if (mode === 'insert') {
-			const handle = photoInsert();
+			const handle = photoTask(armed?.task === 'cover' ? 'cover' : 'insert');
 			if (!handle) return [];
 			return photoResults.map((p) => ({
 				id: `insert.${p.id}`,
 				title: p.alt,
 				group: 'photos' as const,
 				shortcut: `${p.width}×${p.height}`,
-				// rows HERE insert — the task was declared through the
+				// rows HERE act — the task was declared through the
 				// submenu, so no context-magic: this is not navigation
 				run: () => handle(p)
 			}));
 		}
-		if (backCmd && submenu)
-			return [
-				backCmd,
-				...(submenu.children ?? []).filter((c) => !q || c.title.toLowerCase().includes(q))
-			];
+		if (backCmd && submenu) {
+			const kids = (submenu.children ?? []).filter((c) => !q || c.title.toLowerCase().includes(q));
+			const created = submenu.createChild?.(query.trim()) ?? null;
+			return created ? [backCmd, ...kids, created] : [backCmd, ...kids];
+		}
 		// API results already went through the server-side q filter — they join
 		// verbatim; static commands filter locally as before. Mode gates which
 		// groups exist at all.
@@ -185,17 +198,21 @@
 	});
 
 	const placeholder = $derived(
-		mode === 'insert'
-			? 'Search the library — Enter inserts at the cursor…'
-			: submenu && mode === 'all'
-				? 'Filter the options…'
-				: mode === 'all'
-					? 'Type a command or search…'
-					: mode === 'commands'
-						? 'Filter commands…'
-						: mode === 'content'
-							? 'Search posts, photos, tags…'
-							: 'Jump to a page…'
+		mode === 'edit'
+			? armed?.editKind === 'date'
+				? 'today · -3d · nov 12 · 2026-11-12 · arrows step…'
+				: 'Type the new value — ⏎ commits…'
+			: mode === 'insert'
+				? 'Search the library — Enter applies…'
+				: submenu && mode === 'all'
+					? 'Filter the options…'
+					: mode === 'all'
+						? 'Type a command or search…'
+						: mode === 'commands'
+							? 'Filter commands…'
+							: mode === 'content'
+								? 'Search posts, photos, tags…'
+								: 'Jump to a page…'
 	);
 
 	// The active row resets whenever the query (the only input to `filtered`)
@@ -207,35 +224,99 @@
 		// sigils arm only from the plain palette — inside a submenu the text
 		// is a child filter, and a typed grammar never interrupts a task
 		if (mode === 'all' && !submenu) {
-			const armed = armMode(query);
-			if (armed) {
-				mode = armed.mode;
-				query = armed.arg;
+			const sigil = armMode(query);
+			if (sigil) {
+				mode = sigil.mode;
+				armed = null; // typed grammar has no command behind it
+				query = sigil.arg;
 			}
 		}
+	}
+
+	function disarm() {
+		mode = 'all';
+		armed = null;
+		query = '';
+		active = 0;
+	}
+
+	/** The buffer mode has no rows — the hint line IS the UI: parse feedback
+	 *  for dates (live), commit state for text. */
+	const editHint = $derived.by(() => {
+		const a = armed;
+		if (!a) return '';
+		if (a.editKind === 'date') {
+			const w = parseDateExpr(query);
+			if (!w) return 'not a date — try: today · -3d · nov 12 · 2026-11-12 · ←→ ±1d ↑↓ ±1w';
+			if (w.from !== w.to) return `${w.from} .. ${w.to} — this field takes ONE date`;
+			return `${w.from}${w.from === a.seed ? ' · unchanged' : ' — ⏎ saves'} · esc cancels`;
+		}
+		return `⏎ saves to ${a.pillLabel ?? 'field'}${query === (a.seed ?? '') ? ' · buffer unchanged' : ' — buffer edited'} · esc cancels`;
+	});
+
+	const inputLabel = $derived(
+		mode === 'edit'
+			? `Editing ${pillLabel.toLowerCase()}`
+			: mode === 'all'
+				? 'Search commands and content'
+				: `Search ${MODE_LABEL[mode]}`
+	);
+
+	/** Enter inside the buffer mode: the query IS the value. Date commits
+	 *  parse through the grammar first — an unparseable buffer (or a range
+	 *  aimed at a single-date field) must never eat the user's typing. */
+	function commitEdit() {
+		const a = armed;
+		if (!a?.commit) return disarm();
+		if (a.editKind === 'date') {
+			const w = parseDateExpr(query);
+			if (!w || w.from !== w.to) return; // hint row already says "not a date"
+			if (a.commit(w.from) === false) return;
+		} else if (a.commit(query) === false) {
+			return;
+		}
+		// committed: stay open, fall back to the command list (ruling 2 —
+		// chaining fields is the whole keyboard-first point)
+		disarm();
 	}
 
 	function run(cmd: Cmd | undefined) {
 		if (!cmd) return;
 		// back rows and drill-parents never close the palette — they move it
 		if (cmd === backCmd) {
-			submenu = null;
+			submenuId = null;
 			query = '';
 			active = 0;
 			return;
 		}
 		if (cmd.children) {
-			submenu = cmd;
+			submenuId = cmd.id;
 			mode = 'all';
+			armed = null;
 			query = '';
+			active = 0;
+			return;
+		}
+		if (cmd.edit) {
+			armed = cmd;
+			mode = 'edit';
+			query = cmd.seed ?? ''; // seeded EDIT, not replace
 			active = 0;
 			return;
 		}
 		if (cmd.arm) {
 			// declarative arming (a task mode entered through a command);
 			// the palette interprets, the page never reaches in
+			armed = cmd;
 			mode = cmd.arm;
 			query = '';
+			active = 0;
+			return;
+		}
+		if (cmd.keepOpen) {
+			// toggles inside a submenu: run, stay, watch the ✓ flip on the
+			// LIVE re-registered children — the next tag is already typed
+			cmd.run?.();
 			active = 0;
 			return;
 		}
@@ -244,6 +325,26 @@
 	}
 
 	function onKey(e: KeyboardEvent) {
+		// the date stepper: in a date buffer, arrows stop moving rows (there
+		// are none) and start moving the DAY — ←→ ±1d, ↑↓ ±1w
+		if (mode === 'edit' && armed?.editKind === 'date') {
+			const step =
+				e.key === 'ArrowLeft'
+					? { days: -1 }
+					: e.key === 'ArrowRight'
+						? { days: 1 }
+						: e.key === 'ArrowUp'
+							? { weeks: 1 }
+							: e.key === 'ArrowDown'
+								? { weeks: -1 }
+								: null;
+			if (step) {
+				e.preventDefault();
+				const base = parseDateExpr(query)?.from ?? armed.seed ?? todayISO();
+				query = shiftDate(base, step);
+				return;
+			}
+		}
 		if (e.key === 'ArrowDown') {
 			e.preventDefault();
 			active = Math.min(active + 1, filtered.length - 1);
@@ -252,21 +353,23 @@
 			active = Math.max(active - 1, 0);
 		} else if (e.key === 'Enter') {
 			e.preventDefault();
+			if (mode === 'edit') return commitEdit();
 			run(filtered[active]);
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
-			// the stack unwinds ONE layer per Esc — task mode, then submenu,
-			// then the palette itself ("walk back out the way you came")
+			// the stack unwinds ONE layer per Esc — buffer/task mode, then
+			// submenu, then the palette itself ("walk back out the way you came")
 			const step = escapeAction({ mode, inSubmenu: submenu !== null });
-			if (step === 'disarm') mode = 'all';
-			else if (step === 'close-submenu') submenu = null;
-			else onClose();
-			query = '';
-			active = 0;
+			if (step === 'disarm') disarm();
+			else if (step === 'close-submenu') {
+				submenuId = null;
+				query = '';
+				active = 0;
+			} else onClose();
 		} else if (e.key === 'Backspace' && query === '' && mode !== 'all') {
 			// an empty backspace disarms the chip — the mode was a detour,
 			// Backspace walks you back out of it
-			mode = 'all';
+			disarm();
 		}
 	}
 
@@ -305,7 +408,7 @@
 					class="flex shrink-0 items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 px-2 py-1 font-mono text-[10px] leading-none tracking-widest text-brand uppercase select-none"
 				>
 					<ModeIcon class="size-3 shrink-0" />
-					{MODE_LABEL[mode]}
+					{pillLabel}
 				</span>
 			{/if}
 			<input
@@ -314,7 +417,7 @@
 				{placeholder}
 				bind:value={query}
 				oninput={onInput}
-				aria-label={mode === 'all' ? 'Search commands and content' : `Search ${MODE_LABEL[mode]}`}
+				aria-label={inputLabel}
 				use:focusOnMount
 			/>
 			<kbd
@@ -361,7 +464,9 @@
 				</li>
 			{:else}
 				<li class="px-3 py-6 text-center font-mono text-xs text-muted-foreground">
-					{#if mode === 'content' && query.trim().length < 2}
+					{#if mode === 'edit'}
+						{editHint}
+					{:else if mode === 'content' && query.trim().length < 2}
 						type at least two characters — posts, photos &amp; tags
 					{:else if mode === 'insert' && query.trim().length < 2}
 						type at least two characters — library photos
