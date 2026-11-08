@@ -1,9 +1,20 @@
 <script lang="ts">
 	import { goto, beforeNavigate } from '$app/navigation';
-	import { Clock, Eye, EyeOff, PanelRightClose, PanelRightOpen } from 'lucide-svelte';
+	import {
+		Clock,
+		ClipboardCopy,
+		Download,
+		Eye,
+		EyeOff,
+		PanelRightClose,
+		PanelRightOpen,
+		Printer
+	} from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
+	import DatePicker from '#lib/components/DatePicker.svelte';
+	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
@@ -218,11 +229,104 @@ flowchart LR
 		message = { kind: 'ok', text: 'unpublished — off the shelf' };
 	}
 
+	// Deletion is intentional (item #5): GitHub's name-retype pattern via a real
+	// dialog — native confirm() trusted a single click for permanent loss.
+	let confirmDelete = $state(false);
 	async function remove() {
-		if (!confirm('Delete this post for good?')) return;
-		dirty = false; // deliberate exit — skip the SPA guard
 		await client.deletePost(draft.slug);
+		dirty = false; // deliberate exit — skip the SPA guard
 		await goto('/posts');
+	}
+
+	// ── Export (item #3) — portable author artifacts, not the storage contract:
+	// YAML front-matter + the raw Route B body. PDF prints the live preview DOM
+	// (rendered diagrams included) through the browser's own Save-as-PDF.
+	let exportMsg = $state('');
+	let exportTimer: ReturnType<typeof setTimeout>;
+	function flashExport(msg: string) {
+		exportMsg = msg;
+		clearTimeout(exportTimer);
+		exportTimer = setTimeout(() => (exportMsg = ''), 2500);
+	}
+
+	function markdownDoc(): string {
+		const fm = [
+			'---',
+			`title: ${JSON.stringify(draft.title || 'Untitled')}`,
+			draft.subtitle ? `subtitle: ${JSON.stringify(draft.subtitle)}` : '',
+			`slug: ${draft.slug || slugify(draft.title)}`,
+			`date: ${draft.date}`,
+			draft.tags.length ? `tags: [${draft.tags.map((t) => JSON.stringify(t)).join(', ')}]` : '',
+			draft.thumbnail ? `thumbnail: ${draft.thumbnail}` : '',
+			'---'
+		].filter(Boolean);
+		return `${fm.join('\n')}\n\n${draft.content}\n`;
+	}
+
+	function exportMd() {
+		const blob = new Blob([markdownDoc()], { type: 'text/markdown;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${draft.slug || slugify(draft.title) || 'post'}.md`;
+		a.click();
+		URL.revokeObjectURL(url);
+		flashExport('markdown downloaded');
+	}
+
+	async function copyMd() {
+		try {
+			await navigator.clipboard.writeText(markdownDoc());
+			flashExport('markdown copied');
+		} catch {
+			flashExport('clipboard blocked by the browser');
+		}
+	}
+
+	async function exportPdf() {
+		// Prefer the LIVE pane (mermaid SVGs already hydrated inside it); fall
+		// back to a fresh render for preview-off exports.
+		const body =
+			showPreview && html && previewEl ? previewEl.innerHTML : (await preview(draft.content)).html;
+		const safeTitle = (draft.title || 'Untitled').replace(
+			/[&<>"]/g,
+			(c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string
+		);
+		const w = window.open('', 'mellon-export', 'width=880,height=1000');
+		if (!w) {
+			flashExport('popup blocked — allow popups to export PDF');
+			return;
+		}
+		w.document.write(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>${safeTitle}</title>
+<style>
+	body{font:15px/1.65 system-ui,-apple-system,'Segoe UI',Inter,sans-serif;color:#18181b;
+		max-width:44rem;margin:0 auto;padding:2.5rem 1.5rem}
+	h1,h2,h3{font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.015em;line-height:1.25}
+	h1{font-size:2rem}h2{font-size:1.4rem;margin-top:2rem}h3{font-size:1.15rem}
+	p{margin:0.9rem 0}a{color:#6d28d9;text-decoration:none}
+	pre{border:1px solid #e4e4e7;border-radius:8px;padding:.75rem 1rem;overflow-x:auto;
+		font-size:.78rem;background:#fafafa;white-space:pre-wrap}
+	code{font-family:ui-monospace,'JetBrains Mono',monospace}
+	code:not([class]){background:#f4f4f5;border-radius:4px;padding:.1rem .35rem;font-size:.85em}
+	.shiki,.shiki span{color:var(--shiki-light);background:var(--shiki-light-bg)}
+	table{border-collapse:collapse;margin:1rem 0}th,td{border-bottom:1px solid #e4e4e7;
+		padding:.4rem .9rem;text-align:left}th{font-weight:600}
+	blockquote{border-left:2px solid #e4e4e7;margin:.9rem 0;padding-left:1rem;color:#52525b}
+	img{max-width:100%;border-radius:8px}
+	ul,ol{padding-left:1.4rem}
+	.mermaid-box{display:flex;justify-content:center;margin:1.2rem 0}
+	.mermaid-box svg{max-width:100%;height:auto}
+	.mermaid-src,.mermaid-error{border:1px dashed #e4e4e7;border-radius:8px;padding:.75rem 1rem;
+		font-size:.72rem;background:#fafafa}
+	[hidden]{display:none}
+	input[type='checkbox']{accent-color:#7c3aed}
+	@page{margin:2cm}
+</style></head><body class="prose">${body}</body></html>`);
+		w.document.close();
+		w.focus();
+		setTimeout(() => w.print(), 350);
+		flashExport('print dialog opened');
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -285,7 +389,7 @@ flowchart LR
 				{#if !isNew}
 					<button
 						type="button"
-						onclick={() => void remove()}
+						onclick={() => (confirmDelete = true)}
 						class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-danger transition-colors hover:bg-danger/10"
 					>
 						delete
@@ -335,27 +439,39 @@ flowchart LR
 			</p>
 		{/if}
 
-		<div class="grid min-h-0 flex-1 gap-4 {showPreview ? 'lg:grid-cols-2' : ''}">
+		<!-- Preview toggle (item #1): the pane is ALWAYS mounted and the grid's
+		     second column animates 1fr↔0fr — an owned outro transition reflows
+		     the ghost below the editor (old bug), while a clipped permanent
+		     child can only slide sideways. Inner keeps its width during the
+		     collapse (min-w) so text never re-wraps mid-animation. Below lg the
+		     pane is simply present/absent — mobile has no room to slide into. -->
+		<div
+			class="grid min-h-0 flex-1 transition-[grid-template-columns,gap] duration-200 ease-out {showPreview
+				? 'gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
+				: 'gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)]'}"
+		>
 			<div
 				class="min-h-[50vh] flex-1 overflow-hidden rounded-lg border border-border bg-card lg:min-h-0"
 			>
 				<CodeMirrorEditor bind:value={draft.content} onchange={touch} {vim} class="h-full" />
 			</div>
 
-			{#if showPreview}
-				<!-- NO outro transition here: while fading, the pane is still a grid
-				     child — the container has already collapsed to one column, so the
-				     ghost reflowed BELOW the editor for its last frames (owner report
-				     #5). Immediate removal is the smooth choice. -->
+			<div
+				class="min-h-0 min-w-0 overflow-hidden {showPreview ? '' : 'hidden lg:block'}"
+				aria-hidden={!showPreview}
+				inert={!showPreview}
+			>
 				<div
 					bind:this={previewEl}
-					class="preview min-h-0 overflow-y-auto rounded-lg border border-border bg-card p-5"
+					class="preview h-full min-w-0 overflow-y-auto rounded-lg border border-border bg-card p-5 transition-opacity duration-150 lg:min-w-[360px] {showPreview
+						? 'opacity-100'
+						: 'opacity-0'}"
 					aria-label="Rendered preview"
 				>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -- server-rendered, DOMPurify-sanitized in the pipeline -->
 					<div class="prose max-w-none">{@html html}</div>
 				</div>
-			{/if}
+			</div>
 		</div>
 	</div>
 
@@ -375,7 +491,7 @@ flowchart LR
 			>
 				<PanelRightOpen class="size-4" />
 				<span class="font-mono text-[10px] tracking-widest uppercase [writing-mode:vertical-rl]"
-					>settings;</span
+					>settings</span
 				>
 			</button>
 		{:else}
@@ -412,11 +528,11 @@ flowchart LR
 					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
 						>subtitle</span
 					>
-					<input
-						class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-border focus-visible:border-brand"
+					<textarea
+						rows="3"
+						class="w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-snug outline-none hover:border-border focus-visible:border-brand"
 						bind:value={draft.subtitle}
-						oninput={touch}
-					/>
+						oninput={touch}></textarea>
 				</label>
 				<label class="flex flex-col gap-1">
 					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
@@ -425,7 +541,7 @@ flowchart LR
 					{#if isNew}
 						<input
 							class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs outline-none hover:border-border focus-visible:border-brand"
-							placeholder="auto from title;"
+							placeholder="auto from title"
 							bind:value={draft.slug}
 							oninput={() => {
 								slugTouched = true;
@@ -444,17 +560,20 @@ flowchart LR
 					{/if}
 				</label>
 
-				<label
-					class="flex items-center gap-2 text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>
-					date
-					<input
-						type="date"
-						class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs tracking-normal normal-case outline-none hover:border-border focus-visible:border-brand"
-						bind:value={draft.date}
-						onchange={touch}
+				<div class="flex flex-col gap-1">
+					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						date
+					</p>
+					<!-- earendil's calendar popover, single-pick shape (item #6): the
+					     native date input is stock, not ours. -->
+					<DatePicker
+						value={draft.date}
+						onchange={(iso) => {
+							draft.date = iso;
+							touch();
+						}}
 					/>
-				</label>
+				</div>
 
 				<div class="flex flex-col gap-1.5">
 					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
@@ -494,6 +613,44 @@ flowchart LR
 					</select>
 				</label>
 
+				<div class="flex flex-col gap-1.5 border-t border-border pt-4">
+					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						export
+					</p>
+					<div class="flex flex-col gap-1.5">
+						<button
+							type="button"
+							onclick={exportMd}
+							class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
+						>
+							<Download class="size-3.5" />download markdown
+						</button>
+						<button
+							type="button"
+							onclick={exportPdf}
+							class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
+						>
+							<Printer class="size-3.5" />save as PDF
+						</button>
+						<button
+							type="button"
+							onclick={copyMd}
+							class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
+						>
+							<ClipboardCopy class="size-3.5" />copy markdown
+						</button>
+					</div>
+					{#if exportMsg}
+						<p
+							class="font-mono text-[10px] text-brand"
+							role="status"
+							transition:fade={{ duration: 150 }}
+						>
+							{exportMsg}
+						</p>
+					{/if}
+				</div>
+
 				{#if !isNew && seed}
 					<div
 						class="flex flex-col gap-1 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground"
@@ -510,4 +667,13 @@ flowchart LR
 			</aside>
 		{/if}
 	</div>
+
+	{#if confirmDelete}
+		<DeleteDialog
+			title={draft.title || 'Untitled'}
+			slug={draft.slug}
+			onConfirm={remove}
+			onClose={() => (confirmDelete = false)}
+		/>
+	{/if}
 </section>

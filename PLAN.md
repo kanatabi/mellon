@@ -580,3 +580,40 @@ with one console warning. Worst case = source, never a stuck lie.
 Gates green (lint 0, check 0/0, 18 tests, build). NOTE for the owner: restart
 `npm run dev` — Vite optimized mermaid (114 pkgs) mid-session and a stale
 dep cache explains the failed dynamic import behind the stuck shimmer.
+
+### 2026-11-08 — owner review round 3: preview motion, vim status bar, export rail, confirm-to-delete, earendil dates
+
+Seven calls, plus the tail of the shimmer saga (previous entry). All shipped:
+
+1. **Preview toggle animates** — the pane is now a permanent grid child whose
+   column animates `1fr ↔ 0fr` (`transition-[grid-template-columns,gap]`,
+   200ms) with inner `min-w` so text never re-wraps mid-slide; hidden below
+   lg where there is no room to slide. No outro ghost: nothing leaves the
+   layout, so nothing can reflow (the old bug's structural cure).
+2. **Editor status bar** — CodeMirror's frame gained an instrument readout:
+   vim mode badge (`INSERT` violet / others solid, `NORMAL·PENDING` submodes)
+   fed by the keymap's `vim-mode-change` DOM event (the package ships no
+   getVim accessor), plus `Ln/Col` live and word count. Non-vim users see
+   `insert · Ln · words` — still useful.
+3. **Export section in the settings rail**: `download markdown` (YAML
+   front-matter + Route B body, blob download), `copy markdown`
+   (clipboard API), `save as PDF` — prints the LIVE preview DOM (hydrated
+   mermaid included) through the browser's own Save-as-PDF in a popup with
+   the light-theme Shiki vars resolved inline. Export = portable artifact,
+   not the storage contract.
+4. Subtitle is a 3-row auto-styled `textarea`.
+5. **Delete = GitHub-style intent check**: real dialog (`DeleteDialog`),
+   permanent-effect copy, the slug shown `select-all`, submit disabled until
+   the retyped slug matches; Esc/backdrop close with busy-locking; red
+   finally earns its keep on the one truly destructive verb (§11.3).
+   6/7. **Dates go native-to-us, not native-to-OS**: `DatePicker` (editor) and
+   `DateRange` (posts rail: 7/30/90/all presets + two-pick Monday-first
+   calendar) vendored from earendil's rail recipe — same geometry, same
+   brand-filled endpoints, same non-modal Esc/outside-click contract.
+   Popovers position `fixed` from the trigger rect because the curtain rails
+   clip their overflow. `?from&to` relay through the API (inclusive window on
+   the editorial date, ISO-lexicographic — pinned by contract test).
+
+Check caught two self-inflicted regressions before commit: the CodeMirror
+rewrite had dropped `$bindable()` again (bind would fail loudly now — good),
+and DeleteDialog's `role=dialog` belongs on a wrapper, not the `<form>`.

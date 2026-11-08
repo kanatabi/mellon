@@ -81,6 +81,9 @@ export interface PostListOpts {
 	q?: string;
 	/** OR semantics on tags, mirroring earendil's §3 list contract. */
 	tag?: string[];
+	/** Inclusive YYYY-MM-DD window on the editorial date. */
+	from?: string;
+	to?: string;
 	/** Sort key; default newest-updated. */
 	sort?: 'newest' | 'oldest' | 'title';
 }

@@ -69,6 +69,9 @@ describe('mock AdminApi contract', () => {
 		// queues-unacked was touched "now" — it heads newest, tails oldest
 		expect(newest[0].slug).toBe('queues-unacked');
 		expect(oldest[oldest.length - 1].slug).toBe('queues-unacked');
+		// inclusive editorial-date window (from/to relay params)
+		const windowed = await api.listPosts({ from: '2024-03-01', to: '2024-06-30' });
+		expect(windowed.map((p) => p.slug)).toEqual(['shape-of-a-useful-queue']);
 	});
 
 	it('update is CAS-checked on rev (lumen §8 optimistic lock)', async () => {

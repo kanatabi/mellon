@@ -45,6 +45,9 @@ async function route(ctx: Ctx) {
 		if (p.length === 1 && request.method === 'GET') {
 			const status = url.searchParams.get('status');
 			const sort = url.searchParams.get('sort');
+			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+			const from = url.searchParams.get('from');
+			const to = url.searchParams.get('to');
 			return json(
 				await api.listPosts({
 					status:
@@ -53,6 +56,8 @@ async function route(ctx: Ctx) {
 							: undefined,
 					q: url.searchParams.get('q') ?? undefined,
 					tag: url.searchParams.getAll('tag'),
+					from: from && DATE_RE.test(from) ? from : undefined,
+					to: to && DATE_RE.test(to) ? to : undefined,
 					sort: sort === 'oldest' || sort === 'title' ? sort : 'newest'
 				})
 			);

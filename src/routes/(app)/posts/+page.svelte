@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
 		ArrowDownWideNarrow,
@@ -11,6 +12,7 @@
 	import { fade } from 'svelte/transition';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import StatusPill from '#lib/components/StatusPill.svelte';
+	import DateRange from '#lib/components/DateRange.svelte';
 	import { postsRail } from '#lib/rails.svelte.ts';
 	import type { PostStatus } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
@@ -44,6 +46,8 @@
 		status?: PostStatus | null;
 		toggleTag?: string;
 		sort?: 'newest' | 'oldest' | 'title';
+		from?: string | null;
+		to?: string | null;
 	}): string {
 		const sp = new SvelteURLSearchParams(page.url.searchParams.toString());
 		if ('status' in opts) {
@@ -62,12 +66,25 @@
 			if (opts.sort === 'newest') sp.delete('sort');
 			else sp.set('sort', opts.sort);
 		}
+		// null = drop the bound, string = set it; undefined = leave as-is
+		if ('from' in opts) {
+			if (opts.from) sp.set('from', opts.from);
+			else sp.delete('from');
+		}
+		if ('to' in opts) {
+			if (opts.to) sp.set('to', opts.to);
+			else sp.delete('to');
+		}
 		const qs = sp.toString();
 		return `/posts${qs ? `?${qs}` : ''}`;
 	}
 
 	const hasFilters = $derived(
-		data.statusFilter !== null || data.tag.length > 0 || data.sort !== 'newest'
+		data.statusFilter !== null ||
+			data.tag.length > 0 ||
+			data.sort !== 'newest' ||
+			!!data.from ||
+			!!data.to
 	);
 </script>
 
@@ -200,6 +217,17 @@
 							</a>
 						{/each}
 					</div>
+				</div>
+
+				<div class="flex flex-col gap-2">
+					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						dates
+					</p>
+					<DateRange
+						from={data.from}
+						to={data.to}
+						onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
+					/>
 				</div>
 
 				<div class="flex flex-col gap-1.5">

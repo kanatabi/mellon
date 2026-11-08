@@ -187,7 +187,7 @@ export function createMockApi(): AdminApi {
 			return { token: `mock.${seq++}.${btoa(username).slice(0, 8)}` };
 		},
 
-		async listPosts({ status, q, tag, sort = 'newest' } = {}) {
+		async listPosts({ status, q, tag, from, to, sort = 'newest' } = {}) {
 			const sum = (p: PostDetailAdmin): PostSummaryAdmin => ({
 				slug: p.slug,
 				title: p.title,
@@ -204,7 +204,10 @@ export function createMockApi(): AdminApi {
 						(!status || p.status === status) &&
 						(!q || `${p.title} ${p.subtitle}`.toLowerCase().includes(q.toLowerCase())) &&
 						// OR semantics on tags, mirroring the public list contract
-						(!tag?.length || p.tags.some((t) => tag.includes(t)))
+						(!tag?.length || p.tags.some((t) => tag.includes(t))) &&
+						// inclusive editorial-date window (ISO compares lexicographically)
+						(!from || p.date >= from) &&
+						(!to || p.date <= to)
 				)
 				.sort((a, b) => {
 					if (sort === 'title') return a.title.localeCompare(b.title);

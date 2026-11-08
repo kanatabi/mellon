@@ -1,30 +1,34 @@
 import { browser } from '$app/env';
 
 /**
- * Live mermaid for the editor preview — settle-then-render, no pending state.
+ * Live mermaid for the editor preview — settle-then-render, NO pending state.
  *
  * While typing, the escaped fence source stays visible as the dashed
  * `.mermaid-src` block the server pipeline emits (earendil's Route B ground
- * truth). Once the keystroke burst settles, `renderMermaid` attempts each
- * fence: success swaps in the diagram, failure shows a quiet error panel with
- * the source in a `<details>`. There is deliberately NO shimmer/pending box:
- * an intermediate DOM state that only a promise chain can leave is exactly
- * what stuck shimmering forever when mermaid's dynamic import failed (owner
- * report 2026-11-08 — "remove the shimmering feature"). Worst case here is
- * simply "still showing source", which is never a lie and never a trap.
+ * truth — and, unlike a JS-constructed shimmer, it can never get stuck: it is
+ * the SSR default, not a state some promise must clean up). Once the
+ * keystroke burst settles, `renderMermaid` attempts each fence:
  *
- * Bomb discipline (root cause of the earlier "Syntax error in text" graphics):
- * mermaid's `render()` RESOLVES with its legacy error SVG instead of rejecting.
- * We gate with `parse(suppressErrors)` first, capture parser messages through
- * our own `parseError` hook (never mermaid's renderer), and content-check the
- * resolved svg as a last guard.
+ *     success → the SVG diagram replaces the source (source stays in the DOM,
+ *               hidden, as ground truth);
+ *     failure → a quiet dashed error panel, source preserved in a <details>.
+ *
+ * Bomb discipline (the earlier "Syntax error in text" graphics): mermaid's
+ * `render()` RESOLVES with its legacy error SVG instead of rejecting, so we
+ * gate with `parse(suppressErrors)` first, capture parser messages through our
+ * own `parseError` hook (mermaid's own renderer is never consulted), and
+ * content-check the resolved svg as a last belt.
+ *
+ * History (2026-11-08, two owner rounds): the shimmer experiment is REMOVED.
+ * A pending box created by JS can only be un-created by JS — when the dynamic
+ * mermaid import failed, every fence shimmered forever. Never let an
+ * intermediate UI state depend on the very async chain that produces the end
+ * state.
  */
 
 let mermaidMod: Promise<typeof import('mermaid').default> | null = null;
 let uid = 0;
-/** Parser's own words, captured through our hook (mermaid never paints). */
 let lastParseError = '';
-let importWarned = false;
 
 function ensureMermaid() {
 	if (!mermaidMod) {
@@ -36,19 +40,19 @@ function ensureMermaid() {
 			};
 			return mermaid;
 		});
+		mermaidMod.catch(() => {
+			mermaidMod = null; // allow a retry after e.g. a Vite dep re-optimize
+		});
 	}
 	return mermaidMod;
 }
 
 function boxAfter(pre: HTMLElement): HTMLElement | null {
 	const next = pre.nextElementSibling as HTMLElement | null;
-	return next && next.dataset.mmd ? next : null;
+	return next?.dataset.mmd === 'done' || next?.dataset.mmd === 'error' ? next : null;
 }
 
-/**
- * Attempt every fence in `container` that has not already settled this swap.
- * `force` (theme flip) re-renders from the surviving sources.
- */
+/** Attempt every fence in `container`; `force` re-renders settled ones (theme flip). */
 export async function renderMermaid(container: HTMLElement, force = false): Promise<void> {
 	if (!browser) return;
 	const pres = Array.from(container.querySelectorAll<HTMLElement>('pre.mermaid-src'));
@@ -57,12 +61,10 @@ export async function renderMermaid(container: HTMLElement, force = false): Prom
 	let mermaid: Awaited<ReturnType<typeof ensureMermaid>>;
 	try {
 		mermaid = await ensureMermaid();
-	} catch {
-		// Mermaid failed to load: the dashed source stays. Say it ONCE.
-		if (!importWarned) {
-			importWarned = true;
-			console.warn('mermaid failed to load — diagrams stay as source until a reload');
-		}
+	} catch (e) {
+		// The whole point of removing pending boxes: this failure now degrades
+		// to "source stays visible" — honest, un-stuck, one console line.
+		console.warn('mermaid failed to load; fences remain as source', e);
 		return;
 	}
 	const dark = document.documentElement.dataset.theme === 'dark';
@@ -75,26 +77,18 @@ export async function renderMermaid(container: HTMLElement, force = false): Prom
 	for (const pre of pres) {
 		const src = pre.textContent ?? '';
 		if (!src.trim()) continue;
-		const box = boxAfter(pre);
-		if (box && !force) continue; // this fence already settled this swap
-		if (box) {
-			box.remove(); // force: discard the old diagram, re-render from source
+		const existing = boxAfter(pre);
+		if (existing && !force) continue; // this swap already settled
+		if (existing) {
+			existing.remove();
 			pre.hidden = false;
 		}
 		lastParseError = '';
-		if (!(await mermaid.parse(src, { suppressErrors: true }))) {
-			// Pull the parser's words deliberately: the suppressed path may
-			// return false without invoking our hook. Either a throw or a hook
-			// call lands the message; both are guarded.
-			try {
-				await mermaid.parse(src);
-			} catch (e) {
-				lastParseError ||= e instanceof Error ? e.message : String(e);
-			}
-			showMermaidError(pre, src, firstLine(lastParseError));
-			continue;
-		}
 		try {
+			if (!(await mermaid.parse(src, { suppressErrors: true }))) {
+				showMermaidError(pre, src, firstLine(lastParseError) || 'invalid diagram');
+				continue;
+			}
 			const { svg } = await mermaid.render(`mellon-mmd-${uid++}`, src);
 			if (/Syntax error in text|mermaidError/i.test(svg)) {
 				showMermaidError(pre, src, firstLine(lastParseError) || 'render refused');
@@ -107,7 +101,7 @@ export async function renderMermaid(container: HTMLElement, force = false): Prom
 			pre.after(figure);
 			pre.hidden = true;
 		} catch (e) {
-			showMermaidError(pre, src, firstLine(e instanceof Error ? e.message : ''));
+			showMermaidError(pre, src, firstLine(e instanceof Error ? e.message : 'error'));
 		}
 	}
 }
