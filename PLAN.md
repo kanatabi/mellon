@@ -1227,3 +1227,30 @@ pick and a chip click write the identical state by construction.
 
 Next: none on the parity map — settings/secrets/dashboard are exempt-by-
 ruling or already twin-complete. The control center is the control center.
+
+### 2026-11-08 — the create-door bug the owner's screenshots caught (fix)
+
+Owner typed `test-collection` (and `asd`) into the palette create doors and
+the rail came back littered with PREFIXES: te, test, test-c, test-co… / a,
+as, asd. Diagnosis from the pattern itself — every junk name is a keystroke
+boundary — the kit's create door returned `{ name, ride: client.createX(name) }`
+and **the promise fired at ROW-BUILD time**. The palette legitimately
+rebuilds the `+ create` row on every keystroke (that's how it shows the
+partial name) — so each keystroke POSTed a creation. Enter was never the
+trigger; rendering was.
+
+- **Contract fixed**: `create` now returns `{ name, start: () => Promise }` —
+  the creation is LAZY, fired only when the row runs (Enter). The kit doc
+  names it load-bearing, and the unit test pins it structurally: build the
+  create row through four partial words, assert `starts === 0`; then `run()`,
+  assert `starts === 1` ("BUILD NEVER CREATES").
+- **Headless repro of the exact user action**: 15 keystrokes typing
+  `test-collection` → inventory unchanged (2→2); Enter → exactly one new
+  collection, no prefixes, picked as drafted. Same for the editor tag door
+  (`zeta-two`: 5→5 during typing, +1 on Enter). 7/7.
+- Both doors shipped in round 2/3 code; nothing else used the eager shape
+  (grep-verified). The user's polluted vocabularies are in-MEMORY mock state —
+  restarting the dev/build server clears the prefix litter.
+
+Lesson for the kit: any callback the palette evaluates during RENDER must be
+a decision, never an effect. Rendering the word "create" must not create.

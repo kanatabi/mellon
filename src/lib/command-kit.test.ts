@@ -78,8 +78,12 @@ describe('command kit', () => {
 		expect(picked).toEqual(['beta']);
 	});
 
-	it('the create door only opens on a real miss — and rides through creation', () => {
+	it('the create door only opens on a real miss — creation LAUNCHES on Enter, never at row build', () => {
 		const created: string[] = [];
+		let starts = 0; // counting the STARTER's calls, not create() evaluations:
+		// the palette rebuilds the create row on EVERY keystroke — a creation
+		// fired at build time would mint one entry per partial word (the bug
+		// the screenshots caught: te, test, test-c, …)
 		const parent = vocabSubmenu({
 			id: 'tags',
 			title: 'Edit tags',
@@ -89,16 +93,25 @@ describe('command kit', () => {
 			create: (raw) => {
 				const q = raw.trim().toLowerCase();
 				if (!q || q === 'alpha') return null;
-				return { name: q, ride: Promise.resolve() };
+				return {
+					name: q,
+					start: () => {
+						starts++;
+						return Promise.resolve();
+					}
+				};
 			},
 			onCreated: (n) => created.push(n)
 		});
-		const child = parent.createChild!('  Beta  ');
-		expect(child).not.toBeNull();
-		expect(child!.title).toBe('+ create “Beta”');
-		expect(child!.keepOpen).toBe(true);
-		child!.run!();
+		// build the row a dozen times (the keystroke pattern):
+		for (const partial of ['b', 'be', 'bet', 'beta']) parent.createChild!(partial);
+		expect(starts).toBe(0); // BUILD NEVER CREATES — the contract
+		const child = parent.createChild!('  Beta  ')!;
+		expect(child.title).toBe('+ create “Beta”');
+		expect(child.keepOpen).toBe(true);
+		child.run!();
 		return Promise.resolve().then(() => {
+			expect(starts).toBe(1); // exactly one creation: the ENTER
 			expect(created).toEqual(['beta']);
 			// exact vocabulary hits and blank filter: no phantom create row
 			expect(parent.createChild!('alpha')).toBeNull();

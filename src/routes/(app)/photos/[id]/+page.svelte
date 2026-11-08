@@ -168,7 +168,7 @@
 					if (!q || q === 'uncategorized') return null;
 					const name = slugify(q);
 					if (!name || vocab.some((c) => c.name === name)) return null;
-					return { name, ride: client.createCollection(name) };
+					return { name, start: () => client.createCollection(name) };
 				},
 				onCreated: (name) => {
 					createdCollections = [...createdCollections, { name, photos: 0 }];

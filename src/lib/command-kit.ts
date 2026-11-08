@@ -74,9 +74,11 @@ export function vocabSubmenu(opts: {
 	/** What picking does — multi pages TOGGLE, single-home pages SET. */
 	pick: (name: string) => void;
 	/** The create door: receives the raw filter text; return the new name +
-	 *  the creation promise, or null when there's nothing to create (blank,
-	 *  already in vocabulary…). */
-	create?: (raw: string) => { name: string; ride: Promise<unknown> } | null;
+	 *  a LAZY starter, or null when there's nothing to create (blank, already
+	 *  in vocabulary…). LAZY IS LOAD-BEARING: the palette rebuilds this row
+	 *  on every keystroke — a promise started at build time would POST one
+	 *  entry per partial word (the shipped bug this contract kills). */
+	create?: (raw: string) => { name: string; start: () => Promise<unknown> } | null;
 	/** Runs after creation resolves — fold the name into the page's local
 	 *  vocabulary AND pick it (the Combobox's ride-until-reload contract). */
 	onCreated?: (name: string) => void;
@@ -105,7 +107,10 @@ export function vocabSubmenu(opts: {
 							shortcut: 'then added',
 							keepOpen: true,
 							run: () => {
-								void door.ride.then(() => opts.onCreated?.(door.name)).catch(() => {});
+								void door
+									.start()
+									.then(() => opts.onCreated?.(door.name))
+									.catch(() => {});
 							}
 						};
 					}

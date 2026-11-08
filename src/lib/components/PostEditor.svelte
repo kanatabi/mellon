@@ -539,7 +539,7 @@ flowchart LR
 				create: (raw) => {
 					const q = raw.trim().toLowerCase();
 					if (!q || tagVocab.some((t) => t.name === slugify(q))) return null;
-					return { name: slugify(q), ride: client.createTag(slugify(q)) };
+					return { name: slugify(q), start: () => client.createTag(slugify(q)) };
 				},
 				onCreated: (name) => {
 					// eager vocabulary: the tag exists from creation, used or not —
