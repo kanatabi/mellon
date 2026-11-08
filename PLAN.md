@@ -738,3 +738,9 @@ of the shell's definition of done, not the last step. §11.1 amended.
    boolean as a function — alias to `vimKeymap`), and lucide v1 renamed
    WrapText's class to `lucide-text-wrap` — the alias still imports fine,
    greps must use the new kebab.
+
+### 2026-11-08 — wrap rides the tab row
+
+Owner placement call: pane controls live in ONE band — tabs left (below lg),
+wrap pill right (`ml-auto`), at every viewport. The meta bar keeps only the
+dirty dot and the desktop eye toggle.
