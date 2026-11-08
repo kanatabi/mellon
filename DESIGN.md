@@ -213,25 +213,35 @@ Voice (owner call 2026-11-08): component copy is **normal** — buttons, labels,
 messages and empty states carry no decorative `;`. The semicolon lives only in the
 **wordmark** (`mellon;`), same pen-word device as the public site's `gofar;`.
 
-### 11.3 Color discipline
+### 11.3 Color discipline — the wayfinding doctrine (owner amendment, 2026-11-08)
 
-- The zinc scale + **one violet** (`--brand`): active/published/primary verb. **Red exists
-  only for destructive** actions — an admin that never needs red for anything else.
-- Statuses stay monochrome by default: `published` = violet-filled pill, `draft` = outlined
-  neutral pill, `unpublished` = dashed neutral pill ("off the shelf"), danger = outlined
-  red. No green/amber/blue status soup.
-- Tokens: everything rides the existing semantic set (`--background/--card/--muted/--border/
---brand/--*-foreground`). Admin-only needs enter as **additive tokens** (`--danger`,
-  future `--diff-add/--diff-del`); **existing tokens are never forked in value** — light/dark
-  parity per §3 applies to every pixel here.
-- Anti-rules, as binding as the rules: no gradients on headers, `rounded-lg` is the roundest
-  anything gets, shadows **only** on overlays (palette, menus, sheets), and motion lives
-  in overlays (150–200ms transforms/opacity — the drawer transitions) plus the **rails**:
-  sidebars fold to the side with a 200ms width transition and curtain the content behind
-  them (owner call 2026-11-08 — "smooth where it moves, still where it reads"); list rows
-  may crossfade 140ms on filter change. Buttons get one micro-interaction: `active:scale`.
-  Forms themselves never animate. Reduced-motion: everything instant. If a screen starts
-  resembling a ThemeForest preview, it is wrong.
+- **Whisper-indigo neutrals:** the whole surface scale is zinc shifted a hair
+  toward indigo (`--background/--card/--muted/--border/--accent`), plus a
+  dedicated `--chrome` for the shell (rail + topbar + drawer) — chrome recedes,
+  content floats. Token NAMES remain the earendil contract; the VALUES are
+  mellon's by owner decision (light/dark parity still mandatory, every pixel).
+- **A hue cast, one hue one job:** `--brand` violet (published, primary verbs,
+  focus, dashboard) · `--accent-blue` periwinkle (posts) · `--accent-teal`
+  (photos / gallery-visible) · `--accent-amber` (drafts / secrets vault) ·
+  `--accent-slate` (settings — deliberately quiet). Cast members sit at equal
+  chroma/lightness so the family reads as one voice set.
+- **Where color may live:** nav icons (72% opacity at rest, full + `color-mix`
+  wash pill when active), status pills, keys/chips pressed states, selection
+  tints. **Where it may not:** body/label text wholesale, backgrounds en masse,
+  tables striped by hue. `red` remains EXCLUSIVELY destructive; green never;
+  statuses speak the cast (published violet / draft amber / unpublished
+  dashed-neutral).
+- **The one gradient exception:** the login aura (`§11.4`), brand at 15% radial.
+  Every other surface is flat.
+- Anti-rules, as binding as the rules: `rounded-lg` is the roundest anything
+  gets, shadows **only** on overlays (palette, menus, sheets), and motion lives
+  in overlays (150–200ms transforms/opacity — the drawer transitions) plus the
+  **rails**: sidebars fold to the side with a 200ms width transition and curtain
+  the content behind them (owner call 2026-11-08 — "smooth where it moves, still
+  where it reads"); list rows may crossfade 140ms on filter change. Buttons get
+  one micro-interaction: `active:scale`. Forms themselves never animate.
+  Reduced-motion: everything instant. If a screen starts resembling a
+  ThemeForest preview, it is wrong.
 
 ### 11.4 Per-view anatomy
 
@@ -281,6 +291,9 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
 - **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
   the charm is free.
 - **Settings**: max-width form, same voice.
+- **Login**: the brand moment — centered gate, the sanctioned aura radial behind
+  it (§11.3), theme toggle reachable in the corner. Nothing else on the screen
+  competes.
 
 ### 11.5 Acceptance test
 

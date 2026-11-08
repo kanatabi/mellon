@@ -907,3 +907,33 @@ createdAt windows inclusive, ISO-lexicographic; tests pinned; lumen §8
 gained the explicit `GET /admin/photos` verb line it was missing. The strip
 slimmed to the always-visible axes (gallery state, select-all) — collection
 chips moved behind the sidebar where the dates already live.
+
+### 2026-11-08 — color round + pagination: seven commits, doctrine amended (HUMAN-GATE #7 applied by owner)
+
+Owner-led redesign, executed in browsable tiers (each revertable alone):
+
+- **Pagination first** (`05a1759`, `cd955e4`): admin lists return the §1-shaped
+  envelope `{ total, items, page, pageSize }` — posts 20/page, photos 24,
+  out-of-range pages clamp to the last (never an empty void), 48-post bulk test
+  pins non-overlap. Pagers are LINK bands; any filter/sort change drops
+  ?page= (stale pages behind new filters read as broken); photo selection is
+  per-page context and clears on query change. lumen §8 documents the envelope
+  it had been silently promising (`page` was listed, never honored).
+- **Tier A** (`f6ebaf3`): whisper-indigo neutrals + `--chrome` shell — rail and
+  topbar are the wall, content the lit panel. Token names remain the earendil
+  contract; VALUES diverge by owner decision.
+- **Tier B** (`d4663eb`): hues get jobs — draft amber, gallery axis teal (strip
+  chips, tile + table eyes), vault reveal amber. published violet, unpublished
+  dashed-neutral, red exclusively destructive.
+- **Tier N** (`8975735`): the nav cast — violet/periwinkle/teal/amber/slate per
+  destination, icons 72% at rest, full + color-mix wash when active, ONE
+  `navItems(rail)` snippet for rail/strip/drawer. Hues ride INLINE styles
+  (Tailwind can't generate dynamic utility names). Recovery note: an external
+  stash apply landed mid-flight with the snippet referenced but never defined
+  — the commit also completes that definition; gates caught the broken state
+  before it shipped.
+- **Tier C** (`8183c63`): the login aura — the single sanctioned radial.
+- **Docs** (this commit): §11.3 rewritten as the wayfinding doctrine (cast
+  table, where color may/may not live, the one gradient exception), §11.4 gains
+  the login entry, `palette.test.ts` guards light/dark token parity + @theme
+  mapping + the zinc-departure, journal closed.
