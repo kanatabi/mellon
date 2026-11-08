@@ -838,3 +838,33 @@ size-4, pressed states intact, `title`+`aria-label` for discovery. Snippets
 gained an `iconOnly` param — desktop meta band keeps the labeled pills, one
 markup source. Tab padding trimmed to px-3 for the ≤360px crowd. Math:
 segment ~120 + 3×44 + gaps ≈ 276px — fits 320.
+
+### 2026-11-08 — search everywhere + the posts table (desktop) round
+
+Three owner calls, three commits:
+
+1. **Mobile filters key**: the four status chips + clear scroll horizontally
+   (single line, hidden scrollbar); the sheet trigger became a pinned
+   `h-9 w-11` key in the thumb-band language. "Is anything filtered?" answers
+   itself twice: violet tint + a mono count badge on the key corner.
+2. **Search made reachable and real**: a round Search key joins the theme
+   toggle below md — the palette door phones never had. And the palette now
+   SEARCHS POSTS: 2+ chars fire a debounced `listPosts({q})` THROUGH the
+   relay (doctrine: the API filters, never the palette looping arrays), top 5
+   join a 'posts' group ranked below actions, each row wearing its status as
+   the hint-column value. Pill copy upgraded to the truth: "search posts,
+   commands…". (q/relay/mock all existed — this round just wired the door.)
+3. **Desktop posts table**: `lg+` renders a columnar table (title, created,
+   updated, published, status+rev) — headers SORT: clicking a column link
+   flips dir / picks the field default (dates desc, title asc), `aria-sort`
+   honest, direction arrow on the active column. Below lg the existing
+   stacked rows stay (owner: the current mobile view suits it) — ONE loop
+   serves both: div role=table, rows flip flex→grid at lg, date cells hide
+   below lg while the mobile meta line hides above it, so the two views can
+   not drift. Rows are link-cards (title ::after spans the row: whole-row
+   click, one tab stop, focus-within tint).
+   Contract change: `sort:'newest'|'oldest'|'title'` → `sort:
+'updated'|'created'|'published'|'title'` + `dir:'asc'|'desc'` (default
+   updated/desc; never-published sinks as the empty key). Rail chips map
+   onto it (newest/oldest/title unchanged in feel). lumen §8 mirrored in
+   the same set; tests expanded to pin created/published/title/window.

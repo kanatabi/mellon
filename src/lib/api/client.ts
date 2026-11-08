@@ -52,7 +52,8 @@ export const client: AdminApi = {
 		for (const t of opts?.tag ?? []) params.append('tag', t);
 		if (opts?.from) params.set('from', opts.from);
 		if (opts?.to) params.set('to', opts.to);
-		if (opts?.sort && opts.sort !== 'newest') params.set('sort', opts.sort);
+		if (opts?.sort) params.set('sort', opts.sort);
+		if (opts?.dir) params.set('dir', opts.dir);
 		const qs = params.toString();
 		return call<PostSummaryAdmin[]>(`/posts${qs ? `?${qs}` : ''}`);
 	},

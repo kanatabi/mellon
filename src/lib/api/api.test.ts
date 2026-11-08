@@ -54,7 +54,7 @@ describe('mock AdminApi contract', () => {
 		});
 	});
 
-	it('list filters relay server-side: status, tag OR, sort', async () => {
+	it('list filters relay server-side: status, tag OR, sort field/dir, date window', async () => {
 		const api = createMockApi();
 		const drafts = await api.listPosts({ status: 'draft' });
 		expect(drafts.map((p) => p.slug)).toEqual(['queues-unacked']);
@@ -63,13 +63,27 @@ describe('mock AdminApi contract', () => {
 			'latency-as-product-decision',
 			'shape-of-a-useful-queue'
 		]);
-		const newest = await api.listPosts({ sort: 'newest' });
-		const oldest = await api.listPosts({ sort: 'oldest' });
+		// default: updated, desc
+		const newest = await api.listPosts({});
+		const oldest = await api.listPosts({ sort: 'updated', dir: 'asc' });
 		expect(oldest[0].slug).toBe(newest[newest.length - 1].slug);
 		// queues-unacked was touched "now" — it heads newest, tails oldest
 		expect(newest[0].slug).toBe('queues-unacked');
 		expect(oldest[oldest.length - 1].slug).toBe('queues-unacked');
-		// inclusive editorial-date window (from/to relay params)
+		// created asc: latency (Jan 2024) precedes shape (Apr 2024)
+		const byCreated = await api.listPosts({ sort: 'created', dir: 'asc' });
+		expect(byCreated[0].slug).toBe('latency-as-product-decision');
+		// published desc: never-published sinks to the tail (empty key)
+		const byPublished = await api.listPosts({ sort: 'published', dir: 'desc' });
+		expect(byPublished[byPublished.length - 1].slug).toBe('queues-unacked');
+		// title A→Z
+		const byTitle = await api.listPosts({ sort: 'title', dir: 'asc' });
+		expect(byTitle.map((p) => p.title)).toEqual([
+			'Queues, unacked',
+			'The shape of a useful queue',
+			'When latency becomes a product decision'
+		]);
+		// inclusive editorial-date window
 		const windowed = await api.listPosts({ from: '2024-03-01', to: '2024-06-30' });
 		expect(windowed.map((p) => p.slug)).toEqual(['shape-of-a-useful-queue']);
 	});

@@ -46,6 +46,7 @@ async function route(ctx: Ctx) {
 		if (p.length === 1 && request.method === 'GET') {
 			const status = url.searchParams.get('status');
 			const sort = url.searchParams.get('sort');
+			const dir = url.searchParams.get('dir');
 			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 			const from = url.searchParams.get('from');
 			const to = url.searchParams.get('to');
@@ -59,7 +60,11 @@ async function route(ctx: Ctx) {
 					tag: url.searchParams.getAll('tag'),
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
-					sort: sort === 'oldest' || sort === 'title' ? sort : 'newest'
+					sort:
+						sort === 'created' || sort === 'published' || sort === 'title' || sort === 'updated'
+							? sort
+							: 'updated',
+					dir: dir === 'asc' ? 'asc' : 'desc'
 				})
 			);
 		}

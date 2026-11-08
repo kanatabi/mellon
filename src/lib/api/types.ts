@@ -87,8 +87,9 @@ export interface PostListOpts {
 	/** Inclusive YYYY-MM-DD window on the editorial date. */
 	from?: string;
 	to?: string;
-	/** Sort key; default newest-updated. */
-	sort?: 'newest' | 'oldest' | 'title';
+	/** Sort field (default `updated`) + direction (default `desc`). */
+	sort?: 'updated' | 'created' | 'published' | 'title';
+	dir?: 'asc' | 'desc';
 }
 
 export class AdminApiError extends Error {

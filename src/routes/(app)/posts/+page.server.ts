@@ -8,7 +8,8 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const load: PageServerLoad = async ({ url }) => {
 	const sp = url.searchParams;
 	const status = sp.get('status');
-	const sort = sp.get('sort');
+	const sortRaw = sp.get('sort');
+	const dirRaw = sp.get('dir');
 	const from = sp.get('from');
 	const to = sp.get('to');
 	const opts = {
@@ -19,7 +20,11 @@ export const load: PageServerLoad = async ({ url }) => {
 		tag: sp.getAll('tag'),
 		from: from && DATE_RE.test(from) ? from : undefined,
 		to: to && DATE_RE.test(to) ? to : undefined,
-		sort: sort === 'oldest' || sort === 'title' ? (sort as 'oldest' | 'title') : ('newest' as const)
+		sort:
+			sortRaw === 'created' || sortRaw === 'published' || sortRaw === 'title'
+				? (sortRaw as 'created' | 'published' | 'title')
+				: ('updated' as const),
+		dir: dirRaw === 'asc' ? ('asc' as const) : ('desc' as const)
 	};
 	const api = createApi();
 	const [posts, tags] = await Promise.all([api.listPosts(opts), api.listTags()]);

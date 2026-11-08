@@ -201,7 +201,7 @@ export function createMockApi(): AdminApi {
 			return { token: `mock.${seq++}.${btoa(username).slice(0, 8)}` };
 		},
 
-		async listPosts({ status, q, tag, from, to, sort = 'newest' } = {}) {
+		async listPosts({ status, q, tag, from, to, sort = 'updated', dir = 'desc' } = {}) {
 			const sum = (p: PostDetailAdmin): PostSummaryAdmin => ({
 				slug: p.slug,
 				title: p.title,
@@ -224,10 +224,16 @@ export function createMockApi(): AdminApi {
 						(!to || p.date <= to)
 				)
 				.sort((a, b) => {
-					if (sort === 'title') return a.title.localeCompare(b.title);
-					return sort === 'oldest'
-						? a.updatedAt.localeCompare(b.updatedAt)
-						: b.updatedAt.localeCompare(a.updatedAt);
+					const key = (p: PostDetailAdmin) =>
+						sort === 'title'
+							? p.title.toLowerCase()
+							: sort === 'created'
+								? p.createdAt
+								: sort === 'published'
+									? (p.publishedAt ?? '') // never-published sink to the tail
+									: p.updatedAt;
+					const cmp = key(a).localeCompare(key(b));
+					return dir === 'asc' ? cmp : -cmp;
 				})
 				.map(sum);
 		},

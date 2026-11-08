@@ -28,6 +28,12 @@
 	$effect(() => postsRail.init());
 
 	const fmt = new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric' });
+	const fmtFull = new Intl.DateTimeFormat('en-GB', {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric'
+	});
+	const fmtDate = (iso: string | null) => (iso ? fmtFull.format(new Date(iso)) : '—');
 
 	const statusChips: { label: string; value: PostStatus | null }[] = [
 		{ label: 'all', value: null },
@@ -37,9 +43,18 @@
 	];
 
 	const sortChips = [
-		{ label: 'newest', value: 'newest', Icon: ArrowDownWideNarrow },
-		{ label: 'oldest', value: 'oldest', Icon: ArrowUpNarrowWide },
-		{ label: 'title', value: 'title', Icon: undefined }
+		{ label: 'newest', sort: 'updated', dir: 'desc', Icon: ArrowDownWideNarrow },
+		{ label: 'oldest', sort: 'updated', dir: 'asc', Icon: ArrowUpNarrowWide },
+		{ label: 'title', sort: 'title', dir: 'asc', Icon: undefined }
+	] as const;
+
+	// Table headers: sortable columns (owner call — headers that don't sort
+	// feel broken). Dates default to newest-first, title to A→Z.
+	const headerCols = [
+		{ field: 'title', label: 'title' },
+		{ field: 'created', label: 'created' },
+		{ field: 'updated', label: 'updated' },
+		{ field: 'published', label: 'published' }
 	] as const;
 
 	// Filters live in the URL (server load relays them to the API) — every chip
@@ -47,7 +62,8 @@
 	function buildUrl(opts: {
 		status?: PostStatus | null;
 		toggleTag?: string;
-		sort?: 'newest' | 'oldest' | 'title';
+		sort?: 'updated' | 'created' | 'published' | 'title';
+		dir?: 'asc' | 'desc';
 		from?: string | null;
 		to?: string | null;
 	}): string {
@@ -65,8 +81,15 @@
 			for (const t of next) sp.append('tag', t);
 		}
 		if (opts.sort) {
-			if (opts.sort === 'newest') sp.delete('sort');
-			else sp.set('sort', opts.sort);
+			const dir = opts.dir ?? 'desc';
+			// the default pair stays implicit — clean URLs
+			if (opts.sort === 'updated' && dir === 'desc') {
+				sp.delete('sort');
+				sp.delete('dir');
+			} else {
+				sp.set('sort', opts.sort);
+				sp.set('dir', dir);
+			}
 		}
 		// null = drop the bound, string = set it; undefined = leave as-is
 		if ('from' in opts) {
@@ -81,12 +104,26 @@
 		return `/posts${qs ? `?${qs}` : ''}`;
 	}
 
+	/** Header click: same field flips direction; new field gets its default. */
+	function sortUrl(field: 'updated' | 'created' | 'published' | 'title'): string {
+		const dir =
+			data.sort === field
+				? data.dir === 'desc'
+					? 'asc'
+					: 'desc'
+				: field === 'title'
+					? 'asc'
+					: 'desc';
+		return buildUrl({ sort: field, dir });
+	}
+
 	const hasFilters = $derived(
 		data.statusFilter !== null ||
 			data.tag.length > 0 ||
-			data.sort !== 'newest' ||
 			!!data.from ||
-			!!data.to
+			!!data.to ||
+			data.sort !== 'updated' ||
+			data.dir !== 'desc'
 	);
 
 	// Sheet trigger rides the status row's far edge (phones only) — no
@@ -167,28 +204,92 @@
 			</button>
 		</div>
 
-		<!-- Row grammar mirrors the public feed: hairline rules, mono meta, serif
-		     entity titles. Hover AND focus reveal (no mouse-only affordance). -->
-		<div class="flex flex-col">
-			{#each data.posts as post (post.slug)}
-				<a
-					href="/posts/{post.slug}"
-					transition:fade|local={{ duration: 140 }}
-					class="group flex items-center justify-between gap-4 border-t border-border py-3.5 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+		<!-- The list: stacked rows below lg (the view the owner keeps for
+		     phones), a columnar TABLE at lg+ — one loop so the two never
+		     drift. Rows are link-cards: the title's ::after spans the row, so
+		     the whole row clicks while the link remains the only tab stop.
+		     Hover AND focus-within tint — no mouse-only affordance. -->
+		<div role="table" aria-label="Posts" class="flex flex-col">
+			<div
+				role="row"
+				class="hidden items-center gap-4 border-b border-border pb-2 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem]"
+			>
+				{#each headerCols as col (col.field)}
+					<a
+						role="columnheader"
+						href={sortUrl(col.field)}
+						aria-sort={data.sort === col.field
+							? data.dir === 'asc'
+								? 'ascending'
+								: 'descending'
+							: 'none'}
+						class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {data.sort ===
+						col.field
+							? 'text-foreground'
+							: 'text-muted-foreground hover:text-foreground'}"
+					>
+						{col.label}
+						{#if data.sort === col.field}
+							{#if data.dir === 'asc'}
+								<ArrowUpNarrowWide class="size-3" />
+							{:else}
+								<ArrowDownWideNarrow class="size-3" />
+							{/if}
+						{/if}
+					</a>
+				{/each}
+				<span
+					role="columnheader"
+					class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
 				>
-					<span class="flex min-w-0 flex-col gap-0.5">
-						<span class="font-mono text-[10px] text-muted-foreground">
+					status
+				</span>
+			</div>
+			{#each data.posts as post (post.slug)}
+				<div
+					role="row"
+					transition:fade|local={{ duration: 140 }}
+					class="group relative flex items-center justify-between gap-4 border-b border-border py-3.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem] lg:justify-start"
+				>
+					<div role="cell" class="min-w-0">
+						<a
+							href="/posts/{post.slug}"
+							class="font-brand text-lg leading-snug font-semibold tracking-tight after:absolute after:inset-0 after:content-[''] focus-visible:underline"
+						>
+							{post.title}
+						</a>
+						<p class="min-w-0 truncate text-xs text-muted-foreground">{post.subtitle}</p>
+						<p class="font-mono text-[10px] text-muted-foreground lg:hidden">
 							{fmt.format(new Date(post.createdAt))} created{#if post.publishedAt}
 								· {fmt.format(new Date(post.publishedAt))} published{/if}
 							· {fmt.format(new Date(post.updatedAt))} edit · rev {post.rev}
-						</span>
-						<span class="font-brand text-lg leading-snug font-semibold tracking-tight">
-							{post.title}
-						</span>
-						<span class="min-w-0 truncate text-xs text-muted-foreground">{post.subtitle}</span>
+						</p>
+					</div>
+					<span
+						role="cell"
+						class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+					>
+						{fmtDate(post.createdAt)}
 					</span>
-					<StatusPill status={post.status} />
-				</a>
+					<span
+						role="cell"
+						class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+					>
+						{fmtDate(post.updatedAt)}
+					</span>
+					<span
+						role="cell"
+						class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+					>
+						{fmtDate(post.publishedAt)}
+					</span>
+					<div role="cell" class="flex flex-col items-end gap-1 lg:items-start">
+						<StatusPill status={post.status} />
+						<span class="hidden font-mono text-[10px] text-muted-foreground/60 lg:block">
+							rev {post.rev}
+						</span>
+					</div>
+				</div>
 			{:else}
 				<p class="border-t border-border py-10 text-center font-mono text-xs text-muted-foreground">
 					nothing matches these filters
@@ -243,12 +344,12 @@
 		<div class="flex flex-col gap-2">
 			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">sort</p>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
-				{#each sortChips as chip (chip.value)}
+				{#each sortChips as chip (chip.label)}
+					{@const on = data.sort === chip.sort && data.dir === chip.dir}
 					<a
-						href={buildUrl({ sort: chip.value })}
-						aria-current={data.sort === chip.value ? 'true' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {data.sort ===
-						chip.value
+						href={buildUrl({ sort: chip.sort, dir: chip.dir })}
+						aria-current={on ? 'true' : undefined}
+						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {on
 							? 'border-brand bg-brand/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
