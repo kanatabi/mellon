@@ -757,3 +757,20 @@ are chips in the rows that already exist: the editor's pane-controls row gets
 active tags + date window; chip violet-tinted when N>0). ml-auto lives on the
 ALWAYS-visible element (wrap) — put it on a lg:hidden one and desktop loses
 its right edge (caught before commit).
+
+### 2026-11-08 — thumb band: editor pane controls dock to the bottom (option 3)
+
+Owner review of the top controls row: the meta band should be pure content
+and pane controls belong where the thumb is — earendil's idiom, applied to
+the editor screen (scoped to this page, NOT the global drawer-nav):
+
+- `<lg`: below the panes a slim bar — `[write|preview]` segment left,
+  right-paired `[wrap] [post]` — the post chip still summons the sheet.
+  The top controls row is gone; panes reclaim that height (13.5rem chrome
+  offset kept — row out ≈ band in; re-check on device).
+- `lg+`: unchanged split + eye; wrap lives in the meta band beside the
+  toggle, rendered from ONE snippet in both bands (`wrapToggle(cls)`) —
+  two homes, zero forked markup.
+- Status band (mode · Ln/Col · words) stays inside the write pane, directly
+  above the thumb bar: readouts stack above inputs, VS Code order, no
+  overlap since both hold layout (the FAB lesson, applied).

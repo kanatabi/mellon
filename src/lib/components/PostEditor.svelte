@@ -430,6 +430,7 @@ flowchart LR
 						unsaved
 					</span>
 				{/if}
+				{@render wrapToggle('hidden lg:flex')}
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
@@ -457,87 +458,6 @@ flowchart LR
 				{message.text}
 			</p>
 		{/if}
-
-		<!-- Phones & tablets below lg: editor and preview swap as tabs (owner
-		     call 2026-11-08) — reading a long post's render should never cost a
-		     scroll. Panels stay mounted; the inactive one is visibility-hidden
-		     via max-lg: variants so desktop semantics (split + eye toggle) are
-		     untouched by the mobile state. Roving tabindex: Tab lands on the
-		     selected pane's tab, arrows walk between them. -->
-		<!-- Pane controls row (owner call): the tabs (below lg) sit left, the
-		     wrap toggle rides the same row at its far right — pane controls in
-		     one band, on every viewport. Tabs vanish at lg (the split view
-		     needs no tab); wrap stays. -->
-		<div class="flex items-center gap-2">
-			<!-- svelte-ignore a11y_interactive_supports_focus -->
-			<div
-				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1 lg:hidden"
-				role="tablist"
-				aria-label="Editor pane"
-				onkeydown={(e) => {
-					if (e.key === 'ArrowRight' || e.key === 'End') {
-						e.preventDefault();
-						setTab('preview');
-					} else if (e.key === 'ArrowLeft' || e.key === 'Home') {
-						e.preventDefault();
-						setTab('write');
-					}
-				}}
-			>
-				<button
-					type="button"
-					id="tab-write"
-					role="tab"
-					aria-selected={editorTab === 'write'}
-					aria-controls="pane-write"
-					tabindex={editorTab === 'write' ? 0 : -1}
-					bind:this={writeTabBtn}
-					onclick={() => setTab('write', false)}
-					class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'write'
-						? 'bg-brand/15 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
-				>
-					write
-				</button>
-				<button
-					type="button"
-					id="tab-preview"
-					role="tab"
-					aria-selected={editorTab === 'preview'}
-					aria-controls="pane-preview"
-					tabindex={editorTab === 'preview' ? 0 : -1}
-					bind:this={previewTabBtn}
-					onclick={() => setTab('preview', false)}
-					class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
-						? 'bg-brand/15 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
-				>
-					preview
-				</button>
-			</div>
-			<button
-				type="button"
-				bind:this={railSheetTrigger}
-				onclick={() => (railSheet = true)}
-				aria-haspopup="dialog"
-				aria-expanded={railSheet}
-				class="flex items-center gap-2 self-stretch rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground lg:hidden"
-			>
-				<FileCog class="size-3.5" />
-				post
-			</button>
-			<button
-				type="button"
-				onclick={toggleWrap}
-				aria-pressed={wrapped}
-				class="ml-auto flex items-center gap-2 self-stretch rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
-					? 'border-brand bg-brand/10 text-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
-				<WrapText class="size-3.5" />
-				wrap
-			</button>
-		</div>
 
 		<!-- Pane area. Below lg: a fixed viewport-height box (NOT flex-1 — its
 		     0% flex-basis overrides the explicit height in an indefinite
@@ -588,6 +508,77 @@ flowchart LR
 				</div>
 			</div>
 		</div>
+
+		<!-- Thumb band (phones & tablets): pane controls where the thumb
+		     lives — tabs left, view controls right (owner call 2026-11-08,
+		     option 3: replaces the top controls row; the meta band above is
+		     pure content again). Tabs also swap the editor/preview panes
+		     below lg — reading a long post's render never costs a scroll;
+		     panels stay mounted, the inactive one is visibility-hidden via
+		     max-lg: variants so desktop semantics are untouched. Roving
+		     tabindex: Tab lands on the selected tab, arrows walk. -->
+		<div class="flex items-center gap-2 lg:hidden">
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div
+				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
+				role="tablist"
+				aria-label="Editor pane"
+				onkeydown={(e) => {
+					if (e.key === 'ArrowRight' || e.key === 'End') {
+						e.preventDefault();
+						setTab('preview');
+					} else if (e.key === 'ArrowLeft' || e.key === 'Home') {
+						e.preventDefault();
+						setTab('write');
+					}
+				}}
+			>
+				<button
+					type="button"
+					id="tab-write"
+					role="tab"
+					aria-selected={editorTab === 'write'}
+					aria-controls="pane-write"
+					tabindex={editorTab === 'write' ? 0 : -1}
+					bind:this={writeTabBtn}
+					onclick={() => setTab('write', false)}
+					class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'write'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					write
+				</button>
+				<button
+					type="button"
+					id="tab-preview"
+					role="tab"
+					aria-selected={editorTab === 'preview'}
+					aria-controls="pane-preview"
+					tabindex={editorTab === 'preview' ? 0 : -1}
+					bind:this={previewTabBtn}
+					onclick={() => setTab('preview', false)}
+					class="rounded-full px-4 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					preview
+				</button>
+			</div>
+			<div class="ml-auto flex items-center gap-2">
+				{@render wrapToggle('flex')}
+				<button
+					type="button"
+					bind:this={railSheetTrigger}
+					onclick={() => (railSheet = true)}
+					aria-haspopup="dialog"
+					aria-expanded={railSheet}
+					class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				>
+					<FileCog class="size-3.5" />
+					post
+				</button>
+			</div>
+		</div>
 	</div>
 
 	<!-- Post rail — actions + slug/date/tags/thumbnail + export + timeline.
@@ -632,6 +623,20 @@ flowchart LR
 			</aside>
 		{/if}
 	</div>
+
+	{#snippet wrapToggle(cls: string)}
+		<button
+			type="button"
+			onclick={toggleWrap}
+			aria-pressed={wrapped}
+			class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
+				? 'border-brand bg-brand/10 text-foreground'
+				: 'text-muted-foreground hover:text-foreground'}"
+		>
+			<WrapText class="size-3.5" />
+			wrap
+		</button>
+	{/snippet}
 
 	{#snippet railBody()}
 		<!-- Actions block (owner call): save/publish/delete live at the

@@ -249,11 +249,14 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   `unpublish`), and a quiet `delete`. (Owner call 2026-11-08: actions live with
   settings, like Ghost's publish box — but labeled as their own section; publish
   verbs are not "settings".)
-  `/posts/new` opens the editor directly — no intermediate form. Below `lg`, the
-  two panes swap as **top tabs** (`write` / `preview`, roving tabindex) instead of
-  stacking — reading the render of a long post must never cost a scroll. Both
-  panes stay mounted, so switching is instant and the hidden preview keeps
-  rendering ahead of the visit. (Owner call 2026-11-08.)
+  `/posts/new` opens the editor directly — no intermediate form. Below `lg`, a
+  **thumb band** under the panes carries the pane controls — `[write] [preview]`
+  tabs left (roving tabindex), `[wrap] [post]` right (the post chip summons the
+  settings sheet) — instead of stacking or stretch-height rows; reading the
+  render of a long post must never cost a scroll or a grip shift. Both panes
+  stay mounted, so switching is instant and the hidden preview keeps
+  rendering ahead of the visit. On `lg+` wrap lives in the meta band beside the
+  eye toggle — same snippet, two bands. (Owner call 2026-11-08.)
 - **Secrets**: presented as what it is — a config file with version control. Masked mono
   values, reveal on press (never "show all values" as a resting state), **version history
   as a side sheet** (springs from the right, reusing the drawer motion), diff between
