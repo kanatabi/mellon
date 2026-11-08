@@ -94,6 +94,8 @@ export const client: AdminApi = {
 		call<CollectionCount>('/collections', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listTags: () => call<TagCount[]>('/tags'),
+	search: (q) =>
+		call<{ posts: PostSummaryAdmin[]; photos: AdminPhoto[] }>(`/search?q=${encodeURIComponent(q)}`),
 	createTag: (name) => call<TagCount>('/tags', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listSecretPaths: () => call<SecretPath[]>('/secrets'),

@@ -444,6 +444,33 @@ export function createMockApi(): AdminApi {
 			return { name, posts: 0 };
 		},
 
+		async search(qRaw) {
+			const q = String(qRaw ?? '')
+				.trim()
+				.toLowerCase();
+			if (!q) return { posts: [], photos: [] };
+			const matched = posts
+				.filter((p) => `${p.title} ${p.subtitle} ${p.tags.join(' ')}`.toLowerCase().includes(q))
+				.slice(0, 8)
+				.map((p): PostSummaryAdmin => ({
+					slug: p.slug,
+					title: p.title,
+					subtitle: p.subtitle,
+					status: p.status,
+					createdAt: p.createdAt,
+					publishedAt: p.publishedAt,
+					updatedAt: p.updatedAt,
+					rev: p.rev
+				}));
+			// photos match on alt + collection — the curation vocabulary people
+			// actually remember; Meilisearch fuzziness arrives with lumen (§4)
+			const pics = photos
+				.filter((p) => `${p.alt} ${p.collection ?? ''}`.toLowerCase().includes(q))
+				.slice(0, 8)
+				.map(clone);
+			return { posts: matched, photos: pics };
+		},
+
 		async listSecretPaths(): Promise<SecretPath[]> {
 			return Object.keys(secrets).map((k) => {
 				const [app, env] = k.split('/');

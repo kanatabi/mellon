@@ -235,6 +235,21 @@ describe('mock AdminApi contract', () => {
 		expect(byTitle.items[0].alt).toBe('Alpine ridge at dawn, fog in the valley');
 	});
 
+	it('search: one call, both content groups (posts by title/subtitle/tags, photos by alt/collection)', async () => {
+		const api = createMockApi();
+		const r1 = await api.search('queue');
+		expect(r1.posts.map((p) => p.slug).sort()).toEqual([
+			'queues-unacked',
+			'shape-of-a-useful-queue'
+		]);
+		expect(r1.photos).toHaveLength(0);
+		const r2 = await api.search('market');
+		expect(r2.photos.map((p) => p.id)).toEqual(['p2']);
+		expect(r2.posts).toHaveLength(0);
+		const r3 = await api.search('');
+		expect(r3).toEqual({ posts: [], photos: [] });
+	});
+
 	it('login demands non-empty credentials (lumen will actually check)', async () => {
 		const api = createMockApi();
 		await expect(api.login('', 'x')).rejects.toBeInstanceOf(AdminApiError);

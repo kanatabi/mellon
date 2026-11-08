@@ -144,6 +144,11 @@ async function route(ctx: Ctx) {
 		return json(await api.createTag(String(name ?? '')), { status: 201 });
 	}
 
+	// --- search (palette content door) ---
+	if (seg === 'search' && request.method === 'GET') {
+		return json(await api.search(url.searchParams.get('q') ?? ''));
+	}
+
 	// --- secrets (lumen §9 passthrough shape) ---
 	if (p[0] === 'secrets') {
 		if (p.length === 1 && request.method === 'GET') return json(await api.listSecretPaths());

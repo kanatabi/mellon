@@ -136,6 +136,15 @@ export interface PostListOpts {
 	page?: number;
 }
 
+/** Palette search results — content search is the API's job (§7 doctrine:
+ *  commands/navigation are portal-side, "what matches?" is served here).
+ *  Phase B: Meilisearch-backed (drafts included for admin); the mock does
+ *  honest substring matching on the same fields. */
+export interface SearchResults {
+	posts: PostSummaryAdmin[];
+	photos: AdminPhoto[];
+}
+
 export class AdminApiError extends Error {
 	constructor(
 		readonly status: number,
@@ -182,6 +191,8 @@ export interface AdminApi {
 	createCollection(name: string): Promise<CollectionCount>;
 
 	listTags(): Promise<TagCount[]>;
+	/** One call serves BOTH content groups for the palette (≤8 each). */
+	search(q: string): Promise<SearchResults>;
 	/** Vocabulary is a first-class store (not derived): a tag exists once
 	 *  created, used or not. Name is slugified; 409 on duplicates. */
 	createTag(name: string): Promise<TagCount>;
