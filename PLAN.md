@@ -744,3 +744,16 @@ of the shell's definition of done, not the last step. §11.1 amended.
 Owner placement call: pane controls live in ONE band — tabs left (below lg),
 wrap pill right (`ml-auto`), at every viewport. The meta bar keeps only the
 dirty dot and the desktop eye toggle.
+
+### 2026-11-08 — FAB retired: sheet triggers occupy layout, not the sky
+
+Owner screenshot: the floating file-cog sat on the editor's status bar,
+crushing the word count. Floating triggers are earendil's reading-context
+furniture (a sticky assistant by the BottomNav); in the admin every control
+belongs in a band with an honest layout slot. RailDrawer became SHEET-ONLY
+(open/trigger bindable props, all dismissal logic intact) and the triggers
+are chips in the rows that already exist: the editor's pane-controls row gets
+`[post]` (phone/tablet only), the posts status row gets `filters · N` (N =
+active tags + date window; chip violet-tinted when N>0). ml-auto lives on the
+ALWAYS-visible element (wrap) — put it on a lg:hidden one and desktop loses
+its right edge (caught before commit).

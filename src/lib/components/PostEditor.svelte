@@ -133,6 +133,12 @@ flowchart LR
 		wrapped = !wrapped;
 		localStorage.setItem('mellon.wrap', wrapped ? '1' : '0');
 	}
+
+	// Bottom-sheet rail (phones & tablets): the trigger is a chip in the
+	// pane-controls row — NOT a floating FAB, which occluded the status bar
+	// (owner screenshot 2026-11-08). Triggers occupy layout, never hover it.
+	let railSheet = $state(false);
+	let railSheetTrigger = $state<HTMLElement | undefined>();
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
 	// keeps rendering ahead of the switch — that's what makes it instant).
 	const previewLive = $derived(showPreview || editorTab === 'preview');
@@ -511,6 +517,17 @@ flowchart LR
 			</div>
 			<button
 				type="button"
+				bind:this={railSheetTrigger}
+				onclick={() => (railSheet = true)}
+				aria-haspopup="dialog"
+				aria-expanded={railSheet}
+				class="flex items-center gap-2 self-stretch rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+			>
+				<FileCog class="size-3.5" />
+				post
+			</button>
+			<button
+				type="button"
 				onclick={toggleWrap}
 				aria-pressed={wrapped}
 				class="ml-auto flex items-center gap-2 self-stretch rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
@@ -806,9 +823,13 @@ flowchart LR
 		{/if}
 	{/snippet}
 
-	<!-- Phones: the same rail arrives as a bottom sheet (earendil's
-	     RailDrawer recipe) — drag down, Esc, or the X dismisses it. -->
-	<RailDrawer label="Post actions and settings" icon={FileCog}>
+	<!-- Phones: the same rail arrives as a bottom sheet, summoned by the
+	     `post` chip in the controls row (RailDrawer is sheet-only now). -->
+	<RailDrawer
+		label="Post actions and settings"
+		bind:open={railSheet}
+		bind:trigger={railSheetTrigger}
+	>
 		{@render railBody()}
 	</RailDrawer>
 

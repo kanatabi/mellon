@@ -88,6 +88,13 @@
 			!!data.from ||
 			!!data.to
 	);
+
+	// Sheet trigger rides the status row's far edge (phones only) — no
+	// floating FAB (owner call 2026-11-08). The count badges tags + the
+	// date window, the things this row's chips don't already show.
+	let filtersSheet = $state(false);
+	let filtersTrigger = $state<HTMLElement | undefined>();
+	const sheetCount = $derived(data.tag.length + (data.from ? 1 : 0) + (data.to ? 1 : 0));
 </script>
 
 <svelte:head>
@@ -128,6 +135,21 @@
 					<X class="size-3" /> clear
 				</a>
 			{/if}
+			<!-- Sheet trigger, phones only, pinned to the row's far edge. -->
+			<button
+				type="button"
+				bind:this={filtersTrigger}
+				onclick={() => (filtersSheet = true)}
+				aria-haspopup="dialog"
+				aria-expanded={filtersSheet}
+				class="ml-auto flex items-center gap-2 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground lg:hidden {sheetCount
+					? 'border-brand/50 text-foreground'
+					: ''}"
+			>
+				<SlidersHorizontal class="size-3.5" />
+				filters{#if sheetCount}
+					· {sheetCount}{/if}
+			</button>
 		</div>
 
 		<!-- Row grammar mirrors the public feed: hairline rules, mono meta, serif
@@ -261,8 +283,8 @@
 		</p>
 	{/snippet}
 
-	<!-- Phones: filters arrive as a bottom sheet instead of the inline rail. -->
-	<RailDrawer label="Filters" icon={SlidersHorizontal}>
+	<!-- Phones: filters arrive as a bottom sheet, summoned by the row chip. -->
+	<RailDrawer label="Filters" bind:open={filtersSheet} bind:trigger={filtersTrigger}>
 		{@render filtersBody()}
 	</RailDrawer>
 </section>
