@@ -1112,3 +1112,51 @@ the GLYPH (it didn't) — verified the wrong pixel.
   dynamic components need UPPERCASE bindings (`const ModeIcon = $derived(...)`);
 - when verifying a render, assert the smallest thing that can break — the
   DOM dump / bounding box of the icon, not the row containing it.
+
+### 2026-11-08 — control center round 1: the post rail joins the palette
+
+Owner's doctrine, stated at last: _the command palette is the control center
+of the entire portal._ The approved plan — edit buffers, live submenus,
+picker tasks, date grammar — landed as three commits; the parity rule is now
+law (§7): everything a page lets you change, ⌘K can change while that page
+is mounted. Exemptions ruled, not drifted: confirmation theater (delete
+always opens its dialog), spatial state (bulk selection stays in the grid),
+secrets values (masked + CAS want a form — palette navigates, never edits).
+
+- **`6664cf7` feat(palette-edit)**: the primitives. EDIT mode — a command
+  with `edit+seed+commit` turns the query into a SEEDED buffer (you edit,
+  never replace); Enter commits through the closure and STAYS OPEN
+  (chaining title→subtitle→date is the keyboard-first point — ruling);
+  `commit` returning false rejects — an invalid date can't eat a keystroke.
+  Submenus went LIVE: hold the parent's id, re-read children from the
+  reactive tree — snapshotted ✓-marks would lie after a toggle;
+  `keepOpen` rows stay put (selection stays on the flipped row — your eyes
+  are already there); `createChild` synthesizes `+ create "xyz"` from the
+  filter text — eager vocabulary, palette edition. Picker tasks: one
+  engine, many destinations (`insert` cursor markdown vs `cover` thumbnail,
+  page-published per-task handlers). `date-expr.ts`: today/-3d/nov 12/next
+  monday/this week, ranges `a..b` + window words parsed from day one for
+  the filter pages, month-end clamp, nov-31-is-a-typo rejection; arrows
+  step the buffer (←→ ±1d, ↑↓ ±1w). vitest 35 → 44.
+- **`e8c34ff` feat(editor-palette-fields)**: the rail, ⌘K-complete — Set
+  title/subtitle/date, Set slug (pre-creation only; commit freezes
+  auto-derivation like typing it does), Edit tags (✓-live submenu +
+  create), Cover image (upload-then-SET singular / search library with the
+  COVER pill), Download markdown · Save as PDF · Copy markdown. Every
+  commit closes over the rail's OWN setter — the parity rule made safe:
+  no second implementation to rot.
+- **Verification earned its keep** (control-verify.js, 20/20 headless):
+  pixel-level runs found TWO real bugs grep-and-hope would miss — task
+  modes inheriting the submenu's skip-back-row selection (Enter hit a
+  phantom row; cover silently did nothing), and created tags invisible
+  until reload (fixed with the Combobox's local-vocab ride). Also caught:
+  tests against the in-memory mock are NOT idempotent across runs — the
+  corpus survives (that's the point of it); fresh server per suite.
+  One lesson re-learned while writing tests: trust the tool, not the
+  fixture arithmetic — the failing shiftDate assertion was the TEST's
+  wrong expectation (Nov 8 + 1w + 1d = the 16th), the parser was right.
+- **Docs** (this commit): §7 grows the task-mode doctrine (edit/insert,
+  live submenus, date grammar) and the control-center parity rule with its
+  three exemptions; §11.4 the buffer/selection anatomy and the rail-parity
+  note. Next surfaces by the owner's map: photo-detail form, posts/photos
+  list filters (where the range grammar finally gets its consumer).

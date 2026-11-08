@@ -127,7 +127,9 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   `photos`, `posts`, `tags` (API content results), `actions` (new post, save, publish,
   toggles), `go to`, `open recent`. Mode prefixes re-route this list — see **Mode
   grammar** below. Shortcut-hint column. Built on a
-  **command registry** (`commands.ts`: `{ id, title, shortcut?, run }`) — pages register,
+  **command registry** (`commands.ts`: `{ id, title, shortcut?, run? }` plus the
+  declarative shapes — `children`, `arm`, `edit`+`seed`+`commit`, `keepOpen`, `task`,
+  `createChild`) — pages register,
   the palette renders (the rail kit's plug-and-play contract, applied to navigation).
   Context registration is real (`page-commands.svelte.ts`): a page publishes its verbs in
   an effect whose cleanup unregisters — the editor's save/publish/unpublish/delete… appear
@@ -161,23 +163,54 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   (armed/disarmed/group-routing/API-gating all unit-tested in node). Pills and legend
   render SVG icons (ChevronRight/Search/Hash), never text glyphs — mono stacks lack
   `❯ ⌕` and font fallback drifts the baseline.
-- **Submenus & the INSERT task** (owner calls, 2026-11-08): the palette can go DEEPER
+- **Submenus & task modes** (owner calls, 2026-11-08): the palette can go DEEPER
   without closing. `Command` is declarative all the way down: `children?: Command[]`
   makes a row a parent (Enter swaps the list to its options under a `← parent` back
   row; typing filters children locally), `arm?: PaletteMode` makes a row enter a mode
   instead of running — pages describe shapes, the palette interprets, nobody sniffs ids.
-  `insert` is the task mode that closes the ⌘K→cursor gap: **no sigil arms it** (typed
-  grammar stays the user-facing vocabulary; `insert` exists only as a command's
-  destination); its rows are API photos whose Enter runs the page-published handle
-  (`setPhotoInsert`, same register/cleanup lifecycle as commands — leaving the editor
-  cannot leave a stale door). Escape unwinds ONE layer per press: insert → submenu →
-  palette; typed modes are grammar, not a path, so Esc closes straight through them.
-  The import split states the doctrine: **global `Import image` = upload into the
-  library and that's it; the editor's `Import image into post` = a task with two
+  Submenus read their children **LIVE** (the parent's id is held, children re-resolved
+  from the reactive command tree) — a snapshotted array would keep showing yesterday's
+  ✓-marks after a toggle; `keepOpen?: true` rows run without closing (the next tag is
+  already typed); `createChild?(filterText)` lets a parent synthesize
+  `+ create "xyz"` — the eager-vocabulary doctrine, palette edition.
+  **Task modes have no sigils** (typed grammar stays the user-facing vocabulary;
+  tasks exist only as a command's destination): `insert` closes the ⌘K→cursor gap —
+  rows are API photos whose Enter runs the page-published handler for the declared
+  **task** (`setPhotoTask('insert' | 'cover', fn)`, same register/cleanup lifecycle —
+  one picker engine, many destinations: cursor markdown or the cover field);
+  `edit` is the buffer mode — `edit: true` + `seed` (the field's CURRENT value: you
+  EDIT, never replace) + `commit(buffer)`, Enter saves and **stays open** so
+  title→subtitle→date chains in one session, `commit` returning `false` REJECTS
+  (an invalid value must never eat a keystroke). The pill names the field
+  (`TITLE` `DATE` `COVER`), not the generic mode.
+  Escape unwinds ONE layer per press: buffer/task → submenu → palette; typed modes
+  are grammar, not a path, so Esc closes straight through them.
+  The import split states the upload doctrine: **global `Import image` = upload into
+  the library and that's it; the editor's `Import image into post` = a task with two
   doors** — `Upload new image…` (picker in upload mode, every finished upload inserts
-  `![alt](src)` at the cursor behind the still-open dialog) or `Search library`
-  (INSERT mode, no dialog at all). Upload THEN apply is the editor's promise; the
-  mouse doors (toolbar/rail keys) keep the full picker.
+  `![alt](src)` at the cursor behind the still-open dialog; covers take the same shape
+  with singular semantics — first upload sets the cover, dialog closes) or
+  `Search library` (task mode, no dialog at all). Upload THEN apply is the editor's
+  promise; the mouse doors (toolbar/rail keys) keep the full picker.
+- **Date grammar for the ✎ DATE buffer** (control-center round 1): the keyboard answer
+  to a calendar popover — dates are day-arithmetic and arithmetic is a keyboard
+  artifact. The pure `date-expr.ts` parses `today/tomorrow/yesterday`, ISO verbatim,
+  relative `-3d +2w +1m` (month-end clamped), `nov 12` / `12 november` (current year,
+  honest no-rollover), `monday / next monday` (1–7 days out), window words
+  (`this/last/next week|month`) and ranges `a..b` — ranges parsed from day one for the
+  filter pages; a single-date field REJECTS them (parse feedback shows in the hint
+  line). The arrows stop moving rows and start moving the day: `←→ ±1d`, `↑↓ ±1w`.
+  The calendar popover stays the mouse door; both write through the same setter.
+- **Control-center parity doctrine** (owner call, 2026-11-08): the command palette is
+  the portal's control surface — **everything a page lets you change, ⌘K can change
+  while that page is mounted.** Three principled exemptions: _confirmation theater_
+  (destructive acts open their dialog from the palette, never fire from a keystroke);
+  _spatial state_ (bulk row-selection lives in the grid); _secrets values_ (masked
+  reveal + CAS want a real form — the palette navigates and selects, never edits a
+  value). The parity is safe because commands CLOSE OVER the page's own setters —
+  there is no second implementation to rot (the rail↔palette title edit writes the
+  same `draft` field). Rollout: the post editor's rail is done (fields, tags, cover,
+  export); photo-detail form and the posts/photos list filters are next surfaces.
 - Roving tabindex for list rows; every table action keyboard-reachable; visible
   `focus-visible` rings (house style); forms fully labeled (native focus/announce);
   `Ctrl+Enter` save/publish convention in the editor.
@@ -325,6 +358,12 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   stay mounted, so switching is instant and the hidden preview keeps
   rendering ahead of the visit. On `lg+` wrap lives in the meta band beside the
   eye toggle — same snippet, two bands. (Owner call 2026-11-08.)
+  **The whole rail is palette-reachable** (control-center parity, §7): title/subtitle/
+  date as `✎` edit buffers, slug only pre-creation, tags as a live toggle submenu with
+  eager create, cover as the upload-then-set / pick-as-cover task, export as three
+  plain commands. Every one writes through the rail's own setter — the palette is the
+  keyboard for the same state, never a second copy. The read-only TIMELINE stays out
+  by design: there is nothing to change.
 - **Photos (the darkroom)**: presented as a working library, not a moodboard.
   Two views — tiles (the default; phones only ever see tiles) and a sortable
   table (`photo · alt · collection · gallery · size · created`, headers linking
@@ -381,7 +420,11 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   counts). GROUP chips prefix each row only while MULTIPLE kinds share the plain
   list — a forced mode, a submenu, or the legend's own silence says what rows are.
   Submenu view: back row first (`← parent` · `esc` hint), children below in declared
-  order. Idle shows the legend footer (`› commands · ⌕ content · # pages`) — sigils
+  order — selection lands on the FIRST OPTION (back rows exit, so they never get the
+  default highlight; task modes riding above a submenu have no back row and select
+  from the top). The EDIT buffer mode has no list at all: the hint line IS the UI —
+  live parse feedback for dates (`2026-11-09 — ⏎ saves`), commit state for text.
+  Idle shows the legend footer (`› commands · ⌕ content · # pages`) — sigils
   documented, not folklore.
 - **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
   the charm is free.
