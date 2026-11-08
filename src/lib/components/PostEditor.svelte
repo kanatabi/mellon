@@ -401,7 +401,10 @@ flowchart LR
 		const cmds: Command[] = [
 			{
 				id: 'editor.save',
-				title: isNew ? 'Create post' : 'Save draft',
+				// "Save draft" in BOTH modes (owner confusion fix): pressing it
+				// persists — create-vs-update mechanics are plumbing, not a
+				// different verb the user has to remember.
+				title: 'Save draft',
 				group: 'actions',
 				shortcut: '⌘↵',
 				run: () => void save()
@@ -742,7 +745,7 @@ flowchart LR
 				onclick={() => void save()}
 				class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
 			>
-				{isNew ? 'create' : 'save draft'}<span class="ml-1.5 text-muted-foreground">⏎</span>
+				save draft<span class="ml-1.5 text-muted-foreground">⏎</span>
 			</button>
 			{#if status === 'published'}
 				<button
