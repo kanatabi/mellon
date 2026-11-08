@@ -66,6 +66,10 @@
 				EditorView.updateListener.of((u) => {
 					if (!u.docChanged) return;
 					emitted = u.state.doc.toString();
+					// Assign the bindable prop ITSELF — writing only through
+					// `onchange` left the parent's bind:value stale (typing never
+					// reached draft.content, so the live preview never moved).
+					value = emitted;
 					onchange(emitted);
 				})
 			]

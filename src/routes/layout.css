@@ -122,10 +122,25 @@
 	font-family: var(--font-mono);
 	font-size: 0.8125rem;
 }
-/* Mermaid fences: SOURCE-REVEAL deviation (journal 2026-11-08) — the preview
-   shows exactly what lumen stores; client render is earendil's job. */
+/* Mermaid fences: SOURCE-REVEAL is the SSR/fallback state; the editor's
+   preview hydrates them into diagrams client-side (mermaid-preview.ts —
+   owner call 2026-11-08, reversing the earlier deviation). The escaped
+   source stays in the DOM: hidden once a render lands, revealed on error. */
 .preview .prose .mermaid-src {
 	border-style: dashed;
+}
+.preview .mermaid-src[hidden] {
+	display: none;
+}
+.preview .mermaid-box {
+	display: flex;
+	justify-content: center;
+	margin: 1rem 0;
+	overflow-x: auto;
+}
+.preview .mermaid-box svg {
+	max-width: 100%;
+	height: auto;
 }
 .preview .prose .article-grid {
 	gap: 1rem;

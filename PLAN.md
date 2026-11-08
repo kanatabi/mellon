@@ -482,3 +482,43 @@ goto options → `{ replace, reset }` (`noScroll`/`keepFocus`/`replaceState` are
 gone — `reset:false` covers both scroll and focus). Both found by check, fixed
 before commit. Sort-direction sign bug caught by the smoke sweep, pinned by a
 new test assertion (newest[0] must be the just-touched draft).
+
+### 2026-11-08 — owner review round 2: the typing-never-saved bug, folding rails fixed
+
+Seven reports; the list found two real defects and one overridden deviation:
+
+1/4. **Rail collapse buttons died silently** — `onclick={rail.toggle}` passes a
+prototype method detached from `this`; every click threw a TypeError behind the
+handler. All three rails shared the bug. Fix in `rails.svelte.ts`: arrow-bound
+class fields (`init = () => …`), so any passing style works. Lesson journaled:
+never hand a `this`-dependent method as an event reference.
+
+3. **The editor never saw the typing — a data-loss bug.** `CodeMirrorEditor`
+   pushed doc changes only through `onchange`, never assigning its `$bindable`
+   `value`; the parent's `bind:value` left `draft.content` frozen at the seed.
+   Preview looked static AND **save wrote the old content back**. Fix: assign
+   `value = emitted` in the update listener (bindable props must write themselves).
+   Verified end-to-end: typing now reaches the doc → CAS PUT carries it.
+
+4. **Mermaid renders in the live preview** — owner reversed the source-reveal
+   deviation: `src/lib/mermaid-preview.ts` lazy-imports `mermaid@12.2.0` (same
+   pin as earendil) after each preview swap, `pre.mermaid-src` → SVG box; theme
+   flip re-renders from the kept sources; parse errors reveal the source dashed.
+   The escaped source stays the DOM ground truth — Route B rule intact. The
+   server pipeline still emits source-reveal (SSR + no-JS fallback).
+
+5. **Preview pane ghost below the editor on toggle-off**: the outro `fade`
+   kept the pane a grid child while the container had already collapsed to one
+   column — it reflowed to row 2 mid-fade. Removal is now immediate; transitions
+   on layout-participating children are the trap, journaled.
+
+6. **Breadcrumb is navigation** — segments are links (cumulative paths), the
+   last wears `aria-current="page"`; the root reads `dashboard`.
+
+7. **Copy de-semicolonised** — every button, label, pill, message and empty
+   state is normal prose; the `;` device survives ONLY in the wordmark `mellon;`
+   (§11.2 amended). Near-real-time preview: debounce 250→120ms (one Shiki
+   round-trip per burst, feels live).
+
+Gates: lint 0 standalone · check 0/0 · 18/18 tests · build + SSR smoke
+(breadcrumb links, clean copy, wordmark intact, lazy mermaid chunk present).

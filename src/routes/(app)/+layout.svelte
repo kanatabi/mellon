@@ -161,7 +161,7 @@
 						? 'lg:opacity-0'
 						: 'lg:opacity-100'}"
 				>
-					end session<span class="text-brand">;</span>
+					end session
 				</button>
 			</form>
 		</div>
@@ -172,13 +172,22 @@
 		<header
 			class="relative flex h-14 items-center justify-between gap-4 border-b border-border px-6"
 		>
-			<p class="min-w-0 truncate font-mono text-xs text-muted-foreground" aria-label="Breadcrumb">
+			<nav class="min-w-0 truncate font-mono text-xs" aria-label="Breadcrumb">
 				{#each crumb as part, i (part + i)}
-					{#if i > 0}<span aria-hidden="true" class="mx-1">/</span>{/if}{part}
+					{#if i > 0}<span aria-hidden="true" class="mx-1 text-muted-foreground">/</span>{/if}
+					{#if i === crumb.length - 1}
+						<span aria-current="page" class="text-foreground">{part}</span>
+					{:else}
+						<a
+							href={'/' + crumb.slice(0, i + 1).join('/')}
+							class="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+							>{part}</a
+						>
+					{/if}
 				{:else}
-					dashboard
+					<span aria-current="page" class="text-foreground">dashboard</span>
 				{/each}
-			</p>
+			</nav>
 			<button
 				type="button"
 				onclick={() => {

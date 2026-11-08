@@ -124,7 +124,7 @@
 				</li>
 			{:else}
 				<li class="px-3 py-6 text-center font-mono text-xs text-muted-foreground">
-					nothing matches &ldquo;{query}&rdquo;;
+					nothing matches &ldquo;{query}&rdquo;
 				</li>
 			{/each}
 		</ul>

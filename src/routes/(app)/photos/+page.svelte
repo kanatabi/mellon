@@ -53,14 +53,12 @@
 </script>
 
 <svelte:head>
-	<title>photos · mellon;</title>
+	<title>photos · mellon</title>
 </svelte:head>
 
 <section class="flex flex-col gap-6">
 	<div class="flex items-center justify-between gap-4">
-		<h1 class="font-brand text-4xl font-semibold tracking-tight">
-			Photos<span class="text-brand">;</span>
-		</h1>
+		<h1 class="font-brand text-4xl font-semibold tracking-tight">Photos</h1>
 		<label
 			class="flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-brand hover:text-foreground has-[input:focus-visible]:border-brand has-[input:focus-visible]:text-foreground"
 		>
@@ -76,7 +74,7 @@
 		</label>
 	</div>
 	{#if busy}
-		<p class="font-mono text-xs text-muted-foreground">probing dimensions…;</p>
+		<p class="font-mono text-xs text-muted-foreground">probing dimensions…</p>
 	{:else if message}
 		<p class="w-fit rounded-full bg-brand/10 px-3 py-1 font-mono text-xs text-brand">{message}</p>
 	{/if}
@@ -89,7 +87,7 @@
 			/>
 			<Images class="relative size-6 text-muted-foreground" />
 			<p class="relative font-mono text-xs text-muted-foreground">
-				no photographs yet — the darkroom is empty;
+				no photographs yet — the darkroom is empty
 			</p>
 		</div>
 	{:else}

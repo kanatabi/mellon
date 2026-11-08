@@ -204,6 +204,10 @@ tool, a different posture. Every rule below serves that sentence.
 Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px. The instrument is
 comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 
+Voice (owner call 2026-11-08): component copy is **normal** — buttons, labels, pills,
+messages and empty states carry no decorative `;`. The semicolon lives only in the
+**wordmark** (`mellon;`), same pen-word device as the public site's `gofar;`.
+
 ### 11.3 Color discipline
 
 - The zinc scale + **one violet** (`--brand`): active/published/primary verb. **Red exists

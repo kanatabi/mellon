@@ -59,7 +59,7 @@
 		try {
 			const v = await client.writeSecret(data.app, data.env, rows, cas);
 			await invalidateAll();
-			message = { kind: 'ok', text: `saved as version ${v} — Bao has the audit;` };
+			message = { kind: 'ok', text: `saved as version ${v} — Bao has the audit` };
 		} catch (e) {
 			message = {
 				kind: 'err',
@@ -113,7 +113,7 @@
 </script>
 
 <svelte:head>
-	<title>secrets · mellon;</title>
+	<title>secrets · mellon</title>
 </svelte:head>
 
 {#if !data.secret || !data.meta}
@@ -123,16 +123,14 @@
 			opacity={0.08}
 		/>
 		<p class="relative font-mono text-xs text-muted-foreground">
-			the policy grants no paths — nothing to show;
+			the policy grants no paths — nothing to show
 		</p>
 	</div>
 {:else}
 	<section class="flex flex-col gap-6">
 		<div class="flex flex-wrap items-end justify-between gap-4">
 			<div class="flex flex-col gap-1">
-				<h1 class="font-brand text-4xl font-semibold tracking-tight">
-					Secrets<span class="text-brand">;</span>
-				</h1>
+				<h1 class="font-brand text-4xl font-semibold tracking-tight">Secrets</h1>
 				<!-- The double-`data` KV-v2 envelope, humanized: kv/<app>/<env>. -->
 				<p class="font-mono text-xs text-muted-foreground">
 					kv / {data.app} / {page.url.searchParams.get('env') ?? data.env} · v{cas}
@@ -230,7 +228,7 @@
 				onclick={addRow}
 				class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
-				+ key;
+				+ key
 			</button>
 			<button
 				type="button"
@@ -238,7 +236,7 @@
 				class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				aria-expanded={historyOpen}
 			>
-				<History class="size-3.5" /> history;
+				<History class="size-3.5" /> history
 			</button>
 			<button
 				type="button"
@@ -246,7 +244,7 @@
 				onclick={() => void save()}
 				class="ml-auto rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
 			>
-				save as v{cas + 1}<span class="text-white/70">;</span>
+				save as v{cas + 1}
 			</button>
 		</div>
 
@@ -265,7 +263,7 @@
 						onclick={() => (historyOpen = false)}
 						class="font-mono text-xs text-muted-foreground hover:text-foreground"
 					>
-						close;
+						close
 					</button>
 				</div>
 				<div class="flex flex-col gap-1">
@@ -299,7 +297,7 @@
 					</pre>
 				{/if}
 				<p class="mt-6 font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-					values are masked in diffs too — Bao's audit (server-side) holds the true bytes;
+					values are masked in diffs too — Bao's audit (server-side) holds the true bytes
 				</p>
 			</aside>
 		{/if}

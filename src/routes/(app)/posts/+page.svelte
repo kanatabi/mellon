@@ -26,10 +26,10 @@
 	const fmt = new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric' });
 
 	const statusChips: { label: string; value: PostStatus | null }[] = [
-		{ label: 'all;', value: null },
-		{ label: 'published;', value: 'published' },
-		{ label: 'draft;', value: 'draft' },
-		{ label: 'unpublished;', value: 'unpublished' }
+		{ label: 'all', value: null },
+		{ label: 'published', value: 'published' },
+		{ label: 'draft', value: 'draft' },
+		{ label: 'unpublished', value: 'unpublished' }
 	];
 
 	const sortChips = [
@@ -72,20 +72,18 @@
 </script>
 
 <svelte:head>
-	<title>posts · mellon;</title>
+	<title>posts · mellon</title>
 </svelte:head>
 
 <section class="flex min-h-full gap-4">
 	<div class="flex min-w-0 grow flex-col gap-6">
 		<div class="flex items-end justify-between gap-4">
-			<h1 class="font-brand text-4xl font-semibold tracking-tight">
-				Posts<span class="text-brand">;</span>
-			</h1>
+			<h1 class="font-brand text-4xl font-semibold tracking-tight">Posts</h1>
 			<a
 				href="/posts/new"
 				class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
 			>
-				<Plus class="size-4" /> new post<span class="text-white/70">;</span>
+				<Plus class="size-4" /> new post
 			</a>
 		</div>
 
@@ -108,7 +106,7 @@
 					href="/posts"
 					class="flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
-					<X class="size-3" /> clear;
+					<X class="size-3" /> clear
 				</a>
 			{/if}
 		</div>
@@ -137,7 +135,7 @@
 				</a>
 			{:else}
 				<p class="border-t border-border py-10 text-center font-mono text-xs text-muted-foreground">
-					nothing matches these filters;
+					nothing matches these filters
 				</p>
 			{/each}
 		</div>
@@ -160,7 +158,7 @@
 				<PanelRightOpen class="size-4" />
 				<span class="font-mono text-[10px] tracking-widest uppercase [writing-mode:vertical-rl]">
 					filters{#if data.tag.length}
-						· {data.tag.length}{/if};
+						· {data.tag.length}{/if}
 				</span>
 			</button>
 		{:else}
@@ -170,9 +168,7 @@
 				aria-label="Filters"
 			>
 				<div class="flex items-center justify-between">
-					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-						filters;
-					</p>
+					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">filters</p>
 					<button
 						type="button"
 						onclick={postsRail.toggle}
@@ -185,7 +181,7 @@
 
 				<div class="flex flex-col gap-2">
 					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						sort;
+						sort
 					</p>
 					<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
 						{#each sortChips as chip (chip.value)}
@@ -200,7 +196,7 @@
 								{#if chip.Icon}
 									<chip.Icon class="size-3" />
 								{/if}
-								{chip.label};
+								{chip.label}
 							</a>
 						{/each}
 					</div>
@@ -209,7 +205,7 @@
 				<div class="flex flex-col gap-1.5">
 					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
 						tags{#if data.tag.length}
-							· {data.tag.length} on{/if};
+							· {data.tag.length} on{/if}
 					</p>
 					<!-- OR semantics, matching the public list contract. -->
 					<div class="flex flex-wrap gap-1.5">
@@ -230,7 +226,7 @@
 				</div>
 
 				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
-					filters ride the URL — the API does the work, the page never sorts;
+					filters ride the URL — the API does the work, the page never sorts
 				</p>
 			</aside>
 		{/if}

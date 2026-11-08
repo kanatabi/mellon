@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { beforeNavigate } from '$app/navigation';
+	import { goto, beforeNavigate } from '$app/navigation';
 	import { Clock, Eye, EyeOff, PanelRightClose, PanelRightOpen } from 'lucide-svelte';
+	import { tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
+	import { renderMermaid } from '#lib/mermaid-preview.ts';
+	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
 	import type {
 		AdminPhoto,
@@ -90,8 +92,11 @@ flowchart LR
 		}
 	});
 
-	// Debounced true-to-prod preview (server endpoint = the vendored pipeline).
+	// Debounced near-real-time preview (server endpoint = the vendored pipeline).
+	// 120ms: reads as "while typing" but batches a burst of keystrokes into one
+	// render round-trip — the pipeline runs Shiki, not a regex.
 	let previewTimer: ReturnType<typeof setTimeout>;
+	let previewEl: HTMLDivElement | undefined = $state();
 	$effect(() => {
 		const md = draft.content;
 		if (!showPreview) return;
@@ -100,10 +105,21 @@ flowchart LR
 			try {
 				html = (await preview(md)).html;
 			} catch {
-				html = '<p class="font-mono text-xs text-danger">preview failed;</p>';
+				html = '<p class="font-mono text-xs text-danger">preview failed</p>';
 			}
-		}, 250);
+		}, 120);
 		return () => clearTimeout(previewTimer);
+	});
+
+	// Mermaid renders client-side after each preview swap (reads `html` on
+	// purpose: it is the dependency that means "fresh DOM inside the pane").
+	$effect(() => {
+		if (!previewEl || !showPreview || !html) return;
+		void tick().then(() => renderMermaid(previewEl!));
+	});
+	$effect(() => {
+		void themeState.theme; // track flips; re-diagram the kept sources
+		if (previewEl && showPreview && html) void renderMermaid(previewEl, true);
 	});
 
 	function touch() {
@@ -170,7 +186,7 @@ flowchart LR
 				const created = await client.createPost({ ...draft, title: draft.title || 'Untitled' });
 				const res = await client.publishPost(created.slug);
 				dirty = false;
-				message = { kind: 'ok', text: 'created · published;' };
+				message = { kind: 'ok', text: 'created · published' };
 				await goto(`/posts/${res.slug}`, { replace: true, reset: false });
 			} catch (e) {
 				message = { kind: 'err', text: e instanceof Error ? e.message : 'publish failed' };
@@ -184,7 +200,7 @@ flowchart LR
 		rev = res.rev;
 		updatedAt = res.updatedAt;
 		publishedAt = res.publishedAt;
-		message = { kind: 'ok', text: 'published;' };
+		message = { kind: 'ok', text: 'published' };
 	}
 
 	async function unpublish() {
@@ -192,7 +208,7 @@ flowchart LR
 		status = res.status;
 		rev = res.rev;
 		updatedAt = res.updatedAt;
-		message = { kind: 'ok', text: 'unpublished — off the shelf;' };
+		message = { kind: 'ok', text: 'unpublished — off the shelf' };
 	}
 
 	async function remove() {
@@ -223,7 +239,7 @@ flowchart LR
 </script>
 
 <svelte:head>
-	<title>{draft.title || 'new post'} · mellon;</title>
+	<title>{draft.title || 'new post'} · mellon</title>
 </svelte:head>
 
 <!-- ⌘/Ctrl+Enter saves — window-scoped (an element handler on a plain
@@ -257,7 +273,7 @@ flowchart LR
 					aria-pressed={showPreview}
 				>
 					{#if showPreview}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-					preview;
+					preview
 				</button>
 				{#if !isNew}
 					<button
@@ -265,7 +281,7 @@ flowchart LR
 						onclick={() => void remove()}
 						class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-danger transition-colors hover:bg-danger/10"
 					>
-						delete;
+						delete
 					</button>
 				{/if}
 				<button
@@ -283,7 +299,7 @@ flowchart LR
 						onclick={() => void unpublish()}
 						class="rounded-full border border-border px-4 py-1.5 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 					>
-						unpublish;
+						unpublish
 					</button>
 				{:else}
 					<button
@@ -292,7 +308,7 @@ flowchart LR
 						onclick={() => void publish()}
 						class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 					>
-						publish<span class="text-white/70">;</span>
+						publish
 					</button>
 				{/if}
 			</div>
@@ -320,8 +336,12 @@ flowchart LR
 			</div>
 
 			{#if showPreview}
+				<!-- NO outro transition here: while fading, the pane is still a grid
+				     child — the container has already collapsed to one column, so the
+				     ghost reflowed BELOW the editor for its last frames (owner report
+				     #5). Immediate removal is the smooth choice. -->
 				<div
-					transition:fade={{ duration: 160 }}
+					bind:this={previewEl}
 					class="preview min-h-0 overflow-y-auto rounded-lg border border-border bg-card p-5"
 					aria-label="Rendered preview"
 				>
@@ -359,7 +379,7 @@ flowchart LR
 			>
 				<div class="flex items-center justify-between">
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-						settings;
+						settings
 					</p>
 					<button
 						type="button"
@@ -405,7 +425,7 @@ flowchart LR
 								touch();
 							}}
 						/>
-						<span class="font-mono text-[10px] text-muted-foreground/60">fixed at creation;</span>
+						<span class="font-mono text-[10px] text-muted-foreground/60">fixed at creation</span>
 					{:else}
 						<input
 							class="w-full rounded-md border border-border bg-muted/40 px-1 py-0.5 font-mono text-xs text-muted-foreground outline-none"
@@ -413,7 +433,7 @@ flowchart LR
 							disabled
 							aria-label="Slug (immutable after creation)"
 						/>
-						<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move;</span>
+						<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move</span>
 					{/if}
 				</label>
 
@@ -431,7 +451,7 @@ flowchart LR
 
 				<div class="flex flex-col gap-1.5">
 					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-						tags;
+						tags
 					</p>
 					<div class="flex flex-wrap gap-1.5">
 						{#each tags as t (t.name)}
@@ -460,7 +480,7 @@ flowchart LR
 						bind:value={draft.thumbnail}
 						onchange={touch}
 					>
-						<option value={null}>none;</option>
+						<option value={null}>none</option>
 						{#each photos as p (p.id)}
 							<option value={p.src}>{p.alt.slice(0, 32)}</option>
 						{/each}
@@ -472,7 +492,7 @@ flowchart LR
 						class="flex flex-col gap-1 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground"
 					>
 						<p class="mb-1 flex items-center gap-2 text-[10px] tracking-widest uppercase">
-							<Clock class="size-3" />timeline;
+							<Clock class="size-3" />timeline
 						</p>
 						<span>created · {fmtDay(seed.createdAt)}</span>
 						<span>published · {fmtDay(publishedAt)}</span>
