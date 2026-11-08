@@ -26,7 +26,7 @@
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
-	import { setPageCommands } from '#lib/page-commands.svelte.ts';
+	import { setPageCommands, setPhotoInsert } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
 	import type {
 		AdminPhoto,
@@ -149,7 +149,7 @@ flowchart LR
 	// from the editor bands or the rail media section. `insert` mode writes
 	// through the CodeMirror handle — the docChanged listener does the rest
 	// (value, dirty, preview — all for free).
-	let pickerMode = $state<'thumbnail' | 'insert' | null>(null);
+	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | null>(null);
 	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
 	// keeps rendering ahead of the switch — that's what makes it instant).
@@ -429,7 +429,26 @@ flowchart LR
 			id: 'editor.image',
 			title: 'Import image into post',
 			group: 'actions',
-			run: () => (pickerMode = 'insert')
+			// submenu doctrine (§7): the task has TWO doors, both ending at
+			// the cursor — upload THEN apply (dialog owns bytes), or search
+			// the library (palette owns finding). The toolbar/rail buttons
+			// keep opening the full picker for mouse users — one door each.
+			children: [
+				{
+					id: 'editor.image.upload',
+					title: 'Upload new image…',
+					group: 'actions',
+					shortcut: 'dialog',
+					run: () => (pickerMode = 'upload')
+				},
+				{
+					id: 'editor.image.library',
+					title: 'Search library',
+					group: 'actions',
+					shortcut: 'inserts at cursor',
+					arm: 'insert'
+				}
+			]
 		});
 		// reads `wrapped` for the state hint — re-registers on every flip
 		cmds.push({
@@ -439,8 +458,15 @@ flowchart LR
 			shortcut: wrapped ? 'on' : 'off',
 			run: () => toggleWrap()
 		});
+		// the insertion door for the palette's INSERT mode — same lifecycle
+		// contract as the commands themselves: mounted editor owns the cursor,
+		// leaving it must never leave a stale door behind
 		setPageCommands(cmds);
-		return () => setPageCommands([]);
+		setPhotoInsert((p) => editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`));
+		return () => {
+			setPageCommands([]);
+			setPhotoInsert(null);
+		};
 	});
 
 	const fmtDate = new Intl.DateTimeFormat('en-GB', {
@@ -984,10 +1010,18 @@ flowchart LR
 				if (pickerMode === 'thumbnail') {
 					draft.thumbnail = p.src;
 					touch();
-				} else if (pickerMode === 'insert') {
+				} else if (pickerMode === 'insert' || pickerMode === 'upload') {
+					// upload mode's "library (now)" rows are pickable too —
+					// choosing one mid-flow obviously means "use this one"
 					editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`);
 				}
 				pickerMode = null;
+			}}
+			// 'upload' is the palette child-command's door: upload THEN apply —
+			// every finished upload lands at the cursor, dialog stays open
+			// (multi-upload sessions are normal), close is the user's call
+			onUploaded={(p) => {
+				if (pickerMode === 'upload') editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`);
 			}}
 		/>
 	{/if}
