@@ -81,6 +81,8 @@ browser ──► mellon SSR (UI + session cookie) ──/admin-api/*──► l
 
 ## 5. Post editor (the heart of P0)
 
+The editor's chrome follows §11.4: split view, meta rail, two verbs.
+
 - **Content model**: raw Markdown, ` ```mermaid ` fences and `:::` grids **intact** (Route
   B — the lumen contract). The editor edits the artifact that gets stored; no
   transformation layer, no WYSIWYG content model.
@@ -102,6 +104,8 @@ browser ──► mellon SSR (UI + session cookie) ──/admin-api/*──► l
   upsert fire server-side; the UI shows state (`draft;` / `published;` pills).
 
 ## 6. Pages (P0)
+
+Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view anatomy in §11.4.
 
 | route | content |
 | --- | --- |
@@ -155,3 +159,84 @@ browser ──► mellon SSR (UI + session cookie) ──/admin-api/*──► l
 - Media picker in posts — blocked on lumen's upload-pipeline decision (deferred there).
 - Whether `/secrets` edits should propose via PR-style diff-confirm (vs direct CAS PUT) —
   lean: direct save + CAS + history (Bao keeps the audit), no ceremony.
+
+## 11. UI system — the look of the instrument
+
+The brief: *"like any other CMS, but simple and modern."* The resolution: earendil is an
+editorial artifact; mellon is an **instrument**. Not its antithesis — the same maker's
+tool, a different posture. Every rule below serves that sentence.
+
+### 11.1 The shell
+
+```
+┌──────────┬──────────────────────────────────────────┐
+│          │  topbar (56px): breadcrumb · ⌘K · actions│
+│ left nav ├──────────────────────────────────────────┤
+│ 240px    │                                          │
+│          │   content: tables / forms / editor       │
+│ ──────── │                                          │
+│ theme    │                                          │
+│ session  │                                          │
+└──────────┴──────────────────────────────────────────┘
+```
+
+- **Left nav**: grouped sections — `content` (posts · photos · tags), `ops` (secrets; the
+  future infra tab joins here). Section labels are the blog's `CardTitle` voice: mono,
+  uppercase, `text-xs tracking-widest`. Collapses to an icon rail below `lg`; theme +
+  session live pinned at the base.
+- **Top bar**: context left, the **⌘K affordance centered** (a VS Code/Raycast convention —
+  the shell *advertises* the keyboard-first promise rather than burying it), page actions
+  right. The palette itself is global chrome, rendered from the §7 command registry.
+- **Content area**: full-bleed; forms constrained to their measure (max ~72ch), lists
+  allowed the width.
+
+### 11.2 Type & voice
+
+| role | face | where |
+| --- | --- | --- |
+| chrome, labels, body | **Inter** | everywhere by default |
+| **entity titles** | **Fraunces** | table post titles, the editor's document title, page headers — and nowhere else. The author's voice greets you in the admin; one signature is enough |
+| anything data-like | **JetBrains Mono** | slugs, dates, readTime, tags, secret keys/versions/values, shortcut hints |
+
+Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px. The instrument is
+comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
+
+### 11.3 Color discipline
+
+- The zinc scale + **one violet** (`--brand`): active/published/primary verb. **Red exists
+  only for destructive** actions — an admin that never needs red for anything else.
+- Statuses stay monochrome by default: `published` = violet-filled pill, `draft` = outlined
+  neutral pill, danger = outlined red. No green/amber/blue status soup.
+- Tokens: everything rides the existing semantic set (`--background/--card/--muted/--border/
+  --brand/--*-foreground`). Admin-only needs enter as **additive tokens** (`--danger`,
+  future `--diff-add/--diff-del`); **existing tokens are never forked in value** — light/dark
+  parity per §3 applies to every pixel here.
+- Anti-rules, as binding as the rules: no gradients on headers, `rounded-lg` is the roundest
+  anything gets, shadows **only** on overlays (palette, menus, sheets), and motion lives
+  exclusively in overlays (150–200ms transforms/opacity — the drawer transitions);
+  tables and forms never animate. Reduced-motion: everything instant. If a screen starts
+  resembling a ThemeForest preview, it is wrong.
+
+### 11.4 Per-view anatomy
+
+- **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
+  on row focus** — the AGENTS §10.5 lesson, restated for keyboards: *"no mouse-only
+  affordance in the admin either."* Filter/tool rows use the `Pill` chip language.
+- **Post editor**: split view — CodeMirror left, true-to-prod preview right (toggle via
+  palette); a **meta rail** (status, slug, date, tags, featured) at the content's right —
+  Ghost's shape, not Notion's sprawl. The toolbar holds exactly two verbs:
+  `save draft` (quiet, outlined) and `publish` (violet, filled).
+- **Secrets**: presented as what it is — a config file with version control. Masked mono
+  values, reveal on press (never "show all values" as a resting state), **version history
+  as a side sheet** (springs from the right, reusing the drawer motion), diff between
+  versions, CAS-save. The masked-mono table is naturally beautiful in this palette; no
+  decoration needed.
+- **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
+  the charm is free.
+- **Settings**: max-width form, same voice.
+
+### 11.5 Acceptance test
+
+Screenshot any mellon page beside gofar.id: it must read as **the same maker's tool** —
+same zinc, same violet, same mono data, same restraint — while being unmistakably an
+instrument, not an article. If either half fails, the page is not done.
