@@ -522,3 +522,30 @@ never hand a `this`-dependent method as an event reference.
 
 Gates: lint 0 standalone · check 0/0 · 18/18 tests · build + SSR smoke
 (breadcrumb links, clean copy, wordmark intact, lazy mermaid chunk present).
+
+### 2026-11-08 — mermaid bomb exorcised: parse-first, settle-to-render
+
+Owner screenshot: mermaid's own "Syntax error in text" bomb SVG rendered twice
+in the preview. Root cause is a trap worth keeping: **`mermaid.render()` does
+NOT reject on a parse error — it RESOLVES with the error graphic as the svg**
+(its legacy `parseError` renderer paints the bomb and hands it back as
+success). A `catch` around render is never fired; the bomb lands in
+`box.innerHTML`.
+
+The graceful cycle now — exactly the proposed UX:
+
+- typing → every preview swap re-`markMermaidPending`: dashed shimmer box
+  (pure CSS sweep, role=progressbar), the escaped source hidden underneath;
+- settled (450ms after the keystroke burst) → `mermaid.parse(src,
+{suppressErrors:true})` gate FIRST — nothing paints on failure; only
+  verified sources reach `render()`;
+- invalid → our dashed error panel: quiet headline, the parser's first line,
+  and a `<details>` revealing the source. §11.3 holds: no red, no bombs;
+- belt beyond the gate: `mermaid.parseError` is hooked to THROW (so even
+  render's internal error path rejects into our handler) and the resolved svg
+  is content-checked for the bomb markers as a last guard.
+
+Verified API facts against mermaid@12.2.0's shipped .d.ts (parse resolves
+`{diagramType}` when valid / `false` with suppressErrors / throws without).
+Half-typed fences never flash errors: they simply stay pending until the
+typing pauses.
