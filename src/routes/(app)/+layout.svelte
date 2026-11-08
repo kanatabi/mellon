@@ -212,7 +212,7 @@
 		<header
 			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-4 lg:px-6"
 		>
-			<div class="flex min-w-0 items-center gap-1.5 justify-self-start">
+			<div class="col-start-1 flex min-w-0 items-center gap-1.5 justify-self-start">
 				<button
 					type="button"
 					bind:this={burger}
@@ -247,7 +247,7 @@
 						document.activeElement instanceof HTMLElement ? document.activeElement : null;
 					paletteOpen = true;
 				}}
-				class="hidden w-72 max-w-[42vw] items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:flex md:justify-self-center"
+				class="hidden w-72 max-w-[42vw] items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:col-start-2 md:flex md:justify-self-center"
 				aria-label="Open command palette"
 			>
 				<span class="flex items-center gap-2">
@@ -256,7 +256,7 @@
 				</span>
 				<kbd class="rounded border border-border px-1.5 py-0.5 text-[10px]">⌘K</kbd>
 			</button>
-			<div class="flex items-center gap-2 justify-self-end">
+			<div class="col-start-3 flex items-center gap-2 justify-self-end">
 				<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
 			</div>
 		</header>

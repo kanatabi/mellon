@@ -703,3 +703,21 @@ Three shipped calls from the owner review of the phone/iPad surfaces:
 
 Tailwind lesson reused on purpose: state-driven classes must exist as LITERAL
 strings for the scanner — the ternaries spell `max-lg:invisible` in full.
+
+### 2026-11-08 — phone follow-up: empty editor + wandering toggle (two flex/grid traps)
+
+1. **Empty editor on phones:** the pane box carried `flex-1` AND
+   `h-[calc(100svh-…)]` — flex's 0% basis overrides the explicit height in an
+   indefinite-height column, so the box collapsed to zero and the absolute
+   children (no intrinsic height) vanished. The old static grid survived only
+   because its child had `min-h-[50vh]` forcing the row open. Fix: mobile =
+   `h-calc shrink-0`, desktop = `lg:flex-1 lg:h-auto` (basis 0 is fine there
+   because the split grid rows size to content stretch).
+2. **Theme toggle drifted to center, over the breadcrumb:** grid
+   auto-placement SKIPS `display:none` items — with the ⌘K pill hidden below
+   md, the toggle took the middle auto track instead of the right one. Fix:
+   explicit `col-start-1/2/3` placement on the three zones; a hidden pill can
+   no longer shift anything.
+
+Both were invisible to every desktop-width test — real-device passes are part
+of the shell's definition of done, not the last step. §11.1 amended.

@@ -495,12 +495,14 @@ flowchart LR
 			</button>
 		</div>
 
-		<!-- Pane area. lg+: the split grid with the 1fr↔0fr curtain animation —
-		     the pane never leaves layout, so nothing can reflow (old ghost bug).
-		     Below lg: a viewport-height box with the two panes layered, tabs
-		     deciding which is visible; 13.5rem ≈ the chrome above+below it. -->
+		<!-- Pane area. Below lg: a fixed viewport-height box (NOT flex-1 — its
+		     0% flex-basis overrides the explicit height in an indefinite
+		     column and collapsed the panes to zero: the empty-editor bug) with
+		     the two panes layered; tabs decide which is visible. lg+: flex
+		     fills the row and the split grid animates 1fr↔0fr — the pane never
+		     leaves layout, so nothing can reflow (old ghost bug). -->
 		<div
-			class="relative h-[calc(100svh-13.5rem)] min-h-0 flex-1 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-auto {showPreview
+			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-auto lg:min-h-0 lg:flex-1 {showPreview
 				? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-4'
 				: 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-0'}"
 		>
