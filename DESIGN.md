@@ -6,8 +6,13 @@ env/secret management. It is a UI — the only server it ever talks to is
 [`lumen/`](../lumen/DESIGN.md), and the only thing it ever shows is what lumen's Admin API
 (§8 there) decides to expose.
 
-> _Speak, friend, and enter._ The name is the access doctrine: this door has no public
-> address. It opens for a port-forward and a session, not for a URL anyone can find.
+> _Speak, friend, and enter._ The name is the access doctrine — and the doctrine
+> **amended** (owner decision, 2026-11-08, as §2-rule-3 prescribed: _"a written decision,
+> never a quiet convenience"_): the door now has one sanctioned public address,
+> `console.gofar.id`, reachable only with a session (JWT, revocable — §8) and gated on
+> the pre-launch checklist (HUMAN-GATE #10). What the amendment does NOT touch: the
+> backend stays behind the relay — **lumen/Meilisearch/Bao have no public address, ever**.
+> "Speak, friend, and enter" still holds; the friend just arrived over TLS now.
 
 Status: **design only** — implementation not started. Conventions (git discipline, gates,
 branch-per-milestone, pinned versions) are inherited from `earendil`.
@@ -38,9 +43,14 @@ branch-per-milestone, pinned versions) are inherited from `earendil`.
 2. **The relay forwards; it never decides.** All logic, auth, credentials, and policy
    decisions live in lumen. Mellon holds **no secrets** — not Bao tokens, not GitHub
    tokens, not DB creds.
-3. **Private path only.** ClusterIP, no ingress (public _or_ mesh). Access =
-   `kubectl port-forward svc/mellon 8080:8080`. Revisit as a written decision (never as a
-   quiet convenience) if port-forwarding stops getting used.
+3. ~~**Private path only.** ClusterIP, no ingress (public _or_ mesh).~~ → **Amended
+   2026-11-08 (this clause's own prescribed ritual):** the portal is public at
+   `console.gofar.id` — TLS at the shared Traefik edge, console middlewares (HSTS,
+   headers, rate-limit), JWT sessions with `token_version` revocation, login throttle,
+   and HUMAN-GATE #10 as the launch checklist. The **service itself stays ClusterIP**
+   (only Traefik routes to it); port-forward remains documented break-glass. Doctrine
+   intact where it counts: the API plane keeps "no public ingress, ever", and relay-only
+   remains the sole path from UI to lumen.
 4. **Anything reachable by mouse is reachable by keyboard.** The palette + shortcuts are
    the vocabulary; this is the promise. No hover-only affordances (AGENTS §10.5 lesson,
    applied to the admin too).
@@ -235,16 +245,38 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 
 ## 8. Security posture
 
-- Port-forward-only (§2); CSP default; cookie `SameSite=Strict` (origin is localhost —
-  Strict is free and correct); no third-party requests, ever (fonts self-hosted).
+- **Exposure (owner amendment, 2026-11-08):** the portal is **public** at
+  `console.gofar.id` — TLS at the shared Traefik edge with the console middlewares
+  (HSTS, `frameDeny`, nosniff, per-IP rate limit; INFRA Phase 3). The
+  port-forward path **survives as documented break-glass, not the only door**.
+  The API doctrine is untouched by the amendment: lumen/Meilisearch/Bao stay
+  ClusterIP-only; every portal→API byte rides the same-origin relay.
+  **HUMAN-GATE #10 (PLAN ledger): DNS flips only when the checklist verifies** —
+  edge middlewares live, login throttle + argon2id in lumen, `tv`-revocation
+  proven (logout kills outstanding tokens end-to-end), `Secure` cookie over TLS,
+  Bao audit trail on. Strict CSP stays deferred honestly: the rail hues ride
+  inline `style=` attributes by design (Tailwind can't scan dynamic utilities),
+  so a tight `style-src` would break the wayfinding — CSP arrives with a
+  custom-property hue refactor, not folklore.
+- CSP default; cookie `SameSite=Strict` + `HttpOnly` (Kit's `Secure` default holds —
+  prod is TLS-only by the checklist); no third-party requests, ever (fonts self-hosted).
 - Bao path per `INFRA_ARCHITECTURE.md` §5.5: the AppRole lives with **lumen's** server
   identity (narrow policy: `read`/`update` on `kv/data/<app>/*`, no `sys/` list); CAS
   writes prevent lost updates; **Bao audit devices are the trail** — mellon adds no
   logging of values, and lumen must never log secret values (structured logs redact by
-  key).
+  key). The portal's own logs: operations, never payloads.
 - Values never round-trip to git, never appear in mellon's SSR payloads, and are masked in
   the UI by default.
-- Session: short TTL, re-login flow (no long-lived tokens in any cookie jar).
+- **Session (JWT, 2026-11-08):** lumen mints an HS256 token (`sub/iat/exp/tv/jti`,
+  12h TTL, **no refresh tokens** — re-login is the design; lumen §8). mellon carries
+  exactly one `HttpOnly` cookie, sized from the server's `expiresIn`; the browser NEVER
+  sees the token (login/logout are server-side actions — the client's session verbs
+  throw). **End session is real**: `/logout` revokes first (lumen bumps `token_version`
+  → every outstanding token dies, closing the "stolen 12h bearer outlives logout"
+  window that pure statelessness accepts and a public console cannot), then clears the
+  cookie best-effort. The signing key (`SESSION_JWT_SECRET`) lives only in Bao;
+  credentials move to lumen's argon2id `users.passhash` — the portal holds no
+  credential material in any era.
 
 ## 9. Infra footprint (when scaffolded)
 
