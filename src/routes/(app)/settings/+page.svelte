@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { Moon, Sun } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
+	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import type { PageData } from './$types';
 
 	interface Props {
@@ -23,9 +25,60 @@
 
 <section class="mx-auto flex w-full max-w-xl flex-col gap-6 py-4">
 	<h1 class="font-brand text-4xl font-semibold tracking-tight">Settings</h1>
+
+	<!-- Appearance: the theme, where it belongs — a setting, not only a
+	     topbar control. One write path (setTheme: store + cookie +
+	     View Transition) shared with the topbar toggle and the palette. -->
+	<div class="flex flex-col gap-4">
+		<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+			appearance
+		</p>
+		<div class="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4">
+			<span class="flex flex-col gap-1">
+				<span class="text-sm font-medium">Theme</span>
+				<span class="font-mono text-xs leading-relaxed text-muted-foreground">
+					light or dark, flipped with a crossfade and persisted via the theme cookie — instant on
+					every surface
+				</span>
+			</span>
+			<div
+				class="flex shrink-0 gap-1 rounded-full border border-border bg-card p-1"
+				role="radiogroup"
+				aria-label="Theme"
+			>
+				<button
+					type="button"
+					role="radio"
+					aria-checked={themeState.theme === 'light'}
+					onclick={() => setTheme('light')}
+					class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {themeState.theme ===
+					'light'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					<Sun class="size-3.5" />
+					light
+				</button>
+				<button
+					type="button"
+					role="radio"
+					aria-checked={themeState.theme === 'dark'}
+					onclick={() => setTheme('dark')}
+					class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {themeState.theme ===
+					'dark'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					<Moon class="size-3.5" />
+					dark
+				</button>
+			</div>
+		</div>
+	</div>
+
 	<form
 		method="POST"
-		class="flex flex-col gap-6"
+		class="flex flex-col gap-4"
 		use:enhance={() => {
 			saved = false;
 			return async ({ update }) => {
@@ -38,6 +91,7 @@
 			};
 		}}
 	>
+		<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">editor</p>
 		<label
 			class="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4"
 		>
@@ -73,7 +127,6 @@
 	</form>
 
 	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-		theme follows the toggle in the top bar and survives reloads via the theme cookie; session
-		length is set by lumen (Phase B) — today a 12h mock
+		session length is set by lumen (Phase B) — today a 12h mock
 	</p>
 </section>
