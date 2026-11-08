@@ -632,3 +632,7 @@ Now sampled on every editor transaction (mode switches ride effects) plus a
 `keyup → queueMicrotask` belt for transitions that resolve outside a
 transaction. Lesson: grep a library's DISPATCH site, not just the event name —
 `on(` in their code may be their bus, not the DOM.
+
+Reload seed fix: `state.vim` is created lazily by the keymap, and my "nothing
+yet" fallback said INSERT — but vim opens in NORMAL (owner screenshot). The
+fallback now mirrors the truth; live reads correct it from the first key.

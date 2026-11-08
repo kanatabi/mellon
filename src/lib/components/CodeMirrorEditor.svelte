@@ -44,7 +44,12 @@
 		}
 		const vimState = getCM(view)?.state?.vim as
 			{ mode?: string; subMode?: string } | undefined | null;
-		mode = vimState?.mode ?? 'INSERT';
+		// The package creates state.vim LAZILY on the first handled key — until
+		// then there is nothing to read, and the seed answer is NORMAL: vim
+		// starts in normal mode, like the editor it is named after. (Guessing
+		// INSERT here showed the wrong badge on every fresh reload — owner
+		// report 2026-11-08.)
+		mode = vimState?.mode ?? 'NORMAL';
 		sub =
 			vimState?.subMode === 'linewise' ? 'LINE' : vimState?.subMode === 'blockwise' ? 'BLOCK' : '';
 	}
