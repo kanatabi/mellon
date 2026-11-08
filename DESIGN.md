@@ -126,6 +126,10 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   (new post, save, publish, theme), `open recent`. Shortcut-hint column. Built on a
   **command registry** (`commands.ts`: `{ id, title, shortcut?, run }`) — pages register,
   the palette renders (the rail kit's plug-and-play contract, applied to navigation).
+  Context registration is real (`page-commands.svelte.ts`): a page publishes its verbs in
+  an effect whose cleanup unregisters — the editor's save/publish/unpublish/delete… appear
+  ONLY while the editor is mounted; leaving the page cannot leave stale commands behind.
+  Contextual delete opens the confirm dialog, never deletes from the palette directly.
   Focus management + Esc + focus return reuse the `SearchDialog` recipe.
 - Roving tabindex for list rows; every table action keyboard-reachable; visible
   `focus-visible` rings (house style); forms fully labeled (native focus/announce);

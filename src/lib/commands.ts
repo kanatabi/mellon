@@ -26,7 +26,15 @@ export const baseCommands: Command[] = [
 	nav('go.posts', 'Posts', '/posts', 'g p'),
 	nav('go.photos', 'Photos', '/photos'),
 	nav('go.secrets', 'Secrets', '/secrets'),
-	nav('go.settings', 'Settings', '/settings')
+	nav('go.settings', 'Settings', '/settings'),
+	{
+		// Global import: the photos page treats ?upload=1 as "open the picker on
+		// arrival" — one upload door (the picker), reachable from any route.
+		id: 'action.import-image',
+		title: 'Import image',
+		group: 'actions',
+		run: () => void goto('/photos?upload=1')
+	}
 ];
 
 /** Dynamic commands injected by the shell (open-recent, contextual actions). */

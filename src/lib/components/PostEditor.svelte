@@ -26,6 +26,8 @@
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
+	import { setPageCommands } from '#lib/page-commands.svelte.ts';
+	import type { Command } from '#lib/commands.ts';
 	import type {
 		AdminPhoto,
 		PostDraft,
@@ -389,6 +391,46 @@ flowchart LR
 			void save();
 		}
 	}
+
+	// Page-context commands (DESIGN §7 made real): while the editor is mounted,
+	// the palette gains its verbs — scoped by the component's life, re-derived
+	// as state changes (create vs save, publish vs unpublish). Delete opens the
+	// confirm dialog; it never deletes directly. On unmount the registry is
+	// cleared, so the dashboard's palette has no stale editor rows.
+	$effect(() => {
+		const cmds: Command[] = [
+			{
+				id: 'editor.save',
+				title: isNew ? 'Create post' : 'Save draft',
+				group: 'actions',
+				shortcut: '⌘↵',
+				run: () => void save()
+			},
+			status === 'published'
+				? {
+						id: 'editor.unpublish',
+						title: 'Unpublish',
+						group: 'actions',
+						run: () => void unpublish()
+					}
+				: { id: 'editor.publish', title: 'Publish', group: 'actions', run: () => void publish() }
+		];
+		if (!isNew)
+			cmds.push({
+				id: 'editor.delete',
+				title: 'Delete post…',
+				group: 'actions',
+				run: () => (confirmDelete = true)
+			});
+		cmds.push({
+			id: 'editor.image',
+			title: 'Import image into post',
+			group: 'actions',
+			run: () => (pickerMode = 'insert')
+		});
+		setPageCommands(cmds);
+		return () => setPageCommands([]);
+	});
 
 	const fmtDate = new Intl.DateTimeFormat('en-GB', {
 		month: 'short',

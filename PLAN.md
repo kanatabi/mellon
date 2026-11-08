@@ -937,3 +937,21 @@ Owner-led redesign, executed in browsable tiers (each revertable alone):
   table, where color may/may not live, the one gradient exception), §11.4 gains
   the login entry, `palette.test.ts` guards light/dark token parity + @theme
   mapping + the zinc-departure, journal closed.
+
+### 2026-11-08 — palette context commands: DESIGN §7 becomes real
+
+Owner asks: editor verbs + image import in the palette, editor commands shown
+ONLY on the editor. The registry promise ("pages register, the palette
+renders") existed only for static nav; now it's a mechanism:
+
+- `page-commands.svelte.ts` — a $state registry; a page publishes its verbs
+  inside an effect whose CLEANUP unregisters. Leaving the editor cannot leave
+  stale save/publish rows on the dashboard (the lifecycle contract).
+- PostEditor registers: Create/Save draft (⌘↵ label follows mode), Publish or
+  Unpublish (state machine decides which exists at all), Delete post… (opens
+  the confirm dialog — never deletes straight from a palette keystroke), and
+  Import image into post (insert-mode picker).
+- Global `Import image` action → /photos?upload=1; the photos page opens the
+  shared picker once per arrival flag (uploadSeen latch — closing must not be
+  fought by a re-opening effect). One upload door, many handles.
+- §7 amended with the lifecycle contract.

@@ -21,6 +21,7 @@
 	import { navRail } from '#lib/rails.svelte.ts';
 	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import { baseCommands, recentCommands, type Command } from '#lib/commands.ts';
+	import { pageCommands } from '#lib/page-commands.svelte.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -62,6 +63,9 @@
 			shortcut: 'n',
 			run: () => void import('$app/navigation').then(({ goto }) => goto('/posts/new'))
 		},
+		// Context first: the page's verbs (editor save/publish/…) sort into the
+		// 'actions' group, ranked above navigation by the palette order.
+		...pageCommands(),
 		...recentCommands(data.recent)
 	]);
 

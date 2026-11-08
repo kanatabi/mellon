@@ -37,6 +37,9 @@ export const load: PageServerLoad = async ({ url }) => {
 		total: paged.total,
 		totalPages: Math.ceil(paged.total / paged.pageSize),
 		page: paged.page,
+		// the palette's global "Import image" lands here with this flag; the
+		// page opens the shared picker once on arrival
+		upload: sp.has('upload'),
 		collections,
 		activeCollections,
 		gallery: gallery === '1' ? true : gallery === '0' ? false : undefined,

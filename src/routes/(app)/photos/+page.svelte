@@ -181,6 +181,15 @@
 	let filtersSheet = $state(false);
 	let filtersTrigger = $state<HTMLElement | undefined>();
 	let pickerOpen = $state(false);
+	// Palette "Import image" arrives as ?upload=1 — open the picker once per
+	// arrival flag, never in a loop that re-opens it after the user closes.
+	let uploadSeen = $state(false);
+	$effect(() => {
+		if (data.upload && !uploadSeen) {
+			uploadSeen = true;
+			pickerOpen = true;
+		} else if (!data.upload) uploadSeen = false;
+	});
 
 	/* ── View: tiles ⇄ table (owner call — same dual-view idea as the editor) ─
 	   localStorage preference; the table only renders from md up (phones keep
