@@ -210,7 +210,14 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   value). The parity is safe because commands CLOSE OVER the page's own setters —
   there is no second implementation to rot (the rail↔palette title edit writes the
   same `draft` field). Rollout: the post editor's rail is done (fields, tags, cover,
-  export); photo-detail form and the posts/photos list filters are next surfaces.
+  export) and the photo-detail pane (alt buffer, collection submenu, gallery toggle,
+  copy link — the palette reaches the DIRTY FORM, never the network: persistence
+  stays the explicit Save). The posts/photos list filters are the next surface.
+  The recurring shapes are kit-ified (`command-kit.ts`: `editField`, `stateToggle`,
+  `vocabSubmenu`) — extracted only after two pages proved the same forms; pages
+  own WHAT a commit does, the kit fixes how every toggle/submenu/field BEHAVES
+  (and `stateToggle`'s `keepOpen` is opt-in: a form toggle chains into save,
+  a plain toggle closes like any row).
 - Roving tabindex for list rows; every table action keyboard-reachable; visible
   `focus-visible` rings (house style); forms fully labeled (native focus/announce);
   `Ctrl+Enter` save/publish convention in the editor.
@@ -400,6 +407,11 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   mono src + copy-link); and the pinned action band — `Save changes`,
   `Download` (blob save-as named from the alt text; open-in-tab as the honest
   cross-origin fallback), `Delete image` (danger-outline → red on hover).
+  The pane is fully **⌘K-reachable** (kit-built, §7 parity): `Set alt text` seeded
+  buffer, `Set collection` submenu (single-home: rows SET, `uncategorized` clears,
+  `+ create` rides the local vocabulary), `Toggle gallery` with the live
+  `in gallery`/`hidden` hint — all writing the DRAFT; the Save button arms dirty,
+  nothing persists until ⌘S.
   Delete is **WARNED, NEVER BLOCKED** (owner ruling): the shared DeleteDialog —
   generalized to `{heading, description, confirmText, references?}`, one destructive
   grammar for posts and photos alike — names the consequence in plain words ("citing

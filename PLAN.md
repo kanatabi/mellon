@@ -1160,3 +1160,35 @@ secrets values (masked + CAS want a form — palette navigates, never edits).
   three exemptions; §11.4 the buffer/selection anatomy and the rail-parity
   note. Next surfaces by the owner's map: photo-detail form, posts/photos
   list filters (where the range grammar finally gets its consumer).
+
+### 2026-11-08 — control center round 2: photo detail joins, the kit is born
+
+The factory extraction happened exactly where the plan said it would — at the
+SECOND consumer. Photo-detail needed the same three shapes the editor proved
+(alt buffer, collection submenu, gallery toggle), so `command-kit.ts` came
+out of that duplication rather than ahead of it: `editField`, `stateToggle`,
+`vocabSubmenu` (+5 node tests, 49). The editor and the layout's theme/vim
+toggles were refactored onto the kit in the same commit — a toggle is now a
+toggle on every surface, and the parity rungs share one behavior spec.
+
+- **`010e177` feat(photo-palette)**: the metadata pane is ⌘K-complete —
+  `Set alt text` (seeded EDIT buffer), `Set collection` (single-home submenu:
+  rows SET instead of toggling, `uncategorized` clears, `+ create` rides the
+  local vocab AND picks itself), `Toggle gallery` (live in-gallery/hidden
+  hint; keepOpen made OPT-IN on stateToggle for precisely this chain — form
+  toggles stay open so you can flip→verify→save; plain toggles still close),
+  `Copy link`, plus the surviving save/download/delete trio. The decisive
+  doctrine, proven by test: the palette reaches the FORM, never around it —
+  a full editing session across alt/collection/gallery left the SERVER copy
+  untouched; the Save button armed dirty like typing would, and persistence
+  stayed the explicit ⌘S.
+- Also fixed on the way: submenu hints now pluralize honestly ('1 photo') —
+  both pages had the `1 posts` artifact; the headless runs caught it.
+- Verification discipline, re-learned loudly: running the editor suite twice
+  against ONE mock server fails the second time — the in-memory corpus IS
+  the database; created vocabulary (distr/portrait) persists across suites.
+  One fresh server process per verifying run, ever. (photo 14/14, editor
+  20/20, each on its own corpus.)
+
+Next surface (round 3): the posts/photos list filters — where the range
+grammar (`nov 1..nov 12`, `last week`) finally gets its consumer.
