@@ -16,3 +16,11 @@ export interface RecentEntry {
 export function isAuthed(cookieValue: string | undefined): boolean {
 	return typeof cookieValue === 'string' && cookieValue.length > 0;
 }
+
+/** Non-httpOnly preference cookies the browser may write (settings action and
+ *  the palette toggle share this one write path). */
+export function writeVimCookie(on: boolean): void {
+	document.cookie = on
+		? 'mellon_vim=1; path=/; max-age=31536000; samesite=strict'
+		: 'mellon_vim=; path=/; max-age=0; samesite=strict';
+}

@@ -18,7 +18,9 @@
 	import Palette from '#lib/components/Palette.svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import { focusOnMount } from '#lib/actions.ts';
+	import { invalidateAll } from '$app/navigation';
 	import { navRail } from '#lib/rails.svelte.ts';
+	import { writeVimCookie } from '#lib/session.ts';
 	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import { baseCommands, recentCommands, type Command } from '#lib/commands.ts';
 	import { pageCommands } from '#lib/page-commands.svelte.ts';
@@ -62,6 +64,27 @@
 			group: 'actions',
 			shortcut: 'n',
 			run: () => void import('$app/navigation').then(({ goto }) => goto('/posts/new'))
+		},
+		// Global toggles: the hint column shows CURRENT STATE — the palette
+		// answers "what mode am I in?" before you flip it (owner call).
+		{
+			id: 'toggle.theme',
+			title: 'Toggle theme',
+			group: 'actions',
+			shortcut: themeState.theme,
+			run: () => toggleTheme()
+		},
+		{
+			id: 'toggle.vim',
+			title: 'Toggle vim editing',
+			group: 'actions',
+			shortcut: data.vim ? 'on' : 'off',
+			// cookie + invalidateAll: the layout load re-reads mellon_vim, and
+			// the editor's vim compartment reconfigures WITHOUT a page reload
+			run: () => {
+				writeVimCookie(!data.vim);
+				void invalidateAll();
+			}
 		},
 		// Context first: the page's verbs (editor save/publish/…) sort into the
 		// 'actions' group, ranked above navigation by the palette order.

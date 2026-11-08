@@ -431,6 +431,14 @@ flowchart LR
 			group: 'actions',
 			run: () => (pickerMode = 'insert')
 		});
+		// reads `wrapped` for the state hint — re-registers on every flip
+		cmds.push({
+			id: 'editor.wrap',
+			title: 'Toggle word wrap',
+			group: 'actions',
+			shortcut: wrapped ? 'on' : 'off',
+			run: () => toggleWrap()
+		});
 		setPageCommands(cmds);
 		return () => setPageCommands([]);
 	});
