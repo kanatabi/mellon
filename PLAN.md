@@ -89,14 +89,14 @@ Tasks:
       (empty for P0): `--danger`, `--diff-add`, `--diff-del` with light/dark values.
 - [x] [mellon] `/healthz` route (echo earendil proxy shape) + placeholder `/` shell page;
       `Dockerfile` (multi-stage non-root, copy earendil's); note GHCR workflow as M0.5.
-- [ ] [lumen] Go scaffold: `go.mod` (latest stable pinned), stdlib or `chi`
+- [ ] [lumen] Go scaffold: `go.mod` (latest stable pinned), stdlib or `chi` <!-- PARTIAL via M1 `b2aa886`: module + chi (gate #2) + viper config + /healthz + migrations + seed; Dockerfile & GH Actions still open (M7-adjacent) -->
       — `HUMAN-GATE` router choice (offer: stdlib `net/http` + `ServeMux` = zero deps,
       chi = middleware ergonomics; recommend stdlib until middleware demand is real),
       `/healthz`, config struct reading ONLY env (`API_BASE`-equivalents per
       `env.yaml.sample` pattern: schema in git, values in Bao), multi-stage Dockerfile,
       GH Actions build (copy earendil workflow: build → `sha-<short>` → kustomize edit).
-- [ ] [lumen] `env.yaml.sample` seed schema; [vortex] placeholder manifests remain —
-      no new app dirs until M7 (skip until real images exist).
+- [x] [lumen] `env.yaml.sample` seed schema (keys documented, zero values — doctrine);
+      [vortex] placeholder manifests untouched until M7, as planned.
 
 **Verify:** mellon gates §3 exit 0 incl. `check` 0/0; `curl :5173/healthz` 200; theme
 flip works with no FOUC (hard-reload, throttled); lumen `gofmt/vet/build/test` clean;
@@ -111,19 +111,26 @@ source), `api.test.ts` (the harness to clone).
 
 Tasks:
 
-- [ ] Postgres schema per §6 (posts **with `status ENUM('draft','published','unpublished')`**, rev for
+- [x] Postgres schema per §6 (posts **with `status ENUM('draft','published','unpublished')`**, rev for
       CAS-ish optimistic lock, tags, post_tags, photos); migrations as plain SQL files.
-- [ ] Seed importer: `cmd/seed` reads a JSON translation of earendil's 12-post corpus
-      (commit it as `testdata/earendil-fixture.json` — the contract twin).
-- [ ] Implement §1 read endpoints exactly (published-only): pagination, repeated `tag`
+      (§6 additions the contract forced: `post_tags.position` — tag ORDER is payload, not
+      alphabet; `tags.cloud` — cloud MEMBERSHIP is curation distinct from FK vocabulary:
+      earendil curates 10 of 26 corpus names. Plus `users(passhash, token_version)` from
+      the revised §6, empty until M3.)
+- [x] Seed importer: `cmd/seed` reads a JSON translation of earendil's 12-post corpus
+      (committed as `testdata/earendil-fixture.json` — GENERATED from the mock by a
+      throwaway vitest dump, never hand-transcribed; ships with a seeded draft as
+      permanent leak-bait asserted invisible on every surface).
+- [x] Implement §1 read endpoints exactly (published-only): pagination, repeated `tag`
       (OR), `from/to`, `readMin/readMax`, `sort` whitelist, suggest/search split,
       photos list, featured (404 when unset — keep, FE tolerates), tags cloud
       (counts = published corpus; curation = SQL ORDER BY count DESC, ties by name).
-- [ ] Contract harness: port `api.test.ts` expectations to a Go-side test set AND keep
+- [x] Contract harness: port `api.test.ts` expectations to a Go-side test set AND keep
       the JS side — add `earendil: scripts/contract.spec.ts` (vitest, env-gated:
       `LUMEN_URL=… npx vitest run src/lib/api/contract.spec.ts`, skipped by default so
       offline CI stays green) asserting the same 12-post fixtures round-trip.
-- [ ] Dev ergonomics: `docker-compose.dev.yml` (postgres only) + `make dev`.
+- [x] Dev ergonomics: `docker-compose.dev.yml` (postgres:16.6 only) + make up/seed/run/
+      test/test-integration/contract (`make dev` named out — same intent).
 
 **Verify:** `go test ./...` green; with compose up + seed:
 `LUMEN_URL=http://localhost:8080 npx vitest run src/lib/api/contract.spec.ts` in earendil
@@ -368,7 +375,7 @@ gates green; no open `HUMAN-GATE` left unresolved. **P0 CLOSED** only on owner's
 | #   | gate                                                                                                                                                                                                                                                                                                                | milestone |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | 1   | Create + push `kanatabi/mellon` (private), submodule registration                                                                                                                                                                                                                                                   | M0        |
-| 2   | lumen router choice (stdlib vs chi)                                                                                                                                                                                                                                                                                 | M0        |
+| 2   | ~~lumen router choice (stdlib vs chi)~~ **RESOLVED (owner, 2026-11-08): chi** — same-session ruling **viper** for config (env > env.yaml > defaults, no dotenv); both recorded in `lumen/AGENTS.md`                                                                                                                 | M0        |
 | 3   | PR merges (every repo, every PR)                                                                                                                                                                                                                                                                                    | all       |
 | 4   | OpenBao bootstrap seeds: `fzr-portal` role/policy creation, `kv/data/mellon/*` first values                                                                                                                                                                                                                         | M6/M7     |
 | 5   | Security threat-note ack before secrets merge                                                                                                                                                                                                                                                                       | M6        |
@@ -1349,3 +1356,57 @@ re-draws the map: **the portal goes public at `console.gofar.id`**.
   probe `curl <external> :9090/:7700/:8200/:6443` = unreachable is still the
   line in the acceptance, and the relay remains the only byte-path from UI
   to lumen.
+
+### 2026-11-08 — PHASE B OPENS: lumen M1 read-api is live code, accepted the doctrine's way
+
+Owner said continue; HUMAN-GATE #2 answered on the spot — **chi** (and a second
+ruling arrived mid-build: **viper** for config, env-precedence, no dotenv).
+With #2 resolved, Phase B began: lumen scaffolded, and M1 (read API) shipped
+in one session.
+
+- **`b2aa886` [lumen] feat(read-api)** (branch `milestone/1-read-api`, pushed):
+  §6 schema as plain-SQL migrations (embedded, `_migrations` ledger) — with
+  two columns the contract itself forced: `post_tags.position` (tag ORDER is
+  payload — the alphabet-ordered aggregation drifted from the mock on the
+  very first live diff) and `tags.cloud` (the cloud is a CURATED subset —
+  10 of the corpus's 26 names; counts exist, membership is decided).
+  The `users(passhash argon2id, token_version)` row landed with the session
+  design's schema, empty until M3. The fixture twin is GENERATED from
+  earendil's mock (a throwaway vitest dump), never hand-transcribed, and
+  seeds a draft as permanent leak-bait.
+- **The acceptance ran**: `earendil: milestone/1-contract-harness` (`6c593d3`,
+  pushed) adds `contract.spec.ts` — 13 env-gated tests driving the REAL
+  `createApi(LUMEN_URL)` client against live lumen-on-Postgres, diffing every
+  endpoint against `mockApi`. **13/13 green**, including the defaults-parity
+  traps (absent list limit = whole corpus; search default 10) and the draft-
+  leak assertions through the production client path. Offline CI untouched:
+  no LUMEN_URL ⇒ clean skip (verified: earendil gates report 47 passed | 13
+  skipped). The Go side mirrors the same suite twice — in-memory twin
+  (offline) and real Postgres (LUMEN_INTEGRATION=1) — 24 cases each.
+- **Rulings written where they live** (`lumen/AGENTS.md`): prepared statements
+  ALWAYS — `store.NewPool` asserts `QueryExecModeCacheStatement` explicitly
+  (the one honest exception: multi-statement DDL migrations, trusted files,
+  zero user data, documented as the exception it is); handlers one FILE PER
+  RESOURCE (owner caught the accreting http.go mid-build — split to
+  router/respond/posts/search/photos/tags); viper precedence env >
+  `LUMEN_CONFIG`/`./env.yaml` > defaults, and chi's deprecated `RealIP`
+  replaced with `ClientIPFromXFFTrustedProxies(1)` — which STATEs the trust
+  topology instead of blindly rewriting RemoteAddr (nothing reads it until
+  M3's throttle; the assumption is commented for that day).
+- **Config caught live what tests missed**: `SetEnvPrefix("LUMEN")` quietly
+  renamed `PORT` to `LUMEN_PORT` — the first real smoke listened on the
+  wrong port. Fixed with explicit multi-name `BindEnv("port", "LUMEN_PORT",
+"PORT")` + a regression test. Journal law, again: run the binary; offline-
+  green is not live-correct.
+- **Verify honesty (3 items, 2 done):** go tests ✓ (offline + integration),
+  live contract spec ✓ — the third (render the site against `API_BASE=lumen`
+  and diff two pages by eye) is DEFERRED to Phase C's cutover: the payload-
+  level twin already proves identity, and pointing earendil at lumen is
+  literally M7/M8's switch. Not forgotten, not claimed.
+- Dev loop today: `make up && make seed && make run` (:8080), `make contract`
+  runs the whole acceptance against the live server.
+
+Next in Phase B: **M3 admin-api** — JWT sessions (HS256 pinned, tv-revocation,
+argon2id users row finally gets its code), posts CRUD + the §2 publish
+transaction, Meilisearch (swapping the Go-scored interim), the four bao
+operations. GATE #9 (media provider) still gates M5-B.
