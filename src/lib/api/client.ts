@@ -73,6 +73,7 @@ export const client: AdminApi = {
 	addPhoto: (p) => call<AdminPhoto>('/photos', { method: 'POST', body: JSON.stringify(p) }),
 
 	listTags: () => call<TagCount[]>('/tags'),
+	createTag: (name) => call<TagCount>('/tags', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listSecretPaths: () => call<SecretPath[]>('/secrets'),
 	readSecret: (app, env, version) =>

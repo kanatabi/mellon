@@ -1,4 +1,5 @@
 import { AdminApiError, type AdminApi } from './types.ts';
+import { slugify } from '../slug.ts';
 import type {
 	AdminPhoto,
 	PostDetailAdmin,
@@ -172,6 +173,11 @@ export function createMockApi(): AdminApi {
 	let photos = clone(PHOTOS);
 	const secrets: Record<string, SecretPayload[]> = structuredClone(SECRETS);
 	let seq = 100;
+	// Tag vocabulary — first-class, seeded from the corpus. A tag exists from
+	// creation, used or not; posts may only carry vocabulary names (lumen §8
+	// enforces the same; the UI never offers a non-vocab tag).
+	const vocab = new Set<string>();
+	for (const p of posts) for (const t of p.tags) vocab.add(t);
 
 	const find = (slug: string) => {
 		const p = posts.find((x) => x.slug === slug);
@@ -299,9 +305,18 @@ export function createMockApi(): AdminApi {
 				if (p.status !== 'published') continue; // counts = published corpus
 				for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
 			}
-			return [...counts.entries()]
-				.map(([name, posts]) => ({ name, posts }))
+			// Every vocabulary name appears — unused tags at 0.
+			return [...vocab]
+				.map((name) => ({ name, posts: counts.get(name) ?? 0 }))
 				.sort((a, b) => b.posts - a.posts || a.name.localeCompare(b.name));
+		},
+
+		async createTag(raw) {
+			const name = slugify(String(raw ?? '')).slice(0, 32);
+			if (!name) throw new AdminApiError(400, 'tag name has no letters or digits');
+			if (vocab.has(name)) throw new AdminApiError(409, `tag exists: ${name}`);
+			vocab.add(name);
+			return { name, posts: 0 };
 		},
 
 		async listSecretPaths(): Promise<SecretPath[]> {

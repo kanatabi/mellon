@@ -121,12 +121,25 @@ describe('mock AdminApi contract', () => {
 		expect(gone).toBeNull();
 	});
 
-	it('tags count the published corpus only, descending', async () => {
+	it('tags: first-class vocabulary (unused names appear at 0), createTag slugifies, 409s', async () => {
 		const api = createMockApi();
+		const before = await api.listTags();
+		const t = await api.createTag('Edge Computing!!');
+		expect(t).toEqual({ name: 'edge-computing', posts: 0 });
+		const after = await api.listTags();
+		expect(after.find((x) => x.name === 'edge-computing')).toEqual({
+			name: 'edge-computing',
+			posts: 0
+		});
+		await expect(api.createTag('edge-computing')).rejects.toMatchObject({ status: 409 });
+		await expect(api.createTag('!!!')).rejects.toMatchObject({ status: 400 });
+		expect(after.length).toBe(before.length + 1);
+		// counts still measure the PUBLISHED corpus only
 		await api.publishPost('queues-unacked');
 		const tags = await api.listTags();
-		expect(tags.find((t) => t.name === 'queues')?.posts).toBe(2);
-		expect(tags.find((t) => t.name === 'backpressure')?.posts).toBe(1);
+		expect(tags.find((t2) => t2.name === 'queues')?.posts).toBe(2);
+		expect(tags.find((t2) => t2.name === 'backpressure')?.posts).toBe(1);
+		expect(tags.find((t2) => t2.name === 'latency')?.posts).toBe(0); // seeded-but-unpublished tag
 		for (let i = 1; i < tags.length; i++)
 			expect(tags[i - 1].posts).toBeGreaterThanOrEqual(tags[i].posts);
 	});

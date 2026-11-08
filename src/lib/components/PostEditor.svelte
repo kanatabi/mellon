@@ -19,6 +19,7 @@
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
+	import TagPicker from '#lib/components/TagPicker.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
@@ -380,11 +381,6 @@ flowchart LR
 		}
 	}
 
-	const toggleTag = (t: string) => {
-		draft.tags = draft.tags.includes(t) ? draft.tags.filter((x) => x !== t) : [...draft.tags, t];
-		touch();
-	};
-
 	const fmtDate = new Intl.DateTimeFormat('en-GB', {
 		month: 'short',
 		day: 'numeric',
@@ -743,22 +739,14 @@ flowchart LR
 
 		<div class="flex flex-col gap-1.5">
 			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">tags</p>
-			<div class="flex flex-wrap gap-1.5">
-				{#each tags as t (t.name)}
-					<button
-						type="button"
-						onclick={() => toggleTag(t.name)}
-						aria-pressed={draft.tags.includes(t.name)}
-						class="rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {draft.tags.includes(
-							t.name
-						)
-							? 'border-brand bg-brand/10 text-foreground'
-							: 'border-border text-muted-foreground hover:text-foreground'}"
-					>
-						{t.name}
-					</button>
-				{/each}
-			</div>
+			<TagPicker
+				available={tags}
+				selected={draft.tags}
+				onchange={(t) => {
+					draft.tags = t;
+					touch();
+				}}
+			/>
 		</div>
 
 		<label class="flex flex-col gap-1.5">

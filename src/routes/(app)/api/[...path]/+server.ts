@@ -87,6 +87,10 @@ async function route(ctx: Ctx) {
 
 	// --- tags ---
 	if (seg === 'tags' && request.method === 'GET') return json(await api.listTags());
+	if (seg === 'tags' && request.method === 'POST') {
+		const { name } = (await body()) as { name: string };
+		return json(await api.createTag(String(name ?? '')), { status: 201 });
+	}
 
 	// --- secrets (lumen §9 passthrough shape) ---
 	if (p[0] === 'secrets') {

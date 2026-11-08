@@ -115,6 +115,9 @@ export interface AdminApi {
 	addPhoto(p: { src: string; alt: string; width: number; height: number }): Promise<AdminPhoto>;
 
 	listTags(): Promise<TagCount[]>;
+	/** Vocabulary is a first-class store (not derived): a tag exists once
+	 *  created, used or not. Name is slugified; 409 on duplicates. */
+	createTag(name: string): Promise<TagCount>;
 
 	listSecretPaths(): Promise<SecretPath[]>;
 	readSecret(app: string, env: string, version?: number): Promise<SecretPayload | null>;
