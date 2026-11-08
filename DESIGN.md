@@ -238,10 +238,12 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   (title/subtitle, slug — auto from title until authored, date, tags, featured, export
   block, timeline of created/published/updated) at the content's right —
   Ghost's shape, not Notion's sprawl. The meta bar above the editor holds ONLY the
-  preview toggle; the rail's top block carries the verbs — quiet `save draft`
+  preview toggle; the rail is headed **post** and its first labeled section,
+  **actions**, carries the verbs — quiet `save draft`
   (outlined; ⌘Enter/⌘S), the one violet verb the state machine allows (`publish` /
   `unpublish`), and a quiet `delete`. (Owner call 2026-11-08: actions live with
-  settings, like Ghost's publish box.)
+  settings, like Ghost's publish box — but labeled as their own section; publish
+  verbs are not "settings".)
   `/posts/new` opens the editor directly — no intermediate form.
 - **Secrets**: presented as what it is — a config file with version control. Masked mono
   values, reveal on press (never "show all values" as a resting state), **version history

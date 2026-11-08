@@ -365,7 +365,7 @@ flowchart LR
 <section class="flex min-h-full flex-1 gap-4">
 	<div class="flex min-w-0 grow flex-col gap-4">
 		<!-- Meta bar: entity title wears the serif; only the preview toggle
-		     lives here — verbs moved to the settings rail (owner call). -->
+		     lives here — verbs moved to the post rail's actions block. -->
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<div class="flex min-w-0 items-center gap-3">
 				<h1 class="min-w-0 truncate font-brand text-2xl font-semibold tracking-tight">
@@ -454,7 +454,8 @@ flowchart LR
 		</div>
 	</div>
 
-	<!-- Post settings rail — slug/date/tags/thumbnail + the timeline. The
+	<!-- Post rail — actions + slug/date/tags/thumbnail + export + timeline.
+	     The header names the whole rail; sections label themselves. The
 	     container animates its width; the content curtains inside it (item #6). -->
 	<div
 		class="shrink-0 overflow-hidden transition-[width] duration-200 ease-out {editorRail.collapsed
@@ -465,37 +466,39 @@ flowchart LR
 			<button
 				type="button"
 				onclick={editorRail.toggle}
-				aria-label="Open post settings"
+				aria-label="Open post rail"
 				class="flex h-full w-9 flex-col items-center gap-3 rounded-lg border border-border bg-card py-3 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<PanelRightOpen class="size-4" />
 				<span class="font-mono text-[10px] tracking-widest uppercase [writing-mode:vertical-rl]"
-					>settings</span
+					>post</span
 				>
 			</button>
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
 				class="flex w-72 flex-col gap-5 self-stretch overflow-y-auto rounded-lg border border-border bg-card p-4"
-				aria-label="Post settings"
+				aria-label="Post actions and settings"
 			>
 				<div class="flex items-center justify-between">
-					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-						settings
-					</p>
+					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">post</p>
 					<button
 						type="button"
 						onclick={editorRail.toggle}
-						aria-label="Collapse post settings"
+						aria-label="Collapse post rail"
 						class="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<PanelRightClose class="size-4" />
 					</button>
 				</div>
 
-				<!-- Actions (owner call): save/publish/delete moved from the meta
-				     bar to the top of the rail — the CMS "publish box" position. -->
+				<!-- Actions block (owner call): save/publish/delete live at the
+				     top of the rail under their own label — the CMS "publish
+				     box" position, never under "settings". -->
 				<div class="flex flex-col gap-2">
+					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						actions
+					</p>
 					<button
 						type="button"
 						disabled={saving}

@@ -649,3 +649,10 @@ primary verb reachable either way; keyboard doctrine).
 CodeMirror status bar gained a `wrap` chip (aria-pressed; compartment
 reconfigure, no rebuild) persisted to localStorage like the rails — default
 on, matching the old behavior. §11.4 amended in place.
+
+### 2026-11-08 — rail relabel: actions are not "settings"
+
+Owner screenshot flagged the misleading grouping — publish verbs sat under
+the rail's SETTINGS heading. The rail is now headed **post**; **actions** is
+its own labeled section (save/publish/delete), ahead of the fields, export
+and timeline. Collapse/expand aria labels follow the rename. §11.4 amended.
