@@ -168,9 +168,39 @@ describe('mock AdminApi contract', () => {
 		});
 		expect(created.src).toMatch(/^\/api\/media\/m\d+$/);
 		expect(created.alt).toBe('alpine dawn');
+		// fresh captures start private & uncategorized — curation is deliberate
+		expect(created.gallery).toBe(false);
+		expect(created.collection).toBeNull();
 		expect(mediaStore.get(created.id)).toBe('data:image/png;base64,aW1hZ2U=');
 		const list = await api.listPhotos();
 		expect(list[0].id).toBe(created.id); // newest first, seeded picsum follow
+	});
+
+	it('curation: gallery flag + collection vocabulary, filtered/sorted lists, PATCH merges', async () => {
+		const api = createMockApi();
+		// seeds exercise every state
+		expect((await api.listPhotos({ gallery: true })).map((p) => p.id).sort()).toEqual(['p1', 'p3']);
+		expect((await api.listPhotos({ collection: 'uncategorized' })).map((p) => p.id)).toEqual([
+			'p3'
+		]);
+		// collection must exist in the vocabulary to be assignable
+		await expect(api.updatePhoto('p2', { collection: 'nope' })).rejects.toMatchObject({
+			status: 400
+		});
+		const col = await api.createCollection('Long Exposures');
+		expect(col).toEqual({ name: 'long-exposures', photos: 0 });
+		await expect(api.createCollection('long-exposures')).rejects.toMatchObject({ status: 409 });
+		const patched = await api.updatePhoto('p2', { collection: 'long-exposures', gallery: true });
+		expect(patched.collection).toBe('long-exposures');
+		expect(patched.gallery).toBe(true);
+		expect((await api.listCollections()).find((c) => c.name === 'long-exposures')?.photos).toBe(1);
+		// unknown photo 404s
+		await expect(api.updatePhoto('ghost', { gallery: true })).rejects.toMatchObject({
+			status: 404
+		});
+		// sorting: title asc
+		const byTitle = await api.listPhotos({ sort: 'title', dir: 'asc' });
+		expect(byTitle[0].alt).toBe('Alpine ridge at dawn, fog in the valley');
 	});
 
 	it('login demands non-empty credentials (lumen will actually check)', async () => {

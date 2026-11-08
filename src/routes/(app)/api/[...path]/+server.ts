@@ -87,8 +87,33 @@ async function route(ctx: Ctx) {
 
 	// --- photos ---
 	if (p[0] === 'photos' && p.length === 1) {
-		if (request.method === 'GET') return json(await api.listPhotos());
+		if (request.method === 'GET') {
+			const col = url.searchParams.get('collection');
+			const gal = url.searchParams.get('gallery');
+			const sort = url.searchParams.get('sort');
+			const dir = url.searchParams.get('dir');
+			return json(
+				await api.listPhotos({
+					collection: col ?? undefined,
+					gallery: gal === '1' ? true : gal === '0' ? false : undefined,
+					sort: sort === 'title' || sort === 'collection' || sort === 'created' ? sort : undefined,
+					dir: dir === 'asc' || dir === 'desc' ? dir : undefined
+				})
+			);
+		}
 		if (request.method === 'POST') return json(await api.addPhoto(await body()), { status: 201 });
+	}
+	if (p[0] === 'photos' && p.length === 2 && request.method === 'PATCH') {
+		return json(await api.updatePhoto(p[1], await body()));
+	}
+
+	// --- collections (curation vocabulary, admin-internal) ---
+	if (p[0] === 'collections' && p.length === 1) {
+		if (request.method === 'GET') return json(await api.listCollections());
+		if (request.method === 'POST') {
+			const { name } = (await body()) as { name: string };
+			return json(await api.createCollection(String(name ?? '')), { status: 201 });
+		}
 	}
 
 	// --- media (mellon-LOCAL deviating endpoint, mock era only — journal

@@ -113,6 +113,8 @@ const PHOTOS: AdminPhoto[] = [
 		alt: 'Alpine ridge at dawn, fog in the valley',
 		width: 900,
 		height: 560,
+		gallery: true, // curated: theme + public
+		collection: 'landscapes',
 		createdAt: '2024-04-01T05:41:00Z'
 	},
 	{
@@ -121,9 +123,25 @@ const PHOTOS: AdminPhoto[] = [
 		alt: 'Night market steam under a single bulb',
 		width: 700,
 		height: 900,
+		gallery: false, // companion image for an article — not for the Gallery page
+		collection: 'street',
 		createdAt: '2024-04-06T21:03:00Z'
+	},
+	{
+		id: 'p3',
+		src: 'https://picsum.photos/seed/harbor-fog/1200/800',
+		alt: 'Fog over the fishing harbour at first light',
+		width: 1200,
+		height: 800,
+		gallery: true,
+		collection: null, // in the Gallery, yet uncategorized
+		createdAt: '2024-06-11T04:20:00Z'
 	}
 ];
+
+/** Collection vocabulary — admin-internal curation groups (owner decision
+ *  2026-11-08: the blog ignores them; public = gallery=true, all themes). */
+const COLLECTIONS = ['landscapes', 'street'];
 
 /** Bao-shaped: app/env → payload versions, newest last. */
 const SECRETS: Record<string, SecretPayload[]> = {
@@ -186,6 +204,8 @@ export function createMockApi(): AdminApi {
 	// enforces the same; the UI never offers a non-vocab tag).
 	const vocab = new Set<string>();
 	for (const p of posts) for (const t of p.tags) vocab.add(t);
+	// Collection vocabulary — same eager-creation semantics as tags.
+	const collections = new Set<string>(COLLECTIONS);
 
 	const find = (slug: string) => {
 		const p = posts.find((x) => x.slug === slug);
@@ -303,8 +323,27 @@ export function createMockApi(): AdminApi {
 			posts = posts.filter((p) => p.slug !== slug);
 		},
 
-		async listPhotos() {
-			return clone(photos);
+		async listPhotos({ collection, gallery, sort = 'created', dir = 'desc' } = {}) {
+			return photos
+				.filter(
+					(p) =>
+						(collection === undefined ||
+							(collection === 'uncategorized'
+								? p.collection === null
+								: p.collection === collection)) &&
+						(gallery === undefined || p.gallery === gallery)
+				)
+				.sort((a, b) => {
+					const key = (p: AdminPhoto) =>
+						sort === 'title'
+							? p.alt.toLowerCase()
+							: sort === 'collection'
+								? (p.collection ?? '')
+								: p.createdAt;
+					const cmp = key(a).localeCompare(key(b));
+					return dir === 'asc' ? cmp : -cmp;
+				})
+				.map(clone);
 		},
 
 		async addPhoto(p) {
@@ -318,10 +357,40 @@ export function createMockApi(): AdminApi {
 				alt: p.name.replace(/\.[^.]+$/, ''),
 				width: p.width,
 				height: p.height,
+				// fresh captures start private & uncategorized — curation is deliberate
+				gallery: false,
+				collection: null,
 				createdAt: now()
 			};
 			photos = [created, ...photos];
 			return clone(created);
+		},
+
+		async updatePhoto(id, patch) {
+			const p = photos.find((x) => x.id === id);
+			if (!p) throw new AdminApiError(404, `photo not found: ${id}`);
+			if (patch.alt !== undefined) p.alt = patch.alt;
+			if (patch.gallery !== undefined) p.gallery = patch.gallery;
+			if (patch.collection !== undefined) {
+				if (patch.collection !== null && !collections.has(patch.collection))
+					throw new AdminApiError(400, `unknown collection: ${patch.collection}`);
+				p.collection = patch.collection;
+			}
+			return clone(p);
+		},
+
+		async listCollections() {
+			return [...collections]
+				.map((name) => ({ name, photos: photos.filter((p) => p.collection === name).length }))
+				.sort((a, b) => b.photos - a.photos || a.name.localeCompare(b.name));
+		},
+
+		async createCollection(raw) {
+			const name = slugify(String(raw ?? '')).slice(0, 32);
+			if (!name) throw new AdminApiError(400, 'collection name has no letters or digits');
+			if (collections.has(name)) throw new AdminApiError(409, `collection exists: ${name}`);
+			collections.add(name);
+			return { name, photos: 0 };
 		},
 
 		async listTags() {

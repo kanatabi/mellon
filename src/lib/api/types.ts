@@ -51,7 +51,30 @@ export interface AdminPhoto {
 	alt: string;
 	width: number;
 	height: number;
+	/** Curation flag: publish to the blog's public Gallery page. Companion
+	 *  images for articles stay false. Uploads default FALSE — surfacing
+	 *  publicly is a deliberate act (owner decision 2026-11-08). */
+	gallery: boolean;
+	/** Curation group (theme: landscapes, street…). ADMIN-INTERNAL: the
+	 *  public list returns every gallery=true photo regardless of collection;
+	 *  collections are not (yet) a publishing axis. One home per photo;
+	 *  null = uncategorized. Names live in the collection vocabulary. */
+	collection: string | null;
 	createdAt: string;
+}
+
+export interface CollectionCount {
+	name: string;
+	photos: number;
+}
+
+/** Photo list filters — relayed like posts'; the page never sorts itself. */
+export interface PhotoListOpts {
+	/** Collection name, or the literal 'uncategorized' for the null bucket. */
+	collection?: string;
+	gallery?: boolean;
+	sort?: 'created' | 'title' | 'collection';
+	dir?: 'asc' | 'desc';
 }
 
 export interface TagCount {
@@ -115,7 +138,7 @@ export interface AdminApi {
 	unpublishPost(slug: string): Promise<PostDetailAdmin>;
 	deletePost(slug: string): Promise<void>;
 
-	listPhotos(): Promise<AdminPhoto[]>;
+	listPhotos(opts?: PhotoListOpts): Promise<AdminPhoto[]>;
 	/** Upload entry point. `dataUrl` stands in for the bytes during the mock
 	 *  era (journaled); Phase B transports multipart POST /admin/photos and
 	 *  lumen probes dims + strips EXIF server-side — this interface's output
@@ -126,6 +149,16 @@ export interface AdminApi {
 		width: number;
 		height: number;
 	}): Promise<AdminPhoto>;
+	/** Curation metadata setter (alt/collection/gallery). No CAS: photos carry
+	 *  no rev, and single-author album metadata is last-write-wins (journaled). */
+	updatePhoto(
+		id: string,
+		patch: { alt?: string; collection?: string | null; gallery?: boolean }
+	): Promise<AdminPhoto>;
+
+	listCollections(): Promise<CollectionCount[]>;
+	/** Same vocabulary semantics as tags: eager, slugified, 409 on duplicates. */
+	createCollection(name: string): Promise<CollectionCount>;
 
 	listTags(): Promise<TagCount[]>;
 	/** Vocabulary is a first-class store (not derived): a tag exists once

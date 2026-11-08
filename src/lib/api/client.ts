@@ -7,6 +7,7 @@
 import type {
 	AdminApi,
 	AdminPhoto,
+	CollectionCount,
 	PostDetailAdmin,
 	PostStatus,
 	PostSummaryAdmin,
@@ -70,8 +71,22 @@ export const client: AdminApi = {
 	deletePost: (slug) =>
 		call<{ ok: true }>(`/posts/${slug}`, { method: 'DELETE' }).then(() => undefined),
 
-	listPhotos: () => call<AdminPhoto[]>('/photos'),
+	listPhotos: (opts) => {
+		const params = new URLSearchParams();
+		if (opts?.collection) params.set('collection', opts.collection);
+		if (opts?.gallery !== undefined) params.set('gallery', opts.gallery ? '1' : '0');
+		if (opts?.sort) params.set('sort', opts.sort);
+		if (opts?.dir) params.set('dir', opts.dir);
+		const qs = params.toString();
+		return call<AdminPhoto[]>(`/photos${qs ? `?${qs}` : ''}`);
+	},
 	addPhoto: (p) => call<AdminPhoto>('/photos', { method: 'POST', body: JSON.stringify(p) }),
+	updatePhoto: (id, patch) =>
+		call<AdminPhoto>(`/photos/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+	listCollections: () => call<CollectionCount[]>('/collections'),
+	createCollection: (name) =>
+		call<CollectionCount>('/collections', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listTags: () => call<TagCount[]>('/tags'),
 	createTag: (name) => call<TagCount>('/tags', { method: 'POST', body: JSON.stringify({ name }) }),
