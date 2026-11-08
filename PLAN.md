@@ -1021,3 +1021,39 @@ Gates per commit: prettier → lint(0) → check 0/0 → vitest (24 → 26) → 
 lumen mirrors pushed (`42ce0b5` search, `8624abe` photo verbs) on
 `feature/admin-api-and-portal`; mellon remains HUMAN-GATE #1 paused (no
 remote) — commits accumulate on local `main`.
+
+### 2026-11-08 — palette mode grammar: sigils that route the question
+
+Owner sketched the prefix design outright (`>` commands / `/` content / `#`
+pages, plain text = everything) and it slotted into §7 doctrine like it was
+always there — the palette keeps staying DUMB about content, the prefixes
+just tell it WHERE to look. Five clarifying calls: chip = consuming prefix +
+pill (plain `<input>`, IME-safe; contenteditable rejected), `>` includes
+global actions and stateful TOGGLES, `#` owns destinations + open recent,
+prefix requires the committing space (bare `>` stays literal).
+
+- **`4914e51` feat(search-tags)**: `search(q)` grows to
+  `{posts, photos, tags}` — and the mirror records the boundary tags live
+  on: a NAME lookup over the vocabulary (Postgres), never Meilisearch
+  relevance. Counts honor the published-corpus rule so a tag hint never
+  disagrees with the tags list. Selecting a tag enters `/posts?tag=` —
+  filter axis, not page; the URL already rode the API filter, zero new
+  plumbing. (Gate caught the empty-query early-return missing the new
+  group — the contract test pinned it immediately.)
+- **`9184cea` feat(palette)**: the mode machine in PURE logic
+  (`palette-mode.ts`: arm/disarm/group-routing/API-gating, 7 node tests —
+  vitest 26 → 33). Prefix + space at position 0 consumes both characters
+  into a pill; mode is explicit STATE, never re-parsed from text, which is
+  what keeps IME and caret semantics boring on a plain input. Empty
+  Backspace disarms; pasted `/ alpine ridge` commits in one keystroke.
+  `/ ` never renders navigation, `# ` never asks the API — the door gating
+  is the doctrine made executable. Tag rows: hint shows published counts.
+  Group chips hide in forced modes (the pill says what rows ARE); the idle
+  legend footer documents the grammar so it's learned by sight, not folklore.
+- **Docs** (this commit): §7 search doctrine amended to THREE content
+  groups + the full mode grammar bullet; §11.4 gains the palette anatomy
+  (pill, hint-column state, legend, chip-hiding rule).
+
+Live-verified: `/api/search?q=latency` → tag 'latency · 0 posts' — the
+eager vocabulary shows UNUSED names, exactly as the vocabulary doctrine
+promises (a tag exists from creation, used or not).

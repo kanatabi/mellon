@@ -124,8 +124,9 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 ## 7. Keyboard-first
 
 - **Command palette**: ⌘K / Ctrl+K (aliases of one binding). Sections, ranked in order:
-  `photos`, `posts` (API content results), `actions` (new post, save, publish, toggles),
-  `go to`, `open recent`. Shortcut-hint column. Built on a
+  `photos`, `posts`, `tags` (API content results), `actions` (new post, save, publish,
+  toggles), `go to`, `open recent`. Mode prefixes re-route this list — see **Mode
+  grammar** below. Shortcut-hint column. Built on a
   **command registry** (`commands.ts`: `{ id, title, shortcut?, run }`) — pages register,
   the palette renders (the rail kit's plug-and-play contract, applied to navigation).
   Context registration is real (`page-commands.svelte.ts`): a page publishes its verbs in
@@ -136,13 +137,27 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   Focus management + Esc + focus return reuse the `SearchDialog` recipe.
 - **Search doctrine** (owner call, 2026-11-08): the palette is DUMB about content.
   Commands, navigation and toggles are portal-side; "what matches?" is served by the API —
-  one debounced `search(q)` call (`GET /admin/search?q`) returns BOTH groups, `{ posts,
-photos }` (posts match title/subtitle/tags incl. drafts; photos match alt + collection —
-  images are findable by their ALT text). Phase B: Meilisearch behind the same verb
-  (lumen §4 indexes `photos` for the admin door); the palette never changes. Toggles show
-  CURRENT STATE in the hint column (`light`/`dark`, `on`/`off`) — the palette answers
-  "what mode am I in?" before you flip it. A photo result always opens `/photos/[id]`:
-  one destination, no context-magic.
+  one debounced `search(q)` call (`GET /admin/search?q`) returns ALL content groups,
+  `{ posts, photos, tags }` (posts match title/subtitle/tags incl. drafts; photos match
+  alt + collection — images are findable by their ALT text; tags are a VOCABULARY prefix
+  lookup, a name not a document). Phase B: Meilisearch behind the same verb
+  (lumen §4 indexes `photos` for the admin door; tags come from Postgres); the palette
+  never changes. Toggles show CURRENT STATE in the hint column (`light`/`dark`,
+  `on`/`off`) — the palette answers "what mode am I in?" before you flip it. A photo
+  result always opens `/photos/[id]`: one destination, no context-magic. A TAG result
+  enters `/posts?tag=<name>`: a filter axis, not a page.
+- **Mode grammar** (owner call, 2026-11-08): the palette also knows WHERE to look.
+  A position-0 prefix + space commits a MODE, rendered as a pill inside the search row —
+  the sigil characters are CONSUMED (mode is explicit state, never re-parsed text, so a
+  plain `<input>` keeps IME/caret semantics boring; contenteditable chips were rejected):
+  `> ` **commands** — current-page verbs + stateful toggles + global actions,
+  `/ ` **content** — the API door alone (posts · photos · tags, never navigation),
+  `# ` **pages** — destinations + open recent,
+  and untyped remains search-EVERYTHING (all groups ranked content-first). Empty
+  Backspace disarms; sigils elsewhere stay literal (`C++ > foo` still searches); pasted
+  `prefix + argument` commits in one keystroke. The grammar is a legend footer while
+  idle — a keyboard-first UI shows its sigils. Pure logic lives in `palette-mode.ts`
+  (armed/disarmed/group-routing/API-gating all unit-tested in node).
 - Roving tabindex for list rows; every table action keyboard-reachable; visible
   `focus-visible` rings (house style); forms fully labeled (native focus/announce);
   `Ctrl+Enter` save/publish convention in the editor.
@@ -337,6 +352,14 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   as a side sheet** (springs from the right, reusing the drawer motion), diff between
   versions, CAS-save. The masked-mono table is naturally beautiful in this palette; no
   decoration needed.
+- **Command palette** (the §7 grammar, made visible): search row = `⌘` mark, an optional
+  MODE PILL (`❯ commands` / `⌕ content` / `# pages`, brand-tinted mono micro-chip,
+  aria-hidden because the input's own label speaks the mode), then the plain input,
+  then the `esc` kbd. Results keep the hint column for state (toggles show
+  `light/dark`/`on/off`, photos show dims, posts show status, tags show published
+  counts). GROUP chips prefix each row only while MULTIPLE kinds share the list — a
+  forced mode already says what the rows are. Idle shows the legend footer
+  (`❯ commands · ⌕ content · # pages`) — sigils documented, not folklore.
 - **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
   the charm is free.
 - **Settings**: max-width form, same voice (owner call 2026-11-08: the theme became an
