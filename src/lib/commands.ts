@@ -8,7 +8,7 @@ import { goto } from '$app/navigation';
 export interface Command {
 	id: string;
 	title: string;
-	group: 'go to' | 'actions' | 'open recent' | 'posts' | 'photos';
+	group: 'go to' | 'actions' | 'open recent' | 'posts' | 'photos' | 'tags';
 	shortcut?: string;
 	run: () => void;
 }
