@@ -6,7 +6,7 @@
 	import { EditorView } from '@codemirror/view';
 	// Community-maintained vim keymap (the npm reality: no @codemirror/vim
 	// package exists — corrected against my earlier claim, journaled).
-	import { vim } from '@replit/codemirror-vim';
+	import { getCM, vim } from '@replit/codemirror-vim';
 
 	interface Props {
 		value: string;
@@ -25,13 +25,29 @@
 	let emitted = value;
 
 	// ── Status bar state (instrument chrome, §11.1) ──────────────────────────
-	// The @replit keymap fires `vim-mode-change` (CustomEvent {mode, subMode})
-	// on the editor DOM — the only public door (the package exports no
-	// getVim accessor; journaled 2026-11-08).
+	// The mode truth lives on the CM5-adapter's vim state — `getCM(view)` is
+	// the package's only public door. There is NO DOM event: @replit ships
+	// `vim-mode-change` on a private emitter (its status-bar listener consumes
+	// it internally), so an addEventListener never fires (owner report
+	// 2026-11-08 — badge stuck at INSERT). Re-read it on every transaction:
+	// mode changes always ride a state effect, so updates cover them all.
 	let mode = $state('');
 	let sub = $state('');
 	let pos = $state({ line: 1, col: 1 });
 	let words = $state(0);
+
+	function readVimMode() {
+		if (!view || !vimOn) {
+			mode = '';
+			sub = '';
+			return;
+		}
+		const vimState = getCM(view)?.state?.vim as
+			{ mode?: string; subMode?: string } | undefined | null;
+		mode = vimState?.mode ?? 'INSERT';
+		sub =
+			vimState?.subMode === 'linewise' ? 'LINE' : vimState?.subMode === 'blockwise' ? 'BLOCK' : '';
+	}
 
 	function readStats(state: EditorState) {
 		const head = state.selection.main.head;
@@ -80,6 +96,14 @@
 				EditorView.lineWrapping,
 				theme,
 				vimCompartment.of(vimOn ? [vim()] : []),
+				EditorView.domEventHandlers({
+					// belt for transitions that resolve outside a transaction: sample
+					// right after vim's key handlers finish
+					keyup: () => {
+						queueMicrotask(readVimMode);
+						return false;
+					}
+				}),
 				EditorView.updateListener.of((u) => {
 					if (u.docChanged) {
 						emitted = u.state.doc.toString();
@@ -90,26 +114,23 @@
 						onchange(emitted);
 					}
 					if (u.docChanged || u.selectionSet) readStats(u.state);
+					// mode changes ride their own transactions; the read is a few
+					// property lookups — sample every update unconditionally
+					readVimMode();
 				})
 			]
 		});
 		view = new EditorView({ state, parent: host });
 		readStats(view.state);
-		if (vimOn) mode = 'INSERT';
-
-		host.addEventListener('vim-mode-change', (e) => {
-			const detail = (e as CustomEvent<{ mode: string; subMode?: string }>).detail;
-			mode = detail?.mode ?? '';
-			sub = detail?.subMode ?? '';
-		});
+		readVimMode();
 	});
 
 	// Vim preference toggled from settings — reconfigure, don't rebuild.
 	$effect(() => {
 		if (!view) return;
 		view.dispatch({ effects: vimCompartment.reconfigure(vimOn ? [vim()] : []) });
-		mode = vimOn ? 'INSERT' : '';
-		sub = '';
+		// sample after the reconfigure transaction settles
+		queueMicrotask(readVimMode);
 	});
 
 	// External value pushes (post load / revert) must reach the document.
@@ -135,7 +156,8 @@
 		<span class="flex items-center gap-2 tabular-nums">
 			{#if vimOn && mode}
 				<span
-					class="rounded px-1.5 py-0.5 font-semibold tracking-wider {mode === 'INSERT'
+					class="rounded px-1.5 py-0.5 font-semibold tracking-wider uppercase {mode.toLowerCase() ===
+					'insert'
 						? 'bg-brand/15 text-brand'
 						: 'bg-muted text-foreground'}">{mode}{sub ? `·${sub}` : ''}</span
 				>

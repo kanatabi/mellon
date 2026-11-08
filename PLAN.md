@@ -617,3 +617,18 @@ Seven calls, plus the tail of the shimmer saga (previous entry). All shipped:
 Check caught two self-inflicted regressions before commit: the CodeMirror
 rewrite had dropped `$bindable()` again (bind would fail loudly now — good),
 and DeleteDialog's `role=dialog` belongs on a wrapper, not the `<form>`.
+
+### 2026-11-08 — vim badge stuck: there is no DOM event to listen for
+
+Owner screenshot: the status bar read `INSERT` forever. The event I trusted —
+`vim-mode-change` — is real but PRIVATE: @replit/codemirror-vim dispatches it
+on its own CM5-style emitter (`cm.on(...)`), consumed by the package's own
+status bar; it never touches the DOM, so my `host.addEventListener` sat
+waiting for something that cannot arrive. The badge only ever showed its seed.
+
+The truth door the package DOES export: `getCM(view)` → CM5 adapter →
+`cm.state.vim.mode / subMode` (`'Insert' | 'Normal' | 'Visual line' …`).
+Now sampled on every editor transaction (mode switches ride effects) plus a
+`keyup → queueMicrotask` belt for transitions that resolve outside a
+transaction. Lesson: grep a library's DISPATCH site, not just the event name —
+`on(` in their code may be their bus, not the DOM.
