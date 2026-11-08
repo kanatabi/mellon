@@ -9,7 +9,8 @@
 		FileCog,
 		PanelRightClose,
 		PanelRightOpen,
-		Printer
+		Printer,
+		WrapText
 	} from 'lucide-svelte';
 	import { onMount, tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
@@ -122,7 +123,16 @@ flowchart LR
 	onMount(() => {
 		const stored = localStorage.getItem('mellon.tab.editor');
 		if (stored === 'preview') editorTab = 'preview'; // adopt AFTER hydration
+		if (localStorage.getItem('mellon.wrap') === '0') wrapped = false;
 	});
+
+	// Line wrap: a plain toggle in the meta bar (all viewports), state owned
+	// here, applied by the editor through the `wrap` prop.
+	let wrapped = $state(true);
+	function toggleWrap() {
+		wrapped = !wrapped;
+		localStorage.setItem('mellon.wrap', wrapped ? '1' : '0');
+	}
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
 	// keeps rendering ahead of the switch — that's what makes it instant).
 	const previewLive = $derived(showPreview || editorTab === 'preview');
@@ -414,6 +424,20 @@ flowchart LR
 						unsaved
 					</span>
 				{/if}
+				<!-- Wrap toggle (owner call): a normal pressed-state pill at the
+				     top of the editor, every viewport — it replaced the
+				     status-bar chip. -->
+				<button
+					type="button"
+					onclick={toggleWrap}
+					aria-pressed={wrapped}
+					class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
+						? 'border-brand bg-brand/10 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					<WrapText class="size-3.5" />
+					wrap
+				</button>
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
@@ -515,7 +539,13 @@ flowchart LR
 					? 'max-lg:invisible max-lg:opacity-0'
 					: ''}"
 			>
-				<CodeMirrorEditor bind:value={draft.content} onchange={touch} {vim} class="h-full" />
+				<CodeMirrorEditor
+					bind:value={draft.content}
+					onchange={touch}
+					{vim}
+					wrap={wrapped}
+					class="h-full"
+				/>
 			</div>
 
 			<div

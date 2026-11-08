@@ -721,3 +721,20 @@ strings for the scanner — the ternaries spell `max-lg:invisible` in full.
 
 Both were invisible to every desktop-width test — real-device passes are part
 of the shell's definition of done, not the last step. §11.1 amended.
+
+### 2026-11-08 — vim auto-off below lg; wrap promoted to a real toggle
+
+1. **Vim is a desktop affordance.** The preference cookie stays the user's
+   truth; the EDITOR computes effectiveness: `vim && !smallScreen`. Own
+   `media()` store (svelte 5.57 exports no `mql`) starts false → SSR/hydration
+   agree → syncs post-mount and tracks viewport crossings live (rotate a
+   tablet: vim compartment reconfigures itself, status bar follows). Settings
+   copy says so. No state.vim → plain `insert` mode on touch.
+2. **Wrap left the status bar** for a normal pressed-state pill in the meta
+   bar — every viewport, next to preview; the editor became a pure `wrap`
+   prop consumer (parent owns state + localStorage, same key).
+3. Two traps caught by the gates on the way: a `vim` PROP shadowed the `vim`
+   EXTENSION import (eslint's odd "read-only" error was really calling a
+   boolean as a function — alias to `vimKeymap`), and lucide v1 renamed
+   WrapText's class to `lucide-text-wrap` — the alias still imports fine,
+   greps must use the new kebab.

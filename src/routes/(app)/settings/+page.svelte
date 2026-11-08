@@ -44,8 +44,9 @@
 			<span class="flex flex-col gap-1">
 				<span class="text-sm font-medium">Vim keybindings</span>
 				<span class="font-mono text-xs leading-relaxed text-muted-foreground">
-					modal editing in the post editor (normal/insert). IME note: pause vim if you type with an
-					input method
+					modal editing in the post editor (normal/insert), desktop viewports only — auto-off below
+					lg, where touch editing gets plain mode. IME note: pause vim if you type with an input
+					method
 				</span>
 			</span>
 			<input

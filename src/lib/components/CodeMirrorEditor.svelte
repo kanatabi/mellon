@@ -1,31 +1,59 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { browser } from '$app/env';
 	import { basicSetup } from 'codemirror';
 	import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 	import { Compartment, EditorState } from '@codemirror/state';
 	import { EditorView } from '@codemirror/view';
 	// Community-maintained vim keymap (the npm reality: no @codemirror/vim
 	// package exists — corrected against my earlier claim, journaled).
-	import { getCM, vim } from '@replit/codemirror-vim';
+	// Aliased: the `vim` prop (user preference) would shadow the extension
+	// factory otherwise — a collision eslint caught as "read-only" nonsense.
+	import { getCM, vim as vimKeymap } from '@replit/codemirror-vim';
 
 	interface Props {
 		value: string;
 		onchange: (v: string) => void;
+		/** The USER preference (cookie). Effective mode ANDs it with the
+		 *  viewport: modal editing is a desktop affordance — below `lg` the
+		 *  editor always runs plain (owner call 2026-11-08). */
 		vim: boolean;
+		/** Line-wrap state, owned by the parent's toggle button. */
+		wrap: boolean;
 		class?: string;
 	}
 
-	let { value = $bindable(), onchange, vim: vimOn, class: cls = '' }: Props = $props();
+	let { value = $bindable(), onchange, vim, wrap, class: cls = '' }: Props = $props();
 
 	let host: HTMLDivElement | undefined = $state();
 	let view: EditorView | undefined;
 	const vimCompartment = new Compartment();
 	const wrapCompartment = new Compartment();
-	// line-wrap preference: localStorage (pure client view state, like rails)
-	let wrapped = $state(true);
 	// deliberate one-time capture: the editor doc is seeded from `value` at
 	// mount; later syncs run through the $effect pair below.
 	let emitted = value;
+
+	// Minimal reactive media query — svelte 5.57 ships no `mql` export yet.
+	// Initial `false` keeps SSR and hydration in agreement; the listener syncs
+	// post-mount and tracks viewport crossings (rotate a tablet).
+	function media(query: string) {
+		const state = $state({ matches: false });
+		$effect(() => {
+			if (!browser) return;
+			const mq = window.matchMedia(query);
+			const sync = (e: MediaQueryListEvent | MediaQueryList) => (state.matches = e.matches);
+			sync(mq);
+			mq.addEventListener('change', sync);
+			return () => mq.removeEventListener('change', sync);
+		});
+		return state;
+	}
+	// Breakpoint twin of the CSS `lg` (1024px).
+	const smallScreen = media('(max-width: 1023.98px)');
+	// EFFECTIVE vim state — false until mount (SSR and hydration agree), then
+	// preference ∧ viewport, re-evaluated when the setting flips OR the
+	// viewport crosses lg (rotate a tablet and vim walks out by itself).
+	let vimOn = $state(false);
 
 	// ── Status bar state (instrument chrome, §11.1) ──────────────────────────
 	// The mode truth lives on the CM5-adapter's vim state — `getCM(view)` is
@@ -96,15 +124,15 @@
 
 	onMount(() => {
 		if (!host) return;
-		wrapped = localStorage.getItem('mellon.wrap') !== '0';
+		vimOn = vim && !smallScreen.matches;
 		const state = EditorState.create({
 			doc: value,
 			extensions: [
 				basicSetup,
 				markdown({ base: markdownLanguage }),
-				wrapCompartment.of(wrapped ? [EditorView.lineWrapping] : []),
+				wrapCompartment.of(wrap ? [EditorView.lineWrapping] : []),
 				theme,
-				vimCompartment.of(vimOn ? [vim()] : []),
+				vimCompartment.of(vimOn ? [vimKeymap()] : []),
 				EditorView.domEventHandlers({
 					// belt for transitions that resolve outside a transaction: sample
 					// right after vim's key handlers finish
@@ -134,12 +162,21 @@
 		readVimMode();
 	});
 
-	// Vim preference toggled from settings — reconfigure, don't rebuild.
+	// Effective vim: setting flips AND viewport crossings reconfigure the
+	// compartment — no rebuild, cursor and history survive.
+	$effect(() => {
+		const next = vim && !smallScreen.matches;
+		if (next === vimOn) return;
+		vimOn = next;
+		if (!view) return;
+		view.dispatch({ effects: vimCompartment.reconfigure(next ? [vimKeymap()] : []) });
+		queueMicrotask(readVimMode);
+	});
+
+	// Wrap state arrives from the parent's toggle button.
 	$effect(() => {
 		if (!view) return;
-		view.dispatch({ effects: vimCompartment.reconfigure(vimOn ? [vim()] : []) });
-		// sample after the reconfigure transaction settles
-		queueMicrotask(readVimMode);
+		view.dispatch({ effects: wrapCompartment.reconfigure(wrap ? [EditorView.lineWrapping] : []) });
 	});
 
 	// External value pushes (post load / revert) must reach the document.
@@ -151,14 +188,6 @@
 	});
 
 	onDestroy(() => view?.destroy());
-
-	function toggleWrap() {
-		wrapped = !wrapped;
-		view?.dispatch({
-			effects: wrapCompartment.reconfigure(wrapped ? [EditorView.lineWrapping] : [])
-		});
-		localStorage.setItem('mellon.wrap', wrapped ? '1' : '0');
-	}
 </script>
 
 <div class="flex h-full min-h-0 flex-col {cls}">
@@ -183,18 +212,6 @@
 			{/if}
 			<span>Ln {pos.line}, Col {pos.col}</span>
 		</span>
-		<span class="flex items-center gap-2">
-			<button
-				type="button"
-				onclick={toggleWrap}
-				aria-pressed={wrapped}
-				class="rounded px-1.5 py-0.5 tracking-wider uppercase transition-colors {wrapped
-					? 'bg-muted text-foreground'
-					: 'text-muted-foreground/60 hover:text-foreground'}"
-			>
-				wrap
-			</button>
-			<span class="tabular-nums">{words} words</span>
-		</span>
+		<span class="tabular-nums">{words} words</span>
 	</div>
 </div>
