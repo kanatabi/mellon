@@ -284,7 +284,7 @@
 					aria-current={data.gallery === true ? 'true' : undefined}
 					class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
 					true
-						? 'border-brand bg-brand/10 text-foreground'
+						? 'border-accent-teal bg-accent-teal/10 text-foreground'
 						: 'border-border text-muted-foreground hover:text-foreground'}"
 				>
 					<Eye class="size-3" /> in gallery
@@ -294,7 +294,7 @@
 					aria-current={data.gallery === false ? 'true' : undefined}
 					class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
 					false
-						? 'border-brand bg-brand/10 text-foreground'
+						? 'border-accent-teal bg-accent-teal/10 text-foreground'
 						: 'border-border text-muted-foreground hover:text-foreground'}"
 				>
 					<EyeOff class="size-3" /> out

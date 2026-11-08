@@ -196,7 +196,9 @@
 					/>
 					<button
 						type="button"
-						class="p-1 text-muted-foreground transition-colors hover:text-foreground"
+						class="p-1 transition-colors {revealed[k]
+							? 'text-accent-amber'
+							: 'text-muted-foreground hover:text-foreground'}"
 						aria-label={revealed[k] ? 'Hide value' : 'Reveal value'}
 						onpointerdown={() => toggleReveal(k, true)}
 						onpointerup={() => toggleReveal(k, false)}
