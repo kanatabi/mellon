@@ -116,7 +116,7 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 | `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                            |
 | `/posts`        | list (status pills, roving-tabindex rows, `n` = new)                                                                                                                |
 | `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                     |
-| `/photos`       | upload (drag-drop + file), alt + natural dims display (server-probed)                                                                                               |
+| `/photos`       | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker (owner calls 2026-11-08)          |
 | `/secrets`      | app/env picker (from policy-scoped list), values masked by default (click/keyboard reveal), version history + diff + CAS save, rollback = pin-an-older-version flow |
 | `/settings`     | vim toggle, session                                                                                                                                                 |
 
@@ -259,6 +259,17 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   stay mounted, so switching is instant and the hidden preview keeps
   rendering ahead of the visit. On `lg+` wrap lives in the meta band beside the
   eye toggle — same snippet, two bands. (Owner call 2026-11-08.)
+- **Photos (the darkroom)**: presented as a working library, not a moodboard.
+  Two views — tiles (the default; phones only ever see tiles) and a sortable
+  table (`photo · alt · collection · gallery · size · created`, headers linking
+  `?sort=&dir=` through the API). Every tile and row carries the same two
+  controls: an **eye key** toggling the `gallery` flag (uploads default OFF —
+  publishing to the blog's Gallery is a deliberate act; the public list serves
+  only gallery=true photos, collection-agnostic), and a single-select
+  **collection combobox** (eager create, "uncategorized" clears). A **bulk
+  bar** materializes only while a selection lives: set collection / in / out
+  across N photos, optimistic with per-id overlays so the grid never reloads
+  mid-cursor. Filters ride the URL like posts'; the vocabulary is admin-internal.
 - **Secrets**: presented as what it is — a config file with version control. Masked mono
   values, reveal on press (never "show all values" as a resting state), **version history
   as a side sheet** (springs from the right, reusing the drawer motion), diff between

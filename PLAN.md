@@ -868,3 +868,29 @@ Three owner calls, three commits:
    updated/desc; never-published sinks as the empty key). Rail chips map
    onto it (newest/oldest/title unchanged in feel). lumen §8 mirrored in
    the same set; tests expanded to pin created/published/title/window.
+
+### 2026-11-08 — curation round: gallery flag, collection vocabulary, tiles⇄table
+
+Four commits (`74f0dc5 → docs`):
+
+1. **media-model**: `AdminPhoto.{gallery,collection}` + listCollections/
+   createCollection/updatePhoto(PATCH) + `listPhotos({collection?, gallery?,
+sort?, dir?})`. Uploads land `gallery:false, collection:null` — publishing
+   to the blog's Gallery is deliberate; collections are ADMIN-INTERNAL themes
+   (public = every gallery=true photo, owner decision). Seeds cover every
+   state. lumen §1/§6/§8 mirrored in the same set.
+2. **photos-curate**: filter strip (collections + in-gallery/out + select
+   all), eye keys + single-select collection Combobox per tile, bulk bar
+   that exists only while a selection lives, optimistic per-id edit overlays
+   (tiles never reload under the keyboard). TagPicker generalized into
+   `Combobox` (multi|single + injected eager create + optional clear row) —
+   tags and collections share one popover truth; TagPicker retired.
+   Gotcha kept: Kit 3 +server.ts is verb-EXPlicit — PATCH 405'd until it was
+   exported; and an a11y `figcaption` must be FIRST OR LAST child of a figure.
+3. **photos-table**: `[tiles | table]` segment (localStorage, like rails/
+   tabs), table = checkbox · thumb · alt · collection · gallery · size ·
+   created with API-sorted headers (`sort=title|collection|created`,
+   uncategorized sinks on the empty key). Phones always see tiles — the
+   table is `hidden md:flex` even if the saved view says otherwise: seven
+   columns lie at 390px.
+4. **docs**: §6 page table + §11.4 darkroom anatomy.
