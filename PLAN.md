@@ -1192,3 +1192,38 @@ toggle on every surface, and the parity rungs share one behavior spec.
 
 Next surface (round 3): the posts/photos list filters — where the range
 grammar (`nov 1..nov 12`, `last week`) finally gets its consumer.
+
+### 2026-11-08 — control center round 3: the filter pages, chained
+
+The parity map closed: posts and photos lists now answer to ⌘K exactly like
+their sidebars — `Filter by status`, `Filter by tags`, `Filter gallery`,
+`Filter collections`, `Set date range` (the grammar's planned consumer at
+last), `Sort by`, `Toggle view` (photos), `Clear filters` present only while
+something is on and vanishing when it isn't. Every command closes over the
+page's own `buildUrl` — the URL is the one query-string truth — so a palette
+pick and a chip click write the identical state by construction.
+
+- **`6aeffa9` feat(filter-palette)**: `editField` gained `range:true` (filter
+  fields take windows, content fields still reject them); the ✎ dates buffer
+  parses live in the hint (`2026-11-01 .. 2026-11-12 — ⏎ saves`), slides
+  WHOLE windows with the arrows (`last week` + → moves both endpoints), and
+  re-serializes canonically on commit. keepOpen's grand showcase: one ⌘K
+  session walked /posts → ?status=draft → &tag=queues → &from=..&to=.. →
+  &sort=title&dir=asc, ✓ marks staying live between navigations, then Clear
+  filters back to zero — 19/19 in the new filter-verify suite (editor 20/20,
+  photo 14/14 re-run; one fresh mock server per suite — the corpus
+  persistence is the DATABASE behaving correctly, tests just respect it).
+- **The round's real catch — focus theft**: a keepOpen pick navigates under
+  the still-open palette, and SvelteKit moves focus to the NEW page; every
+  subsequent keypress (Escape included) hit nothing. The step-debug dump
+  made it visible: aria said 'all', rows said submenu, keys said nothing.
+  Fix: while mounted, the palette reclaims its input on every URL change
+  (tick-guarded). Doctrine sharpened for §7: a control center must OWN its
+  focus or it is decoration.
+- Test-suite honesty: two of the mid-round "failures" were the SUITE's
+  choreography (double-Escape leaving the list, stale expectations against
+  pluralization fixes) — the dumps told the truth; the app got fixed only
+  where the dumps proved it broken.
+
+Next: none on the parity map — settings/secrets/dashboard are exempt-by-
+ruling or already twin-complete. The control center is the control center.

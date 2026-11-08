@@ -212,7 +212,18 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
   same `draft` field). Rollout: the post editor's rail is done (fields, tags, cover,
   export) and the photo-detail pane (alt buffer, collection submenu, gallery toggle,
   copy link — the palette reaches the DIRTY FORM, never the network: persistence
-  stays the explicit Save). The posts/photos list filters are the next surface.
+  stays the explicit Save), AND the posts/photos list filters (status/gallery,
+  collections & tags, date windows, sort, view, clear) — parity is now TOTAL on
+  every configurable surface; what remains is exempt-or-already-there by ruling
+  (settings' controls ARE palette toggles; secrets values stay out: masked+CAS;
+  dashboard is nav+actions). Filter commands close over the page's own
+  `buildUrl` — the URL is the ONE query-string truth the API reads, so a palette
+  pick and a sidebar chip can never disagree; picking NAVIGATES under the
+  still-open palette (keepOpen chains: status→tag→dates→sort in one ⌘K session,
+  ✓ marks live between pages), and `Clear filters` exists only while something
+  is on. **Focus is part of the contract**: navigation steals the caret (Kit
+  follows focus to the new page), so the palette reclaims its input on every URL
+  change while mounted — a control center whose keys hit deaf ears is decoration.
   The recurring shapes are kit-ified (`command-kit.ts`: `editField`, `stateToggle`,
   `vocabSubmenu`) — extracted only after two pages proved the same forms; pages
   own WHAT a commit does, the kit fixes how every toggle/submenu/field BEHAVES
