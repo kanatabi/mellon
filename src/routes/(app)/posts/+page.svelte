@@ -114,41 +114,56 @@
 		</div>
 
 		<!-- Status row — the §4 machine's three states, filterable. -->
-		<div class="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
-			{#each statusChips as chip (chip.label)}
-				{@const active = (data.statusFilter ?? null) === chip.value}
-				<a
-					href={buildUrl({ status: chip.value })}
-					aria-current={active ? 'true' : undefined}
-					class="rounded-full border px-3 py-1 font-mono text-xs transition-colors {active
-						? 'border-brand bg-brand/10 text-foreground'
-						: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
-				>
-					{chip.label}
-				</a>
-			{/each}
-			{#if hasFilters}
-				<a
-					href="/posts"
-					class="flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
-				>
-					<X class="size-3" /> clear
-				</a>
-			{/if}
-			<!-- Sheet trigger, phones only, pinned to the row's far edge. -->
+		<!-- Status strip + pinned filters key (owner call): the chips scroll
+		     sideways at phone widths (no wrap — the row keeps one line), the
+             key holds the same h-9 w-11 language as the editor's thumb band.
+             Badge + tint answer "is anything filtered?" at a glance. -->
+		<div class="flex items-center gap-2">
+			<div
+				class="-mx-1 flex min-w-0 grow [scrollbar-width:none] gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
+				role="group"
+				aria-label="Filter by status"
+			>
+				{#each statusChips as chip (chip.label)}
+					{@const active = (data.statusFilter ?? null) === chip.value}
+					<a
+						href={buildUrl({ status: chip.value })}
+						aria-current={active ? 'true' : undefined}
+						class="shrink-0 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
+							? 'border-brand bg-brand/10 text-foreground'
+							: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
+					>
+						{chip.label}
+					</a>
+				{/each}
+				{#if hasFilters}
+					<a
+						href="/posts"
+						class="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<X class="size-3" /> clear
+					</a>
+				{/if}
+			</div>
 			<button
 				type="button"
 				bind:this={filtersTrigger}
 				onclick={() => (filtersSheet = true)}
 				aria-haspopup="dialog"
 				aria-expanded={filtersSheet}
-				class="ml-auto flex items-center gap-2 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground lg:hidden {sheetCount
-					? 'border-brand/50 text-foreground'
-					: ''}"
+				aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
+				title="Filters"
+				class="relative flex h-9 w-11 shrink-0 items-center justify-center rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
+					? 'border-brand bg-brand/10 text-foreground'
+					: 'border-border text-muted-foreground hover:text-foreground'}"
 			>
-				<SlidersHorizontal class="size-3.5" />
-				filters{#if sheetCount}
-					· {sheetCount}{/if}
+				<SlidersHorizontal class="size-4" />
+				{#if sheetCount}
+					<span
+						class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
+						>{sheetCount}</span
+					>
+				{/if}
 			</button>
 		</div>
 
