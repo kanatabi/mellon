@@ -8,6 +8,7 @@ import type {
 	AdminApi,
 	AdminPhoto,
 	CollectionCount,
+	Paged,
 	PostDetailAdmin,
 	PostStatus,
 	PostSummaryAdmin,
@@ -55,8 +56,9 @@ export const client: AdminApi = {
 		if (opts?.to) params.set('to', opts.to);
 		if (opts?.sort) params.set('sort', opts.sort);
 		if (opts?.dir) params.set('dir', opts.dir);
+		if (opts?.page) params.set('page', String(opts.page));
 		const qs = params.toString();
-		return call<PostSummaryAdmin[]>(`/posts${qs ? `?${qs}` : ''}`);
+		return call<Paged<PostSummaryAdmin>>(`/posts${qs ? `?${qs}` : ''}`);
 	},
 	getPost: (slug) => call<PostDetailAdmin>(`/posts/${slug}`),
 	createPost: (draft) =>
@@ -79,8 +81,9 @@ export const client: AdminApi = {
 		if (opts?.to) params.set('to', opts.to);
 		if (opts?.sort) params.set('sort', opts.sort);
 		if (opts?.dir) params.set('dir', opts.dir);
+		if (opts?.page) params.set('page', String(opts.page));
 		const qs = params.toString();
-		return call<AdminPhoto[]>(`/photos${qs ? `?${qs}` : ''}`);
+		return call<Paged<AdminPhoto>>(`/photos${qs ? `?${qs}` : ''}`);
 	},
 	addPhoto: (p) => call<AdminPhoto>('/photos', { method: 'POST', body: JSON.stringify(p) }),
 	updatePhoto: (id, patch) =>

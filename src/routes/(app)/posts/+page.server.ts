@@ -12,6 +12,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const dirRaw = sp.get('dir');
 	const from = sp.get('from');
 	const to = sp.get('to');
+	const page = Number.parseInt(sp.get('page') ?? '1', 10) || 1;
 	const opts = {
 		status:
 			status === 'draft' || status === 'published' || status === 'unpublished'
@@ -27,6 +28,14 @@ export const load: PageServerLoad = async ({ url }) => {
 		dir: dirRaw === 'asc' ? ('asc' as const) : ('desc' as const)
 	};
 	const api = createApi();
-	const [posts, tags] = await Promise.all([api.listPosts(opts), api.listTags()]);
-	return { posts, tags, ...opts, statusFilter: opts.status ?? null };
+	const [paged, tags] = await Promise.all([api.listPosts({ ...opts, page }), api.listTags()]);
+	return {
+		posts: paged.items,
+		total: paged.total,
+		totalPages: Math.ceil(paged.total / paged.pageSize),
+		page: paged.page,
+		tags,
+		...opts,
+		statusFilter: opts.status ?? null
+	};
 };

@@ -1,4 +1,10 @@
-import { AdminApiError, type AdminApi } from './types.ts';
+import {
+	AdminApiError,
+	PHOTOS_PAGE_SIZE,
+	POSTS_PAGE_SIZE,
+	type AdminApi,
+	type Paged
+} from './types.ts';
 import { slugify } from '../slug.ts';
 import type {
 	AdminPhoto,
@@ -186,6 +192,18 @@ const SECRETS: Record<string, SecretPayload[]> = {
 
 const clone = <T>(v: T): T => structuredClone(v);
 
+/** Apply the envelope: clamp the page, slice, and tell the truth about total. */
+function paged<T>(all: T[], page: number, pageSize: number): Paged<T> {
+	const totalPages = Math.max(1, Math.ceil(all.length / pageSize));
+	const p = Math.min(Math.max(1, Math.trunc(page) || 1), totalPages);
+	return {
+		total: all.length,
+		items: all.slice((p - 1) * pageSize, p * pageSize),
+		page: p,
+		pageSize
+	};
+}
+
 /**
  * Mock-era media bytes: id → data-URL. Module-level (the relay route reads
  * it outside the API object) — the same process-lifetime singleton as the
@@ -221,7 +239,7 @@ export function createMockApi(): AdminApi {
 			return { token: `mock.${seq++}.${btoa(username).slice(0, 8)}` };
 		},
 
-		async listPosts({ status, q, tag, from, to, sort = 'updated', dir = 'desc' } = {}) {
+		async listPosts({ status, q, tag, from, to, sort = 'updated', dir = 'desc', page } = {}) {
 			const sum = (p: PostDetailAdmin): PostSummaryAdmin => ({
 				slug: p.slug,
 				title: p.title,
@@ -232,7 +250,7 @@ export function createMockApi(): AdminApi {
 				updatedAt: p.updatedAt,
 				rev: p.rev
 			});
-			return posts
+			const filtered = posts
 				.filter(
 					(p) =>
 						(!status || p.status === status) &&
@@ -256,6 +274,7 @@ export function createMockApi(): AdminApi {
 					return dir === 'asc' ? cmp : -cmp;
 				})
 				.map(sum);
+			return paged(filtered, page ?? 1, POSTS_PAGE_SIZE);
 		},
 
 		async getPost(slug) {
@@ -323,8 +342,16 @@ export function createMockApi(): AdminApi {
 			posts = posts.filter((p) => p.slug !== slug);
 		},
 
-		async listPhotos({ collections, gallery, from, to, sort = 'created', dir = 'desc' } = {}) {
-			return photos
+		async listPhotos({
+			collections,
+			gallery,
+			from,
+			to,
+			sort = 'created',
+			dir = 'desc',
+			page
+		} = {}) {
+			const filtered = photos
 				.filter(
 					(p) =>
 						(!collections?.length ||
@@ -345,8 +372,9 @@ export function createMockApi(): AdminApi {
 								: p.createdAt;
 					const cmp = key(a).localeCompare(key(b));
 					return dir === 'asc' ? cmp : -cmp;
-				})
-				.map(clone);
+				});
+			const env = paged(filtered, page ?? 1, PHOTOS_PAGE_SIZE);
+			return { ...env, items: env.items.map(clone) };
 		},
 
 		async addPhoto(p) {

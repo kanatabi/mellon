@@ -9,7 +9,7 @@ export const load: PageServerLoad = async () => {
 		api.listTags()
 	]);
 	return {
-		counts: { posts: posts.length, photos: photos.length, tags: tags.length },
-		recentPosts: posts.slice(0, 6)
+		counts: { posts: posts.total, photos: photos.total, tags: tags.length },
+		recentPosts: posts.items.slice(0, 6)
 	};
 };

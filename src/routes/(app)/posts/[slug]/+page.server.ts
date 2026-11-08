@@ -35,5 +35,5 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 		maxAge: 60 * 60 * 24 * 30
 	});
 
-	return { post, tags, photos };
+	return { post, tags, photos: photos.items };
 };

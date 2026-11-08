@@ -58,6 +58,7 @@ async function route(ctx: Ctx) {
 							: undefined,
 					q: url.searchParams.get('q') ?? undefined,
 					tag: url.searchParams.getAll('tag'),
+					page: Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1,
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
 					sort:
@@ -102,7 +103,8 @@ async function route(ctx: Ctx) {
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
 					sort: sort === 'title' || sort === 'collection' || sort === 'created' ? sort : undefined,
-					dir: dir === 'asc' || dir === 'desc' ? dir : undefined
+					dir: dir === 'asc' || dir === 'desc' ? dir : undefined,
+					page: Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1
 				})
 			);
 		}

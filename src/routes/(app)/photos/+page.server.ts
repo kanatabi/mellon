@@ -14,24 +14,29 @@ export const load: PageServerLoad = async ({ url }) => {
 	const activeCollections = sp.getAll('collection');
 	const from = sp.get('from');
 	const to = sp.get('to');
+	const page = Number.parseInt(sp.get('page') ?? '1', 10) || 1;
 	const sort =
 		sortRaw === 'title' || sortRaw === 'collection' || sortRaw === 'created'
 			? (sortRaw as 'title' | 'collection' | 'created')
 			: undefined;
 	const api = createApi();
-	const [photos, collections] = await Promise.all([
+	const [paged, collections] = await Promise.all([
 		api.listPhotos({
 			collections: activeCollections.length ? activeCollections : undefined,
 			gallery: gallery === '1' ? true : gallery === '0' ? false : undefined,
 			from: from && DATE_RE.test(from) ? from : undefined,
 			to: to && DATE_RE.test(to) ? to : undefined,
 			sort,
-			dir: sp.get('dir') === 'asc' ? 'asc' : 'desc'
+			dir: sp.get('dir') === 'asc' ? 'asc' : 'desc',
+			page
 		}),
 		api.listCollections()
 	]);
 	return {
-		photos,
+		photos: paged.items,
+		total: paged.total,
+		totalPages: Math.ceil(paged.total / paged.pageSize),
+		page: paged.page,
 		collections,
 		activeCollections,
 		gallery: gallery === '1' ? true : gallery === '0' ? false : undefined,

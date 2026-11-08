@@ -77,6 +77,8 @@ export interface PhotoListOpts {
 	/** Inclusive YYYY-MM-DD window on createdAt. */
 	from?: string;
 	to?: string;
+	/** 1-based page (default 1); out-of-range pages clamp. */
+	page?: number;
 	sort?: 'created' | 'title' | 'collection';
 	dir?: 'asc' | 'desc';
 }
@@ -105,6 +107,19 @@ export interface SecretPath {
 	env: string;
 }
 
+/** Paged envelope — same shape the public §1 list endpoints use, so the
+ *  portal can answer "is there a next page?" honestly (total, not vibes). */
+export interface Paged<T> {
+	total: number;
+	items: T[];
+	/** 1-based. */
+	page: number;
+	pageSize: number;
+}
+
+export const POSTS_PAGE_SIZE = 20;
+export const PHOTOS_PAGE_SIZE = 24;
+
 /** Admin-side list filters — relayed to lumen in Phase B, never filtered in UI. */
 export interface PostListOpts {
 	status?: PostStatus;
@@ -117,6 +132,8 @@ export interface PostListOpts {
 	/** Sort field (default `updated`) + direction (default `desc`). */
 	sort?: 'updated' | 'created' | 'published' | 'title';
 	dir?: 'asc' | 'desc';
+	/** 1-based page (default 1); out-of-range pages clamp. */
+	page?: number;
 }
 
 export class AdminApiError extends Error {
@@ -133,7 +150,7 @@ export interface AdminApi {
 	// session (mock: any non-empty identity; lumen: real credentials)
 	login(username: string, password: string): Promise<{ token: string }>;
 
-	listPosts(opts?: PostListOpts): Promise<PostSummaryAdmin[]>;
+	listPosts(opts?: PostListOpts): Promise<Paged<PostSummaryAdmin>>;
 	getPost(slug: string): Promise<PostDetailAdmin>;
 	/** create ⇒ rev starts at 1. update ⇒ CAS on `rev`, 412-style on mismatch. */
 	createPost(draft: PostDraft): Promise<PostDetailAdmin>;
@@ -142,7 +159,7 @@ export interface AdminApi {
 	unpublishPost(slug: string): Promise<PostDetailAdmin>;
 	deletePost(slug: string): Promise<void>;
 
-	listPhotos(opts?: PhotoListOpts): Promise<AdminPhoto[]>;
+	listPhotos(opts?: PhotoListOpts): Promise<Paged<AdminPhoto>>;
 	/** Upload entry point. `dataUrl` stands in for the bytes during the mock
 	 *  era (journaled); Phase B transports multipart POST /admin/photos and
 	 *  lumen probes dims + strips EXIF server-side — this interface's output

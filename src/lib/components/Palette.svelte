@@ -35,7 +35,7 @@
 			const seq = ++searchSeq;
 			try {
 				const res = await client.listPosts({ q });
-				if (seq === searchSeq) postResults = res.slice(0, 5);
+				if (seq === searchSeq) postResults = res.items.slice(0, 5);
 			} catch {
 				if (seq === searchSeq) postResults = [];
 			}

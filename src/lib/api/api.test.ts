@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AdminApiError, type PostDraft } from './types.ts';
+import { AdminApiError, POSTS_PAGE_SIZE, type PostDraft } from './types.ts';
 import { createMockApi, mediaStore } from './mock.ts';
 
 /**
@@ -24,9 +24,10 @@ describe('mock AdminApi contract', () => {
 	it('seeds the corpus: 3 posts (published, draft, unpublished), mermaid fence intact', async () => {
 		const api = createMockApi();
 		const posts = await api.listPosts();
-		expect(posts).toHaveLength(3);
-		expect(posts.filter((p) => p.status === 'published')).toHaveLength(1);
-		expect(posts.filter((p) => p.status === 'unpublished')).toHaveLength(1);
+		expect(posts.total).toBe(3);
+		expect(posts.items).toHaveLength(3);
+		expect(posts.items.filter((p) => p.status === 'published')).toHaveLength(1);
+		expect(posts.items.filter((p) => p.status === 'unpublished')).toHaveLength(1);
 		const pub = await api.getPost('shape-of-a-useful-queue');
 		expect(pub.content).toContain('```mermaid'); // Route B: raw fences stored
 		expect(pub.createdAt).toBe('2024-04-28T15:03:00Z');
@@ -57,35 +58,59 @@ describe('mock AdminApi contract', () => {
 	it('list filters relay server-side: status, tag OR, sort field/dir, date window', async () => {
 		const api = createMockApi();
 		const drafts = await api.listPosts({ status: 'draft' });
-		expect(drafts.map((p) => p.slug)).toEqual(['queues-unacked']);
+		expect(drafts.items.map((p) => p.slug)).toEqual(['queues-unacked']);
 		const orTags = await api.listPosts({ tag: ['latency', 'backpressure'] });
-		expect(orTags.map((p) => p.slug).sort()).toEqual([
+		expect(orTags.items.map((p) => p.slug).sort()).toEqual([
 			'latency-as-product-decision',
 			'shape-of-a-useful-queue'
 		]);
 		// default: updated, desc
 		const newest = await api.listPosts({});
 		const oldest = await api.listPosts({ sort: 'updated', dir: 'asc' });
-		expect(oldest[0].slug).toBe(newest[newest.length - 1].slug);
+		expect(oldest.items[0].slug).toBe(newest.items[newest.items.length - 1].slug);
 		// queues-unacked was touched "now" — it heads newest, tails oldest
-		expect(newest[0].slug).toBe('queues-unacked');
-		expect(oldest[oldest.length - 1].slug).toBe('queues-unacked');
+		expect(newest.items[0].slug).toBe('queues-unacked');
+		expect(oldest.items[oldest.items.length - 1].slug).toBe('queues-unacked');
 		// created asc: latency (Jan 2024) precedes shape (Apr 2024)
 		const byCreated = await api.listPosts({ sort: 'created', dir: 'asc' });
-		expect(byCreated[0].slug).toBe('latency-as-product-decision');
+		expect(byCreated.items[0].slug).toBe('latency-as-product-decision');
 		// published desc: never-published sinks to the tail (empty key)
 		const byPublished = await api.listPosts({ sort: 'published', dir: 'desc' });
-		expect(byPublished[byPublished.length - 1].slug).toBe('queues-unacked');
+		expect(byPublished.items[byPublished.items.length - 1].slug).toBe('queues-unacked');
 		// title A→Z
 		const byTitle = await api.listPosts({ sort: 'title', dir: 'asc' });
-		expect(byTitle.map((p) => p.title)).toEqual([
+		expect(byTitle.items.map((p) => p.title)).toEqual([
 			'Queues, unacked',
 			'The shape of a useful queue',
 			'When latency becomes a product decision'
 		]);
 		// inclusive editorial-date window
 		const windowed = await api.listPosts({ from: '2024-03-01', to: '2024-06-30' });
-		expect(windowed.map((p) => p.slug)).toEqual(['shape-of-a-useful-queue']);
+		expect(windowed.items.map((p) => p.slug)).toEqual(['shape-of-a-useful-queue']);
+	});
+
+	it('pagination: { total, items, page, pageSize } envelope, pages clamp', async () => {
+		const api = createMockApi();
+		const first = await api.listPosts({ page: 1 });
+		expect(first.pageSize).toBe(POSTS_PAGE_SIZE);
+		expect(first.page).toBe(1);
+		expect(first.total).toBe(3);
+		expect(first.items).toHaveLength(3); // seed corpus fits on one page
+		// out-of-range clamps to the last page — never an empty void
+		const far = await api.listPosts({ page: 99 });
+		expect(far.page).toBe(1);
+		expect(far.items).toHaveLength(3);
+		// a corpus that spills: 45 creates → 48 total → 3 pages
+		for (let i = 0; i < 45; i++)
+			await api.createPost(draft({ slug: `bulk-${i}`, title: `Bulk ${i}` }));
+		const p2 = await api.listPosts({ page: 2 });
+		expect(p2.total).toBe(48);
+		expect(p2.page).toBe(2);
+		expect(p2.items).toHaveLength(POSTS_PAGE_SIZE);
+		const p3 = await api.listPosts({ page: 3 });
+		expect(p3.items.length).toBe(8);
+		const ids = new Set([...p2.items.map((p) => p.slug), ...p3.items.map((p) => p.slug)]);
+		expect(ids.size).toBe(p2.items.length + p3.items.length); // pages don't overlap
 	});
 
 	it('update is CAS-checked on rev (lumen §8 optimistic lock)', async () => {
@@ -173,19 +198,22 @@ describe('mock AdminApi contract', () => {
 		expect(created.collection).toBeNull();
 		expect(mediaStore.get(created.id)).toBe('data:image/png;base64,aW1hZ2U=');
 		const list = await api.listPhotos();
-		expect(list[0].id).toBe(created.id); // newest first, seeded picsum follow
+		expect(list.items[0].id).toBe(created.id); // newest first, seeds follow
 	});
 
 	it('curation: gallery flag + collection vocabulary, filtered/sorted lists, PATCH merges', async () => {
 		const api = createMockApi();
 		// seeds exercise every state
-		expect((await api.listPhotos({ gallery: true })).map((p) => p.id).sort()).toEqual(['p1', 'p3']);
-		expect((await api.listPhotos({ collections: ['uncategorized'] })).map((p) => p.id)).toEqual([
+		expect((await api.listPhotos({ gallery: true })).items.map((p) => p.id).sort()).toEqual([
+			'p1',
 			'p3'
 		]);
+		expect(
+			(await api.listPhotos({ collections: ['uncategorized'] })).items.map((p) => p.id)
+		).toEqual(['p3']);
 		// inclusive createdAt window
 		expect(
-			(await api.listPhotos({ from: '2024-04-01', to: '2024-04-30' })).map((p) => p.id).sort()
+			(await api.listPhotos({ from: '2024-04-01', to: '2024-04-30' })).items.map((p) => p.id).sort()
 		).toEqual(['p1', 'p2']);
 		// collection must exist in the vocabulary to be assignable
 		await expect(api.updatePhoto('p2', { collection: 'nope' })).rejects.toMatchObject({
@@ -204,7 +232,7 @@ describe('mock AdminApi contract', () => {
 		});
 		// sorting: title asc
 		const byTitle = await api.listPhotos({ sort: 'title', dir: 'asc' });
-		expect(byTitle[0].alt).toBe('Alpine ridge at dawn, fog in the valley');
+		expect(byTitle.items[0].alt).toBe('Alpine ridge at dawn, fog in the valley');
 	});
 
 	it('login demands non-empty credentials (lumen will actually check)', async () => {

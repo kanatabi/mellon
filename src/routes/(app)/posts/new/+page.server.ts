@@ -7,5 +7,5 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async () => {
 	const api = createApi();
 	const [tags, photos] = await Promise.all([api.listTags(), api.listPhotos()]);
-	return { tags, photos };
+	return { tags, photos: photos.items };
 };
