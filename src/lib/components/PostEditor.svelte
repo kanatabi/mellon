@@ -7,6 +7,7 @@
 		Eye,
 		EyeOff,
 		FileCog,
+		ImagePlus,
 		PanelRightClose,
 		PanelRightOpen,
 		Printer,
@@ -17,6 +18,7 @@
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
+	import ImagePicker from '#lib/components/ImagePicker.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import TagPicker from '#lib/components/TagPicker.svelte';
@@ -140,6 +142,13 @@ flowchart LR
 	// (owner screenshot 2026-11-08). Triggers occupy layout, never hover it.
 	let railSheet = $state(false);
 	let railSheetTrigger = $state<HTMLElement | undefined>();
+
+	// Media picker: ONE dialog for cover + body embeds (owner call), opened
+	// from the editor bands or the rail media section. `insert` mode writes
+	// through the CodeMirror handle — the docChanged listener does the rest
+	// (value, dirty, preview — all for free).
+	let pickerMode = $state<'thumbnail' | 'insert' | null>(null);
+	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
 	// keeps rendering ahead of the switch — that's what makes it instant).
 	const previewLive = $derived(showPreview || editorTab === 'preview');
@@ -427,6 +436,7 @@ flowchart LR
 					</span>
 				{/if}
 				{@render wrapToggle('hidden lg:flex')}
+				{@render imageTrigger('hidden lg:flex')}
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
@@ -480,6 +490,7 @@ flowchart LR
 					onchange={touch}
 					{vim}
 					wrap={wrapped}
+					onReady={(api) => (editorApi = api)}
 					class="h-full"
 				/>
 			</div>
@@ -561,6 +572,7 @@ flowchart LR
 				</button>
 			</div>
 			<div class="ml-auto flex items-center gap-2">
+				{@render imageTrigger('flex')}
 				{@render wrapToggle('flex')}
 				<button
 					type="button"
@@ -619,6 +631,18 @@ flowchart LR
 			</aside>
 		{/if}
 	</div>
+
+	{#snippet imageTrigger(cls: string)}
+		<button
+			type="button"
+			onclick={() => (pickerMode = 'insert')}
+			class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+			aria-label="Insert image into the post"
+		>
+			<ImagePlus class="size-3.5" />
+			image
+		</button>
+	{/snippet}
 
 	{#snippet wrapToggle(cls: string)}
 		<button
@@ -749,21 +773,49 @@ flowchart LR
 			/>
 		</div>
 
-		<label class="flex flex-col gap-1.5">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>thumbnail</span
+		<!-- Media section (owner call): cover + body-insert entries live here;
+		     the stock <select> became a real preview + dialog (one ImagePicker
+		     for both jobs — the library grid and the upload queue are shared
+		     with the photos page). -->
+		<div class="flex flex-col gap-2">
+			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">media</p>
+			{#if draft.thumbnail}
+				<img
+					src={draft.thumbnail}
+					alt="Cover preview"
+					class="aspect-video w-full rounded-md border border-border object-cover"
+				/>
+			{/if}
+			<div class="flex flex-wrap gap-1.5">
+				<button
+					type="button"
+					onclick={() => (pickerMode = 'thumbnail')}
+					class="rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+				>
+					{draft.thumbnail ? 'change cover' : 'set cover'}
+				</button>
+				{#if draft.thumbnail}
+					<button
+						type="button"
+						onclick={() => {
+							draft.thumbnail = null;
+							touch();
+						}}
+						class="rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-danger"
+					>
+						clear
+					</button>
+				{/if}
+			</div>
+			<button
+				type="button"
+				onclick={() => (pickerMode = 'insert')}
+				class="flex items-center gap-2 self-start rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
 			>
-			<select
-				class="rounded-md border border-border bg-card px-2 py-1 font-mono text-xs outline-none focus-visible:border-brand"
-				bind:value={draft.thumbnail}
-				onchange={touch}
-			>
-				<option value={null}>none</option>
-				{#each photos as p (p.id)}
-					<option value={p.src}>{p.alt.slice(0, 32)}</option>
-				{/each}
-			</select>
-		</label>
+				<ImagePlus class="size-3" />
+				insert image…
+			</button>
+		</div>
 
 		<div class="flex flex-col gap-1.5 border-t border-border pt-4">
 			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">export</p>
@@ -832,6 +884,23 @@ flowchart LR
 			slug={draft.slug}
 			onConfirm={remove}
 			onClose={() => (confirmDelete = false)}
+		/>
+	{/if}
+
+	{#if pickerMode}
+		<ImagePicker
+			mode={pickerMode}
+			{photos}
+			onClose={() => (pickerMode = null)}
+			onPick={(p) => {
+				if (pickerMode === 'thumbnail') {
+					draft.thumbnail = p.src;
+					touch();
+				} else if (pickerMode === 'insert') {
+					editorApi?.insertAtCursor(`![${p.alt}](${p.src})\n`);
+				}
+				pickerMode = null;
+			}}
 		/>
 	{/if}
 </section>

@@ -20,10 +20,14 @@
 		vim: boolean;
 		/** Line-wrap state, owned by the parent's toggle button. */
 		wrap: boolean;
+		/** Imperfect but honest handle: the parent's picker inserts markdown
+		 *  at the live cursor; the transaction flows back through the normal
+		 *  docChanged listener, so `value`/dirty/preview update for free. */
+		onReady?: (api: { insertAtCursor: (text: string) => void }) => void;
 		class?: string;
 	}
 
-	let { value = $bindable(), onchange, vim, wrap, class: cls = '' }: Props = $props();
+	let { value = $bindable(), onchange, vim, wrap, onReady, class: cls = '' }: Props = $props();
 
 	let host: HTMLDivElement | undefined = $state();
 	let view: EditorView | undefined;
@@ -160,6 +164,17 @@
 		view = new EditorView({ state, parent: host });
 		readStats(view.state);
 		readVimMode();
+		onReady?.({
+			insertAtCursor(text) {
+				if (!view) return;
+				const head = view.state.selection.main.head;
+				view.dispatch({
+					changes: { from: head, insert: text },
+					selection: { anchor: head + text.length }
+				});
+				view.focus();
+			}
+		});
 	});
 
 	// Effective vim: setting flips AND viewport crossings reconfigure the
