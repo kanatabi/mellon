@@ -27,6 +27,10 @@ import type {
 	TagCount
 } from './types.ts';
 
+/** Local-dev fallback when API_BASE is unset — the cluster always overrides.
+ *  Real-by-default (owner ruling 2026-11-09): there is no runtime mock path. */
+export const DEV_DEFAULT_API_BASE = 'http://localhost:8080';
+
 export function createLumenApi(base: string, bearer: string): AdminApi {
 	async function call<T>(
 		method: string,

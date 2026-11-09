@@ -1657,3 +1657,17 @@ earendil/mellon (PORT/LUMEN overridable; default 5173/5173 — pass PORTs).
 Last full verification before stop: lumen battery 2× green, earendil contract
 13/13, mellon live 6/6, Postman example replays 60/60 — all against the fixed
 binary including the soft-delete convergence patch.
+
+**Addendum 2026-11-09 — real-by-default (mock exits the runtime).** Owner
+superseded the mock-first doctrine: `createApi()` now ALWAYS returns the
+fetch adapter (unset `API_BASE` = dev fallback :8080, cluster env wins);
+`index.ts` no longer imports `mock.ts`, and the relay's mock-era
+`GET /api/media/<id>` byte-store route retired exactly as its comment
+promised (src has been real URLs since the upload relay shipped). The twin
+stays — as the test-only semantics reference `api.test.ts` already imported
+directly: 50 offline tests still pass with zero backend, now with a runtime
+that ships no fixtures at all. `make dev` folded the old two-target split
+into one readyz-gated entry. Gates: lint / check 0-0 / 50+6-gated / build;
+live: login → desk → secrets → dead /api/media 404 — all against the running
+stack. Lumen's dev loop went idempotent the same session (23d650a: reuse
+containers/server, seed never clobbers real data without FORCE=1).
