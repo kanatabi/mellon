@@ -1723,3 +1723,15 @@ dirty dot, chevron) with vertical slide. Order model tidied: header -1, pinned A
 movables from 1 (the first screenshot exposed ACTIONS floating above the POST header).
 Everything persisted survived: open-state, order, keyboard parity, pinned wall, reset.
 Harness 21/21, visual proof shots/accordion.png.
+
+**2026-11-09 — accordion finished properly (`fcaf3a7`):** owner's three
+observations were all correct. Collapse affordance = arrow (points where the
+click goes). The animation jank had a structural cause: card/bar were TWO
+branches racing out-vs-in transitions — now ONE persistent shell whose body
+slides in place. Drag became the real model: lift closes the source gap
+immediately (FLIP), hovering opens a dashed ghost slot and neighbors make
+room LIVE, the drop lands exactly where the ghost already is — plus fast-
+fading rail scrollbars (rail-scroll). Per-pane ondrop props died; a single
+container action (drag-reorder.ts) owns drag mechanics via data-pane
+delegation, pin excluded from landing slots. Self-review caught an inverted
+chevron between runs. Harness 22/21→22 with the ghost-slot assert.
