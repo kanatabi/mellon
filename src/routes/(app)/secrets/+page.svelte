@@ -1,12 +1,23 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { Eye, EyeOff, History, Pin, PinOff, Plus, Search, X } from 'lucide-svelte';
+	import {
+		ArrowLeftRight,
+		Eye,
+		EyeOff,
+		History,
+		Pin,
+		PinOff,
+		Plus,
+		Search,
+		X
+	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import Watermark from '#lib/components/Watermark.svelte';
 	import { ApiError, client } from '#lib/api/client.ts';
 	import { diffLines, type DiffOp } from '#lib/diff.ts';
 	import { rankByFuzzy } from '#lib/fuzzy.ts';
+	import { displayValue, orderEnvs } from '#lib/secrets-diff.ts';
 	import { editField, stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -53,6 +64,10 @@
 	// historyDiff (which is a shape diff, not the secret bytes).
 	let viewing = $state<{ version: number; data: Record<string, string> } | null>(null);
 	let searchEl: HTMLInputElement | undefined = $state();
+	// REVEAL ALL: a display switch only — the values already live in this
+	// page's memory; nothing new crosses the network. Never persisted:
+	// a refresh returning to masked is the safe direction of failure.
+	let revealAll = $state(false);
 
 	// Palette verbs (DESIGN §7 contract): the page owns its actions, the
 	// shell composes them. The effect RE-READS live state (dirty target,
@@ -91,6 +106,25 @@
 					run: () => void togglePin(cas)
 				})
 			);
+			cmds.push(
+				stateToggle({
+					id: 'secrets.reveal',
+					title: revealAll ? 'Hide all values' : 'Show all values',
+					on: revealAll,
+					onHint: 'shown',
+					offHint: 'masked',
+					run: () => (revealAll = !revealAll)
+				})
+			);
+			cmds.push({
+				id: 'secrets.compare',
+				title: `Compare v${pinnedVersion ?? Math.max(1, cas - 1)} ↔ head`,
+				group: 'actions',
+				run: () =>
+					void goto(
+						`/secrets/compare?app=${data.app}&env=${data.env}&from=${pinnedVersion ?? Math.max(1, cas - 1)}&to=${cas}`
+					)
+			});
 			cmds.push({
 				id: 'secrets.add-env',
 				title: 'Add environment…',
@@ -259,13 +293,6 @@
 		});
 	}
 
-	/** Masked display value: short values read as-is, long ones become dots.
-	 *  Lives in SCRIPT because the markup expression {/regex...} is a parser
-	 *  trap — a leading regex literal reads as a block-close tag. */
-	function maskValue(v: string): string {
-		return /^.{0,6}$/.test(v) ? v : '•'.repeat(Math.min(v.length, 12));
-	}
-
 	/** Version payloads → sorted K=V lines → pure diff. */
 	function lineDiff(older: SecretPayload, newerData: Record<string, string>): DiffOp[] {
 		const toLines = (d: Record<string, string>) =>
@@ -288,7 +315,7 @@
 		}
 		return out.sort((a, b) => a.app.localeCompare(b.app));
 	});
-	const currentEnvs = $derived(apps.find((a) => a.app === data.app)?.envs ?? []);
+	const currentEnvs = $derived(orderEnvs(apps.find((a) => a.app === data.app)?.envs ?? []));
 	const envIsPinned = (v: number) => pinnedVersion === v;
 
 	// the search-filtered row order — empty query is identity (B2 contract).
@@ -349,7 +376,9 @@
 	</div>
 {:else}
 	<section class="flex flex-col gap-6">
-		<div class="flex flex-wrap items-end justify-between gap-4">
+		<div
+			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4"
+		>
 			<div class="flex flex-col gap-1">
 				<h1 class="font-brand text-4xl font-semibold tracking-tight">Secrets</h1>
 				<!-- The double-`data` KV-v2 envelope, humanized: kv/<app>/<env>. -->
@@ -368,10 +397,11 @@
 					{/if}
 				</p>
 			</div>
-			<div class="flex flex-col items-end gap-2">
-				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env. -->
-				<div class="flex flex-wrap items-center justify-end gap-2">
-					<label class="flex items-center gap-1.5">
+			<div class="flex flex-col gap-2 md:items-end">
+				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env.
+				     Mobile: full-width stack, select grows; desktop: right cluster. -->
+				<div class="flex flex-wrap items-center gap-2 md:justify-end">
+					<label class="flex min-w-0 grow items-center gap-1.5 md:grow-0">
 						<span class="sr-only">App namespace</span>
 						<select
 							value={data.app}
@@ -381,7 +411,7 @@
 								selectPath(app, first);
 							}}
 							aria-label="App namespace"
-							class="rounded-md border border-border bg-card px-2 py-1 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+							class="w-full rounded-md border border-border bg-card px-2 py-1 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand/40 md:w-auto"
 						>
 							{#each apps as a (a.app)}
 								<option value={a.app}>{a.app}</option>
@@ -397,7 +427,7 @@
 						<Plus class="size-3.5" /> app
 					</button>
 				</div>
-				<div class="flex flex-wrap items-center justify-end gap-1.5">
+				<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
 					{#each currentEnvs as env (env)}
 						<button
 							type="button"
@@ -435,30 +465,44 @@
 			</p>
 		{/if}
 
-		<!-- Search bar (D3): fuzzy over current-env key names AND values. -->
-		<div class="relative flex items-center">
-			<Search
-				class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
-				aria-hidden="true"
-			/>
-			<input
-				type="search"
-				bind:this={searchEl}
-				bind:value={query}
-				placeholder="filter keys and values…"
-				aria-label="Search keys and values"
-				class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-			/>
-			{#if query}
-				<button
-					type="button"
-					onclick={() => (query = '')}
-					aria-label="Clear search"
-					class="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground"
-				>
-					<X class="size-3.5" />
-				</button>
-			{/if}
+		<!-- Search bar (D3) + the reveal-all display switch. -->
+		<div class="flex items-center gap-2">
+			<div class="relative flex grow items-center">
+				<Search
+					class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
+					aria-hidden="true"
+				/>
+				<input
+					type="search"
+					bind:this={searchEl}
+					bind:value={query}
+					placeholder="filter keys and values…"
+					aria-label="Search keys and values"
+					class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+				/>
+				{#if query}
+					<button
+						type="button"
+						onclick={() => (query = '')}
+						aria-label="Clear search"
+						class="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground"
+					>
+						<X class="size-3.5" />
+					</button>
+				{/if}
+			</div>
+			<button
+				type="button"
+				onclick={() => (revealAll = !revealAll)}
+				aria-pressed={revealAll}
+				aria-label={revealAll ? 'Hide all values' : 'Show all values'}
+				class="flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 font-mono text-xs transition-colors {revealAll
+					? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+					: 'border-border text-muted-foreground hover:text-foreground'}"
+			>
+				{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
+				{revealAll ? 'hide all' : 'show all'}
+			</button>
 		</div>
 
 		<!-- Config-file anatomy: mono table, masked values, reveal-on-press. -->
@@ -484,7 +528,7 @@
 					/>
 					<input
 						class="min-w-0 rounded bg-transparent px-1 font-mono text-xs outline-none focus-visible:bg-muted"
-						type={revealed[k] ? 'text' : 'password'}
+						type={revealed[k] || revealAll ? 'text' : 'password'}
 						value={rows[k]}
 						aria-label={`value of ${k}`}
 						oninput={(e) => setVal(k, String(e.currentTarget.value))}
@@ -605,6 +649,14 @@
 								>
 									restore
 								</button>
+								<a
+									href={`/secrets/compare?app=${data.app}&env=${data.env}&from=${v}&to=${cas}`}
+									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+									aria-label={`Compare v${v} with head`}
+									title="Compare with head"
+								>
+									<ArrowLeftRight class="size-3.5" />
+								</a>
 								<button
 									type="button"
 									onclick={() => void togglePin(v)}
@@ -635,7 +687,7 @@
 							{#each Object.keys(viewing.data).sort() as k (k)}
 								<div class="flex justify-between gap-3 font-mono text-[11px]">
 									<span class="text-muted-foreground">{k}</span>
-									<span class="truncate">{maskValue(viewing.data[k])}</span>
+									<span class="truncate">{displayValue(viewing.data[k], revealAll)}</span>
 								</div>
 							{/each}
 						</div>

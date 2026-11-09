@@ -761,6 +761,125 @@ check(
 	await hp.close();
 }
 
+// --- T-cmp: version compare — seeded via API (fresh app), driven via UI ---
+{
+	const APP = 'cmp-' + Date.now().toString(36);
+	const auth = { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' };
+	await fetch(`${LUMEN}/admin/bao/apps`, {
+		method: 'POST',
+		headers: auth,
+		body: JSON.stringify({ app: APP })
+	});
+	await fetch(`${LUMEN}/admin/bao/${APP}/dev`, {
+		method: 'PUT',
+		headers: auth,
+		body: JSON.stringify({
+			data: { GONE: 'was-here-before', SAME: '12345', CHANGED: 'short-a' },
+			cas: 1
+		})
+	});
+	await fetch(`${LUMEN}/admin/bao/${APP}/dev`, {
+		method: 'PUT',
+		headers: auth,
+		body: JSON.stringify({
+			data: { SAME: '12345', CHANGED: 'short-b', NEW: 'brand-new-secret-value' },
+			cas: 2
+		})
+	});
+	const cp = await ctx.newPage();
+	await cp.goto(`${BASE}/secrets/compare?app=${APP}&env=dev&from=2&to=3`, {
+		waitUntil: 'networkidle'
+	});
+	await cp.waitForTimeout(600);
+	// split is the default presentation; values are MASKED — the bytes must not appear
+	const masked = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp1 split view aligns AND masks by default',
+		masked.includes('GONE=') &&
+			!masked.includes('was-here-before') &&
+			!masked.includes('brand-new-secret-value')
+	);
+	await cp.locator('button[aria-label="Show all values"]').click();
+	await cp.waitForTimeout(200);
+	const revealed = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp2 show-values reveals both panes (display-only switch)',
+		revealed.includes('was-here-before') && revealed.includes('brand-new-secret-value')
+	);
+	await cp.locator('button:has-text("table")').click();
+	await cp.waitForTimeout(250);
+	const tbl = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp3 table view: per-key statuses + honest changed count',
+		tbl.includes('changed') &&
+			tbl.includes('added') &&
+			tbl.includes('removed') &&
+			tbl.includes('3 of 4 keys changed'),
+		tbl.match(/\d of 4 keys changed/)?.[0] ?? 'no count'
+	);
+	// raw json is DISABLED in table mode (table is parsed by nature) —
+	// leave table first: the honest choreography the UI enforces
+	await cp.locator('button:has-text("inline")').click();
+	await cp.locator('button:has-text("raw json")').click();
+	await cp.waitForTimeout(250);
+	const raw = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp4 raw JSON mode diffs the serialized shape (braces visible)',
+		raw.includes('{') && raw.includes('}')
+	);
+	// presentation/content persist across reload (localStorage preference)
+	await cp.reload({ waitUntil: 'networkidle' });
+	await cp.waitForTimeout(400);
+	const persisted = await cp.evaluate(() =>
+		document
+			.querySelector('[aria-label="Presentation"] button[aria-pressed="true"]')
+			?.textContent?.trim()
+	);
+	check(
+		'T-cmp5 presentation preference survives reload',
+		persisted === 'inline',
+		`after reload: ${persisted}`
+	);
+	// the nav child + canonical env order on the editor (lumen has the trio)
+	const navHasCompare = await cp.locator('a[href="/secrets/compare"]').count();
+	await cp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await cp.waitForTimeout(400);
+	const envOrder = await cp.evaluate(() =>
+		[
+			...document.querySelectorAll(
+				'aside [aria-label^="Environment"], button[aria-label^="Environment"]'
+			)
+		].map((e) => e.getAttribute('aria-label').replace('Environment ', ''))
+	);
+	const editorEnvOrder = await cp.evaluate(() => {
+		const pills = [...document.querySelectorAll('button')].filter((b) =>
+			['dev', 'staging', 'production'].includes(b.textContent?.trim() ?? '')
+		);
+		return pills.map((b) => b.textContent.trim());
+	});
+	check(
+		'T-cmp6 nav carries compare; env pills are dev → staging → production',
+		navHasCompare >= 1 && editorEnvOrder.join(',') === 'dev,staging,production',
+		editorEnvOrder.join(',') + ` | ${envOrder.join(',')}`
+	);
+	// mobile: the header stacks, nothing overflows horizontally
+	const mp = await ctx.newPage();
+	await mp.setViewportSize({ width: 390, height: 844 });
+	await mp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await mp.waitForTimeout(400);
+	const overflow = await mp.evaluate(
+		() => document.documentElement.scrollWidth - document.documentElement.clientWidth
+	);
+	check(
+		'T-cmp7 mobile secrets editor has zero horizontal overflow',
+		overflow === 0,
+		`overflow=${overflow}px`
+	);
+	await mp.close();
+	cp.__APP = APP;
+	await cp.close();
+}
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

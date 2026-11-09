@@ -61,6 +61,7 @@ export const baseCommands: Command[] = [
 	nav('go.posts', 'Posts', '/posts', 'g p'),
 	nav('go.photos', 'Photos', '/photos'),
 	nav('go.secrets', 'Secrets', '/secrets'),
+	nav('go.compare', 'Compare versions', '/secrets/compare'),
 	nav('go.settings', 'Settings', '/settings'),
 	{
 		// Global import: the photos page treats ?upload=1 as "open the picker on
