@@ -57,8 +57,9 @@ export class SectionSet {
 		this.persist();
 	};
 
-	/** flex order: pinned leads, movables follow their sequence. */
-	pos = (id: string) => (id === this.pinned ? -1 : this.order.indexOf(id));
+	/** flex order: the header owns the rail top, the pinned pane leads the
+	 *  cards (0), movables follow (1..) — no negative orders anywhere. */
+	pos = (id: string) => (id === this.pinned ? 0 : (this.pinned ? 1 : 0) + this.order.indexOf(id));
 
 	/** keyboard: Alt+↑/↓ — swaps with the neighbor in the MOVABLE list only
 	 *  (index 0 moving up onto ACTIONS is a silent no-op: the pin is a wall). */

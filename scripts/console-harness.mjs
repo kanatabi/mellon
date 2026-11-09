@@ -281,7 +281,7 @@ const movedSubtitle = await page.evaluate(
 );
 check(
 	'T-pane3 Alt+Down reorders (order map swaps)',
-	moved === '1' && movedSubtitle === '0',
+	moved === '2' && movedSubtitle === '1',
 	`title order ${moved}, subtitle ${movedSubtitle}`
 );
 // pinned wall: Alt+Up on the first movable pane is a no-op
@@ -291,11 +291,7 @@ await sleep(250);
 const order0 = await page.evaluate(
 	() => getComputedStyle(document.querySelector('[data-pane="subtitle"]')).order
 );
-check(
-	'T-pane4 first movable cannot pass the pin',
-	order0 === '0' || order0 === '1',
-	`subtitle order ${order0}`
-);
+check('T-pane4 first movable cannot pass the pin', order0 === '1', `subtitle order ${order0}`);
 check(
 	'T-pane5 ACTIONS pane is not draggable',
 	(await page.locator('[data-pane="actions"]').getAttribute('draggable')) !== 'true'

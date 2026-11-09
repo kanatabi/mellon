@@ -4,6 +4,7 @@
 	type IconCmp = typeof import('lucide-svelte').Send;
 	import { GripVertical, PanelRightClose } from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
+	import { ChevronDown } from 'lucide-svelte';
 
 	/**
 	 * One labeled pane of a config sidebar: expanded card, or the vertical
@@ -35,7 +36,7 @@
 		ontoggle: () => void;
 		onmove?: (dir: -1 | 1) => void;
 		ondrop?: (dragId: string, after: boolean) => void;
-		children: Snippet;
+		children?: Snippet;
 	} = $props();
 
 	let dropEdge = $state<'' | 'top' | 'bottom'>('');
@@ -126,48 +127,55 @@
 			</button>
 		</header>
 
-		<div class="flex flex-col gap-2.5">{@render children()}</div>
+		<div class="flex flex-col gap-2.5">{@render children?.()}</div>
 	</article>
 {:else}
 	<button
 		type="button"
+		data-pane={id}
 		draggable={!pinned}
-		onclick={ontoggle}
-		onkeydown={keydown}
 		ondragstart={dragstart}
 		ondragover={dragover}
 		ondragleave={() => (dropEdge = '')}
 		ondrop={drop}
+		onkeydown={keydown}
+		onclick={ontoggle}
 		transition:slide={{ duration: 180 }}
 		style="order:{order}"
-		aria-label="Expand {label}{pinned ? '' : ' — Alt+arrows to move'}"
-		data-pane={id}
-		class="{rootClass} flex w-fit flex-col items-center gap-2 self-start rounded-lg border border-border bg-card px-1.5 py-2.5 hover:border-muted-foreground/40"
+		aria-label="Expand {label}{pinned ? '' : ' — Alt+arrows to move, drag to reorder'}"
+		class="group relative flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-left"
 	>
 		{#if dropEdge === 'top'}
 			<span
-				class="pointer-events-none absolute inset-x-1 -top-1.5 h-0.5 rounded bg-brand"
+				class="pointer-events-none absolute inset-x-2 -top-1.5 h-0.5 rounded bg-brand"
 				aria-hidden="true"
 			></span>
 		{:else if dropEdge === 'bottom'}
 			<span
-				class="pointer-events-none absolute inset-x-1 -bottom-1.5 h-0.5 rounded bg-brand"
+				class="pointer-events-none absolute inset-x-2 -bottom-1.5 h-0.5 rounded bg-brand"
 				aria-hidden="true"
 			></span>
 		{/if}
-		{#if dirty}
-			<span class="size-1.5 rounded-full bg-accent-amber" aria-label="unsaved changes"></span>
-		{/if}
-		{#if !pinned}
-			<GripVertical class="size-3 text-muted-foreground/30" aria-hidden="true" />
-		{/if}
-		{#if Icon}
-			<Icon class="size-4 text-muted-foreground" aria-hidden="true" />
-		{/if}
-		<span
-			class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase [writing-mode:vertical-rl]"
-		>
-			{label}
+		<span class="flex items-center gap-1.5">
+			{#if !pinned}
+				<GripVertical
+					class="size-3.5 shrink-0 cursor-grab text-muted-foreground/30 transition-colors group-hover:text-muted-foreground"
+					aria-hidden="true"
+				/>
+			{/if}
+			{#if Icon}
+				<Icon class="size-3.5 text-muted-foreground" aria-hidden="true" />
+			{/if}
+			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+				>{label}</span
+			>
+			{#if dirty}
+				<span class="size-1.5 rounded-full bg-accent-amber" aria-label="unsaved changes"></span>
+			{/if}
 		</span>
+		<ChevronDown
+			class="size-3.5 text-muted-foreground/50 transition-transform group-hover:text-muted-foreground"
+			aria-hidden="true"
+		/>
 	</button>
 {/if}

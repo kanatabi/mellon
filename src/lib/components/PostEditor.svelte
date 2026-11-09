@@ -860,6 +860,7 @@ flowchart LR
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<!-- dblclick is a progressive enhancement: keyboard users move panes per-card -->
 				<div
+					style="order:-1"
 					class="flex items-center justify-between"
 					title="Double-click resets pane order"
 					ondblclick={postSections.reset}

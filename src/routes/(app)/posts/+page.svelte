@@ -448,6 +448,7 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<!-- dblclick reset is enhancement; keyboard moves live on each pane -->
 				<div
+					style="order:-1"
 					class="flex items-center justify-between"
 					title="Double-click resets pane order"
 					ondblclick={deskSections.reset}
