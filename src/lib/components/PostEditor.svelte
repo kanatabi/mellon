@@ -966,7 +966,7 @@ flowchart LR
 			pinned
 			{dirty}
 			ontoggle={() => postSections.toggle('actions')}
-			order={postSections.pos('actions')}
+			order={movable ? postSections.pos('actions') : undefined}
 		>
 			<button
 				type="button"
@@ -1014,7 +1014,7 @@ flowchart LR
 			open={postSections.isOpen('title')}
 			ontoggle={() => postSections.toggle('title')}
 			onmove={(d) => postSections.move('title', d)}
-			order={postSections.pos('title')}
+			order={movable ? postSections.pos('title') : undefined}
 		>
 			<input
 				aria-label="Title"
@@ -1031,7 +1031,7 @@ flowchart LR
 			open={postSections.isOpen('subtitle')}
 			ontoggle={() => postSections.toggle('subtitle')}
 			onmove={(d) => postSections.move('subtitle', d)}
-			order={postSections.pos('subtitle')}
+			order={movable ? postSections.pos('subtitle') : undefined}
 		>
 			<textarea
 				aria-label="Subtitle"
@@ -1048,7 +1048,7 @@ flowchart LR
 			open={postSections.isOpen('slug')}
 			ontoggle={() => postSections.toggle('slug')}
 			onmove={(d) => postSections.move('slug', d)}
-			order={postSections.pos('slug')}
+			order={movable ? postSections.pos('slug') : undefined}
 		>
 			{#if isNew}
 				<input
@@ -1081,7 +1081,7 @@ flowchart LR
 			open={postSections.isOpen('date')}
 			ontoggle={() => postSections.toggle('date')}
 			onmove={(d) => postSections.move('date', d)}
-			order={postSections.pos('date')}
+			order={movable ? postSections.pos('date') : undefined}
 		>
 			<!-- earendil's calendar popover, single-pick shape (item #6): the
 					     native date input is stock, not ours. -->
@@ -1102,7 +1102,7 @@ flowchart LR
 			open={postSections.isOpen('tags')}
 			ontoggle={() => postSections.toggle('tags')}
 			onmove={(d) => postSections.move('tags', d)}
-			order={postSections.pos('tags')}
+			order={movable ? postSections.pos('tags') : undefined}
 		>
 			<Combobox
 				items={tags.map((t) => ({ name: t.name, count: t.posts }))}
@@ -1129,7 +1129,7 @@ flowchart LR
 			open={postSections.isOpen('media')}
 			ontoggle={() => postSections.toggle('media')}
 			onmove={(d) => postSections.move('media', d)}
-			order={postSections.pos('media')}
+			order={movable ? postSections.pos('media') : undefined}
 		>
 			{#if draft.thumbnail}
 				<div
@@ -1187,7 +1187,7 @@ flowchart LR
 			open={postSections.isOpen('export')}
 			ontoggle={() => postSections.toggle('export')}
 			onmove={(d) => postSections.move('export', d)}
-			order={postSections.pos('export')}
+			order={movable ? postSections.pos('export') : undefined}
 		>
 			<div class="flex flex-col gap-1.5">
 				<button
@@ -1232,7 +1232,7 @@ flowchart LR
 				open={postSections.isOpen('timeline')}
 				ontoggle={() => postSections.toggle('timeline')}
 				onmove={(d) => postSections.move('timeline', d)}
-				order={postSections.pos('timeline')}
+				order={movable ? postSections.pos('timeline') : undefined}
 			>
 				<div class="flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
 					<span>created · {fmtDay(seed.createdAt)}</span>

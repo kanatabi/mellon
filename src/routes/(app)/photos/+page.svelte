@@ -788,7 +788,7 @@
 			open={photosSections.isOpen('sort')}
 			ontoggle={() => photosSections.toggle('sort')}
 			onmove={(d) => photosSections.move('sort', d)}
-			order={photosSections.pos('sort')}
+			order={movable ? photosSections.pos('sort') : undefined}
 		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort photos">
 				{#each sortChips as chip (chip.label)}
@@ -817,7 +817,7 @@
 			open={photosSections.isOpen('dates')}
 			ontoggle={() => photosSections.toggle('dates')}
 			onmove={(d) => photosSections.move('dates', d)}
-			order={photosSections.pos('dates')}
+			order={movable ? photosSections.pos('dates') : undefined}
 		>
 			<DateRange
 				from={data.from}
@@ -834,7 +834,7 @@
 			open={photosSections.isOpen('collections')}
 			ontoggle={() => photosSections.toggle('collections')}
 			onmove={(d) => photosSections.move('collections', d)}
-			order={photosSections.pos('collections')}
+			order={movable ? photosSections.pos('collections') : undefined}
 		>
 			<!-- OR semantics across toggled names, like posts' tags. -->
 			<div class="flex flex-wrap gap-1.5">

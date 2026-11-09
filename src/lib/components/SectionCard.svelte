@@ -21,7 +21,7 @@
 		open,
 		pinned = false,
 		dirty = false,
-		order = 0,
+		order,
 		reorderable = true,
 		ontoggle,
 		onmove,
@@ -59,7 +59,7 @@
 	draggable={!pinned && reorderable}
 	tabindex={pinned || !reorderable ? undefined : 0}
 	onkeydown={keydown}
-	style="order:{order}"
+	style={order == null ? undefined : `order:${order}`}
 	class="group flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4 outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
 	aria-label="{label} section{pinned || !reorderable
 		? ''

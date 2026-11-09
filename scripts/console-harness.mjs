@@ -961,11 +961,23 @@ check(
 		Math.abs(y1 - y0) < 2,
 		`${y0} -> ${y1}`
 	);
+	const sheetOrder = await sheet.evaluate((el) =>
+		[...el.querySelectorAll('[data-pane]')].map((p) => p.dataset.pane).join(',')
+	);
+	check(
+		'T-sheet4 sheet panes are in the FIXED pre-drag order (desktop taste does not travel)',
+		sheetOrder === 'actions,title,subtitle,slug,date,tags,media,export,timeline',
+		sheetOrder
+	);
+	const styled = await sheet.evaluate((el) =>
+		[...el.querySelectorAll('[data-pane]')].some((p) => p.style.order !== '')
+	);
+	check('T-sheet4b no order styles leak into the sheet', !styled);
 	const openCount = await sheet.locator('[aria-label^="Collapse"]').count();
 	await sheet.locator('[aria-label="Collapse tags"]').click();
 	await sp.waitForTimeout(300);
 	check(
-		'T-sheet4 collapse still works in the sheet',
+		'T-sheet5 collapse still works in the sheet',
 		openCount > 0 && (await sheet.locator('[aria-label="Expand tags"]').count()) === 1
 	);
 	await sc.close();

@@ -479,7 +479,7 @@
 			open={deskSections.isOpen('sort')}
 			ontoggle={() => deskSections.toggle('sort')}
 			onmove={(d) => deskSections.move('sort', d)}
-			order={deskSections.pos('sort')}
+			order={movable ? deskSections.pos('sort') : undefined}
 		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
 				{#each sortChips as chip (chip.label)}
@@ -508,7 +508,7 @@
 			open={deskSections.isOpen('dates')}
 			ontoggle={() => deskSections.toggle('dates')}
 			onmove={(d) => deskSections.move('dates', d)}
-			order={deskSections.pos('dates')}
+			order={movable ? deskSections.pos('dates') : undefined}
 		>
 			<DateRange
 				from={data.from}
@@ -525,7 +525,7 @@
 			open={deskSections.isOpen('tags')}
 			ontoggle={() => deskSections.toggle('tags')}
 			onmove={(d) => deskSections.move('tags', d)}
-			order={deskSections.pos('tags')}
+			order={movable ? deskSections.pos('tags') : undefined}
 		>
 			<!-- OR semantics, matching the public list contract. -->
 			<div class="flex flex-wrap gap-1.5">
