@@ -1781,6 +1781,13 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-10 — split stacking + wrap (follow-up commit):** owner's second
+screenshot: 2-col split on a 390px phone is two unreadable slivers — below
+md the panes now STACK (from above to), side-by-side resumes at md+. A
+persisted wrap toggle (default ON) breaks long lines across split/inline
+(one lineCls helper; visibly disabled in table with a title that says why).
+Harness 57/57 — the stack assert is numeric (pane boxes compared), not visual.
+
 **2026-11-10 — version compare + mobile honesty (`73f5d26`):** the cockpit grew its
 review surface. `/secrets/compare` — same-path versions only (owner ratified; cross-
 env diffing refused by doctrine), presentations table/split/inline × parsed/raw (raw
