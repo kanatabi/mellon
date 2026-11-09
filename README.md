@@ -29,6 +29,10 @@ gated like earendil's: `LUMEN_URL=http://localhost:8080 npm run test:unit`
 (`src/lib/api/api.live.test.ts` — login, drafts-at-the-door, CAS 409s,
 multipart upload, secrets relay, instant revocation).
 
+Makefile included: `make help` lists the verbs — `make dev` (mock),
+`make lumen` (real, readyz-gated, `LUMEN=`/`PORT=` overridable), `make live`
+(the gated suite), check/lint/test/build.
+
 Branch-per-milestone, PR-reviewed — never commit directly to `main`.
 
 ## Repo bootstrap (remote not yet created)

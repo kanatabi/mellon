@@ -1614,3 +1614,46 @@ re-enqueue jobs for rows nobody touches again — the engine had to be told).
 Consumer harnesses re-verified against the fixed binary: contract 13/13, live 6/6,
 Postman replays 60/60. This is the program's thesis in one paragraph: mock-mode
 green proves the LOGIC; only the live wire proves the SYSTEM.
+
+## PENDING TASKS — session handoff (2026-11-09, owner stepped away)
+
+**Owner side (gates — nothing here may be self-resolved):**
+
+1. **GATE #3 merges** (all branches pushed, every gate green on each tip):
+   - lumen `fix/softdel-index-convergence` (`e74e993`) → merge to `main`
+   - earendil `milestone/1-contract-harness` (`8e11c10`) and
+     `feature/lumen-cutover` (`c6cbb25`) — merge the harness FIRST: the new
+     `make contract` target needs `src/lib/api/contract.spec.ts` on the tree
+   - mellon `feature/lumen-cutover` (this commit)
+2. **Root pins** — bump after each child merges (main-only rule).
+3. **GATE #5** — final read of `mellon/THREAT-NOTE.md`; it gates prod seeding
+   and GATE #10. Provisionally ack'd, NOT finalized.
+4. **GATE #9** — media provider choice; then bucket/endpoint/CDN/keys become
+   Bao `lumen/{env}` VALUES (code never learns the vendor).
+5. **GATE #10** — console go-public checklist, run at launch (items listed in
+   DESIGN §exposure + the threat note's finalization sequence).
+
+**Phase C-infra (explicitly held by owner — the next execution slice):**
+
+- vortex manifests: lumen/meilisearch/openbao Deployments (placement, budget
+  line, ESO ExternalSecret CRs, unrouted 9090 + prometheus annotations,
+  `overlays/production/lumen`)
+- CI wiring (INFRA Phase 8): build → GHCR → `kustomize edit set image` hook
+- §5.6 prod seed procedure — with the AppRole **CIDR-bound** (dev is not);
+  `scripts/dev-plane.sh` is the shape reference
+- k3d rehearsal (root README §5): placement, failover, selfHeal, proxy
+- staging Application CRs when a staging target exists
+- put contract.spec + api.live.test behind a CI job with a lumen service container
+
+**Recorded-deferred (each has a written why):** D2/RSS routing decision;
+webp encoder story; fenced-media GC rows; presigned-direct uploads; strict-CSP
+hue refactor; content-revision audit trail (threat note R4).
+
+**Dev-stack state at leave:** everything STOPPED (`docker compose down`; no
+go/node processes). pg + meili volumes persist; **OpenBao dev storage is
+in-memory — rerun `make dev-plane` before wanting /admin/bao back.** Resume
+loop: `cd lumen && make dev` (+ `make devs3` for uploads) → `make lumen` in
+earendil/mellon (PORT/LUMEN overridable; default 5173/5173 — pass PORTs).
+Last full verification before stop: lumen battery 2× green, earendil contract
+13/13, mellon live 6/6, Postman example replays 60/60 — all against the fixed
+binary including the soft-delete convergence patch.
