@@ -1691,3 +1691,14 @@ preview and rails (T4: window at 0, cm-scroller at +1200, chrome pixels fixed).
   in-chrome rendering keeps the palette one keystroke from escape. Harness 9/9;
   units 50 green; lint exit 0 verified directly after a pipe swallowed a prettier
   warning (own lesson logged: pipes eat gates — check the exit, not the tail).
+
+**2026-11-09 — rail containment (`560fccc`):** owner screenshot caught the
+inspector cropping mid-timeline — the shell lock had bounded the document, but
+rails still sized to content (editor: `self-stretch` inside a `lg:block` wrapper =
+decorative; desk/photos: `min-h-full` sections + scroller-less asides). Pattern now
+uniform: viewport-bounded sections, `h-full overflow-y-auto overscroll-contain`
+rails, own-scroller center columns. Diagnosis was pure measurement (Playwright
+ancestor-chain probe), never theory — and it caught two lies the eye accepted:
+the editor rail looked fine at desktop sizes under content height until the probe
+showed 1235px clipped inside 796px. Harness now asserts every rail: bounded,
+internally scrollable, page motionless — 15/15.
