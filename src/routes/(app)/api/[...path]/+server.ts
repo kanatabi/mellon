@@ -131,11 +131,24 @@ async function route(ctx: Ctx) {
 		}
 	}
 
-	// --- tags ---
+	// --- tags (the desk's 1:1 relay: GET/POST/PATCH/DELETE) ---
 	if (seg === 'tags' && request.method === 'GET') return json(await api.listTags());
 	if (seg === 'tags' && request.method === 'POST') {
 		const { name } = (await body()) as { name: string };
 		return json(await api.createTag(String(name ?? '')), { status: 201 });
+	}
+	if (p[0] === 'tags' && p.length === 2 && request.method === 'PATCH') {
+		const patch = (await body()) as { name?: string; featured?: boolean };
+		return json(
+			await api.updateTag(p[1], {
+				...(patch.name !== undefined ? { name: String(patch.name) } : {}),
+				...(patch.featured !== undefined ? { featured: Boolean(patch.featured) } : {})
+			})
+		);
+	}
+	if (p[0] === 'tags' && p.length === 2 && request.method === 'DELETE') {
+		await api.deleteTag(p[1]);
+		return json({ ok: true });
 	}
 
 	// --- search (palette content door) ---

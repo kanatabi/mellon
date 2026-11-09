@@ -1781,6 +1781,22 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-10 — the tag desk:** earendil's TOPICS mystery (new tags never surface)
+traced to its root: the widget reads a curated FLAG (`cloud` — renamed `featured` by
+lumen migration 0005), and only the SEED ever set it; publish maintains counts,
+nothing promoted. Ruling: promotion is a human decision, so the desk page `/tags`
+makes it — create/rename/feature/delete with lumen's guards shown verbatim (the
+delete refusal names the referencing count; rename collision 409). The public widget
+rule `featured AND posts > 0` means a featured tag with no posts is READY, not
+display-worthy — earendil itself needed ZERO changes (public shape preserved). The
+twin gained the full desk semantics (rename propagates through post tag lists) + 1
+contract test; harness T-tags1..8 drive the desk live (74/74). Truths the battery
+taught: never client-side guess a server's slugify (take the name from the response),
+and the HTTP response arrives before the UI re-renders (waitForSelector, not
+faith). The dev server had to RESTART for the migration'd schema — old binary +
+migrated DB = 500s; noted in the runbook sense: after lumen migrations, rebuild the
+running server.
+
 **2026-11-10 — sheet order finalized:** the pre-drag view means the FIXED
 order too, not just hidden affordances — cards carry `order={movable ? pos :
 undefined}` and SectionCard omits the style when undefined, so the sheet is

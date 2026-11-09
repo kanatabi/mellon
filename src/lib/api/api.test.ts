@@ -206,15 +206,48 @@ describe('mock AdminApi contract', () => {
 		expect((await api.secretMeta('twinapp', 'dev'))?.pinnedVersion).toBeNull();
 	});
 
+	it('tag desk (twin baseline): feature/rename-propagates/delete-guard mirror lumen', async () => {
+		const api = createMockApi();
+		// create + feature
+		await api.createTag('Harness Desk Tag');
+		const row = await api.updateTag('harness-desk-tag', { featured: true });
+		expect(row).toEqual({ name: 'harness-desk-tag', posts: 0, featured: true });
+		// rename propagates: attach to a draft, rename, the post follows
+		const created = await api.createPost(
+			draft({ slug: 'desk-rename-me', tags: ['harness-desk-tag'] })
+		);
+		expect(created.tags).toContain('harness-desk-tag');
+		const renamed = await api.updateTag('harness-desk-tag', { name: 'Harness Desk Renamed' });
+		expect(renamed.name).toBe('harness-desk-renamed');
+		const post = await api.getPost('desk-rename-me');
+		expect(post.tags).toContain('harness-desk-renamed');
+		// collision refuses
+		await expect(api.updateTag('harness-desk-renamed', { name: 'queues' })).rejects.toMatchObject({
+			status: 409
+		});
+		// delete refuses while referenced — the message NAMES the count
+		await expect(api.deleteTag('harness-desk-renamed')).rejects.toMatchObject({
+			status: 409
+		});
+		await api.deletePost('desk-rename-me');
+		await api.deleteTag('harness-desk-renamed'); // freed → gone
+		const list = await api.listTags();
+		expect(list.find((x) => x.name === 'harness-desk-renamed')).toBeUndefined();
+		await expect(api.updateTag('ghost-tag', { featured: true })).rejects.toMatchObject({
+			status: 404
+		});
+	});
+
 	it('tags: first-class vocabulary (unused names appear at 0), createTag slugifies, 409s', async () => {
 		const api = createMockApi();
 		const before = await api.listTags();
 		const t = await api.createTag('Edge Computing!!');
-		expect(t).toEqual({ name: 'edge-computing', posts: 0 });
+		expect(t).toEqual({ name: 'edge-computing', posts: 0, featured: false });
 		const after = await api.listTags();
 		expect(after.find((x) => x.name === 'edge-computing')).toEqual({
 			name: 'edge-computing',
-			posts: 0
+			posts: 0,
+			featured: false
 		});
 		await expect(api.createTag('edge-computing')).rejects.toMatchObject({ status: 409 });
 		await expect(api.createTag('!!!')).rejects.toMatchObject({ status: 400 });

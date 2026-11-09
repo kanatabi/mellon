@@ -174,6 +174,9 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 			call<CollectionCount>('POST', '/admin/collections', { body: { name } }),
 		listTags: () => call<TagCount[]>('GET', '/admin/tags'),
 		createTag: (name) => call<TagCount>('POST', '/admin/tags', { body: { name } }),
+		updateTag: (name, patch) =>
+			call<TagCount>('PATCH', `/admin/tags/${enc(name)}`, { body: patch }),
+		deleteTag: (name) => call<void>('DELETE', `/admin/tags/${enc(name)}`),
 
 		// --- palette content door (§8) ---
 		search: (needle) => call<SearchResults>('GET', '/admin/search', { query: { q: [needle] } }),

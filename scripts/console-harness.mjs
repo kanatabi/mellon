@@ -1033,6 +1033,87 @@ check(
 	await pp.close();
 }
 
+// --- T-tags: the tag desk end-to-end (featured IS the manual promotion the
+// earendil TOPICS widget lacked; guards and propagation asserted live) ---
+{
+	const tp = await ctx.newPage();
+	await tp.goto(`${BASE}/tags`, { waitUntil: 'networkidle' });
+	await tp.waitForTimeout(400);
+	check('T-tags1 desk lists the vocabulary', (await tp.locator('text=observability').count()) > 0);
+	// create — take the CANONICAL name from the API response, never a
+	// client-side guess of lumen's Slugify (the guess was the first FAIL)
+	await tp
+		.locator('[aria-label="New tag name"]')
+		.fill('Harness Desk ' + Date.now().toString(36).slice(-4));
+	const respPromise = tp.waitForResponse(
+		(r) => r.url().endsWith('/api/tags') && r.request().method() === 'POST',
+		{ timeout: 10000 }
+	);
+	await tp.locator('button:has-text("create")').click();
+	const madeName = (await (await respPromise).json()).name;
+	// the HTTP response lands BEFORE the desk re-renders — wait for the ROW
+	await tp.waitForSelector(`[aria-label="Feature ${madeName}"]`, { timeout: 8000 }).catch(() => {});
+	const rowSel = `[aria-label="Feature ${madeName}"], [aria-label="Unfeature ${madeName}"]`;
+	check(
+		`T-tags2 create slugifies + rows appear (${madeName})`,
+		(await tp.locator(rowSel).count()) === 1
+	);
+	// feature it — but with ZERO posts the public widget must NOT show it (rule)
+	await tp.locator(`[aria-label="Feature ${madeName}"]`).click();
+	await tp.waitForTimeout(700);
+	const pressed = await tp
+		.locator(`[aria-label="Unfeature ${madeName}"]`)
+		.getAttribute('aria-pressed');
+	const pub = await (await fetch(`${LUMEN}/api/tags`)).text();
+	check(
+		'T-tags3 feature sticks; unused featured tag stays OUT of the public widget',
+		pressed === 'true' && !pub.includes(madeName),
+		`pressed=${pressed} leak=${pub.includes(madeName)}`
+	);
+	// rename via the row input (change fires on blur)
+	await tp.locator(`[aria-label="Rename ${madeName}"]`).fill(madeName + '-renamed');
+	await tp.locator(`[aria-label="Rename ${madeName}"]`).press('Tab');
+	await tp.waitForTimeout(700);
+	const gone = await tp.locator(`[aria-label="Rename ${madeName}"]`).count();
+	const there = await tp.locator(`[aria-label="Rename ${madeName}-renamed"]`).count();
+	check('T-tags4 rename moves the row', gone === 0 && there === 1);
+	// collision refuses VERBATIM
+	await tp.locator(`[aria-label="Rename ${madeName}-renamed"]`).fill('queues');
+	await tp.locator(`[aria-label="Rename ${madeName}-renamed"]`).press('Tab');
+	await tp.waitForTimeout(700);
+	const clash = await tp.evaluate(
+		() => document.querySelector('[role="status"]')?.textContent ?? ''
+	);
+	check(
+		'T-tags5 rename collision 409 surfaces verbatim',
+		clash.includes('exists'),
+		clash.slice(0, 80)
+	);
+	// delete-guard on a USED tag: refusal names the count
+	tp.once('dialog', (d) => d.accept());
+	await tp.locator('[aria-label="Delete queues"]').click();
+	await tp.waitForTimeout(900);
+	const guard = await tp.evaluate(
+		() => document.querySelector('[role="status"]')?.textContent ?? ''
+	);
+	check(
+		'T-tags6 deleting a used tag refuses with the referencing COUNT',
+		guard.includes('still reference it'),
+		guard.slice(0, 90)
+	);
+	// freed tag deletes cleanly
+	tp.once('dialog', (d) => d.accept());
+	await tp.locator(`[aria-label="Delete ${madeName}-renamed"]`).click();
+	await tp.waitForTimeout(900);
+	check(
+		'T-tags7 unused tag deletes away',
+		(await tp.locator(`[aria-label*="${madeName}-renamed"]`).count()) === 0
+	);
+	// nav + registry
+	check('T-tags8 nav carries the tags desk', (await tp.locator('a[href="/tags"]').count()) >= 1);
+	await tp.close();
+}
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

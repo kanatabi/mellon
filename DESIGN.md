@@ -120,16 +120,17 @@ published ⇄ unpublished`; a shipped post NEVER returns to draft.** Slug is fix
 
 Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view anatomy in §11.4.
 
-| route           | content                                                                                                                                                                                        |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`        | single-user session start                                                                                                                                                                      |
-| `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                                                       |
-| `/posts`        | list (status pills, roving-tabindex rows, `n` = new)                                                                                                                                           |
-| `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                                                |
-| `/photos`       | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker (owner calls 2026-11-08)                                     |
-| `/photos/[id]`  | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08) |
-| `/secrets`      | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-intent badge, restore-by-overlay         |
-| `/settings`     | appearance (theme segment), vim toggle, session                                                                                                                                                |
+| route           | content                                                                                                                                                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`        | single-user session start                                                                                                                                                                                                                                     |
+| `/` (dashboard) | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                                                                                                                      |
+| `/posts`        | list (status pills, roving-tabindex rows, `n` = new)                                                                                                                                                                                                          |
+| `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                                                                                                               |
+| `/photos`       | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker (owner calls 2026-11-08)                                                                                                    |
+| `/photos/[id]`  | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08)                                                                |
+| `/secrets`      | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-intent badge, restore-by-overlay                                                                        |
+| `/tags`         | the **tag desk** — vocabulary rows (name, posts, featured), create, inline rename (propagates via id-keyed FKs), feature toggle (manual promotion to earendil's TOPICS widget: `featured AND posts > 0`), delete guarded by reference COUNT surfaced verbatim |
+| `/settings`     | appearance (theme segment), vim toggle, session                                                                                                                                                                                                               |
 
 ### 6.1 Secrets control plane (PLAN-SECRETS-CONTROL.md, ratified D1-D5)
 

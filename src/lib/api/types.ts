@@ -86,6 +86,9 @@ export interface PhotoListOpts {
 export interface TagCount {
 	name: string;
 	posts: number;
+	/** The desk's manual promotion flag (lumen 0005: was `cloud`): membership
+	 *  in the earendil TOPICS widget. Vocabulary exists WITHOUT it. */
+	featured: boolean;
 }
 
 /** Mirrors Bao KV-v2: the double-`data` envelope flattened to what the UI needs. */
@@ -224,6 +227,12 @@ export interface AdminApi {
 	/** Vocabulary is a first-class store (not derived): a tag exists once
 	 *  created, used or not. Name is slugified; 409 on duplicates. */
 	createTag(name: string): Promise<TagCount>;
+	/** The desk's row verb: rename propagates to every post (id-keyed FKs),
+	 *  featured toggles the widget. 409 on collision. */
+	updateTag(name: string, patch: { name?: string; featured?: boolean }): Promise<TagCount>;
+	/** Refuses (409, message naming the COUNT) while any live post references
+	 *  the tag — unassignment is the editor's job, never a side effect. */
+	deleteTag(name: string): Promise<void>;
 
 	listSecretPaths(): Promise<SecretPath[]>;
 	readSecret(app: string, env: string, version?: number): Promise<SecretPayload | null>;

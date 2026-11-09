@@ -569,7 +569,7 @@ flowchart LR
 				onCreated: (name) => {
 					// eager vocabulary: the tag exists from creation, used or not —
 					// ride it locally so the submenu row flips ✓ without a reload
-					createdTags = [...createdTags, { name, posts: 0 }];
+					createdTags = [...createdTags, { name, posts: 0, featured: false }];
 					toggleTag(name);
 				}
 			})

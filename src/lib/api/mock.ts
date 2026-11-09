@@ -234,6 +234,11 @@ export function createMockApi(): AdminApi {
 	// enforces the same; the UI never offers a non-vocab tag).
 	const vocab = new Set<string>();
 	for (const p of posts) for (const t of p.tags) vocab.add(t);
+	// The desk's manual promotion set (lumen 0005 `featured`; seeded cloud
+	// tags mirror the corpus's curated widget). Deletion frees membership.
+	const featuredVocab = new Set<string>();
+	for (const p of posts)
+		if (p.status === 'published') for (const t of p.tags.slice(0, 2)) featuredVocab.add(t);
 	// Collection vocabulary — same eager-creation semantics as tags.
 	const collections = new Set<string>(COLLECTIONS);
 
@@ -474,9 +479,11 @@ export function createMockApi(): AdminApi {
 				if (p.status !== 'published') continue; // counts = published corpus
 				for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
 			}
-			// Every vocabulary name appears — unused tags at 0.
+			// Every vocabulary name appears — unused tags at 0, `featured`
+			// carried for the desk (the PUBLIC widget's posts>0 rule lives in
+			// lumen's read; the desk shows the whole truth either way).
 			return [...vocab]
-				.map((name) => ({ name, posts: counts.get(name) ?? 0 }))
+				.map((name) => ({ name, posts: counts.get(name) ?? 0, featured: featuredVocab.has(name) }))
 				.sort((a, b) => b.posts - a.posts || a.name.localeCompare(b.name));
 		},
 
@@ -485,7 +492,47 @@ export function createMockApi(): AdminApi {
 			if (!name) throw new AdminApiError(400, 'tag name has no letters or digits');
 			if (vocab.has(name)) throw new AdminApiError(409, `tag exists: ${name}`);
 			vocab.add(name);
-			return { name, posts: 0 };
+			return { name, posts: 0, featured: false };
+		},
+
+		async updateTag(name, patch) {
+			if (!vocab.has(name)) throw new AdminApiError(404, 'vocabulary row not found');
+			let cur = name;
+			const countOf = (n: string) => {
+				const counts = new Map<string, number>();
+				for (const p of posts) {
+					if (p.status !== 'published') continue;
+					for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+				}
+				return counts.get(n) ?? 0;
+			};
+			if (patch.name !== undefined) {
+				const next = slugify(String(patch.name)).slice(0, 32);
+				if (!next) throw new AdminApiError(400, 'tag name has no letters or digits');
+				if (next !== cur && vocab.has(next)) throw new AdminApiError(409, `tag exists: ${next}`);
+				if (next !== cur) {
+					// rename PROPAGATES (id-keyed FKs in lumen; here: rewrite the tag lists)
+					for (const p of posts) p.tags = p.tags.map((t) => (t === cur ? next : t));
+					vocab.delete(cur);
+					if (featuredVocab.delete(cur)) featuredVocab.add(next);
+					vocab.add(next);
+					cur = next;
+				}
+			}
+			if (patch.featured !== undefined) {
+				if (patch.featured) featuredVocab.add(cur);
+				else featuredVocab.delete(cur);
+			}
+			return { name: cur, posts: countOf(cur), featured: featuredVocab.has(cur) };
+		},
+
+		async deleteTag(name) {
+			if (!vocab.has(name)) throw new AdminApiError(404, 'vocabulary row not found');
+			const used = posts.filter((p) => p.tags.includes(name)).length;
+			if (used > 0)
+				throw new AdminApiError(409, `tag is in use — ${used} posts still reference it`);
+			vocab.delete(name);
+			featuredVocab.delete(name);
 		},
 
 		async search(qRaw) {
@@ -521,7 +568,8 @@ export function createMockApi(): AdminApi {
 				.map((name) => ({
 					name,
 					// same counting rule as listTags: published corpus
-					posts: posts.filter((p) => p.status === 'published' && p.tags.includes(name)).length
+					posts: posts.filter((p) => p.status === 'published' && p.tags.includes(name)).length,
+					featured: featuredVocab.has(name)
 				}));
 			return { posts: matched, photos: pics, tags: tagHits };
 		},

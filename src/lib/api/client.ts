@@ -15,7 +15,8 @@ import type {
 	SecretMeta,
 	SecretPath,
 	SecretPayload,
-	TagCount
+	TagCount,
+	SearchResults
 } from './types.ts';
 
 export class ApiError extends Error {
@@ -102,13 +103,11 @@ export const client: AdminApi = {
 		call<CollectionCount>('/collections', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listTags: () => call<TagCount[]>('/tags'),
-	search: (q) =>
-		call<{
-			posts: PostSummaryAdmin[];
-			photos: AdminPhoto[];
-			tags: { name: string; posts: number }[];
-		}>(`/search?q=${encodeURIComponent(q)}`),
+	search: (q) => call<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
 	createTag: (name) => call<TagCount>('/tags', { method: 'POST', body: JSON.stringify({ name }) }),
+	updateTag: (name, patch) =>
+		call<TagCount>(`/tags/${name}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+	deleteTag: (name) => call(`/tags/${name}`, { method: 'DELETE' }),
 
 	listSecretPaths: () => call<SecretPath[]>('/secrets'),
 	readSecret: (app, env, version) =>
