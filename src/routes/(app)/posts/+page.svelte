@@ -21,6 +21,7 @@
 	import { postsRail } from '#lib/rails.svelte.ts';
 	import SectionCard from '#lib/components/SectionCard.svelte';
 	import { deskSections } from '#lib/sections.svelte.ts';
+	import { reorderable } from '#lib/drag-reorder.ts';
 	import { editField, vocabSubmenu } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import { parseDateExpr } from '#lib/date-expr.ts';
@@ -442,7 +443,8 @@
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
+				use:reorderable={{ store: deskSections }}
+				class="rail-scroll flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Filters"
 			>
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -476,7 +478,6 @@
 			open={deskSections.isOpen('sort')}
 			ontoggle={() => deskSections.toggle('sort')}
 			onmove={(d) => deskSections.move('sort', d)}
-			ondrop={(drag, after) => deskSections.moveTo(drag, 'sort', after)}
 			order={deskSections.pos('sort')}
 		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
@@ -505,7 +506,6 @@
 			open={deskSections.isOpen('dates')}
 			ontoggle={() => deskSections.toggle('dates')}
 			onmove={(d) => deskSections.move('dates', d)}
-			ondrop={(drag, after) => deskSections.moveTo(drag, 'dates', after)}
 			order={deskSections.pos('dates')}
 		>
 			<DateRange
@@ -522,7 +522,6 @@
 			open={deskSections.isOpen('tags')}
 			ontoggle={() => deskSections.toggle('tags')}
 			onmove={(d) => deskSections.move('tags', d)}
-			ondrop={(drag, after) => deskSections.moveTo(drag, 'tags', after)}
 			order={deskSections.pos('tags')}
 		>
 			<!-- OR semantics, matching the public list contract. -->

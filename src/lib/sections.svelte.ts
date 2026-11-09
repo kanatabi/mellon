@@ -85,6 +85,18 @@ export class SectionSet {
 		this.persist();
 	};
 
+	/** drag landing: place dragId immediately before beforeId (null = last;
+	 *  the pinned id as target means "first among the movables"). */
+	place = (dragId: string, beforeId: string | null) => {
+		if (!this.order.includes(dragId)) return;
+		const next = this.order.filter((id) => id !== dragId);
+		let at = beforeId == null || beforeId === this.pinned ? 0 : next.indexOf(beforeId);
+		if (at < 0) at = next.length;
+		next.splice(at, 0, dragId);
+		this.order = next;
+		this.persist();
+	};
+
 	reset = () => {
 		this.order = [...this.movable];
 		this.persist();

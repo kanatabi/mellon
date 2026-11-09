@@ -32,6 +32,7 @@
 	import { photosRail } from '#lib/rails.svelte.ts';
 	import SectionCard from '#lib/components/SectionCard.svelte';
 	import { photosSections } from '#lib/sections.svelte.ts';
+	import { reorderable } from '#lib/drag-reorder.ts';
 	import { editField, stateToggle, vocabSubmenu } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import { parseDateExpr } from '#lib/date-expr.ts';
@@ -751,7 +752,8 @@
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
+				use:reorderable={{ store: photosSections }}
+				class="rail-scroll flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Photo filters"
 			>
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -785,7 +787,6 @@
 			open={photosSections.isOpen('sort')}
 			ontoggle={() => photosSections.toggle('sort')}
 			onmove={(d) => photosSections.move('sort', d)}
-			ondrop={(drag, after) => photosSections.moveTo(drag, 'sort', after)}
 			order={photosSections.pos('sort')}
 		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort photos">
@@ -814,7 +815,6 @@
 			open={photosSections.isOpen('dates')}
 			ontoggle={() => photosSections.toggle('dates')}
 			onmove={(d) => photosSections.move('dates', d)}
-			ondrop={(drag, after) => photosSections.moveTo(drag, 'dates', after)}
 			order={photosSections.pos('dates')}
 		>
 			<DateRange
@@ -831,7 +831,6 @@
 			open={photosSections.isOpen('collections')}
 			ontoggle={() => photosSections.toggle('collections')}
 			onmove={(d) => photosSections.move('collections', d)}
-			ondrop={(drag, after) => photosSections.moveTo(drag, 'collections', after)}
 			order={photosSections.pos('collections')}
 		>
 			<!-- OR semantics across toggled names, like posts' tags. -->

@@ -293,6 +293,10 @@ const order0 = await page.evaluate(
 );
 check('T-pane4 first movable cannot pass the pin', order0 === '1', `subtitle order ${order0}`);
 check(
+	'T-pane6 drag ghost slot is provisioned (hidden until a drag)',
+	(await page.locator('aside [data-pane-ghost]').count()) === 1
+);
+check(
 	'T-pane5 ACTIONS pane is not draggable',
 	(await page.locator('[data-pane="actions"]').getAttribute('draggable')) !== 'true'
 );

@@ -281,3 +281,29 @@
 		animation-duration: 0.01ms !important;
 	}
 }
+
+/* Rail scrollbars (owner ask 2026-11-09): fade out fast. The thumb is invisible
+   at rest, appears while the pointer is inside the rail, and vanishes shortly
+   after it leaves — the 400ms-delay color swap gives Chrome/Firefox the quick
+   auto-hide the OS default scrollbar never has. */
+.rail-scroll {
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+	transition: scrollbar-color 240ms ease 400ms;
+}
+.rail-scroll:hover {
+	scrollbar-color: var(--border) transparent;
+	transition: scrollbar-color 120ms ease;
+}
+.rail-scroll::-webkit-scrollbar {
+	width: 6px;
+}
+.rail-scroll::-webkit-scrollbar-thumb {
+	border-radius: 3px;
+	background: transparent;
+	transition: background 240ms ease 400ms;
+}
+.rail-scroll:hover::-webkit-scrollbar-thumb {
+	background: var(--border);
+	transition: background 120ms ease;
+}

@@ -16,6 +16,7 @@
 	import { fade, slide } from 'svelte/transition';
 	import SectionCard from '#lib/components/SectionCard.svelte';
 	import { postSections } from '#lib/sections.svelte.ts';
+	import { reorderable } from '#lib/drag-reorder.ts';
 	import {
 		AlignLeft,
 		CalendarDays,
@@ -854,7 +855,8 @@ flowchart LR
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex h-full w-72 flex-col gap-3 overflow-y-auto overscroll-contain"
+				use:reorderable={{ store: postSections }}
+				class="rail-scroll flex h-full w-72 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Post actions and settings"
 			>
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -995,7 +997,6 @@ flowchart LR
 			open={postSections.isOpen('title')}
 			ontoggle={() => postSections.toggle('title')}
 			onmove={(d) => postSections.move('title', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'title', after)}
 			order={postSections.pos('title')}
 		>
 			<input
@@ -1012,7 +1013,6 @@ flowchart LR
 			open={postSections.isOpen('subtitle')}
 			ontoggle={() => postSections.toggle('subtitle')}
 			onmove={(d) => postSections.move('subtitle', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'subtitle', after)}
 			order={postSections.pos('subtitle')}
 		>
 			<textarea
@@ -1029,7 +1029,6 @@ flowchart LR
 			open={postSections.isOpen('slug')}
 			ontoggle={() => postSections.toggle('slug')}
 			onmove={(d) => postSections.move('slug', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'slug', after)}
 			order={postSections.pos('slug')}
 		>
 			{#if isNew}
@@ -1062,7 +1061,6 @@ flowchart LR
 			open={postSections.isOpen('date')}
 			ontoggle={() => postSections.toggle('date')}
 			onmove={(d) => postSections.move('date', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'date', after)}
 			order={postSections.pos('date')}
 		>
 			<!-- earendil's calendar popover, single-pick shape (item #6): the
@@ -1083,7 +1081,6 @@ flowchart LR
 			open={postSections.isOpen('tags')}
 			ontoggle={() => postSections.toggle('tags')}
 			onmove={(d) => postSections.move('tags', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'tags', after)}
 			order={postSections.pos('tags')}
 		>
 			<Combobox
@@ -1110,7 +1107,6 @@ flowchart LR
 			open={postSections.isOpen('media')}
 			ontoggle={() => postSections.toggle('media')}
 			onmove={(d) => postSections.move('media', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'media', after)}
 			order={postSections.pos('media')}
 		>
 			{#if draft.thumbnail}
@@ -1158,7 +1154,6 @@ flowchart LR
 			open={postSections.isOpen('export')}
 			ontoggle={() => postSections.toggle('export')}
 			onmove={(d) => postSections.move('export', d)}
-			ondrop={(drag, after) => postSections.moveTo(drag, 'export', after)}
 			order={postSections.pos('export')}
 		>
 			<div class="flex flex-col gap-1.5">
@@ -1203,7 +1198,6 @@ flowchart LR
 				open={postSections.isOpen('timeline')}
 				ontoggle={() => postSections.toggle('timeline')}
 				onmove={(d) => postSections.move('timeline', d)}
-				ondrop={(drag, after) => postSections.moveTo(drag, 'timeline', after)}
 				order={postSections.pos('timeline')}
 			>
 				<div class="flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
