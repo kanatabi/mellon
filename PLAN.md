@@ -1478,8 +1478,12 @@ ack, #9 provider all remain owner-side; this run PREPARED #5's note, did not res
   during branch audit. Fix `638345f` (anchored, force-added, story commented).
   **Doctrine: a branch is what `git ls-tree` says it is — gates prove the working
   tree, only the tree proves the branch.**
-- **HUMAN-GATE #5 — THREAT NOTE (prepared for owner review; M6 PRs are NOT merge-ready
-  until personally acked):** (1) _token placement_ — Bao role/secret ids: lumen pod env
+- **HUMAN-GATE #5 — THREAT NOTE: expanded into a standalone document
+  (`mellon/THREAT-NOTE.md`, 2026-11-09 — assets ranked, placement table, six
+  vectors with code/test evidence pointers, residual risks R1-R5, finalization
+  steps). Provisionally ack'd by the owner's merge instruction; FINAL read
+  through that document gates prod seeding + GATE #10.** Original condensed
+  note follows for the record:** (1) _token placement_ — Bao role/secret ids: lumen pod env
   only (ESO-rendered from `bao-approle-credentials`), TTL 5m dev/≤1h prod, re-login
   agent-side; session JWT: never stored by mellon (HttpOnly cookie is a carrier),
   signing key in `lumen/{env}`; the portal UI holds NOTHING. (2) _what a stolen mellon
