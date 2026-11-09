@@ -180,7 +180,7 @@
 	const crumb = $derived(page.url.pathname.split('/').filter(Boolean).slice(0, 2));
 </script>
 
-<div class="flex min-h-svh flex-col lg:flex-row">
+<div class="flex h-svh flex-col overflow-hidden lg:flex-row">
 	<div class="route-progress" data-phase={barState} aria-hidden="true"></div>
 	<!-- Left nav: column at lg, top strip below. Folds to an icon rail (item
 	     #6) — the width transition is GPU-cheap on this small layer, and the
@@ -223,7 +223,7 @@
 		</div>
 	</nav>
 
-	<div class="flex min-w-0 flex-1 flex-col">
+	<div class="flex min-h-0 min-w-0 flex-1 flex-col">
 		<!-- Top bar: three-zone flow grid (§11.1) — the centered ⌘K pill reserves
 		     its space instead of floating over the breadcrumb (the collision your
 		     iPad shot caught: absolute centering doesn't truncate siblings).
@@ -286,7 +286,7 @@
 			</div>
 		</header>
 
-		<main class="flex-1 px-4 py-6 sm:px-6">
+		<main class="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
 			{@render children()}
 		</main>
 	</div>

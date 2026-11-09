@@ -636,7 +636,7 @@ flowchart LR
      anyway, since CodeMirror stops keydown propagation). -->
 <svelte:window onkeydown={onKey} />
 
-<section class="flex min-h-full flex-1 gap-4">
+<section class="flex h-full min-h-0 flex-1 gap-4">
 	<div class="flex min-w-0 grow flex-col gap-4">
 		<!-- Meta bar: entity title wears the serif; only the preview toggle
 		     lives here — verbs moved to the post rail's actions block. -->
@@ -701,7 +701,7 @@ flowchart LR
 		     fills the row and the split grid animates 1fr↔0fr — the pane never
 		     leaves layout, so nothing can reflow (old ghost bug). -->
 		<div
-			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-auto lg:min-h-0 lg:flex-1 {showPreview
+			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-full lg:min-h-0 lg:flex-1 {showPreview
 				? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-4'
 				: 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-0'}"
 		>
