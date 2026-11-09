@@ -1781,6 +1781,23 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-09/10 — secrets control plane, Phase B (`feature/secrets-control-plane`):**
+the `/secrets` page became the cockpit for infra-wide namespaces (plan: root
+`PLAN-SECRETS-CONTROL.md`). B1 four verbs across every layer + the twin NOW
+CARRIES THE INVARIANT (mirror fan-out, union seeding, pin semantics are
+executable contract in api.test.ts, not just shapes); B2 pure fuzzy scorer;
+B3 app-picker/env-tabs/onboard+add-env dialogs with ZERO app-name literals
+(the apps-are-data grep gate); B4 search bar; B5 pin badge + history
+view/diff/restore/pin. B6 harness T-plane1..7 drives the full lifecycle
+against live lumen (branch build) + real OpenBao - 45 asserts. Traps found
+and fixed in the making: a regex QUANTIFIER in a static attribute is eaten
+as a Svelte interpolation ({1,31} became {(1, 31)}) - patterns must be
+expressions; a markup expression STARTING with a regex literal parses as a
+block-close - masking moved to script; two test selectors broke honestly
+(nth input to aria-label pinned; auto-travel expectation replaced by the
+tab-then-visit flow); the modal drawer needs dismissing. Gates: lint 0,
+check 0-0, 63 units, build green, harness exit 0 45/45.
+
 **2026-11-09 — the INTERNAL 200 (`e0fd672`):** owner asked what a 200 was
 doing inside an error boundary. It was never a backend code: SSR succeeded,
 the hydrated component crashed, and Kit's root error page inherits the
