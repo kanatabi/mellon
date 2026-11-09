@@ -1763,3 +1763,20 @@ panes, verified against a live DOM sweep for re-anchoring risk. Owner's two
 UI calls shipped with it: cover preview shimmers until decoded (broken loads
 keep the shimmer rather than paint a broken icon), and the rail scrollbar is
 now fully invisible. Harness 27/27 (+5), gates green.
+
+**2026-11-09 — container pivot + touch drag (`6470882`):** the split/tab
+breakpoint was measuring the WRONG box — the viewport, when the nav+rail
+already ate ~550px — so 1280 laptops got two unreadable half-panes. All
+editor-column layout decisions now ride Tailwind CONTAINER QUERIES on the
+column itself (@container/editor, 48rem): tabs arrive when the column
+actually runs out of room, and rail-collapse buys the split back live. The
+rail's own visibility stayed viewport-keyed per the owner ("as-is"). Touch:
+HTML5 DnD is a mouse-only API, so a 380ms long-press now lifts panes into
+the same FLIP machine — finger-following slim bar, live ghost slots, edge
+autoscroll while parked at the rail's rim, tap/scroll/typing never arm.
+The synthetic-pointer test caught a real bug on first run (autoscroll slid
+the landing out from under a below-fold target) — proof the harness earns
+its keep. Shimmer lifecycle (overlay must STOP on decode; img.complete for
+warm caches) and invisible rail scrollbars shipped in the same commit.
+Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
+layout — columns measure containers, chrome measures viewport.
