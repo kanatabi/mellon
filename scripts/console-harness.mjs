@@ -309,41 +309,60 @@ check(
 	)
 );
 {
-	const expandMedia = page.locator('button[aria-label="Expand media"]');
-	if (await expandMedia.count()) await expandMedia.first().click();
-	await sleep(300);
-	// shimmer is an OVERLAY on the preview box — the owner caught it sweeping
-	// over a fully loaded cover. Lifecycle assert: paint while decoding, STOP
-	// once decoded (and stay off for the warm-cache reload that never fires onload).
+	// shimmer lifecycle, HOST-AGNOSTIC: discover the CURRENT cover URL from
+	// the SSR HTML first — the old test pinned unsplash and silently stopped
+	// gating the moment the owner re-set the cover to picsum. Fresh context:
+	// a warm HTTP cache answers without touching the network, and then the
+	// "loading" window simply does not exist.
+	const html0 = await (
+		await fetch(`${BASE}/posts/observability-is-a-contract`, {
+			headers: { cookie: `mellon_session=${session.token}` }
+		})
+	).text();
+	const coverUrl = html0.match(/src="(https:[^"]+)"[^>]*alt="Cover preview"/)?.[1];
+	const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+	await c2.addCookies([
+		{
+			name: 'mellon_session',
+			value: session.token,
+			domain: 'localhost',
+			path: '/',
+			httpOnly: true,
+			sameSite: 'Strict'
+		}
+	]);
+	const pg = await c2.newPage();
 	let releaseCover;
 	const gate = new Promise((r) => (releaseCover = r));
-	await page.route('**images.unsplash.com/**', async (route) => {
+	await pg.route(coverUrl ?? '**no-such-cover**', async (route) => {
 		await gate;
 		await route.continue();
 	});
-	await page.reload({ waitUntil: 'domcontentloaded' });
-	await sleep(500); // media pane re-mounts open (persisted); cover still in flight
-	const shimmerLoading = await page.locator('aside .thumb-shimmer').count();
+	await pg.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'domcontentloaded' });
+	await sleep(500); // cover in flight (blocked at the gate); media pane open by default
+	const shimmerLoading = await pg.locator('aside .thumb-shimmer').count();
 	releaseCover();
-	await page
-		.waitForFunction(() => !document.querySelector('aside .thumb-shimmer'), { timeout: 15000 })
+	await pg
+		.waitForFunction(() => !document.querySelector('aside .thumb-shimmer'), { timeout: 20000 })
 		.catch(() => {});
-	const shimmerDecoded = await page.locator('aside .thumb-shimmer').count();
+	const shimmerDecoded = await pg.locator('aside .thumb-shimmer').count();
 	check(
 		'T-pane8 cover shimmers while loading, stops when decoded',
-		shimmerLoading === 1 && shimmerDecoded === 0,
-		`loading=${shimmerLoading} decoded=${shimmerDecoded}`
+		!!coverUrl && shimmerLoading === 1 && shimmerDecoded === 0,
+		`cover=${coverUrl ? 'found' : 'NOT FOUND'} loading=${shimmerLoading} decoded=${shimmerDecoded}`
 	);
-	await page.unroute('**images.unsplash.com/**');
+	await pg.unroute(coverUrl ?? '**no-such-cover**');
 	// warm-cache reload: the img NEVER fires onload — the img.complete effect
 	// is the only thing that can stop the sweep there
-	await page.reload({ waitUntil: 'networkidle' });
+	await pg.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
 	await sleep(400);
 	check(
 		'T-pane8b warm-cache reload decodes without a stuck shimmer',
-		(await page.locator('aside .thumb-shimmer').count()) === 0
+		(await pg.locator('aside .thumb-shimmer').count()) === 0
 	);
+	await c2.close();
 }
+
 {
 	// synthetic drag sweep: lift → open slot → steady moves must measure ZERO
 	// rects (the cache is the point), and the drag image must be a slim bar.
@@ -530,6 +549,38 @@ check(
 		phone.pane === 'absolute' && phone.tabs && !phone.rail,
 		JSON.stringify(phone)
 	);
+}
+
+// --- T-secrets: the secrets editor must render, not scream. (The first
+// cut had a self-rearming $effect — rows written then read in the same run —
+// effect_update_depth_exceeded killed the page AFTER SSR's 200, so the root
+// error boundary inherited status 200: the owner's "INTERNAL 200".) ---
+{
+	const sp = await ctx.newPage();
+	const errs = [];
+	sp.on('console', (m) => m.type() === 'error' && errs.push(m.text().slice(0, 120)));
+	await sp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await sleep(400);
+	check(
+		'T-secrets1 secrets page renders rows, no error boundary',
+		(await sp.locator('text=Something went sideways').count()) === 0 &&
+			(await sp.locator('main input').count()) >= 2,
+		`inputs=${await sp.locator('main input').count()}`
+	);
+	check('T-secrets2 mount converged with zero console errors', errs.length === 0, errs[0] ?? '');
+	const saveBtn = sp.locator('button:has-text("save as")');
+	const armedBefore = await saveBtn.isEnabled().catch(() => true);
+	const valInput = sp.locator('main input').nth(1);
+	await valInput.click({ clickCount: 3 });
+	await valInput.type('-X');
+	await sleep(200);
+	const armedAfter = await saveBtn.isEnabled().catch(() => false);
+	check(
+		'T-secrets3 typing arms SAVE (dirty survives the resync guard)',
+		!armedBefore && armedAfter,
+		`before=${armedBefore} after=${armedAfter}`
+	);
+	await sp.close();
 }
 
 // --- T5: error boundary with a dead backend ---
