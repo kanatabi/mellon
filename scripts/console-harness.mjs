@@ -250,6 +250,57 @@ check(
 	JSON.stringify(editorRail)
 );
 
+// --- T-pane: collapsible sections — pill, persistence, keyboard move, pinned wall ---
+await page.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+const panes = async () =>
+	page.evaluate(() =>
+		[...document.querySelectorAll('[data-pane]')].map((e) => e.getAttribute('data-pane'))
+	);
+await page.locator('[aria-label="Collapse tags"]').click();
+await sleep(300);
+const list = await panes();
+check(
+	'T-pane1 collapse turns the card into a pill',
+	list.includes('tags') && (await page.locator('[aria-label^="Expand tags"]').count()) === 1
+);
+await page.reload({ waitUntil: 'networkidle' });
+check(
+	'T-pane2 collapsed state survives reload (persisted)',
+	(await page.locator('[aria-label^="Expand tags"]').count()) === 1
+);
+await page.locator('[aria-label^="Expand tags"]').click();
+// keyboard move: focus the title pane, Alt+Down swaps it with subtitle
+await page.locator('[data-pane="title"]').focus();
+await page.keyboard.press('Alt+ArrowDown');
+await sleep(250);
+const moved = await page.evaluate(
+	() => getComputedStyle(document.querySelector('[data-pane="title"]')).order
+);
+const movedSubtitle = await page.evaluate(
+	() => getComputedStyle(document.querySelector('[data-pane="subtitle"]')).order
+);
+check(
+	'T-pane3 Alt+Down reorders (order map swaps)',
+	moved === '1' && movedSubtitle === '0',
+	`title order ${moved}, subtitle ${movedSubtitle}`
+);
+// pinned wall: Alt+Up on the first movable pane is a no-op
+await page.locator('[data-pane="subtitle"]').focus();
+await page.keyboard.press('Alt+ArrowUp');
+await sleep(250);
+const order0 = await page.evaluate(
+	() => getComputedStyle(document.querySelector('[data-pane="subtitle"]')).order
+);
+check(
+	'T-pane4 first movable cannot pass the pin',
+	order0 === '0' || order0 === '1',
+	`subtitle order ${order0}`
+);
+check(
+	'T-pane5 ACTIONS pane is not draggable',
+	(await page.locator('[data-pane="actions"]').getAttribute('draggable')) !== 'true'
+);
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

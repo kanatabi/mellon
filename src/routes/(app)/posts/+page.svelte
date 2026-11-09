@@ -8,7 +8,10 @@
 		PanelRightOpen,
 		Plus,
 		SlidersHorizontal,
-		X
+		X,
+		ArrowUpDown,
+		CalendarDays,
+		Tags as TagsIcon
 	} from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -16,6 +19,8 @@
 	import DateRange from '#lib/components/DateRange.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import { postsRail } from '#lib/rails.svelte.ts';
+	import SectionCard from '#lib/components/SectionCard.svelte';
+	import { deskSections } from '#lib/sections.svelte.ts';
 	import { editField, vocabSubmenu } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import { parseDateExpr } from '#lib/date-expr.ts';
@@ -220,6 +225,8 @@
 	let filtersSheet = $state(false);
 	let filtersTrigger = $state<HTMLElement | undefined>();
 	const sheetCount = $derived(data.tag.length + (data.from ? 1 : 0) + (data.to ? 1 : 0));
+
+	$effect(() => deskSections.init());
 </script>
 
 <svelte:head>
@@ -435,10 +442,16 @@
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex h-full w-60 flex-col gap-6 overflow-y-auto overscroll-contain rounded-lg border border-border bg-card p-4"
+				class="flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Filters"
 			>
-				<div class="flex items-center justify-between">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- dblclick reset is enhancement; keyboard moves live on each pane -->
+				<div
+					class="flex items-center justify-between"
+					title="Double-click resets pane order"
+					ondblclick={deskSections.reset}
+				>
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">filters</p>
 					<button
 						type="button"
@@ -455,8 +468,16 @@
 	</div>
 
 	{#snippet filtersBody()}
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">sort</p>
+		<SectionCard
+			id="sort"
+			label="sort"
+			icon={ArrowUpDown}
+			open={deskSections.isOpen('sort')}
+			ontoggle={() => deskSections.toggle('sort')}
+			onmove={(d) => deskSections.move('sort', d)}
+			ondrop={(drag, after) => deskSections.moveTo(drag, 'sort', after)}
+			order={deskSections.pos('sort')}
+		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
 				{#each sortChips as chip (chip.label)}
 					{@const on = data.sort === chip.sort && data.dir === chip.dir}
@@ -474,22 +495,35 @@
 					</a>
 				{/each}
 			</div>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">dates</p>
+		<SectionCard
+			id="dates"
+			label="dates"
+			icon={CalendarDays}
+			open={deskSections.isOpen('dates')}
+			ontoggle={() => deskSections.toggle('dates')}
+			onmove={(d) => deskSections.move('dates', d)}
+			ondrop={(drag, after) => deskSections.moveTo(drag, 'dates', after)}
+			order={deskSections.pos('dates')}
+		>
 			<DateRange
 				from={data.from}
 				to={data.to}
 				onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
 			/>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1.5">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-				tags{#if data.tag.length}
-					· {data.tag.length} on{/if}
-			</p>
+		<SectionCard
+			id="tags"
+			label="tags"
+			icon={TagsIcon}
+			open={deskSections.isOpen('tags')}
+			ontoggle={() => deskSections.toggle('tags')}
+			onmove={(d) => deskSections.move('tags', d)}
+			ondrop={(drag, after) => deskSections.moveTo(drag, 'tags', after)}
+			order={deskSections.pos('tags')}
+		>
 			<!-- OR semantics, matching the public list contract. -->
 			<div class="flex flex-wrap gap-1.5">
 				{#each data.tags as t (t.name)}
@@ -506,7 +540,7 @@
 					</a>
 				{/each}
 			</div>
-		</div>
+		</SectionCard>
 
 		<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
 			filters ride the URL — the API does the work, the page never sorts

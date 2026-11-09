@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto, beforeNavigate } from '$app/navigation';
 	import {
-		Clock,
 		ClipboardCopy,
 		Download,
 		Eye,
@@ -15,6 +14,18 @@
 	} from 'lucide-svelte';
 	import { onMount, tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
+	import SectionCard from '#lib/components/SectionCard.svelte';
+	import { postSections } from '#lib/sections.svelte.ts';
+	import {
+		AlignLeft,
+		CalendarDays,
+		Type,
+		Link as LinkIcon,
+		Tags as TagsIcon,
+		Image,
+		History,
+		Send
+	} from 'lucide-svelte';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import Combobox from '#lib/components/Combobox.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
@@ -98,6 +109,7 @@ flowchart LR
 	let saving = $state(false);
 
 	$effect(() => editorRail.init());
+	$effect(() => postSections.init());
 
 	// item #2: slug auto-derives from the title until the author edits it by
 	// hand. Only meaningful pre-create — a shipped slug never changes (URL
@@ -842,10 +854,16 @@ flowchart LR
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex h-full w-72 flex-col gap-5 overflow-y-auto overscroll-contain rounded-lg border border-border bg-card p-4"
+				class="flex h-full w-72 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Post actions and settings"
 			>
-				<div class="flex items-center justify-between">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- dblclick is a progressive enhancement: keyboard users move panes per-card -->
+				<div
+					class="flex items-center justify-between"
+					title="Double-click resets pane order"
+					ondblclick={postSections.reset}
+				>
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">post</p>
 					<button
 						type="button"
@@ -921,8 +939,16 @@ flowchart LR
 		<!-- Actions block (owner call): save/publish/delete live at the
 				     top of the rail under their own label — the CMS "publish
 				     box" position, never under "settings". -->
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">actions</p>
+		<SectionCard
+			id="actions"
+			label="actions"
+			icon={Send}
+			open={postSections.isOpen('actions')}
+			pinned
+			{dirty}
+			ontoggle={() => postSections.toggle('actions')}
+			order={postSections.pos('actions')}
+		>
 			<button
 				type="button"
 				disabled={saving}
@@ -959,34 +985,55 @@ flowchart LR
 					delete
 				</button>
 			{/if}
-		</div>
+		</SectionCard>
 
-		<label class="flex flex-col gap-1">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>title</span
-			>
+		<SectionCard
+			id="title"
+			label="title"
+			icon={Type}
+			open={postSections.isOpen('title')}
+			ontoggle={() => postSections.toggle('title')}
+			onmove={(d) => postSections.move('title', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'title', after)}
+			order={postSections.pos('title')}
+		>
 			<input
+				aria-label="Title"
 				class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-border focus-visible:border-brand"
 				bind:value={draft.title}
 				oninput={touch}
 			/>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>subtitle</span
-			>
+		</SectionCard>
+		<SectionCard
+			id="subtitle"
+			label="subtitle"
+			icon={AlignLeft}
+			open={postSections.isOpen('subtitle')}
+			ontoggle={() => postSections.toggle('subtitle')}
+			onmove={(d) => postSections.move('subtitle', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'subtitle', after)}
+			order={postSections.pos('subtitle')}
+		>
 			<textarea
+				aria-label="Subtitle"
 				rows="3"
 				class="w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-snug outline-none hover:border-border focus-visible:border-brand"
 				bind:value={draft.subtitle}
 				oninput={touch}></textarea>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>slug</span
-			>
+		</SectionCard>
+		<SectionCard
+			id="slug"
+			label="slug"
+			icon={LinkIcon}
+			open={postSections.isOpen('slug')}
+			ontoggle={() => postSections.toggle('slug')}
+			onmove={(d) => postSections.move('slug', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'slug', after)}
+			order={postSections.pos('slug')}
+		>
 			{#if isNew}
 				<input
+					aria-label="Slug"
 					class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs outline-none hover:border-border focus-visible:border-brand"
 					placeholder="auto from title"
 					bind:value={draft.slug}
@@ -1005,10 +1052,18 @@ flowchart LR
 				/>
 				<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move</span>
 			{/if}
-		</label>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">date</p>
+		<SectionCard
+			id="date"
+			label="date"
+			icon={CalendarDays}
+			open={postSections.isOpen('date')}
+			ontoggle={() => postSections.toggle('date')}
+			onmove={(d) => postSections.move('date', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'date', after)}
+			order={postSections.pos('date')}
+		>
 			<!-- earendil's calendar popover, single-pick shape (item #6): the
 					     native date input is stock, not ours. -->
 			<DatePicker
@@ -1018,10 +1073,18 @@ flowchart LR
 					touch();
 				}}
 			/>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1.5">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">tags</p>
+		<SectionCard
+			id="tags"
+			label="tags"
+			icon={TagsIcon}
+			open={postSections.isOpen('tags')}
+			ontoggle={() => postSections.toggle('tags')}
+			onmove={(d) => postSections.move('tags', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'tags', after)}
+			order={postSections.pos('tags')}
+		>
 			<Combobox
 				items={tags.map((t) => ({ name: t.name, count: t.posts }))}
 				multiple
@@ -1033,14 +1096,22 @@ flowchart LR
 					touch();
 				}}
 			/>
-		</div>
+		</SectionCard>
 
 		<!-- Media section (owner call): cover + body-insert entries live here;
 		     the stock <select> became a real preview + dialog (one ImagePicker
 		     for both jobs — the library grid and the upload queue are shared
 		     with the photos page). -->
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">media</p>
+		<SectionCard
+			id="media"
+			label="media"
+			icon={Image}
+			open={postSections.isOpen('media')}
+			ontoggle={() => postSections.toggle('media')}
+			onmove={(d) => postSections.move('media', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'media', after)}
+			order={postSections.pos('media')}
+		>
 			{#if draft.thumbnail}
 				<img
 					src={draft.thumbnail}
@@ -1077,10 +1148,18 @@ flowchart LR
 				<ImagePlus class="size-3" />
 				insert image…
 			</button>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1.5 border-t border-border pt-4">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">export</p>
+		<SectionCard
+			id="export"
+			label="export"
+			icon={Download}
+			open={postSections.isOpen('export')}
+			ontoggle={() => postSections.toggle('export')}
+			onmove={(d) => postSections.move('export', d)}
+			ondrop={(drag, after) => postSections.moveTo(drag, 'export', after)}
+			order={postSections.pos('export')}
+		>
 			<div class="flex flex-col gap-1.5">
 				<button
 					type="button"
@@ -1113,20 +1192,26 @@ flowchart LR
 					{exportMsg}
 				</p>
 			{/if}
-		</div>
+		</SectionCard>
 
 		{#if !isNew && seed}
-			<div
-				class="flex flex-col gap-1 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground"
+			<SectionCard
+				id="timeline"
+				label="timeline"
+				icon={History}
+				open={postSections.isOpen('timeline')}
+				ontoggle={() => postSections.toggle('timeline')}
+				onmove={(d) => postSections.move('timeline', d)}
+				ondrop={(drag, after) => postSections.moveTo(drag, 'timeline', after)}
+				order={postSections.pos('timeline')}
 			>
-				<p class="mb-1 flex items-center gap-2 text-[10px] tracking-widest uppercase">
-					<Clock class="size-3" />timeline
-				</p>
-				<span>created · {fmtDay(seed.createdAt)}</span>
-				<span>published · {fmtDay(publishedAt)}</span>
-				<span>updated · {updatedAt ? fmtDay(updatedAt) : '—'}</span>
-				<span>rev {rev}</span>
-			</div>
+				<div class="flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
+					<span>created · {fmtDay(seed.createdAt)}</span>
+					<span>published · {fmtDay(publishedAt)}</span>
+					<span>updated · {updatedAt ? fmtDay(updatedAt) : '—'}</span>
+					<span>rev {rev}</span>
+				</div>
+			</SectionCard>
 		{/if}
 	{/snippet}
 
