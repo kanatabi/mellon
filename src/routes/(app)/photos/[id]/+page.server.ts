@@ -1,9 +1,10 @@
 import { error } from '@sveltejs/kit';
+import { SESSION_COOKIE } from '#lib/session.ts';
 import { createApi } from '#lib/api/index.ts';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
-	const api = createApi();
+export const load: PageServerLoad = async ({ params, cookies }) => {
+	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	let photo;
 	try {
 		photo = await api.getPhoto(params.id);

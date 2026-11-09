@@ -1,11 +1,12 @@
 import { createApi } from '#lib/api/index.ts';
+import { SESSION_COOKIE } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Filtering/sorting is RELAYED to the API (doctrine #1: the UI never sorts or
 // filters payloads itself) — these params map 1:1 onto PostListOpts.
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, cookies }) => {
 	const sp = url.searchParams;
 	const status = sp.get('status');
 	const sortRaw = sp.get('sort');
@@ -27,7 +28,7 @@ export const load: PageServerLoad = async ({ url }) => {
 				: ('updated' as const),
 		dir: dirRaw === 'asc' ? ('asc' as const) : ('desc' as const)
 	};
-	const api = createApi();
+	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const [paged, tags] = await Promise.all([api.listPosts({ ...opts, page }), api.listTags()]);
 	return {
 		posts: paged.items,

@@ -1,20 +1,18 @@
 import { mockApi } from './mock.ts';
+import { createLumenApi } from './fetch-adapter.ts';
 import type { AdminApi } from './types.ts';
 
 /**
- * The API entry. Phase A: always the mock. In Phase B, `API_BASE` set (server
- * env) swaps in a fetch adapter that speaks to lumen's §8/§9 — same interface,
- * zero UI churn. Until that exists, an attempted switch is loud, not silent.
+ * The API entry: mock twin when API_BASE is unset (dev/tests, zero backend),
+ * the REAL lumen transport when it is set (Phase C cutover). `bearer` is the
+ * session token (mellon's httpOnly cookie value) — callers inside request
+ * context pass it; the mock ignores it entirely. Same interface, zero UI
+ * churn — that was the whole point of designing the seam first.
  */
-export function createApi(): AdminApi {
-	const base = process.env.API_BASE; // server-only; deliberately unset in Phase A
-	if (base) {
-		throw new Error(
-			'API_BASE is set, but the lumen fetch adapter lands in Phase B (M1/M3). ' +
-				'Unset API_BASE to use the mock layer.'
-		);
-	}
-	return mockApi;
+export function createApi(bearer = ''): AdminApi {
+	const base = process.env.API_BASE;
+	if (!base) return mockApi;
+	return createLumenApi(base.replace(/\/+$/, ''), bearer);
 }
 
 export { AdminApiError } from './types.ts';

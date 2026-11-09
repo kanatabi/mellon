@@ -64,7 +64,7 @@
 			message = {
 				kind: 'err',
 				text:
-					e instanceof ApiError && e.status === 412
+					e instanceof ApiError && e.status === 409
 						? 'CAS rejected — someone wrote first; reloading theirs'
 						: String(e)
 			};

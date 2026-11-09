@@ -19,6 +19,16 @@ Mirror earendil's conventions: SvelteKit 3 + Svelte 5 runes + TS + Tailwind v4 +
 npm run dev · npm run check · npm run lint · npm run test:unit · npm run build
 ```
 
+**Two data modes (the Phase C seam):** unset `API_BASE` = the mock twin
+(dev, unit tests, CI — zero backend needed). `npm run dev:lumen` points
+`API_BASE=http://localhost:8080` at a RUNNING lumen (`cd ../lumen && make
+dev`) and the same UI talks the real §8/§9 wire — `src/lib/api/fetch-
+adapter.ts` maps every AdminApi method 1:1, the browser still never sees
+lumen or the token. The live acceptance suite for that transport is
+gated like earendil's: `LUMEN_URL=http://localhost:8080 npm run test:unit`
+(`src/lib/api/api.live.test.ts` — login, drafts-at-the-door, CAS 409s,
+multipart upload, secrets relay, instant revocation).
+
 Branch-per-milestone, PR-reviewed — never commit directly to `main`.
 
 ## Repo bootstrap (remote not yet created)

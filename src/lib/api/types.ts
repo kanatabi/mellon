@@ -173,7 +173,7 @@ export interface AdminApi {
 
 	listPosts(opts?: PostListOpts): Promise<Paged<PostSummaryAdmin>>;
 	getPost(slug: string): Promise<PostDetailAdmin>;
-	/** create ⇒ rev starts at 1. update ⇒ CAS on `rev`, 412-style on mismatch. */
+	/** create ⇒ rev starts at 1. update ⇒ CAS on `rev`, 409 on mismatch (lumen ships 409 for both CAS surfaces). */
 	createPost(draft: PostDraft): Promise<PostDetailAdmin>;
 	updatePost(slug: string, draft: PostDraft, rev: number): Promise<PostDetailAdmin>;
 	publishPost(slug: string): Promise<PostDetailAdmin>;

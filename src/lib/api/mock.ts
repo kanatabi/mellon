@@ -313,7 +313,7 @@ export function createMockApi(): AdminApi {
 			const p = find(slug);
 			// CAS: optimistic lock, exactly like lumen §8's rev-checked PUT.
 			if (p.rev !== rev)
-				throw new AdminApiError(412, `conflict: expected rev ${rev}, current ${p.rev}`);
+				throw new AdminApiError(409, `conflict: expected rev ${rev}, current ${p.rev}`);
 			Object.assign(p, clone(draft), { rev: p.rev + 1, updatedAt: now() });
 			p.readTime = Math.max(1, Math.round(draft.content.split(/\s+/).length / 200));
 			return clone(p);
@@ -551,7 +551,7 @@ export function createMockApi(): AdminApi {
 			const list = (secrets[key] ??= []);
 			const current = list.length ? list[list.length - 1].version : 0;
 			if (cas !== current)
-				throw new AdminApiError(412, `CAS failed: expected ${cas}, current ${current}`);
+				throw new AdminApiError(409, `CAS failed: expected ${cas}, current ${current}`);
 			const created: SecretPayload = {
 				data: clone(data),
 				createdTime: now(),

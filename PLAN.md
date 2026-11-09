@@ -1555,3 +1555,49 @@ type-don't-save rule; runtime chaining stays in collection variables. Validation
 rank: 41 read-only examples + 19 defaults replayed against the live server, zero status
 mismatches, before commit. The stateful lifecycle moved to its proper home — the Go
 battery IS the walkthrough; the collection is the reference.
+
+### 2026-11-09 — PHASE C (scoped): both portals cut over to the real lumen
+
+Owner: _"execute PHASE C, only the earendil + mellon cutover… hold the vortex,
+etc later."_ Branches: earendil `feature/lumen-cutover` (`33bcaec`, pushed),
+mellon `feature/lumen-cutover` (pushed with this entry). Merges remain #3.
+
+- **earendil: zero request-path code.** The mock-first seam was built for this
+  day — `API_BASE` (server loads, direct) + `PUBLIC_API_BASE=/` (browser rides
+  the same-origin proxy). One `dev:lumen` script + docs. Proved it's the REAL
+  backend, not a twin trick: the proxy 503s without API_BASE, a dead API_BASE
+  makes SSR pages 500 (the feed is now genuinely lumen-dependent), engine-
+  ranked search hits, leak-bait unlinked (0), plain `npm run dev` still 200
+  on the twin. Contract harness: 13/13 vs :8080 throughout.
+- **mellon: the fetch adapter the placeholder promised.** `src/lib/api/
+fetch-adapter.ts` implements all of AdminApi against §8/§9 (multipart upload
+  converts the browser's dataUrl; lumen's DECODE owns dims; CAS/409/conflict
+  statuses surface verbatim — "the relay forwards, never decides"). `createApi
+(bearer)` threads the session cookie at 10 call sites (loads/actions/relay);
+  login stays bearer-free. Mock mode untouched — unset API_BASE is still the
+  twin.
+- **The wire taught two lessons before merge, exactly as designed:**
+  ① **412→409** — the mock era had invented 412 for CAS conflicts; lumen ships
+  409 on BOTH CAS surfaces (rev + secret). Aligned mock, UI branches, tests,
+  and the types comment to the shipped wire (mirror ritual: mellon moved —
+  lumen's 409 was already merged, tested, and Postman-published).
+  ② **session expiry had no real-mode story** — the layout only checked cookie
+  PRESENCE (mock-era laziness). Now: `search('')` (the cheapest authenticated
+  call — short-circuits before the engine) asks lumen whether the bearer lives;
+  401 → clear cookie → `/login?expired=1`; 503 → honest error, NEVER a fake
+  logout (an outage must not kill good sessions — mellon cannot verify, only
+  lumen can; asking IS forwarding).
+- **Live proof (running :5100 build against :8080 lumen + OpenBao + devs3):**
+  login 200 with real JWT cookie; desk lists DRAFTS (lumen data, camelCase,
+  rev); palette door finds `drafts-are-fantasies` through the relay; secrets
+  paths list `lumen/{dev,staging,production}` from the real plane; stale-rev
+  PUT → `{"error":"stale rev — someone saved first"} [409]` passthrough;
+  publish 200 (with Origin — Kit's CSRF check on body-less POST bit the probe,
+  not the product); upload via dataUrl → `…/media/4e/4e54….png` content-
+  addressed src, `gallery:false`, filename-derived alt; cleanup deletes 200;
+  logout 303 → stale-token replay → 303 `/login?next=%2F&expired=1`.
+- **Gates:** mellon lint 0 / check 0-0 / test:unit 50 passed + 6 live-gated
+  (they pass 6/6 with LUMEN_URL set) / build ✓. earendil lint / check 0-0 /
+  47 unit / build ✓. QA-tool lesson journaled: `grep -c` exits 1 on zero
+  matches — a `&&` chain after a should-be-empty assertion breaks when the
+  assertion PASSES.

@@ -1,10 +1,11 @@
 import { createApi } from '#lib/api/index.ts';
+import { SESSION_COOKIE } from '#lib/session.ts';
 import { error } from '@sveltejs/kit';
 import { RECENT_COOKIE, type RecentEntry } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
-	const api = createApi();
+	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	let post;
 	try {
 		post = await api.getPost(params.slug);

@@ -14,7 +14,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"test:unit": "vitest run"
+		"test:unit": "vitest run",
+		"dev:lumen": "API_BASE=http://localhost:8080 vite dev"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",

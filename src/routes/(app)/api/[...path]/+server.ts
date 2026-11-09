@@ -30,7 +30,7 @@ type Ctx = {
 async function route(ctx: Ctx) {
 	const { params, url, request } = ctx;
 	const p = params.path.split('/').filter(Boolean);
-	const api = createApi();
+	const api = createApi(ctx.cookies.get(SESSION_COOKIE) ?? '');
 	const body = () => request.json();
 	const seg = p.join('/');
 

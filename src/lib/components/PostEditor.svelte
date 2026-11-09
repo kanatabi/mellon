@@ -231,7 +231,7 @@ flowchart LR
 			message = { kind: 'ok', text: `saved · rev ${rev}` };
 			return true;
 		} catch (e) {
-			if (e instanceof ApiError && e.status === 412) {
+			if (e instanceof ApiError && e.status === 409) {
 				message = {
 					kind: 'conflict',
 					text: 'conflict: someone saved first — reload to take theirs'
