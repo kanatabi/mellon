@@ -118,7 +118,23 @@ export const client: AdminApi = {
 		call<{ version: number }>(`/secrets/${app}/${env}`, {
 			method: 'PUT',
 			body: JSON.stringify({ data, cas })
-		}).then((r) => r.version)
+		}).then((r) => r.version),
+	onboardApp: (app, envs) =>
+		call<{ app: string; envs: string[] }>('/secrets/apps', {
+			method: 'POST',
+			body: JSON.stringify(envs?.length ? { app, envs } : { app })
+		}),
+	addEnv: (app, env) =>
+		call<{ app: string; env: string }>(`/secrets/${app}/envs`, {
+			method: 'POST',
+			body: JSON.stringify({ env })
+		}),
+	pinSecret: (app, env, version) =>
+		call<{ pinnedVersion: number }>(`/secrets/${app}/${env}/pin`, {
+			method: 'PUT',
+			body: JSON.stringify({ version })
+		}),
+	unpinSecret: (app, env) => call(`/secrets/${app}/${env}/pin`, { method: 'DELETE' })
 };
 
 export async function preview(

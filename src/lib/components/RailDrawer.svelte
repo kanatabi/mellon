@@ -125,14 +125,14 @@
 		tabindex="-1"
 		bind:this={panel}
 		use:focusOnMount
-		class="fixed inset-x-0 bottom-0 z-30 max-h-[80svh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border bg-card p-5 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl outline-none"
+		class="fixed inset-x-0 bottom-0 z-30 flex max-h-[80svh] flex-col rounded-t-2xl border-t border-border bg-card pt-3 shadow-2xl outline-none"
 		transition:slide|local={slideOpts}
 	>
 		<!-- Grab band: the handle plus a generous hit area, pointer-owned.
 		     aria-hidden — gesture surface, not a control; dismissal already has
 		     X/Esc and keyboard paths. -->
 		<div
-			class="-mx-5 -mt-3 mb-3 cursor-grab touch-none px-5 pt-3 pb-3 active:cursor-grabbing"
+			class="shrink-0 cursor-grab touch-none px-5 pt-1 pb-3 active:cursor-grabbing"
 			aria-hidden="true"
 			onpointerdown={onDragStart}
 			onpointermove={onDragMove}
@@ -149,8 +149,14 @@
 		>
 			<X class="size-4" />
 		</button>
-		<div class="flex flex-col gap-5 pr-2">
-			{@render children()}
+		<!-- the chrome (band + close button) never scrolls: content flows
+		     UNDER the pinned corner controls, not past them -->
+		<div
+			class="min-h-0 grow overflow-y-auto overscroll-contain px-5 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+		>
+			<div class="flex flex-col gap-5 pr-2">
+				{@render children()}
+			</div>
 		</div>
 	</div>
 {/if}

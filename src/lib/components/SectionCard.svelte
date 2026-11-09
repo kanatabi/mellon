@@ -21,7 +21,8 @@
 		open,
 		pinned = false,
 		dirty = false,
-		order = 0,
+		order,
+		reorderable = true,
 		ontoggle,
 		onmove,
 		children
@@ -33,13 +34,14 @@
 		pinned?: boolean;
 		dirty?: boolean;
 		order?: number;
+		reorderable?: boolean;
 		ontoggle: () => void;
 		onmove?: (dir: -1 | 1) => void;
 		children?: Snippet;
 	} = $props();
 
 	function keydown(e: KeyboardEvent) {
-		if (!e.altKey || pinned || !onmove) return;
+		if (!e.altKey || pinned || !reorderable || !onmove) return;
 		if (e.key === 'ArrowUp') {
 			e.preventDefault();
 			onmove(-1);
@@ -54,16 +56,18 @@
 <article
 	role="group"
 	data-pane={id}
-	draggable={!pinned}
-	tabindex={pinned ? undefined : 0}
+	draggable={!pinned && reorderable}
+	tabindex={pinned || !reorderable ? undefined : 0}
 	onkeydown={keydown}
-	style="order:{order}"
+	style={order == null ? undefined : `order:${order}`}
 	class="group flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4 outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-	aria-label="{label} section{pinned ? '' : ' — Alt+arrows to move, drag to reorder'}"
+	aria-label="{label} section{pinned || !reorderable
+		? ''
+		: ' — Alt+arrows to move, drag to reorder'}"
 >
 	<header class="-mx-1 flex items-center justify-between">
 		<div class="flex items-center gap-1.5">
-			{#if !pinned}
+			{#if !pinned && reorderable}
 				<GripVertical
 					class="size-3.5 shrink-0 cursor-grab text-muted-foreground/30 transition-colors group-hover:text-muted-foreground"
 					aria-hidden="true"

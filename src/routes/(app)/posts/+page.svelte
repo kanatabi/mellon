@@ -465,20 +465,21 @@
 						<PanelRightClose class="size-4" />
 					</button>
 				</div>
-				{@render filtersBody()}
+				{@render filtersBody(true)}
 			</aside>
 		{/if}
 	</div>
 
-	{#snippet filtersBody()}
+	{#snippet filtersBody(movable: boolean)}
 		<SectionCard
 			id="sort"
+			reorderable={movable}
 			label="sort"
 			icon={ArrowUpDown}
 			open={deskSections.isOpen('sort')}
 			ontoggle={() => deskSections.toggle('sort')}
 			onmove={(d) => deskSections.move('sort', d)}
-			order={deskSections.pos('sort')}
+			order={movable ? deskSections.pos('sort') : undefined}
 		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort posts">
 				{#each sortChips as chip (chip.label)}
@@ -501,12 +502,13 @@
 
 		<SectionCard
 			id="dates"
+			reorderable={movable}
 			label="dates"
 			icon={CalendarDays}
 			open={deskSections.isOpen('dates')}
 			ontoggle={() => deskSections.toggle('dates')}
 			onmove={(d) => deskSections.move('dates', d)}
-			order={deskSections.pos('dates')}
+			order={movable ? deskSections.pos('dates') : undefined}
 		>
 			<DateRange
 				from={data.from}
@@ -517,12 +519,13 @@
 
 		<SectionCard
 			id="tags"
+			reorderable={movable}
 			label="tags"
 			icon={TagsIcon}
 			open={deskSections.isOpen('tags')}
 			ontoggle={() => deskSections.toggle('tags')}
 			onmove={(d) => deskSections.move('tags', d)}
-			order={deskSections.pos('tags')}
+			order={movable ? deskSections.pos('tags') : undefined}
 		>
 			<!-- OR semantics, matching the public list contract. -->
 			<div class="flex flex-wrap gap-1.5">
@@ -549,6 +552,6 @@
 
 	<!-- Phones: filters arrive as a bottom sheet, summoned by the row chip. -->
 	<RailDrawer label="Filters" bind:open={filtersSheet} bind:trigger={filtersTrigger}>
-		{@render filtersBody()}
+		{@render filtersBody(false)}
 	</RailDrawer>
 </section>

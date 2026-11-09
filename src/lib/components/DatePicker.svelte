@@ -31,7 +31,15 @@
 			if (r) {
 				// Fixed anchor: the editor rail clips overflow (curtain), so the
 				// panel positions off the trigger rect — DOM child nonetheless.
-				pop = `position:fixed; top:${r.bottom + 8}px; right:${Math.max(12, window.innerWidth - r.right)}px;`;
+				// viewport-fit flip (see Combobox): a calendar opening off the
+				// bottom of a tall rail is the same owner-reported bug
+				const right = `right:${Math.max(12, window.innerWidth - r.right)}px`;
+				const need = 340; // the full calendar grid, worst case
+				const below = window.innerHeight - r.bottom;
+				pop =
+					below < need && r.top > below
+						? `position:fixed; bottom:${window.innerHeight - r.top + 8}px; ${right}`
+						: `position:fixed; top:${r.bottom + 8}px; ${right}`;
 			}
 			if (!cursor) {
 				const [y, m] = (value || today()).split('-').map(Number);

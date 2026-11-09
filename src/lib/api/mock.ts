@@ -153,7 +153,15 @@ const PHOTOS: AdminPhoto[] = [
  *  2026-11-08: the blog ignores them; public = gallery=true, all themes). */
 const COLLECTIONS = ['landscapes', 'street'];
 
-/** Bao-shaped: app/env → payload versions, newest last. */
+/** Bao-shaped: app/env → payload versions, newest last. TWO apps ship in
+ *  the twin (lumen + earendil) — "apps are DATA" was the corpus before it
+ *  was the API (PLAN-SECRETS-CONTROL §2.2-1). */
+const APP_SLUG = /^[a-z][a-z0-9-]{1,31}$/;
+const ENV_SLUG = /^[a-z][a-z0-9-]{0,31}$/;
+const DEFAULT_ENVS = ['dev', 'staging', 'production'];
+/** pinned intent per app/env (D1) — null/absence is the honest unpinned. */
+const PINNED: Record<string, number> = {};
+
 const SECRETS: Record<string, SecretPayload[]> = {
 	'lumen/staging': [
 		{
@@ -538,6 +546,7 @@ export function createMockApi(): AdminApi {
 			if (!list) return null;
 			return {
 				currentVersion: list[list.length - 1].version,
+				pinnedVersion: PINNED[secretKey(app, env)] ?? null,
 				versions: list.map((s) => ({
 					version: s.version,
 					createdTime: s.createdTime,
@@ -560,7 +569,91 @@ export function createMockApi(): AdminApi {
 				deletionTime: null
 			};
 			list.push(created);
+			// KEY-SET MIRROR (§2.1): reconcile every sibling env's shape to
+			// the saved set — adds land EMPTY (values are per-env), removes
+			// propagate, existing sibling values survive. Reconcile (not
+			// delta-vs-old-head): an interrupted mirror heals on the next
+			// write. The twin is the BEHAVIOR baseline lumen is held to —
+			// the invariant lives here as much as the shapes do.
+			const savedKeys = Object.keys(data);
+			for (const k of Object.keys(secrets)) {
+				if (!k.startsWith(`${app}/`) || k === key) continue;
+				const sibList = secrets[k];
+				const sib = sibList[sibList.length - 1];
+				const adds = savedKeys.filter((x) => !(x in sib.data));
+				const removes = Object.keys(sib.data).filter((x) => !savedKeys.includes(x));
+				if (!adds.length && !removes.length) continue;
+				const next = clone(sib.data);
+				for (const a of adds) next[a] = '';
+				for (const r of removes) delete next[r];
+				sibList.push({
+					data: next,
+					createdTime: now(),
+					version: sib.version + 1,
+					destroyed: false,
+					deletionTime: null
+				});
+			}
 			return created.version;
+		},
+
+		async onboardApp(app, envs) {
+			if (!APP_SLUG.test(app)) throw new AdminApiError(400, 'app fails slug shape validation');
+			const list = envs?.length ? envs : DEFAULT_ENVS;
+			for (const e of list)
+				if (!ENV_SLUG.test(e)) throw new AdminApiError(400, 'env fails slug shape validation');
+			const uniq = [...new Set(list)];
+			if (Object.keys(secrets).some((k) => k.startsWith(`${app}/`)))
+				throw new AdminApiError(409, 'app namespace already exists');
+			for (const e of uniq)
+				secrets[`${app}/${e}`] = [
+					{
+						data: {},
+						createdTime: now(),
+						version: 1,
+						destroyed: false,
+						deletionTime: null
+					}
+				];
+			return { app, envs: uniq };
+		},
+
+		async addEnv(app, env) {
+			if (!APP_SLUG.test(app) || !ENV_SLUG.test(env))
+				throw new AdminApiError(400, 'app/env fails slug shape validation');
+			const k = secretKey(app, env);
+			if (secrets[k]) throw new AdminApiError(409, 'env already exists for this app');
+			const siblings = Object.keys(secrets).filter((x) => x.startsWith(`${app}/`));
+			if (!siblings.length) throw new AdminApiError(404, 'app has no envs — onboard it first');
+			const union = [
+				...new Set(siblings.flatMap((x) => Object.keys(secrets[x].at(-1)!.data)))
+			].sort();
+			secrets[k] = [
+				{
+					data: Object.fromEntries(union.map((key) => [key, ''])),
+					createdTime: now(),
+					version: 1,
+					destroyed: false,
+					deletionTime: null
+				}
+			];
+			return { app, env };
+		},
+
+		async pinSecret(app, env, version) {
+			const list = secrets[secretKey(app, env)];
+			if (!list) throw new AdminApiError(404, 'secret path not found');
+			const live = list.find((p) => p.version === version && !p.destroyed);
+			if (!version || !live)
+				throw new AdminApiError(404, 'pin version is not a live version of this secret');
+			PINNED[secretKey(app, env)] = version;
+			return { pinnedVersion: version };
+		},
+
+		async unpinSecret(app, env) {
+			const k = secretKey(app, env);
+			if (!secrets[k]) throw new AdminApiError(404, 'secret path not found');
+			delete PINNED[k];
 		}
 	};
 }

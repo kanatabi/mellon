@@ -839,7 +839,7 @@ flowchart LR
 					aria-expanded={railSheet}
 					aria-label="Open post settings"
 					title="Post settings"
-					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] max-lg:hidden"
+					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] lg:hidden"
 				>
 					<FileCog class="size-4" />
 				</button>
@@ -893,7 +893,7 @@ flowchart LR
 					</button>
 				</div>
 
-				{@render railBody()}
+				{@render railBody(true)}
 			</aside>
 		{/if}
 	</div>
@@ -953,19 +953,20 @@ flowchart LR
 		{/if}
 	{/snippet}
 
-	{#snippet railBody()}
+	{#snippet railBody(movable: boolean)}
 		<!-- Actions block (owner call): save/publish/delete live at the
 				     top of the rail under their own label — the CMS "publish
 				     box" position, never under "settings". -->
 		<SectionCard
 			id="actions"
+			reorderable={movable}
 			label="actions"
 			icon={Send}
 			open={postSections.isOpen('actions')}
 			pinned
 			{dirty}
 			ontoggle={() => postSections.toggle('actions')}
-			order={postSections.pos('actions')}
+			order={movable ? postSections.pos('actions') : undefined}
 		>
 			<button
 				type="button"
@@ -1007,12 +1008,13 @@ flowchart LR
 
 		<SectionCard
 			id="title"
+			reorderable={movable}
 			label="title"
 			icon={Type}
 			open={postSections.isOpen('title')}
 			ontoggle={() => postSections.toggle('title')}
 			onmove={(d) => postSections.move('title', d)}
-			order={postSections.pos('title')}
+			order={movable ? postSections.pos('title') : undefined}
 		>
 			<input
 				aria-label="Title"
@@ -1023,12 +1025,13 @@ flowchart LR
 		</SectionCard>
 		<SectionCard
 			id="subtitle"
+			reorderable={movable}
 			label="subtitle"
 			icon={AlignLeft}
 			open={postSections.isOpen('subtitle')}
 			ontoggle={() => postSections.toggle('subtitle')}
 			onmove={(d) => postSections.move('subtitle', d)}
-			order={postSections.pos('subtitle')}
+			order={movable ? postSections.pos('subtitle') : undefined}
 		>
 			<textarea
 				aria-label="Subtitle"
@@ -1039,12 +1042,13 @@ flowchart LR
 		</SectionCard>
 		<SectionCard
 			id="slug"
+			reorderable={movable}
 			label="slug"
 			icon={LinkIcon}
 			open={postSections.isOpen('slug')}
 			ontoggle={() => postSections.toggle('slug')}
 			onmove={(d) => postSections.move('slug', d)}
-			order={postSections.pos('slug')}
+			order={movable ? postSections.pos('slug') : undefined}
 		>
 			{#if isNew}
 				<input
@@ -1071,12 +1075,13 @@ flowchart LR
 
 		<SectionCard
 			id="date"
+			reorderable={movable}
 			label="date"
 			icon={CalendarDays}
 			open={postSections.isOpen('date')}
 			ontoggle={() => postSections.toggle('date')}
 			onmove={(d) => postSections.move('date', d)}
-			order={postSections.pos('date')}
+			order={movable ? postSections.pos('date') : undefined}
 		>
 			<!-- earendil's calendar popover, single-pick shape (item #6): the
 					     native date input is stock, not ours. -->
@@ -1091,12 +1096,13 @@ flowchart LR
 
 		<SectionCard
 			id="tags"
+			reorderable={movable}
 			label="tags"
 			icon={TagsIcon}
 			open={postSections.isOpen('tags')}
 			ontoggle={() => postSections.toggle('tags')}
 			onmove={(d) => postSections.move('tags', d)}
-			order={postSections.pos('tags')}
+			order={movable ? postSections.pos('tags') : undefined}
 		>
 			<Combobox
 				items={tags.map((t) => ({ name: t.name, count: t.posts }))}
@@ -1117,12 +1123,13 @@ flowchart LR
 		     with the photos page). -->
 		<SectionCard
 			id="media"
+			reorderable={movable}
 			label="media"
 			icon={Image}
 			open={postSections.isOpen('media')}
 			ontoggle={() => postSections.toggle('media')}
 			onmove={(d) => postSections.move('media', d)}
-			order={postSections.pos('media')}
+			order={movable ? postSections.pos('media') : undefined}
 		>
 			{#if draft.thumbnail}
 				<div
@@ -1174,12 +1181,13 @@ flowchart LR
 
 		<SectionCard
 			id="export"
+			reorderable={movable}
 			label="export"
 			icon={Download}
 			open={postSections.isOpen('export')}
 			ontoggle={() => postSections.toggle('export')}
 			onmove={(d) => postSections.move('export', d)}
-			order={postSections.pos('export')}
+			order={movable ? postSections.pos('export') : undefined}
 		>
 			<div class="flex flex-col gap-1.5">
 				<button
@@ -1218,12 +1226,13 @@ flowchart LR
 		{#if !isNew && seed}
 			<SectionCard
 				id="timeline"
+				reorderable={movable}
 				label="timeline"
 				icon={History}
 				open={postSections.isOpen('timeline')}
 				ontoggle={() => postSections.toggle('timeline')}
 				onmove={(d) => postSections.move('timeline', d)}
-				order={postSections.pos('timeline')}
+				order={movable ? postSections.pos('timeline') : undefined}
 			>
 				<div class="flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
 					<span>created · {fmtDay(seed.createdAt)}</span>
@@ -1242,7 +1251,7 @@ flowchart LR
 		bind:open={railSheet}
 		bind:trigger={railSheetTrigger}
 	>
-		{@render railBody()}
+		{@render railBody(false)}
 	</RailDrawer>
 
 	{#if confirmDelete}

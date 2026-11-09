@@ -7,6 +7,7 @@
 		FileText,
 		House,
 		Images,
+		GitCompareArrows,
 		KeyRound,
 		LogOut,
 		Menu,
@@ -140,10 +141,30 @@
 			label: 'ops',
 			items: [
 				{ href: '/secrets', icon: KeyRound, label: 'secrets', hue: 'var(--accent-amber)' },
+				{
+					href: '/secrets/compare',
+					icon: GitCompareArrows,
+					label: 'compare',
+					hue: 'var(--accent-amber)'
+				},
 				{ href: '/settings', icon: Settings, label: 'settings', hue: 'var(--accent-slate)' }
 			]
 		}
 	];
+
+	// The longest matching href is the active row: on /secrets/compare the
+	// 'compare' item wins, not both it and 'secrets' (startsWith alone would
+	// light two rows once destinations nest under destinations).
+	const activeHref = $derived.by(() => {
+		const p = page.url.pathname;
+		let best = '';
+		for (const g of navGroups)
+			for (const it of g.items) {
+				const hit = it.href === '/' ? p === '/' : p === it.href || p.startsWith(it.href + '/');
+				if (hit && it.href.length > best.length) best = it.href;
+			}
+		return best;
+	});
 
 	// ── Mobile nav drawer (owner call 2026-11-08): below lg the icon strip is
 	// replaced by a hamburger in the topbar, sliding a sidebar in from the
@@ -231,7 +252,7 @@
 		<header
 			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border bg-chrome px-4 lg:px-6"
 		>
-			<div class="col-start-1 flex min-w-0 items-center gap-1.5 justify-self-start">
+			<div class="col-start-1 flex min-w-0 items-center gap-1.5">
 				<button
 					type="button"
 					bind:this={burger}
@@ -352,8 +373,7 @@
 			<div class={rail ? 'flex gap-1 lg:flex-col' : 'flex flex-col gap-1'}>
 				{#each group.items as item (item.href)}
 					{@const Icon = item.icon}
-					{@const current =
-						item.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(item.href)}
+					{@const current = activeHref === item.href}
 					<a
 						href={item.href}
 						aria-label={item.label}

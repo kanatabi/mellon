@@ -59,10 +59,21 @@
 
 	const isSelected = (name: string) => selected.includes(name);
 
+	// Viewport-fit placement: rails are tall and panes sit LOW, so a panel
+	// that always opens downward renders off-screen (owner: "dropdown not
+	// showing"). Flip ABOVE — anchored with `bottom` so shorter lists still
+	// hug the trigger instead of floating.
 	function positionPop() {
 		const r = trigger?.getBoundingClientRect();
-		if (r)
-			pop = `position:fixed; top:${r.bottom + 6}px; right:${Math.max(12, window.innerWidth - r.right)}px;`;
+		if (!r) return;
+		const right = `right:${Math.max(12, window.innerWidth - r.right)}px`;
+		const need = 310; // search row + max-h-52 list + padding, worst case
+		const below = window.innerHeight - r.bottom;
+		if (below < need && r.top > below) {
+			pop = `position:fixed; bottom:${window.innerHeight - r.top + 6}px; ${right}`;
+		} else {
+			pop = `position:fixed; top:${r.bottom + 6}px; ${right}`;
+		}
 	}
 
 	function toggleOpen() {

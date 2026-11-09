@@ -570,7 +570,9 @@ check(
 	check('T-secrets2 mount converged with zero console errors', errs.length === 0, errs[0] ?? '');
 	const saveBtn = sp.locator('button:has-text("save as")');
 	const armedBefore = await saveBtn.isEnabled().catch(() => true);
-	const valInput = sp.locator('main input').nth(1);
+	// TYPE INTO A VALUE FIELD — nth-based selectors broke when the search
+	// bar joined main (it correctly does NOT arm SAVE — pin by aria-label).
+	const valInput = sp.locator('input[aria-label^="value of "]').first();
 	await valInput.click({ clickCount: 3 });
 	await valInput.type('-X');
 	await sleep(200);
@@ -581,6 +583,454 @@ check(
 		`before=${armedBefore} after=${armedAfter}`
 	);
 	await sp.close();
+}
+
+// --- T-plane: the secrets CONTROL PLANE end-to-end through the real UI
+// (onboard → mirror fan-out → search → pin intent → restore overlay →
+// add-env). The dev plane persists, so the app name is RUN-FRESH (no
+// teardown by design — D5 refuses destroy-grants; FORCE=1 make seed resets) ---
+{
+	const APP = 'harness-' + Date.now().toString(36);
+	const hp = await ctx.newPage();
+	await hp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await hp.locator('[aria-label="Onboard app"]').click();
+	await hp.locator('input[placeholder="credit"]').fill(APP);
+	await hp.locator('form button[type="submit"]', { hasText: 'onboard' }).click();
+	await hp.waitForFunction((a) => document.body.innerText.includes(`kv / ${a} / dev`), APP, {
+		timeout: 15000
+	});
+	check(
+		`T-plane1 onboard ${APP}: dialog → trio tabs (D4)`,
+		(await hp
+			.locator(
+				'[aria-label="Environment dev"], [aria-label="Environment staging"], [aria-label="Environment production"]'
+			)
+			.count()) === 3
+	);
+	// structural save in dev ⇒ the MIRROR lands on siblings (empty value)
+	await hp.locator('button:has-text("+ key")').click();
+	const KEY = 'NEW_KEY_1';
+	await hp.locator(`input[aria-label="value of ${KEY}"]`).fill('HARNESS-SAVED-VALUE');
+	await hp.locator(`button:has-text("save as v2")`).click();
+	await hp.waitForFunction(() => document.body.innerText.includes('saved as version 2'), null, {
+		timeout: 15000
+	});
+	await hp.locator('[aria-label="Environment staging"]').click();
+	await hp.waitForFunction(
+		(a) => document.body.innerText.includes(`kv / ${a} / staging · v2`),
+		APP,
+		{ timeout: 15000 }
+	);
+	const stagedVal = await hp.locator(`input[aria-label="value of ${KEY}"]`).inputValue();
+	check(
+		'T-plane2 key-set mirror fanned out to staging — empty value, own version bump',
+		stagedVal === '' && (await hp.locator(`input[aria-label="key ${KEY}"]`).count()) === 1,
+		`staged value "${stagedVal}"`
+	);
+	// search (D3): key match keeps the row, garbage empties it, clear restores
+	await hp.locator('[aria-label="Search keys and values"]').fill('newk');
+	await hp.waitForFunction(
+		(k) => document.querySelectorAll(`input[aria-label="key ${k}"]`).length === 1,
+		KEY,
+		{ timeout: 5000 }
+	);
+	await hp.locator('[aria-label="Search keys and values"]').fill('zzzz');
+	const emptyState = await hp.locator('text=no keys match').count();
+	await hp.locator('[aria-label="Clear search"]').click();
+	const restored = await hp.locator(`input[aria-label="key ${KEY}"]`).count();
+	check(
+		'T-plane3 fuzzy search filters rows, empty state, clear restores',
+		emptyState === 1 && restored === 1
+	);
+	// pin = intent (D1): badge appears on dev, disappears on unpin
+	await hp.locator('[aria-label="Environment dev"]').click();
+	await hp.waitForFunction(() => document.body.innerText.includes(' / dev ·'), null, {
+		timeout: 10000
+	});
+	await hp.locator('button:has-text("history")').click();
+	await hp.locator(`[aria-label="Pin v2"]`).click();
+	await hp.waitForFunction(() => document.body.innerText.includes('pinned v2'), null, {
+		timeout: 10000
+	});
+	check('T-plane4 pin records intent — badge in the header', true);
+	await hp.locator(`[aria-label="Unpin v2"]`).click();
+	await hp.waitForFunction(() => !document.body.innerText.includes('pinned v2'), null, {
+		timeout: 10000
+	});
+	check('T-plane5 unpin clears the intent', true);
+	// restore (D2): overlay v2's values onto the CURRENT shape → dirty → save
+	await hp.locator('button:has-text("close")').first().click();
+	await hp.locator(`input[aria-label="value of ${KEY}"]`).fill('DRIFTED-VALUE');
+	await hp.locator('button:has-text("save as v3")').click();
+	await hp.waitForFunction(() => document.body.innerText.includes('saved as version 3'), null, {
+		timeout: 15000
+	});
+	await hp.locator('button:has-text("history")').click();
+	await hp.locator('button[aria-label^="Restore v2"]').click();
+	await hp.waitForFunction(() => document.body.innerText.includes('overlaid'), null, {
+		timeout: 10000
+	});
+	check(
+		'T-plane6 restore v2 overlays values onto current keys (dirty armed)',
+		(await hp.locator('button:has-text("save as v4")').isEnabled()) === true
+	);
+	// add-env: the late env gets the canonical union — never a smaller shape
+	// (the history drawer is a modal covering the right edge — close it
+	// honestly like a user does, or the +env click hits the drawer)
+	await hp.locator('aside[aria-label="Version history"] button:has-text("close")').click();
+	await hp.waitForFunction(
+		() => !document.querySelector('aside[aria-label="Version history"]'),
+		null,
+		{ timeout: 5000 }
+	);
+	await hp.locator('[aria-label="Add environment"]').click();
+	await hp.locator('input[placeholder="lab"]').fill('lab');
+	await hp.locator('form button[type="submit"]', { hasText: 'add env' }).click();
+	// the UI stays on the CURRENT env after adding (no surprise travel); the
+	// proof is the tab arriving, then the seeded shape when we visit it
+	await hp.waitForFunction(() => !!document.querySelector('[aria-label="Environment lab"]'), null, {
+		timeout: 15000
+	});
+	await hp.locator('[aria-label="Environment lab"]').click();
+	await hp.waitForFunction((a) => document.body.innerText.includes(`kv / ${a} / lab`), APP, {
+		timeout: 15000
+	});
+	check(
+		'T-plane7 add-env seeded the canonical key set (union, empty values)',
+		(await hp.locator(`input[aria-label="key ${KEY}"]`).count()) === 1 &&
+			(await hp.locator(`input[aria-label="value of ${KEY}"]`).inputValue()) === ''
+	);
+	// palette verbs (DESIGN §7): the page registers; the shell composes.
+	// HARDENED LESSONS: target the palette BY ITS aria-label ('[role="dialog"]
+	// input' is ambiguous — a still-open page dialog wins the selector and
+	// keystrokes land in the wrong input); close the onboard dialog with its
+	// CANCEL button (explicit), not Escape (focus-dependent); and let the
+	// reactive list settle before counting (plane10's rows>0 non-vacuity
+	// guard is what exposed all of this).
+	const openPalette = async () => {
+		await hp.keyboard.press('Control+k');
+		const input = hp.locator('[aria-label="Command palette"] input').first();
+		await input.waitFor({ state: 'visible', timeout: 4000 });
+		await input.click();
+		return input;
+	};
+	const pal = await openPalette();
+	await pal.fill('onboard');
+	await sleep(200);
+	const onboardRow = await hp.locator('[role="option"]', { hasText: 'Onboard app…' }).count();
+	await hp.keyboard.press('Enter');
+	await hp
+		.waitForFunction(() => !!document.querySelector('[aria-label="Onboard app namespace"]'), null, {
+			timeout: 5000
+		})
+		.catch(() => {});
+	const dialogUp = await hp.locator('[aria-label="Onboard app namespace"]').count();
+	await hp.locator('[aria-label="Onboard app namespace"] button', { hasText: 'cancel' }).click();
+	await hp.waitForFunction(
+		() => !document.querySelector('[aria-label="Onboard app namespace"]'),
+		null,
+		{ timeout: 4000 }
+	);
+	check(
+		'T-plane8 palette lists secrets verbs — Onboard runs through the dialog',
+		onboardRow >= 1 && dialogUp === 1,
+		`row=${onboardRow} dialog=${dialogUp}`
+	);
+	const pal2 = await openPalette();
+	await pal2.fill('pin');
+	await sleep(200);
+	const pinRow = await hp.locator('[role="option"]', { hasText: /Pin v|Unpin v/ }).count();
+	await hp.keyboard.press('Escape');
+	check('T-plane9 palette carries the live pin verb (stateToggle)', pinRow >= 1, `rows=${pinRow}`);
+	// leaving the page must clear the verbs (the registration contract)
+	await hp.goto(`${BASE}/posts`, { waitUntil: 'networkidle' });
+	const pal3 = await openPalette();
+	// non-vacuity measured BEFORE filtering: an empty query must show the
+	// base rows; then `onboard` may legitimately match NOTHING on /posts —
+	// that empty list is the proof, not a failure
+	const anyRows = await hp.locator('[aria-label="Command palette"] [role="option"]').count();
+	await pal3.fill('onboard');
+	await sleep(200);
+	const ghosts = await hp.locator('[role="option"]', { hasText: 'Onboard app…' }).count();
+	await hp.keyboard.press('Escape');
+	check(
+		'T-plane10 leaving secrets unregisters its palette verbs',
+		ghosts === 0 && anyRows > 0,
+		`ghosts=${ghosts} rows=${anyRows}`
+	);
+	await hp.close();
+}
+
+// --- T-cmp: version compare — seeded via API (fresh app), driven via UI ---
+{
+	const APP = 'cmp-' + Date.now().toString(36);
+	const auth = { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' };
+	await fetch(`${LUMEN}/admin/bao/apps`, {
+		method: 'POST',
+		headers: auth,
+		body: JSON.stringify({ app: APP })
+	});
+	await fetch(`${LUMEN}/admin/bao/${APP}/dev`, {
+		method: 'PUT',
+		headers: auth,
+		body: JSON.stringify({
+			data: { GONE: 'was-here-before', SAME: '12345', CHANGED: 'short-a' },
+			cas: 1
+		})
+	});
+	await fetch(`${LUMEN}/admin/bao/${APP}/dev`, {
+		method: 'PUT',
+		headers: auth,
+		body: JSON.stringify({
+			data: { SAME: '12345', CHANGED: 'short-b', NEW: 'brand-new-secret-value' },
+			cas: 2
+		})
+	});
+	const cp = await ctx.newPage();
+	await cp.goto(`${BASE}/secrets/compare?app=${APP}&env=dev&from=2&to=3`, {
+		waitUntil: 'networkidle'
+	});
+	await cp.waitForTimeout(600);
+	// split is the default presentation; values are MASKED — the bytes must not appear
+	const masked = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp1 split view aligns AND masks by default',
+		masked.includes('GONE=') &&
+			!masked.includes('was-here-before') &&
+			!masked.includes('brand-new-secret-value')
+	);
+	await cp.locator('button[aria-label="Show all values"]').click();
+	await cp.waitForTimeout(200);
+	const revealed = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp2 show-values reveals both panes (display-only switch)',
+		revealed.includes('was-here-before') && revealed.includes('brand-new-secret-value')
+	);
+	await cp.locator('button:has-text("table")').click();
+	await cp.waitForTimeout(250);
+	const tbl = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp3 table view: per-key statuses + honest changed count',
+		tbl.includes('changed') &&
+			tbl.includes('added') &&
+			tbl.includes('removed') &&
+			tbl.includes('3 of 4 keys changed'),
+		tbl.match(/\d of 4 keys changed/)?.[0] ?? 'no count'
+	);
+	// raw json is DISABLED in table mode (table is parsed by nature) —
+	// leave table first: the honest choreography the UI enforces
+	await cp.locator('button:has-text("inline")').click();
+	await cp.locator('button:has-text("raw json")').click();
+	await cp.waitForTimeout(250);
+	const raw = await cp.evaluate(() => document.body.innerText);
+	check(
+		'T-cmp4 raw JSON mode diffs the serialized shape (braces visible)',
+		raw.includes('{') && raw.includes('}')
+	);
+	// presentation/content persist across reload (localStorage preference)
+	await cp.reload({ waitUntil: 'networkidle' });
+	await cp.waitForTimeout(400);
+	const persisted = await cp.evaluate(() =>
+		document
+			.querySelector('[aria-label="Presentation"] button[aria-pressed="true"]')
+			?.textContent?.trim()
+	);
+	check(
+		'T-cmp5 presentation preference survives reload',
+		persisted === 'inline',
+		`after reload: ${persisted}`
+	);
+	// the nav child + canonical env order on the editor (lumen has the trio)
+	const navHasCompare = await cp.locator('a[href="/secrets/compare"]').count();
+	await cp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await cp.waitForTimeout(400);
+	const envOrder = await cp.evaluate(() =>
+		[
+			...document.querySelectorAll(
+				'aside [aria-label^="Environment"], button[aria-label^="Environment"]'
+			)
+		].map((e) => e.getAttribute('aria-label').replace('Environment ', ''))
+	);
+	const editorEnvOrder = await cp.evaluate(() => {
+		const pills = [...document.querySelectorAll('button')].filter((b) =>
+			['dev', 'staging', 'production'].includes(b.textContent?.trim() ?? '')
+		);
+		return pills.map((b) => b.textContent.trim());
+	});
+	check(
+		'T-cmp6 nav carries compare; env pills are dev → staging → production',
+		navHasCompare >= 1 && editorEnvOrder.join(',') === 'dev,staging,production',
+		editorEnvOrder.join(',') + ` | ${envOrder.join(',')}`
+	);
+	// mobile: the header stacks, nothing overflows horizontally
+	const mp = await ctx.newPage();
+	await mp.setViewportSize({ width: 390, height: 844 });
+	await mp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await mp.waitForTimeout(400);
+	const overflow = await mp.evaluate(
+		() => document.documentElement.scrollWidth - document.documentElement.clientWidth
+	);
+	check(
+		'T-cmp7 mobile secrets editor has zero horizontal overflow',
+		overflow === 0,
+		`overflow=${overflow}px`
+	);
+	// MOBILE SPLIT: panes stack top-to-bottom (owner screenshot) — 'to'
+	// sits BELOW 'from', not beside it
+	await mp.goto(`${BASE}/secrets/compare?app=${APP}&env=dev&from=2&to=3`, {
+		waitUntil: 'networkidle'
+	});
+	await mp.waitForTimeout(400);
+	await mp.locator('button:has-text("split")').click();
+	await mp.waitForTimeout(250);
+	const fromBox = await mp.locator('p:has-text("— from")').boundingBox();
+	const toBox = await mp.locator('p:has-text("— to")').boundingBox();
+	check(
+		'T-cmp8 mobile split STACKS panes vertically',
+		!!fromBox && !!toBox && toBox.y > fromBox.y + 60 && Math.abs(toBox.x - fromBox.x) < 8,
+		JSON.stringify({
+			from: fromBox && [Math.round(fromBox.x), Math.round(fromBox.y)],
+			to: toBox && [Math.round(toBox.x), Math.round(toBox.y)]
+		})
+	);
+	// wrap toggle: on by default (whitespace-pre-wrap rows), flips to nowrap
+	const wrapOn = await mp.locator('[aria-label="Wrap long lines"]').getAttribute('aria-pressed');
+	const rowCls = await mp.evaluate(
+		() =>
+			document.querySelector('.grid [class*="break-words"]')?.className ??
+			document.querySelector('.grid [class*="whitespace-pre"]')?.className ??
+			''
+	);
+	await mp.locator('[aria-label="Wrap long lines"]').click();
+	await mp.waitForTimeout(200);
+	const wrapOff = await mp.locator('[aria-label="Wrap long lines"]').getAttribute('aria-pressed');
+	check(
+		'T-cmp9 wrap defaults ON and flips (rows follow)',
+		wrapOn === 'true' && rowCls.includes('break-words') && wrapOff === 'false',
+		`on=${wrapOn} cls=${rowCls ? 'wrapped' : 'EMPTY'} off=${wrapOff}`
+	);
+	await mp.close();
+	await cp.close();
+}
+
+// --- T-sheet: the mobile settings sheet shows the PRE-DRAG view (collapse
+// only) with chrome that never scrolls over the panes (owner reports) ---
+{
+	const sc = await browser.newContext({ viewport: { width: 390, height: 844 } });
+	await sc.addCookies([
+		{
+			name: 'mellon_session',
+			value: session.token,
+			domain: 'localhost',
+			path: '/',
+			httpOnly: true,
+			sameSite: 'Strict'
+		}
+	]);
+	const sp = await sc.newPage();
+	await sp.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+	await sp.waitForTimeout(500);
+	check(
+		'T-sheet1 the mobile sheet trigger EXISTS (max-lg regression, now lg:hidden)',
+		await sp.locator('[aria-label="Open post settings"]').isVisible()
+	);
+	await sp.locator('[aria-label="Open post settings"]').click();
+	await sp.waitForTimeout(500);
+	const sheet = sp.locator('[role="dialog"][aria-label="Post actions and settings"]');
+	const sheetState = await sheet.evaluate((el) => ({
+		drag: el.querySelectorAll('[data-pane][draggable="true"]').length,
+		grips: el.querySelectorAll('[data-pane] [class*="cursor-grab"]').length,
+		hints: [...el.querySelectorAll('[data-pane]')].some((p) =>
+			p.getAttribute('aria-label')?.includes('drag to reorder')
+		)
+	}));
+	check(
+		'T-sheet2 sheet panes are collapse-only (no drag, grips, hints)',
+		sheetState.drag === 0 && sheetState.grips === 0 && !sheetState.hints,
+		JSON.stringify(sheetState)
+	);
+	const xBtn = sheet.locator('[aria-label="Close post actions and settings"]');
+	const y0 = (await xBtn.boundingBox()).y;
+	await sheet.evaluate((el) => {
+		el.querySelector('.overflow-y-auto').scrollTop = 260;
+	});
+	await sp.waitForTimeout(200);
+	const y1 = (await xBtn.boundingBox()).y;
+	check(
+		'T-sheet3 close button stays PINNED while content scrolls',
+		Math.abs(y1 - y0) < 2,
+		`${y0} -> ${y1}`
+	);
+	const sheetOrder = await sheet.evaluate((el) =>
+		[...el.querySelectorAll('[data-pane]')].map((p) => p.dataset.pane).join(',')
+	);
+	check(
+		'T-sheet4 sheet panes are in the FIXED pre-drag order (desktop taste does not travel)',
+		sheetOrder === 'actions,title,subtitle,slug,date,tags,media,export,timeline',
+		sheetOrder
+	);
+	const styled = await sheet.evaluate((el) =>
+		[...el.querySelectorAll('[data-pane]')].some((p) => p.style.order !== '')
+	);
+	check('T-sheet4b no order styles leak into the sheet', !styled);
+	const openCount = await sheet.locator('[aria-label^="Collapse"]').count();
+	await sheet.locator('[aria-label="Collapse tags"]').click();
+	await sp.waitForTimeout(300);
+	check(
+		'T-sheet5 collapse still works in the sheet',
+		openCount > 0 && (await sheet.locator('[aria-label="Expand tags"]').count()) === 1
+	);
+	await sc.close();
+}
+
+// --- T-pop: viewport-fit popovers (the "covered by the panes" report was
+// really an off-screen open; containment is gone; flip is live) ---
+{
+	const pp = await ctx.newPage();
+	await pp.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+	await pp.waitForTimeout(600);
+	check(
+		'T-pop0 desktop rails KEEP drag reorder (the rule is sheet-scoped)',
+		(await pp.evaluate(
+			() => document.querySelectorAll('aside [data-pane][draggable="true"]').length
+		)) > 0
+	);
+	await pp
+		.locator('aside [data-pane="tags"] button', { hasText: /selected/ })
+		.first()
+		.click();
+	await pp.waitForTimeout(400);
+	const fit = await pp.evaluate(() => {
+		const li = document.querySelector('[role="listbox"] li');
+		if (!li) return { none: true };
+		const r = li.getBoundingClientRect();
+		const hit = document.elementFromPoint(r.x + r.width / 2, r.y + 8);
+		return { inView: r.y > 0 && r.bottom <= innerHeight, onTop: !!(hit && li.contains(hit)) };
+	});
+	check(
+		'T-pop1 combobox popover fits the viewport and is hittable',
+		fit.inView && fit.onTop,
+		JSON.stringify(fit)
+	);
+	await pp.keyboard.press('Escape');
+	await pp.waitForTimeout(200);
+	await pp.locator('[aria-label="Choose publish date"]').first().click();
+	await pp.waitForTimeout(400);
+	const cal = await pp.evaluate(() => {
+		const prev = document.querySelector('[aria-label="Previous month"]');
+		if (!prev) return { none: true };
+		const r = prev.getBoundingClientRect();
+		return {
+			inView: r.top > 0 && r.bottom <= innerHeight,
+			hit: !!document.elementFromPoint(r.x + 6, r.y + 6)
+		};
+	});
+	check(
+		'T-pop2 date picker panel fits and is hittable',
+		cal.inView && cal.hit,
+		JSON.stringify(cal)
+	);
+	await pp.close();
 }
 
 // --- T5: error boundary with a dead backend ---

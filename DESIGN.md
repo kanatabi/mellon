@@ -128,8 +128,44 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 | `/posts/[slug]` | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                                                |
 | `/photos`       | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker (owner calls 2026-11-08)                                     |
 | `/photos/[id]`  | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08) |
-| `/secrets`      | app/env picker (from policy-scoped list), values masked by default (click/keyboard reveal), version history + diff + CAS save, rollback = pin-an-older-version flow                            |
+| `/secrets`      | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-intent badge, restore-by-overlay         |
 | `/settings`     | appearance (theme segment), vim toggle, session                                                                                                                                                |
+
+### 6.1 Secrets control plane (PLAN-SECRETS-CONTROL.md, ratified D1-D5)
+
+The portal is the **central control surface for the whole infra**, and the
+secrets plane shows the pattern: **apps are DATA** - the picker, the onboarding
+dialog, and every request are driven by namespace paths, never by code that
+knows `lumen`. Onboard seeds the `dev/staging/production` trio (a default, not
+a schema - add-env extends an app, seeded to the canonical key-set union). The
+**key-set mirror is lumen's invariant**, enforced on the write path: the UI
+edits ONE env; siblings receive the shape (adds land empty - values are
+per-env), so the picker never shows drifted apps. **Pins are intent** (D1):
+the header badge (`pinned vN . head vM`, amber on drift) records operator
+decision; reads and consumers always see head - any version is viewable,
+diff-able, and **restorable as a value overlay onto the current key set**
+(D2 - removed keys do not resurrect). **Search is client-side, current-env
+only** (D3) - key names AND values, via the pure fuzzy scorer; a server search
+would push secret bytes through a surface that never needs them. No destroy
+path exists in the UI by doctrine (D5): namespaces are born here, they are
+retired by operators. History drawer is a modal covering the right edge -
+the harness learned to dismiss it between steps.
+
+**Compare versions** (`/secrets/compare?app&env&from&to`, owner round
+2026-11-10): two versions of ONE path — never cross-env (values are per-env
+secrets by doctrine; a side-by-side env diff is a leak pattern). Three
+presentations — `table` (one row per key, added/removed/changed/same chips,
+hide-unchanged, honest "N of M keys changed"), `split` (Gitlab-style aligned
+panes: del/add runs paired index-for-index, null-padded so both sides keep
+EQUAL row counts), `inline` (unified ± lines) — over two content forms:
+`parsed` (sorted KEY=value lines) or `raw` JSON (visibly disabled in table
+mode, which is parsed by nature). Masking is a property of WHAT IS DIFFED,
+not what is painted: `displayValue` runs BEFORE serialization, so even raw
+mode cannot leak on the default view; "show values" is display-only and
+never persisted (masked is the safe direction of failure). The engine is
+`secrets-diff.ts` — pure, offline-tested; presentation/content preferences
+persist behind the primitive-flag guard. The nav carries it under OPS with
+LONGEST-MATCH highlighting — nested hrefs light exactly one row.
 
 ## 7. Keyboard-first
 

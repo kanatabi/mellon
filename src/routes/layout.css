@@ -293,13 +293,6 @@
 	height: 0;
 }
 
-/* Pane layout containment: an animating pane (accordion slide, ghost resize)
-   cannot drag other panes' subtrees into the same recalculation. No paint
-   containment — the focus-visible ring must keep escaping the box. */
-[data-pane] {
-	contain: layout style;
-}
-
 /* Long-press-to-drag (touch): while a press decides between tap/scroll/drag,
    suppress selection & the iOS callout so arming never becomes a
    text-selection mess. Interactive children are excluded by the JS arm rule

@@ -413,7 +413,7 @@
      Escape/outside close; focus returns to the opener (shell owns that half). -->
 <div
 	transition:fade={{ duration: 120 }}
-	class="fixed inset-0 z-40 flex items-start justify-center bg-background/70 p-4 pt-[12vh] backdrop-blur-sm"
+	class="fixed inset-0 z-40 flex items-start justify-end bg-background/70 p-4 pt-16 pr-4 backdrop-blur-sm lg:pr-8"
 	role="presentation"
 	onclick={(e) => {
 		if (e.target === e.currentTarget) onClose();

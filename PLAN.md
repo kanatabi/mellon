@@ -1781,6 +1781,69 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-10 — sheet order finalized:** the pre-drag view means the FIXED
+order too, not just hidden affordances — cards carry `order={movable ? pos :
+undefined}` and SectionCard omits the style when undefined, so the sheet is
+pure DOM order (actions, title, subtitle, slug, date, tags, media, export,
+timeline — the owner's list) while the desktop keeps its dragged taste.
+The previous commit had stripped the grips but leaked the saved ORDER —
+half a ruling is how regressions hide; the harness now asserts the sequence
+verbatim (66/66).
+
+**2026-11-10 — mobile honesty sweep (this commit):** owner reports cleared the
+last mobile debt, including two self-inflicted regressions I own: the sheet
+trigger carried a BACKWARDS `max-lg:hidden` (vanished exactly on phones), and my
+`contain: layout` perf tweak made panes stacking contexts that painted over each
+other's popovers — removed, since correctness outranks a cheap win the slot cache
+already delivers. The hidden older bug it masked: popovers opened downward
+unconditionally and fell off-screen in the tall rail — Combobox/DatePicker now
+flip above when space says so. Ruling implemented: SHEET = pre-drag view
+(reorderable prop gates grips/drag/keys/hints; railBody/filtersBody take
+movable; desktop true, sheet false — all three rails). RailDrawer chrome
+(band + X) restructured to never scroll (lesson #2 again: absolute lives at the
+scroller's ORIGIN). Palette right-anchored; breadcrumb finally truncates
+(justify-self-start had sized it to content — truncate needs a bound).
+Harness 64/64 (+7). Two self-own lines in the commit: regressions named as
+mine, with the class each belongs to.
+
+**2026-11-10 — split stacking + wrap (follow-up commit):** owner's second
+screenshot: 2-col split on a 390px phone is two unreadable slivers — below
+md the panes now STACK (from above to), side-by-side resumes at md+. A
+persisted wrap toggle (default ON) breaks long lines across split/inline
+(one lineCls helper; visibly disabled in table with a title that says why).
+Harness 57/57 — the stack assert is numeric (pane boxes compared), not visual.
+
+**2026-11-10 — version compare + mobile honesty (`73f5d26`):** the cockpit grew its
+review surface. `/secrets/compare` — same-path versions only (owner ratified; cross-
+env diffing refused by doctrine), presentations table/split/inline × parsed/raw (raw
+DISABLED in table — visibly, so the UI states its own rules), masking applied BEFORE
+diffing so even raw JSON can't leak by default, reveal-all a display-only never-
+persisted switch on BOTH pages, Gitlab-aligned split via pure alignDiff (null-padded
+equal row counts), per-key table with status chips + honest changed-count. Mobile:
+the right-cluster header stacks full-width (the ragged wrap the owner screenshotted),
+envs read dev→staging→production everywhere (orderEnvs), nav uses longest-match so
+'/secrets/compare' lights ONE row. The battery caught my wrong math ('2 of 4' —
+reality: 3 keys changed; the UI was right) and a deadlocked click on the deliberately
+disabled raw button — choreography is now commented. Harness 55/55, check 0-0, 71
+units, visuals shots/compare-*.png + secrets-mobile.png.
+
+**2026-11-09/10 — secrets control plane, Phase B (`feature/secrets-control-plane`):**
+the `/secrets` page became the cockpit for infra-wide namespaces (plan: root
+`PLAN-SECRETS-CONTROL.md`). B1 four verbs across every layer + the twin NOW
+CARRIES THE INVARIANT (mirror fan-out, union seeding, pin semantics are
+executable contract in api.test.ts, not just shapes); B2 pure fuzzy scorer;
+B3 app-picker/env-tabs/onboard+add-env dialogs with ZERO app-name literals
+(the apps-are-data grep gate); B4 search bar; B5 pin badge + history
+view/diff/restore/pin. B6 harness T-plane1..7 drives the full lifecycle
+against live lumen (branch build) + real OpenBao - 45 asserts. Traps found
+and fixed in the making: a regex QUANTIFIER in a static attribute is eaten
+as a Svelte interpolation ({1,31} became {(1, 31)}) - patterns must be
+expressions; a markup expression STARTING with a regex literal parses as a
+block-close - masking moved to script; two test selectors broke honestly
+(nth input to aria-label pinned; auto-travel expectation replaced by the
+tab-then-visit flow); the modal drawer needs dismissing. Gates: lint 0,
+check 0-0, 63 units, build green, harness exit 0 45/45.
+
 **2026-11-09 — the INTERNAL 200 (`e0fd672`):** owner asked what a 200 was
 doing inside an error boundary. It was never a backend code: SSR succeeded,
 the hydrated component crashed, and Kit's root error page inherits the
