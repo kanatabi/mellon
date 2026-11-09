@@ -100,6 +100,9 @@ export interface SecretPayload {
 export interface SecretMeta {
 	currentVersion: number;
 	versions: { version: number; createdTime: string; destroyed: boolean }[];
+	/** Pin = operator INTENT (D1): the recorded version, or null. It never
+	 *  reroutes a read — head is always what reads serve. */
+	pinnedVersion: number | null;
 }
 
 export interface SecretPath {
@@ -227,4 +230,18 @@ export interface AdminApi {
 	secretMeta(app: string, env: string): Promise<SecretMeta | null>;
 	/** CAS write — `cas` must equal currentVersion; creates a new version. */
 	writeSecret(app: string, env: string, data: Record<string, string>, cas: number): Promise<number>;
+	/** Onboard an app namespace (PLAN §2.1): envs omitted ⇒ the default trio
+	 *  (D4 — a default, not a schema). Empty bundles; 400 bad slug, 409 the
+	 *  namespace (even partially) exists. Apps are DATA: any slug valid. */
+	onboardApp(app: string, envs?: string[]): Promise<{ app: string; envs: string[] }>;
+	/** Extend an existing app with one env, seeded to the app's CANONICAL
+	 *  key set (union of live siblings, empty values) — a late env must never
+	 *  drift a smaller shape. 404 unknown app (a typo, not intent),
+	 *  409 duplicate env. */
+	addEnv(app: string, env: string): Promise<{ app: string; env: string }>;
+	/** Pin a LIVE, non-destroyed version of this path (intent metadata —
+	 *  reads keep serving head, D1). 404 unknown path or unknown version. */
+	pinSecret(app: string, env: string, version: number): Promise<{ pinnedVersion: number }>;
+	/** Clear the intent (no sentinel values — absence is the null). */
+	unpinSecret(app: string, env: string): Promise<void>;
 }

@@ -160,6 +160,52 @@ describe('mock AdminApi contract', () => {
 		expect(gone).toBeNull();
 	});
 
+	it('secrets control plane (twin baseline for lumen): onboard trio, mirror fan-out, pin intent', async () => {
+		const api = createMockApi();
+		// CAS always read from meta, never remembered: structural writes
+		// mirror to siblings and bump THEM — the same trap that the lumen
+		// integration leg hit, proven honest by the same discipline.
+		const write = async (env: string, data: Record<string, string>) => {
+			const cv = (await api.secretMeta('twinapp', env))?.currentVersion ?? 0;
+			return api.writeSecret('twinapp', env, data, cv);
+		};
+		// onboard: the trio arrives (D4), duplicates refuse (never overwrite)
+		const ob = await api.onboardApp('twinapp');
+		expect(ob.envs).toEqual(['dev', 'staging', 'production']);
+		await expect(api.onboardApp('twinapp')).rejects.toMatchObject({ status: 409 });
+		await expect(api.onboardApp('Twin_App')).rejects.toMatchObject({ status: 400 });
+		// structural write in staging mirrors DB_URL into dev AND production
+		await write('staging', { DB_URL: 'sibling-keeps-me' });
+		expect((await api.readSecret('twinapp', 'dev'))?.data).toEqual({ DB_URL: '' });
+		// dev gains a second key: both siblings mirror the ADD (empty value)
+		expect(await write('dev', { DB_URL: 'd', NEW: 'n' })).toBe(3);
+		const sib = await api.readSecret('twinapp', 'staging');
+		expect(sib?.data).toEqual({ DB_URL: 'sibling-keeps-me', NEW: '' });
+		expect(sib?.version).toBe(3);
+		expect((await api.readSecret('twinapp', 'production'))?.data).toEqual({ DB_URL: '', NEW: '' });
+		// value-only save: no sibling bumps
+		expect(await write('dev', { DB_URL: 'd2', NEW: 'n' })).toBe(4);
+		expect((await api.secretMeta('twinapp', 'staging'))?.currentVersion).toBe(3);
+		// removal propagates everywhere
+		expect(await write('dev', { DB_URL: 'd2' })).toBe(5);
+		expect((await api.readSecret('twinapp', 'production'))?.data).toEqual({ DB_URL: '' });
+		expect((await api.readSecret('twinapp', 'staging'))?.data).toEqual({
+			DB_URL: 'sibling-keeps-me'
+		});
+		// add-env seeds the canonical union of live siblings
+		expect(await api.addEnv('twinapp', 'lab')).toEqual({ app: 'twinapp', env: 'lab' });
+		expect((await api.readSecret('twinapp', 'lab'))?.data).toEqual({ DB_URL: '' });
+		await expect(api.addEnv('twinapp', 'lab')).rejects.toMatchObject({ status: 409 });
+		await expect(api.addEnv('ghostapp', 'dev')).rejects.toMatchObject({ status: 404 });
+		// pin = intent (D1): recorded, surfaced, never a routing change
+		await api.pinSecret('twinapp', 'dev', 2);
+		expect((await api.secretMeta('twinapp', 'dev'))?.pinnedVersion).toBe(2);
+		expect((await api.readSecret('twinapp', 'dev'))?.version).toBe(5); // head still wins
+		await expect(api.pinSecret('twinapp', 'dev', 99)).rejects.toMatchObject({ status: 404 });
+		await api.unpinSecret('twinapp', 'dev');
+		expect((await api.secretMeta('twinapp', 'dev'))?.pinnedVersion).toBeNull();
+	});
+
 	it('tags: first-class vocabulary (unused names appear at 0), createTag slugifies, 409s', async () => {
 		const api = createMockApi();
 		const before = await api.listTags();

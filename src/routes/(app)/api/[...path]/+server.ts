@@ -143,9 +143,27 @@ async function route(ctx: Ctx) {
 		return json(await api.search(url.searchParams.get('q') ?? ''));
 	}
 
-	// --- secrets (lumen §9 passthrough shape) ---
+	// --- secrets (lumen §9 passthrough shape; control plane per PLAN §2.1) ---
 	if (p[0] === 'secrets') {
 		if (p.length === 1 && request.method === 'GET') return json(await api.listSecretPaths());
+		if (p.length === 2 && p[1] === 'apps' && request.method === 'POST') {
+			const { app, envs } = (await body()) as { app: string; envs?: string[] };
+			return json(
+				await api.onboardApp(String(app ?? ''), Array.isArray(envs) ? envs.map(String) : undefined)
+			);
+		}
+		if (p.length === 3 && p[2] === 'envs' && request.method === 'POST') {
+			const { env } = (await body()) as { env: string };
+			return json(await api.addEnv(p[1], String(env ?? '')));
+		}
+		if (p.length === 4 && p[3] === 'pin' && request.method === 'PUT') {
+			const { version } = (await body()) as { version: number };
+			return json(await api.pinSecret(p[1], p[2], Number(version)));
+		}
+		if (p.length === 4 && p[3] === 'pin' && request.method === 'DELETE') {
+			await api.unpinSecret(p[1], p[2]);
+			return json({ ok: true });
+		}
 		if (p.length === 3) {
 			const [app, env] = [p[1], p[2]];
 			if (request.method === 'GET') {

@@ -193,7 +193,18 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 		writeSecret: (app, env, data, cas) =>
 			call<{ version: number }>('PUT', `/admin/bao/${enc(app)}/${enc(env)}`, {
 				body: { data, cas }
-			}).then((r) => r.version)
+			}).then((r) => r.version),
+		onboardApp: (app, envs) =>
+			call<{ app: string; envs: string[] }>('POST', '/admin/bao/apps', {
+				body: envs?.length ? { app, envs } : { app }
+			}),
+		addEnv: (app, env) =>
+			call<{ app: string; env: string }>('POST', `/admin/bao/${enc(app)}/envs`, { body: { env } }),
+		pinSecret: (app, env, version) =>
+			call<{ pinnedVersion: number }>('PUT', `/admin/bao/${enc(app)}/${enc(env)}/pin`, {
+				body: { version }
+			}),
+		unpinSecret: (app, env) => call<void>('DELETE', `/admin/bao/${enc(app)}/${enc(env)}/pin`)
 	};
 }
 
