@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/state';
-	import { Eye, EyeOff, History } from 'lucide-svelte';
+	import { Eye, EyeOff, History, Pin, PinOff, Plus, Search, X } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
+	import { focusOnMount } from '#lib/actions.ts';
 	import Watermark from '#lib/components/Watermark.svelte';
 	import { ApiError, client } from '#lib/api/client.ts';
 	import { diffLines, type DiffOp } from '#lib/diff.ts';
+	import { rankByFuzzy } from '#lib/fuzzy.ts';
 	import type { SecretPayload } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
 
@@ -15,8 +16,7 @@
 
 	let { data }: Props = $props();
 
-	// seed; the $effect below resyncs
-	// whenever the server load returns a fresh secret.
+	// seed; the $effect below resyncs whenever the server load returns a fresh secret.
 	// svelte-ignore state_referenced_locally
 	const seed = { secret: data.secret, meta: data.meta };
 	let rows = $state<Record<string, string>>({ ...seed.secret?.data });
@@ -28,6 +28,27 @@
 	let historyOpen = $state(false);
 	let historyVersions = $state<number[]>([]);
 	let historyDiff = $state<DiffOp[] | null>(null);
+	let pinnedVersion = $state<number | null>(seed.meta?.pinnedVersion ?? null);
+
+	// search (B2/D3): current-env rows only, key names AND values, client-side.
+	let query = $state('');
+	// regex QUANTIFIERS must be EXPRESSIONS in attributes: a raw {1,31} in a
+	// static attr is eaten as a Svelte template interpolation (the parser
+	// turned it into the comma-expression {(1, 31)} and split my title attr
+	// across lines — caught by check; Prettier then formalized the damage).
+	const APP_PATTERN = '^[a-z][a-z0-9-]{1,31}$';
+	const ENV_PATTERN = '^[a-z][a-z0-9-]{0,31}$';
+	// onboarding + add-env dialogs; the input carries the slug, the busy flag
+	// gates double-submit while the relay round-trips.
+	let onboardOpen = $state(false);
+	let onboardName = $state('');
+	let onboardBusy = $state(false);
+	let addEnvOpen = $state(false);
+	let addEnvName = $state('');
+	// version inspector: a live version payload the user chose to VIEW (read-only)
+	// or RESTORE (overlay onto the current key set → dirty → save). Separate from
+	// historyDiff (which is a shape diff, not the secret bytes).
+	let viewing = $state<{ version: number; data: Record<string, string> } | null>(null);
 
 	// Resync the editor when the SERVER returns a fresh payload (mount +
 	// invalidateAll after save). Guarded by a PRIMITIVE key: an effect must
@@ -38,7 +59,9 @@
 	// navigation status the crash inherited, not an upstream code). Beware
 	// the second trap: storing the PAYLOAD OBJECT in $state to compare later
 	// also loops forever — Svelte deep-proxies what you store, so `===` is
-	// proxy-vs-proxy and never true. Only primitives converge.
+	// proxy-vs-proxy and never true. Only primitives converge. The pin rides
+	// the same resync (it is meta, and meta changes exactly when a fresh
+	// payload does — plus local pin/unpin set it eagerly for instant feedback).
 	let syncKey = $state('');
 	$effect(() => {
 		const key = `${data.app}|${data.env}|${data.meta?.currentVersion ?? 0}|${JSON.stringify(data.secret?.data ?? null)}`;
@@ -48,8 +71,10 @@
 		rows = nextRows;
 		order = Object.keys(nextRows); // the LOCAL clone — not `rows` state
 		cas = data.meta?.currentVersion ?? 0;
+		pinnedVersion = data.meta?.pinnedVersion ?? null;
 		dirty = false;
 		message = null;
+		viewing = null;
 	});
 
 	function setVal(k: string, v: string) {
@@ -63,28 +88,41 @@
 		dirty = true;
 	}
 	function removeRow(k: string) {
-		if (!confirm(`Drop ${k} from this secret? (history keeps it recoverable)`)) return;
+		if (
+			!confirm(
+				`Drop ${k} from this secret? (the key-set mirror removes it from EVERY env — history keeps it recoverable)`
+			)
+		)
+			return;
 		delete rows[k];
 		order = order.filter((x) => x !== k);
 		dirty = true;
 	}
 
-	async function save() {
+	// ONE error path for all control ops: 409 stories (mirror-stale,
+	// collisions) arrive VERBATIM from lumen — they NAME the env; the
+	// success text is returned by the op itself, so nothing double-writes.
+	async function run(fn: () => Promise<string>): Promise<boolean> {
 		message = null;
 		try {
-			const v = await client.writeSecret(data.app, data.env, rows, cas);
+			message = { kind: 'ok', text: await fn() };
 			await invalidateAll();
-			message = { kind: 'ok', text: `saved as version ${v} — Bao has the audit` };
+			return true;
 		} catch (e) {
 			message = {
 				kind: 'err',
-				text:
-					e instanceof ApiError && e.status === 409
-						? 'CAS rejected — someone wrote first; reloading theirs'
-						: String(e)
+				text: e instanceof ApiError && e.status === 409 ? e.message : String(e)
 			};
 			await invalidateAll();
+			return false;
 		}
+	}
+
+	async function save() {
+		await run(async () => {
+			const v = await client.writeSecret(data.app, data.env, rows, cas);
+			return `saved as version ${v} — key-set mirrored to siblings, Bao has the audit`;
+		});
 	}
 
 	function toggleReveal(k: string, on: boolean) {
@@ -94,15 +132,60 @@
 	async function openHistory() {
 		historyOpen = !historyOpen;
 		historyDiff = null;
+		viewing = null;
 		if (!historyOpen) return;
 		const meta = await client.secretMeta(data.app, data.env);
 		historyVersions = (meta?.versions ?? []).map((v) => v.version).reverse();
+		pinnedVersion = meta?.pinnedVersion ?? null;
 	}
 
 	async function diffAgainst(version: number) {
 		const past = await client.readSecret(data.app, data.env, version);
 		if (!past) return;
 		historyDiff = lineDiff(past, rows);
+		viewing = null;
+	}
+
+	async function viewVersion(version: number) {
+		const past = await client.readSecret(data.app, data.env, version);
+		if (!past) return;
+		viewing = { version, data: past.data };
+		historyDiff = null;
+	}
+
+	// RESTORE (D2): overlay a past version's VALUES onto the CURRENT key set —
+	// keys the shape no longer has do NOT resurrect; the result is a dirty edit
+	// the user saves, so the mirror fan-out + CAS apply exactly as any write.
+	async function restoreVersion(version: number) {
+		const past = await client.readSecret(data.app, data.env, version);
+		if (!past) return;
+		for (const k of order) if (k in past.data) rows[k] = past.data[k];
+		dirty = true;
+		viewing = null;
+		message = {
+			kind: 'ok',
+			text: `values from v${version} overlaid on the current keys — save to promote`
+		};
+	}
+
+	async function togglePin(version: number) {
+		await run(async () => {
+			if (pinnedVersion === version) {
+				await client.unpinSecret(data.app, data.env);
+				pinnedVersion = null; // eager: a pin-only change never moves the meta resync key
+				return 'unpinned — head is all you need';
+			}
+			await client.pinSecret(data.app, data.env, version);
+			pinnedVersion = version;
+			return `pinned v${version} — intent only; reads still serve head (D1)`;
+		});
+	}
+
+	/** Masked display value: short values read as-is, long ones become dots.
+	 *  Lives in SCRIPT because the markup expression {/regex...} is a parser
+	 *  trap — a leading regex literal reads as a block-close tag. */
+	function maskValue(v: string): string {
+		return /^.{0,6}$/.test(v) ? v : '•'.repeat(Math.min(v.length, 12));
 	}
 
 	/** Version payloads → sorted K=V lines → pure diff. */
@@ -116,15 +199,53 @@
 
 	const selectPath = (app: string, env: string) => goto(`?app=${app}&env=${env}`);
 
-	const pathGroups = $derived.by(() => {
-		const groups: [string, string[]][] = [];
+	// apps are the OUTER grouping (owner: pick app, THEN env) — a data-derived
+	// list; zero app names in code (§2.2-1: apps are DATA).
+	const apps = $derived.by(() => {
+		const out: { app: string; envs: string[] }[] = [];
 		for (const p of data.paths) {
-			const hit = groups.find(([app]) => app === p.app);
-			if (hit) hit[1].push(p.env);
-			else groups.push([p.app, [p.env]]);
+			const hit = out.find((x) => x.app === p.app);
+			if (hit) hit.envs.push(p.env);
+			else out.push({ app: p.app, envs: [p.env] });
 		}
-		return groups;
+		return out.sort((a, b) => a.app.localeCompare(b.app));
 	});
+	const currentEnvs = $derived(apps.find((a) => a.app === data.app)?.envs ?? []);
+	const envIsPinned = (v: number) => pinnedVersion === v;
+
+	// the search-filtered row order — empty query is identity (B2 contract).
+	const visibleOrder = $derived(rankByFuzzy(query.trim(), order, (k) => [k, rows[k] ?? '']));
+
+	async function onboard() {
+		const name = onboardName.trim();
+		if (!name) return;
+		onboardBusy = true;
+		try {
+			const res = await client.onboardApp(name);
+			onboardOpen = false;
+			onboardName = '';
+			await invalidateAll();
+			await goto(`?app=${res.app}&env=${res.envs[0]}`);
+			message = { kind: 'ok', text: `onboarded ${res.app} — seeded ${res.envs.join(', ')}` };
+		} catch (e) {
+			message = { kind: 'err', text: e instanceof ApiError ? e.message : String(e) };
+		} finally {
+			onboardBusy = false;
+		}
+	}
+
+	async function submitAddEnv() {
+		const name = addEnvName.trim();
+		if (!name) return;
+		const done = await run(async () => {
+			await client.addEnv(data.app, name);
+			return `added ${data.app}/${name} — seeded to the canonical key set`;
+		});
+		if (done) {
+			addEnvOpen = false;
+			addEnvName = '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -140,6 +261,13 @@
 		<p class="relative font-mono text-xs text-muted-foreground">
 			the policy grants no paths — nothing to show
 		</p>
+		<button
+			type="button"
+			onclick={() => (onboardOpen = true)}
+			class="relative mt-2 flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+		>
+			<Plus class="size-3.5" /> onboard an app
+		</button>
 	</div>
 {:else}
 	<section class="flex flex-col gap-6">
@@ -148,29 +276,77 @@
 				<h1 class="font-brand text-4xl font-semibold tracking-tight">Secrets</h1>
 				<!-- The double-`data` KV-v2 envelope, humanized: kv/<app>/<env>. -->
 				<p class="font-mono text-xs text-muted-foreground">
-					kv / {data.app} / {page.url.searchParams.get('env') ?? data.env} · v{cas}
+					kv / {data.app} / {data.env} · v{cas}
+					{#if pinnedVersion !== null}
+						<span
+							class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] {pinnedVersion === cas
+								? 'bg-brand/10 text-brand'
+								: 'bg-accent-amber/15 text-accent-amber'}"
+							title="D1: pin is intent — reads still serve head"
+						>
+							<Pin class="mr-1 inline size-3 align-[-2px]" />pinned v{pinnedVersion}
+							{#if pinnedVersion !== cas}· head v{cas}{/if}
+						</span>
+					{/if}
 				</p>
 			</div>
-			<div class="flex flex-wrap gap-1.5">
-				{#each pathGroups as [app, envs] (app)}
-					{#each envs as env (env)}
+			<div class="flex flex-col items-end gap-2">
+				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env. -->
+				<div class="flex flex-wrap items-center justify-end gap-2">
+					<label class="flex items-center gap-1.5">
+						<span class="sr-only">App namespace</span>
+						<select
+							value={data.app}
+							onchange={(e) => {
+								const app = String(e.currentTarget.value);
+								const first = apps.find((a) => a.app === app)?.envs[0] ?? 'dev';
+								selectPath(app, first);
+							}}
+							aria-label="App namespace"
+							class="rounded-md border border-border bg-card px-2 py-1 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+						>
+							{#each apps as a (a.app)}
+								<option value={a.app}>{a.app}</option>
+							{/each}
+						</select>
+					</label>
+					<button
+						type="button"
+						onclick={() => (onboardOpen = true)}
+						class="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+						aria-label="Onboard app"
+					>
+						<Plus class="size-3.5" /> app
+					</button>
+				</div>
+				<div class="flex flex-wrap items-center justify-end gap-1.5">
+					{#each currentEnvs as env (env)}
 						<button
 							type="button"
-							onclick={() => selectPath(app, env)}
-							aria-pressed={app === data.app && env === data.env}
-							class="rounded-full border px-3 py-1 font-mono text-xs transition-colors {app ===
-								data.app && env === data.env
+							onclick={() => selectPath(data.app, env)}
+							aria-pressed={env === data.env}
+							aria-label={`Environment ${env}`}
+							class="rounded-full border px-3 py-1 font-mono text-xs transition-colors {env ===
+							data.env
 								? 'border-brand bg-brand/10 text-foreground'
 								: 'border-border text-muted-foreground hover:text-foreground'}"
 						>
-							{app}/{env}
+							{env}
 						</button>
 					{/each}
-				{/each}
+					<button
+						type="button"
+						onclick={() => (addEnvOpen = true)}
+						class="rounded-full border border-dashed border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+						aria-label="Add environment"
+					>
+						+ env
+					</button>
+				</div>
 			</div>
 		</div>
 
-		{#if message}
+		{#if message && message.text}
 			<p
 				class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
 					? 'bg-brand/10 text-brand'
@@ -181,9 +357,34 @@
 			</p>
 		{/if}
 
+		<!-- Search bar (D3): fuzzy over current-env key names AND values. -->
+		<div class="relative flex items-center">
+			<Search
+				class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
+				aria-hidden="true"
+			/>
+			<input
+				type="search"
+				bind:value={query}
+				placeholder="filter keys and values…"
+				aria-label="Search keys and values"
+				class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+			/>
+			{#if query}
+				<button
+					type="button"
+					onclick={() => (query = '')}
+					aria-label="Clear search"
+					class="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground"
+				>
+					<X class="size-3.5" />
+				</button>
+			{/if}
+		</div>
+
 		<!-- Config-file anatomy: mono table, masked values, reveal-on-press. -->
 		<div class="overflow-hidden rounded-lg border border-border bg-card">
-			{#each order as k (k)}
+			{#each visibleOrder as k (k)}
 				<div
 					class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto_auto] items-center gap-3 border-b border-border px-4 py-2 last:border-b-0"
 				>
@@ -236,6 +437,10 @@
 						×
 					</button>
 				</div>
+			{:else}
+				<p class="px-4 py-6 text-center font-mono text-xs text-muted-foreground">
+					no keys match “{query}”
+				</p>
 			{/each}
 		</div>
 
@@ -285,18 +490,86 @@
 				</div>
 				<div class="flex flex-col gap-1">
 					{#each historyVersions as v (v)}
-						<button
-							type="button"
-							onclick={() => void diffAgainst(v)}
-							class="flex items-center justify-between rounded-md px-3 py-1.5 font-mono text-xs transition-colors hover:bg-accent {historyDiff
-								? 'text-muted-foreground'
-								: 'text-foreground'}"
+						<div
+							class="flex items-center justify-between rounded-md px-3 py-1.5 font-mono text-xs transition-colors hover:bg-accent"
 						>
-							<span>v{v}</span>
-							<span>{v === cas ? 'current' : `diff → now`}</span>
-						</button>
+							<span class="flex items-center gap-2">
+								<span>v{v}</span>
+								{#if envIsPinned(v)}
+									<span class="text-accent-amber" title="pinned (intent)">
+										<Pin class="inline size-3 align-[-2px]" />
+									</span>
+								{/if}
+							</span>
+							<span class="flex items-center gap-1">
+								<button
+									type="button"
+									onclick={() => void viewVersion(v)}
+									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+									aria-label={`View v${v}`}
+								>
+									view
+								</button>
+								<button
+									type="button"
+									onclick={() => void diffAgainst(v)}
+									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+									aria-label={`Diff v${v}`}
+								>
+									diff
+								</button>
+								<button
+									type="button"
+									onclick={() => void restoreVersion(v)}
+									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+									aria-label={`Restore v${v}`}
+								>
+									restore
+								</button>
+								<button
+									type="button"
+									onclick={() => void togglePin(v)}
+									class="rounded px-1.5 py-0.5 transition-colors {envIsPinned(v)
+										? 'text-accent-amber hover:text-foreground'
+										: 'text-muted-foreground hover:text-foreground'}"
+									aria-label={envIsPinned(v) ? `Unpin v${v}` : `Pin v${v}`}
+								>
+									{#if envIsPinned(v)}
+										<PinOff class="size-3.5" />
+									{:else}
+										<Pin class="size-3.5" />
+									{/if}
+								</button>
+							</span>
+						</div>
 					{/each}
 				</div>
+
+				{#if viewing}
+					<!-- read-only version payload (values masked — same rule as the
+					     editor and diffs; D1: viewing a version never changes head). -->
+					<div class="mt-4 rounded-lg border border-border bg-muted/30 p-3">
+						<p class="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+							viewing v{viewing.version} (read-only)
+						</p>
+						<div class="flex flex-col gap-1">
+							{#each Object.keys(viewing.data).sort() as k (k)}
+								<div class="flex justify-between gap-3 font-mono text-[11px]">
+									<span class="text-muted-foreground">{k}</span>
+									<span class="truncate">{maskValue(viewing.data[k])}</span>
+								</div>
+							{/each}
+						</div>
+						<button
+							type="button"
+							onclick={() => viewing && void restoreVersion(viewing.version)}
+							class="mt-3 rounded-full border border-border px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+						>
+							restore these values
+						</button>
+					</div>
+				{/if}
+
 				{#if historyDiff}
 					<pre
 						class="mt-4 flex flex-col gap-0.5 overflow-x-auto font-mono text-[11px]"
@@ -314,9 +587,123 @@
 					</pre>
 				{/if}
 				<p class="mt-6 font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-					values are masked in diffs too — Bao's audit (server-side) holds the true bytes
+					values are masked in views and diffs too — Bao's audit (server-side) holds the true bytes
 				</p>
 			</aside>
 		{/if}
 	</section>
+{/if}
+
+{#if onboardOpen}
+	<div
+		class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+		role="dialog"
+		tabindex="-1"
+		aria-modal="true"
+		aria-label="Onboard app namespace"
+		onclick={(e) => e.target === e.currentTarget && (onboardOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (onboardOpen = false)}
+	>
+		<form
+			class="flex w-full max-w-sm flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-2xl"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void onboard();
+			}}
+		>
+			<h2 class="font-brand text-lg font-semibold">Onboard an app</h2>
+			<p class="font-mono text-xs leading-relaxed text-muted-foreground">
+				creates <code class="text-foreground"
+					>kv/{onboardName || '<app>'}/{'{dev, staging, production}'}</code
+				>
+				as empty bundles — the trio is a default, not a schema, and onboarding never overwrites.
+			</p>
+			<label class="flex flex-col gap-1">
+				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
+					>app name</span
+				>
+				<input
+					bind:value={onboardName}
+					use:focusOnMount
+					required
+					pattern={APP_PATTERN}
+					title={APP_PATTERN + ' — apps are data: validated slugs, underscores banned'}
+					class="rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+					placeholder="credit"
+				/>
+			</label>
+			<div class="mt-2 flex justify-end gap-2">
+				<button
+					type="button"
+					onclick={() => (onboardOpen = false)}
+					class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				>
+					cancel
+				</button>
+				<button
+					type="submit"
+					disabled={onboardBusy || !onboardName.trim()}
+					class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
+				>
+					{onboardBusy ? 'seeding…' : 'onboard'}
+				</button>
+			</div>
+		</form>
+	</div>
+{/if}
+
+{#if addEnvOpen}
+	<div
+		class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+		role="dialog"
+		tabindex="-1"
+		aria-modal="true"
+		aria-label="Add environment"
+		onclick={(e) => e.target === e.currentTarget && (addEnvOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (addEnvOpen = false)}
+	>
+		<form
+			class="flex w-full max-w-sm flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-2xl"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void submitAddEnv();
+			}}
+		>
+			<h2 class="font-brand text-lg font-semibold">Add environment to {data.app}</h2>
+			<p class="font-mono text-xs leading-relaxed text-muted-foreground">
+				seeded to the app's canonical key set (union of live siblings, empty values) — a late env
+				never drifts a smaller shape.
+			</p>
+			<label class="flex flex-col gap-1">
+				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
+					>env name</span
+				>
+				<input
+					bind:value={addEnvName}
+					use:focusOnMount
+					required
+					pattern={ENV_PATTERN}
+					title={ENV_PATTERN}
+					class="rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+					placeholder="lab"
+				/>
+			</label>
+			<div class="mt-2 flex justify-end gap-2">
+				<button
+					type="button"
+					onclick={() => (addEnvOpen = false)}
+					class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				>
+					cancel
+				</button>
+				<button
+					type="submit"
+					disabled={!addEnvName.trim()}
+					class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
+				>
+					add env
+				</button>
+			</div>
+		</form>
+	</div>
 {/if}
