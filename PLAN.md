@@ -1515,3 +1515,26 @@ own mis-seeded key pair, a third behavior proven by accident. Dev plane == prod
 plane now by FACT. Lesson for the habit shelf, next to `git ls-tree`: **verify every
 registry before substituting; a substitution recorded honestly is still a
 substitution worth questioning.**
+
+**2026-11-09 — dev-ergonomics round: `make dev`, a Postman collection, and two live
+contract bugs (`2d190a4`+`a4ee264`, lumen `milestone/1-read-api`).** The owner asked to
+test the APIs directly; building the collection against the live binary found, in one
+sitting, what three green suites had missed all milestone: (1) lumen's login answered
+`expires_in` while mellon's `AdminApi` — the executable spec — consumes `expiresIn`
+(the Go integration test couldn't catch it: its struct tag was written from the
+HANDLER, not the spec); (2) media config was bound in viper but never POPULATED into
+`Config.Media`, so the real binary 503'd every upload while the integration harness —
+wiring `media.Config` by hand — stayed green. Both fixed; regression tests pin both
+shapes. Doctrine added to the journal's habit shelf: **run the binary THROUGH the
+client's contract** — every consumer-side type is a wire assertion waiting to be
+walked. The collection itself (59 requests, 6 folders: §1 facets, the §8 lifecycle
+with CAS/idempotence/soft-delete-frees-slug proofs, upload relay, the logout→replay→401
+revocation walk, §9 Bao CAS) carries `x-lumen-*` expectation extensions consumed by a
+throwaway harness — shipped only after a 59/59 walk executed twice consecutively
+(rerunnable by design; the only deliberate non-cleanliness is eager vocabulary rows,
+201-or-409, which proves the doctrine). `make dev` is now the one-command loop (infra →
+seed → dev user → serve :8080), `make dev-plane` bootstraps this box's OpenBao into the
+§5.6 shape so §9 is testable directly, and the README finally matches reality — its
+M1-era quickstart had been dead since M3 (the Makefile never exported the signing
+secret the config fail-fasts on). lumen gates green throughout; no mellon code changed
+(it consumed neither bug — mellon→lumen cutover is still Phase C).
