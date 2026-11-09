@@ -1501,3 +1501,17 @@ ack, #9 provider all remain owner-side; this run PREPARED #5's note, did not res
 - Battery (final state): `go test ./...` offline green; `make test-integration` = twin
   - real pg/meili + embedded S3 + dev vault + 401-replay + throttle, run 2× idempotent;
     earendil contract.spec 13/13 against the live binary; mellon gates untouched and green.
+
+**Refined 2026-11-09 — the M6 dev plane is OpenBao, not Vault (`938ce69`).** The owner
+asked why an OpenBao-documented tree dev-tested against `hashicorp/vault:1.19`. Honest
+answer: `docker.openbao.xyz` failed DNS from this box at build time and **one
+unreachable registry was treated as a decision instead of a data point** — ghcr.io
+serves pinned `openbao/openbao:2.5.3` fine. Swapped; re-proven with zero doctrine
+edits: `TestBaoRelay` passes as-is against OpenBao (the `hashicorp/vault/api` Go
+client IS its documented compatibility path; the bootstrap's error-string matches,
+AppRole/mount/policy, CAS 409s, version pins and the slog-capture redaction proof
+all held), and `driftcheck` re-smoked both exits — mid-run it correctly flagged our
+own mis-seeded key pair, a third behavior proven by accident. Dev plane == prod
+plane now by FACT. Lesson for the habit shelf, next to `git ls-tree`: **verify every
+registry before substituting; a substitution recorded honestly is still a
+substitution worth questioning.**
