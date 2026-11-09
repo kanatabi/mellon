@@ -312,9 +312,36 @@ check(
 	const expandMedia = page.locator('button[aria-label="Expand media"]');
 	if (await expandMedia.count()) await expandMedia.first().click();
 	await sleep(300);
+	// shimmer is an OVERLAY on the preview box — the owner caught it sweeping
+	// over a fully loaded cover. Lifecycle assert: paint while decoding, STOP
+	// once decoded (and stay off for the warm-cache reload that never fires onload).
+	let releaseCover;
+	const gate = new Promise((r) => (releaseCover = r));
+	await page.route('**images.unsplash.com/**', async (route) => {
+		await gate;
+		await route.continue();
+	});
+	await page.reload({ waitUntil: 'domcontentloaded' });
+	await sleep(500); // media pane re-mounts open (persisted); cover still in flight
+	const shimmerLoading = await page.locator('aside .thumb-shimmer').count();
+	releaseCover();
+	await page
+		.waitForFunction(() => !document.querySelector('aside .thumb-shimmer'), { timeout: 15000 })
+		.catch(() => {});
+	const shimmerDecoded = await page.locator('aside .thumb-shimmer').count();
 	check(
-		'T-pane8 media cover preview carries a loading shimmer box',
-		(await page.locator('aside .thumb-shimmer img[alt="Cover preview"]').count()) === 1
+		'T-pane8 cover shimmers while loading, stops when decoded',
+		shimmerLoading === 1 && shimmerDecoded === 0,
+		`loading=${shimmerLoading} decoded=${shimmerDecoded}`
+	);
+	await page.unroute('**images.unsplash.com/**');
+	// warm-cache reload: the img NEVER fires onload — the img.complete effect
+	// is the only thing that can stop the sweep there
+	await page.reload({ waitUntil: 'networkidle' });
+	await sleep(400);
+	check(
+		'T-pane8b warm-cache reload decodes without a stuck shimmer',
+		(await page.locator('aside .thumb-shimmer').count()) === 0
 	);
 }
 {
@@ -382,6 +409,126 @@ check(
 		'T-pane11 synthetic drag lands media right before export',
 		perf.landed,
 		JSON.stringify(perf)
+	);
+}
+
+// --- T-touch: long-press lifts a pane into drag mode (HTML5 DnD has no
+// touch support — Pointer Events drive the SAME FLIP machine) ---
+{
+	const touch = await page.evaluate(async () => {
+		const nap = (ms) => new Promise((r) => setTimeout(r, ms));
+		const aside = document.querySelector('aside.rail-scroll');
+		const title = aside.querySelector('[data-pane="title"]');
+		const r = title.getBoundingClientRect();
+		const pt = (type, clientY, clientX = r.left + 20) =>
+			new PointerEvent(type, {
+				bubbles: true,
+				pointerId: 7,
+				pointerType: 'touch',
+				clientX,
+				clientY
+			});
+		title.dispatchEvent(pt('pointerdown', r.top + 10));
+		await nap(520); // past the long-press threshold
+		const lifted =
+			title.style.display === 'none' && !!document.querySelector('[data-pane-drag-bar]');
+		const expEl = aside.querySelector('[data-pane="export"]');
+		// land where the finger can actually rest: in-view (a parked finger
+		// below the rail's edge triggers autoscroll and slides the slot away)
+		expEl.scrollIntoView({ block: 'center', behavior: 'instant' });
+		await nap(60);
+		const exp = expEl.getBoundingClientRect();
+		const y = exp.top + exp.height * 0.25;
+		aside.dispatchEvent(pt('pointermove', y));
+		await nap(150); // a touch tick previews the slot under the finger
+		const ghostOpen = !aside.querySelector('[data-pane-ghost]').classList.contains('hidden');
+		aside.dispatchEvent(pt('pointerup', y));
+		await nap(150);
+		const barGone = !document.querySelector('[data-pane-drag-bar]');
+		const order = JSON.parse(localStorage.getItem('mellon.sections.post')).order;
+		return {
+			lifted,
+			ghostOpen,
+			barGone,
+			landed: order.indexOf('title') === order.indexOf('export') - 1
+		};
+	});
+	check(
+		'T-touch1 long press lifts the pane (gap closes, bar appears)',
+		touch.lifted,
+		JSON.stringify(touch)
+	);
+	check('T-touch2 finger hover opens the ghost slot', touch.ghostOpen, JSON.stringify(touch));
+	check(
+		'T-touch3 release lands the pane and cleans up the bar',
+		touch.barGone && touch.landed,
+		JSON.stringify(touch)
+	);
+	const tap = await page.evaluate(async () => {
+		const nap = (ms) => new Promise((r) => setTimeout(r, ms));
+		const aside = document.querySelector('aside.rail-scroll');
+		const date = aside.querySelector('[data-pane="date"]');
+		const r = date.getBoundingClientRect();
+		const mk = (type) =>
+			new PointerEvent(type, {
+				bubbles: true,
+				pointerId: 9,
+				pointerType: 'touch',
+				clientX: r.left + 20,
+				clientY: r.top + 10
+			});
+		date.dispatchEvent(mk('pointerdown'));
+		await nap(120); // under the threshold
+		date.dispatchEvent(mk('pointerup'));
+		await nap(80);
+		return date.style.display !== 'none' && !document.querySelector('[data-pane-drag-bar]');
+	});
+	check('T-touch4 a short tap never arms a drag', tap);
+}
+
+// --- T-tab: the EDITOR COLUMN (container), not the viewport, decides
+// side-by-side vs tabs — at 1280 the rails+nav leave the split unreadable,
+// and the owner wants tab view there with the sidebar inline as-is ---
+{
+	const mode = async (w, h) => {
+		const c = await browser.newContext({ viewport: { width: w, height: h } });
+		await c.addCookies([
+			{
+				name: 'mellon_session',
+				value: session.token,
+				domain: 'localhost',
+				path: '/',
+				httpOnly: true,
+				sameSite: 'Strict'
+			}
+		]);
+		const pg = await c.newPage();
+		await pg.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+		const out = await pg.evaluate(() => ({
+			pane: getComputedStyle(document.querySelector('#pane-write')).position,
+			tabs: !!document.querySelector('[role="tablist"]')?.getBoundingClientRect().width,
+			rail: (document.querySelector('aside.rail-scroll')?.getBoundingClientRect().width ?? 0) > 100
+		}));
+		await c.close();
+		return out;
+	};
+	const wide = await mode(1440, 900);
+	check(
+		'T-tab1 1440: side-by-side panes, tab strip off, rail inline',
+		wide.pane === 'static' && !wide.tabs && wide.rail,
+		JSON.stringify(wide)
+	);
+	const mid = await mode(1280, 800);
+	check(
+		'T-tab2 1280: TAB view for editor/preview — sidebar still inline',
+		mid.pane === 'absolute' && mid.tabs && mid.rail,
+		JSON.stringify(mid)
+	);
+	const phone = await mode(390, 844);
+	check(
+		'T-tab3 phone: tab view, rail as sheet (unchanged)',
+		phone.pane === 'absolute' && phone.tabs && !phone.rail,
+		JSON.stringify(phone)
 	);
 }
 

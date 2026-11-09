@@ -163,8 +163,18 @@ flowchart LR
 	// from the editor bands or the rail media section. `insert` mode writes
 	// through the CodeMirror handle — the docChanged listener does the rest
 	// (value, dirty, preview — all for free).
-	// the cover that has ACTUALLY decoded — until then the preview box shimmers
+	// the cover that has ACTUALLY decoded — until then the preview box shimmers,
+	// and the sweep STOPS once it paints (the ::after overlays the img: leaving
+	// the class on meant a permanent gloss — owner screenshot, right it did).
 	let coverDecoded: string | null = $state(null);
+	let coverImgEl: HTMLImageElement | undefined = $state();
+	$effect(() => {
+		// cached reloads never fire onload — complete+decoded is caught here
+		if (coverImgEl && coverImgEl.complete && coverImgEl.naturalWidth > 0) {
+			coverDecoded = draft.thumbnail;
+		}
+	});
+	let coverReady = $derived(coverDecoded != null && coverDecoded === draft.thumbnail);
 	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | 'upload-cover' | null>(null);
 	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
@@ -652,7 +662,7 @@ flowchart LR
 <svelte:window onkeydown={onKey} />
 
 <section class="flex h-full min-h-0 flex-1 gap-4">
-	<div class="flex min-w-0 grow flex-col gap-4">
+	<div class="@container/editor flex min-w-0 grow flex-col gap-4">
 		<!-- Meta bar: entity title wears the serif; only the preview toggle
 		     lives here — verbs moved to the post rail's actions block. -->
 		<div class="flex flex-wrap items-center justify-between gap-3">
@@ -679,12 +689,12 @@ flowchart LR
 						unsaved
 					</span>
 				{/if}
-				{@render wrapToggle('hidden lg:flex')}
-				{@render imageTrigger('hidden lg:flex')}
+				{@render wrapToggle('hidden @min-[48rem]/editor:flex')}
+				{@render imageTrigger('hidden @min-[48rem]/editor:flex')}
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
-					class="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors lg:flex {showPreview
+					class="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors @min-[48rem]/editor:flex {showPreview
 						? 'border-brand bg-brand/10 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-pressed={showPreview}
@@ -709,24 +719,25 @@ flowchart LR
 			</p>
 		{/if}
 
-		<!-- Pane area. Below lg: a fixed viewport-height box (NOT flex-1 — its
+		<!-- Pane area. Narrow editor COLUMN (container 48rem — the rail & nav
+		     steal width long before the viewport hits lg): a fixed box with layered (NOT flex-1 — its
 		     0% flex-basis overrides the explicit height in an indefinite
 		     column and collapsed the panes to zero: the empty-editor bug) with
 		     the two panes layered; tabs decide which is visible. lg+: flex
 		     fills the row and the split grid animates 1fr↔0fr — the pane never
 		     leaves layout, so nothing can reflow (old ghost bug). -->
 		<div
-			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-full lg:min-h-0 lg:flex-1 {showPreview
-				? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-4'
-				: 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-0'}"
+			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out @min-[48rem]/editor:grid @min-[48rem]/editor:h-full @min-[48rem]/editor:min-h-0 @min-[48rem]/editor:flex-1 {showPreview
+				? '@min-[48rem]/editor:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @min-[48rem]/editor:gap-4'
+				: '@min-[48rem]/editor:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] @min-[48rem]/editor:gap-0'}"
 		>
 			<div
 				id="pane-write"
 				role="tabpanel"
 				aria-labelledby="tab-write"
-				class="absolute inset-0 overflow-hidden rounded-lg border border-border bg-card transition-opacity duration-150 lg:static lg:min-h-0 {editorTab ===
+				class="absolute inset-0 overflow-hidden rounded-lg border border-border bg-card transition-opacity duration-150 @min-[48rem]/editor:static @min-[48rem]/editor:min-h-0 {editorTab ===
 				'preview'
-					? 'max-lg:invisible max-lg:opacity-0'
+					? '@max-[48rem]/editor:invisible @max-[48rem]/editor:opacity-0'
 					: ''}"
 			>
 				<CodeMirrorEditor
@@ -743,13 +754,15 @@ flowchart LR
 				id="pane-preview"
 				role="tabpanel"
 				aria-labelledby="tab-preview"
-				class="absolute inset-0 min-h-0 min-w-0 overflow-hidden transition-opacity duration-150 lg:static {showPreview
+				class="absolute inset-0 min-h-0 min-w-0 overflow-hidden transition-opacity duration-150 @min-[48rem]/editor:static {showPreview
 					? ''
-					: 'hidden lg:block'} {editorTab === 'write' ? 'max-lg:invisible max-lg:opacity-0' : ''}"
+					: 'hidden @min-[48rem]/editor:block'} {editorTab === 'write'
+					? '@max-[48rem]/editor:invisible @max-[48rem]/editor:opacity-0'
+					: ''}"
 			>
 				<div
 					bind:this={previewEl}
-					class="preview h-full min-w-0 overflow-y-auto rounded-lg border border-border bg-card p-5 transition-opacity duration-150 lg:min-w-[360px] {showPreview
+					class="preview h-full min-w-0 overflow-y-auto rounded-lg border border-border bg-card p-5 transition-opacity duration-150 @min-[48rem]/editor:min-w-[360px] {showPreview
 						? 'opacity-100'
 						: 'opacity-0'}"
 					aria-label="Rendered preview"
@@ -768,7 +781,7 @@ flowchart LR
 		     panels stay mounted, the inactive one is visibility-hidden via
 		     max-lg: variants so desktop semantics are untouched. Roving
 		     tabindex: Tab lands on the selected tab, arrows walk. -->
-		<div class="flex items-center gap-2 lg:hidden">
+		<div class="flex items-center gap-2 @min-[48rem]/editor:hidden">
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
 				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
@@ -826,7 +839,7 @@ flowchart LR
 					aria-expanded={railSheet}
 					aria-label="Open post settings"
 					title="Post settings"
-					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] max-lg:hidden"
 				>
 					<FileCog class="size-4" />
 				</button>
@@ -1113,15 +1126,17 @@ flowchart LR
 		>
 			{#if draft.thumbnail}
 				<div
-					class="thumb-shimmer relative aspect-video w-full overflow-hidden rounded-md border border-border"
+					class="relative aspect-video w-full overflow-hidden rounded-md border border-border {coverReady
+						? ''
+						: 'thumb-shimmer'}"
 				>
 					<img
+						bind:this={coverImgEl}
 						src={draft.thumbnail}
 						alt="Cover preview"
-						class="h-full w-full object-cover transition-opacity duration-200 {!coverDecoded ||
-						coverDecoded !== draft.thumbnail
-							? 'opacity-0'
-							: 'opacity-100'}"
+						class="h-full w-full object-cover transition-opacity duration-200 {coverReady
+							? 'opacity-100'
+							: 'opacity-0'}"
 						onload={() => (coverDecoded = draft.thumbnail)}
 					/>
 				</div>

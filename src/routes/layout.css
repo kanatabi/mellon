@@ -300,6 +300,17 @@
 	contain: layout style;
 }
 
+/* Long-press-to-drag (touch): while a press decides between tap/scroll/drag,
+   suppress selection & the iOS callout so arming never becomes a
+   text-selection mess. Interactive children are excluded by the JS arm rule
+   (they keep native long-press paste). */
+.pane-arming,
+.pane-arming * {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
 /* Media thumbnail preview shimmer: the box paints its own loading state while
    the cover decodes (same philosophy as the diagram placeholder — the
    skeleton is there before the pixels are). */
