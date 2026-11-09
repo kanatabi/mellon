@@ -252,7 +252,7 @@
 		<header
 			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border bg-chrome px-4 lg:px-6"
 		>
-			<div class="col-start-1 flex min-w-0 items-center gap-1.5 justify-self-start">
+			<div class="col-start-1 flex min-w-0 items-center gap-1.5">
 				<button
 					type="button"
 					bind:this={burger}

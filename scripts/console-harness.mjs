@@ -913,6 +913,114 @@ check(
 	await cp.close();
 }
 
+// --- T-sheet: the mobile settings sheet shows the PRE-DRAG view (collapse
+// only) with chrome that never scrolls over the panes (owner reports) ---
+{
+	const sc = await browser.newContext({ viewport: { width: 390, height: 844 } });
+	await sc.addCookies([
+		{
+			name: 'mellon_session',
+			value: session.token,
+			domain: 'localhost',
+			path: '/',
+			httpOnly: true,
+			sameSite: 'Strict'
+		}
+	]);
+	const sp = await sc.newPage();
+	await sp.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+	await sp.waitForTimeout(500);
+	check(
+		'T-sheet1 the mobile sheet trigger EXISTS (max-lg regression, now lg:hidden)',
+		await sp.locator('[aria-label="Open post settings"]').isVisible()
+	);
+	await sp.locator('[aria-label="Open post settings"]').click();
+	await sp.waitForTimeout(500);
+	const sheet = sp.locator('[role="dialog"][aria-label="Post actions and settings"]');
+	const sheetState = await sheet.evaluate((el) => ({
+		drag: el.querySelectorAll('[data-pane][draggable="true"]').length,
+		grips: el.querySelectorAll('[data-pane] [class*="cursor-grab"]').length,
+		hints: [...el.querySelectorAll('[data-pane]')].some((p) =>
+			p.getAttribute('aria-label')?.includes('drag to reorder')
+		)
+	}));
+	check(
+		'T-sheet2 sheet panes are collapse-only (no drag, grips, hints)',
+		sheetState.drag === 0 && sheetState.grips === 0 && !sheetState.hints,
+		JSON.stringify(sheetState)
+	);
+	const xBtn = sheet.locator('[aria-label="Close post actions and settings"]');
+	const y0 = (await xBtn.boundingBox()).y;
+	await sheet.evaluate((el) => {
+		el.querySelector('.overflow-y-auto').scrollTop = 260;
+	});
+	await sp.waitForTimeout(200);
+	const y1 = (await xBtn.boundingBox()).y;
+	check(
+		'T-sheet3 close button stays PINNED while content scrolls',
+		Math.abs(y1 - y0) < 2,
+		`${y0} -> ${y1}`
+	);
+	const openCount = await sheet.locator('[aria-label^="Collapse"]').count();
+	await sheet.locator('[aria-label="Collapse tags"]').click();
+	await sp.waitForTimeout(300);
+	check(
+		'T-sheet4 collapse still works in the sheet',
+		openCount > 0 && (await sheet.locator('[aria-label="Expand tags"]').count()) === 1
+	);
+	await sc.close();
+}
+
+// --- T-pop: viewport-fit popovers (the "covered by the panes" report was
+// really an off-screen open; containment is gone; flip is live) ---
+{
+	const pp = await ctx.newPage();
+	await pp.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+	await pp.waitForTimeout(600);
+	check(
+		'T-pop0 desktop rails KEEP drag reorder (the rule is sheet-scoped)',
+		(await pp.evaluate(
+			() => document.querySelectorAll('aside [data-pane][draggable="true"]').length
+		)) > 0
+	);
+	await pp
+		.locator('aside [data-pane="tags"] button', { hasText: /selected/ })
+		.first()
+		.click();
+	await pp.waitForTimeout(400);
+	const fit = await pp.evaluate(() => {
+		const li = document.querySelector('[role="listbox"] li');
+		if (!li) return { none: true };
+		const r = li.getBoundingClientRect();
+		const hit = document.elementFromPoint(r.x + r.width / 2, r.y + 8);
+		return { inView: r.y > 0 && r.bottom <= innerHeight, onTop: !!(hit && li.contains(hit)) };
+	});
+	check(
+		'T-pop1 combobox popover fits the viewport and is hittable',
+		fit.inView && fit.onTop,
+		JSON.stringify(fit)
+	);
+	await pp.keyboard.press('Escape');
+	await pp.waitForTimeout(200);
+	await pp.locator('[aria-label="Choose publish date"]').first().click();
+	await pp.waitForTimeout(400);
+	const cal = await pp.evaluate(() => {
+		const prev = document.querySelector('[aria-label="Previous month"]');
+		if (!prev) return { none: true };
+		const r = prev.getBoundingClientRect();
+		return {
+			inView: r.top > 0 && r.bottom <= innerHeight,
+			hit: !!document.elementFromPoint(r.x + 6, r.y + 6)
+		};
+	});
+	check(
+		'T-pop2 date picker panel fits and is hittable',
+		cal.inView && cal.hit,
+		JSON.stringify(cal)
+	);
+	await pp.close();
+}
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

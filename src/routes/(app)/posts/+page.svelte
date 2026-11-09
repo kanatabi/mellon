@@ -465,14 +465,15 @@
 						<PanelRightClose class="size-4" />
 					</button>
 				</div>
-				{@render filtersBody()}
+				{@render filtersBody(true)}
 			</aside>
 		{/if}
 	</div>
 
-	{#snippet filtersBody()}
+	{#snippet filtersBody(movable: boolean)}
 		<SectionCard
 			id="sort"
+			reorderable={movable}
 			label="sort"
 			icon={ArrowUpDown}
 			open={deskSections.isOpen('sort')}
@@ -501,6 +502,7 @@
 
 		<SectionCard
 			id="dates"
+			reorderable={movable}
 			label="dates"
 			icon={CalendarDays}
 			open={deskSections.isOpen('dates')}
@@ -517,6 +519,7 @@
 
 		<SectionCard
 			id="tags"
+			reorderable={movable}
 			label="tags"
 			icon={TagsIcon}
 			open={deskSections.isOpen('tags')}
@@ -549,6 +552,6 @@
 
 	<!-- Phones: filters arrive as a bottom sheet, summoned by the row chip. -->
 	<RailDrawer label="Filters" bind:open={filtersSheet} bind:trigger={filtersTrigger}>
-		{@render filtersBody()}
+		{@render filtersBody(false)}
 	</RailDrawer>
 </section>

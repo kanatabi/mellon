@@ -839,7 +839,7 @@ flowchart LR
 					aria-expanded={railSheet}
 					aria-label="Open post settings"
 					title="Post settings"
-					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] max-lg:hidden"
+					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] lg:hidden"
 				>
 					<FileCog class="size-4" />
 				</button>
@@ -893,7 +893,7 @@ flowchart LR
 					</button>
 				</div>
 
-				{@render railBody()}
+				{@render railBody(true)}
 			</aside>
 		{/if}
 	</div>
@@ -953,12 +953,13 @@ flowchart LR
 		{/if}
 	{/snippet}
 
-	{#snippet railBody()}
+	{#snippet railBody(movable: boolean)}
 		<!-- Actions block (owner call): save/publish/delete live at the
 				     top of the rail under their own label — the CMS "publish
 				     box" position, never under "settings". -->
 		<SectionCard
 			id="actions"
+			reorderable={movable}
 			label="actions"
 			icon={Send}
 			open={postSections.isOpen('actions')}
@@ -1007,6 +1008,7 @@ flowchart LR
 
 		<SectionCard
 			id="title"
+			reorderable={movable}
 			label="title"
 			icon={Type}
 			open={postSections.isOpen('title')}
@@ -1023,6 +1025,7 @@ flowchart LR
 		</SectionCard>
 		<SectionCard
 			id="subtitle"
+			reorderable={movable}
 			label="subtitle"
 			icon={AlignLeft}
 			open={postSections.isOpen('subtitle')}
@@ -1039,6 +1042,7 @@ flowchart LR
 		</SectionCard>
 		<SectionCard
 			id="slug"
+			reorderable={movable}
 			label="slug"
 			icon={LinkIcon}
 			open={postSections.isOpen('slug')}
@@ -1071,6 +1075,7 @@ flowchart LR
 
 		<SectionCard
 			id="date"
+			reorderable={movable}
 			label="date"
 			icon={CalendarDays}
 			open={postSections.isOpen('date')}
@@ -1091,6 +1096,7 @@ flowchart LR
 
 		<SectionCard
 			id="tags"
+			reorderable={movable}
 			label="tags"
 			icon={TagsIcon}
 			open={postSections.isOpen('tags')}
@@ -1117,6 +1123,7 @@ flowchart LR
 		     with the photos page). -->
 		<SectionCard
 			id="media"
+			reorderable={movable}
 			label="media"
 			icon={Image}
 			open={postSections.isOpen('media')}
@@ -1174,6 +1181,7 @@ flowchart LR
 
 		<SectionCard
 			id="export"
+			reorderable={movable}
 			label="export"
 			icon={Download}
 			open={postSections.isOpen('export')}
@@ -1218,6 +1226,7 @@ flowchart LR
 		{#if !isNew && seed}
 			<SectionCard
 				id="timeline"
+				reorderable={movable}
 				label="timeline"
 				icon={History}
 				open={postSections.isOpen('timeline')}
@@ -1242,7 +1251,7 @@ flowchart LR
 		bind:open={railSheet}
 		bind:trigger={railSheetTrigger}
 	>
-		{@render railBody()}
+		{@render railBody(false)}
 	</RailDrawer>
 
 	{#if confirmDelete}

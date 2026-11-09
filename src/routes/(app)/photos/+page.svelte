@@ -774,14 +774,15 @@
 						<PanelRightClose class="size-4" />
 					</button>
 				</div>
-				{@render filtersBody()}
+				{@render filtersBody(true)}
 			</aside>
 		{/if}
 	</div>
 
-	{#snippet filtersBody()}
+	{#snippet filtersBody(movable: boolean)}
 		<SectionCard
 			id="sort"
+			reorderable={movable}
 			label="sort"
 			icon={ArrowUpDown}
 			open={photosSections.isOpen('sort')}
@@ -810,6 +811,7 @@
 
 		<SectionCard
 			id="dates"
+			reorderable={movable}
 			label="dates"
 			icon={CalendarDays}
 			open={photosSections.isOpen('dates')}
@@ -826,6 +828,7 @@
 
 		<SectionCard
 			id="collections"
+			reorderable={movable}
 			label="collections"
 			icon={Folder}
 			open={photosSections.isOpen('collections')}
@@ -869,7 +872,7 @@
 
 	<!-- Phones: the sidebar arrives as a bottom sheet. -->
 	<RailDrawer label="Photo filters" bind:open={filtersSheet} bind:trigger={filtersTrigger}>
-		{@render filtersBody()}
+		{@render filtersBody(false)}
 	</RailDrawer>
 </section>
 
