@@ -842,7 +842,7 @@ flowchart LR
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex w-72 flex-col gap-5 self-stretch overflow-y-auto rounded-lg border border-border bg-card p-4"
+				class="flex h-full w-72 flex-col gap-5 overflow-y-auto overscroll-contain rounded-lg border border-border bg-card p-4"
 				aria-label="Post actions and settings"
 			>
 				<div class="flex items-center justify-between">

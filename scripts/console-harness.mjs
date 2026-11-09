@@ -197,6 +197,59 @@ check(
 );
 await page.screenshot({ path: '/tmp/opencode/shots/shell-locked.png' });
 
+// --- T6/T7: sidebars own their scroller — never crop, never push the page ---
+for (const [label, path] of [
+	['desk', '/posts'],
+	['photos', '/photos']
+]) {
+	await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+	const rail = page.locator('main aside').first();
+	const box = await rail.boundingBox();
+	if (!box) {
+		check(`T-${label} rail present`, false, 'no aside found');
+		continue;
+	}
+	const before = await page.evaluate(() => {
+		const a = document.querySelector('main aside');
+		return { ch: a.clientHeight, sh: a.scrollHeight, bottom: a.getBoundingClientRect().bottom };
+	});
+	await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height - 20, 400));
+	await page.mouse.wheel(0, 400);
+	await sleep(300);
+	const st = await page.evaluate(() => {
+		const a = document.querySelector('main aside');
+		return { top: a.scrollTop, y: window.scrollY, body: document.scrollingElement?.scrollTop ?? 0 };
+	});
+	check(
+		`T-${label}: rail is viewport-bounded`,
+		before.bottom <= 901,
+		`bottom ${Math.round(before.bottom)}`
+	);
+	check(
+		`T-${label}: rail scrolls internally when taller`,
+		before.sh <= before.ch + 2 || st.top > 0,
+		`scrollTop ${st.top}, ch ${before.ch} sh ${before.sh}`
+	);
+	check(`T-${label}: page still does not scroll`, st.y === 0 && st.body === 0, JSON.stringify(st));
+}
+
+// editor inspector rail: inner w-72 column must scroll on its own
+await page.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+const railBox = await page.locator('section > div:last-child').boundingBox();
+await page.mouse.move(railBox.x + railBox.width / 2, railBox.y + 400);
+await page.mouse.wheel(0, 400);
+await sleep(300);
+const editorRail = await page.evaluate(() => {
+	const wrap = document.querySelector('section > div:last-child');
+	const rail = wrap.querySelector('.overflow-y-auto');
+	return { top: rail?.scrollTop ?? -1, y: window.scrollY };
+});
+check(
+	'T-editor: inspector scrolls independently',
+	editorRail.top > 0 && editorRail.y === 0,
+	JSON.stringify(editorRail)
+);
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

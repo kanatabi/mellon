@@ -319,8 +319,8 @@
 	<title>photos · mellon</title>
 </svelte:head>
 
-<section class="flex min-h-full gap-4">
-	<div class="flex min-w-0 grow flex-col gap-6">
+<section class="flex h-full min-h-0 gap-4">
+	<div class="flex min-w-0 grow flex-col gap-6 overflow-y-auto overscroll-contain pr-1">
 		<div class="flex items-center justify-between gap-4">
 			<h1 class="font-brand text-4xl font-semibold tracking-tight">Photos</h1>
 			<div class="flex items-center gap-3">
@@ -744,7 +744,7 @@
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex w-60 flex-col gap-6 rounded-lg border border-border bg-card p-4"
+				class="flex h-full w-60 flex-col gap-6 overflow-y-auto overscroll-contain rounded-lg border border-border bg-card p-4"
 				aria-label="Photo filters"
 			>
 				<div class="flex items-center justify-between">
