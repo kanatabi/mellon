@@ -1,20 +1,16 @@
-import { mockApi } from './mock.ts';
+import { createLumenApi, DEV_DEFAULT_API_BASE } from './fetch-adapter.ts';
 import type { AdminApi } from './types.ts';
 
 /**
- * The API entry. Phase A: always the mock. In Phase B, `API_BASE` set (server
- * env) swaps in a fetch adapter that speaks to lumen's §8/§9 — same interface,
- * zero UI churn. Until that exists, an attempted switch is loud, not silent.
+ * The API entry — REAL lumen only (owner ruling 2026-11-09, mock-first
+ * superseded): unset API_BASE falls back to the dev default, the cluster
+ * overrides via env. `bearer` is the session cookie value, threaded per
+ * call-site; the mock era's runtime twin lives on ONLY as a test double
+ * (api.test.ts imports mock.ts directly — nothing here does).
  */
-export function createApi(): AdminApi {
-	const base = process.env.API_BASE; // server-only; deliberately unset in Phase A
-	if (base) {
-		throw new Error(
-			'API_BASE is set, but the lumen fetch adapter lands in Phase B (M1/M3). ' +
-				'Unset API_BASE to use the mock layer.'
-		);
-	}
-	return mockApi;
+export function createApi(bearer = ''): AdminApi {
+	const base = process.env.API_BASE || DEV_DEFAULT_API_BASE;
+	return createLumenApi(base.replace(/\/+$/, ''), bearer);
 }
 
 export { AdminApiError } from './types.ts';

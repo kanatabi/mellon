@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import { createApi, AdminApiError } from '#lib/api/index.ts';
-import { mediaStore } from '#lib/api/mock.ts';
 import { renderMarkdown } from '#lib/preview/render.ts';
 import { isAuthed, SESSION_COOKIE } from '#lib/session.ts';
 import type { RequestHandler } from './$types';
@@ -30,7 +29,7 @@ type Ctx = {
 async function route(ctx: Ctx) {
 	const { params, url, request } = ctx;
 	const p = params.path.split('/').filter(Boolean);
-	const api = createApi();
+	const api = createApi(ctx.cookies.get(SESSION_COOKIE) ?? '');
 	const body = () => request.json();
 	const seg = p.join('/');
 
@@ -130,20 +129,6 @@ async function route(ctx: Ctx) {
 			const { name } = (await body()) as { name: string };
 			return json(await api.createCollection(String(name ?? '')), { status: 201 });
 		}
-	}
-
-	// --- media (mellon-LOCAL deviating endpoint, mock era only — journal
-	// 2026-11-08: serves the in-memory bytes store so AdminPhoto.src can be
-	// a real URL. Phase B: lumen relays to object storage, src becomes the
-	// CDN URL, and this route retires — the UI never knows the difference.) ---
-	if (p[0] === 'media' && p.length === 2 && request.method === 'GET') {
-		const dataUrl = mediaStore.get(p[1]);
-		if (!dataUrl) return json({ error: 'no such media' }, { status: 404 });
-		const m = /^data:([^;,]+);base64,(.*)$/s.exec(dataUrl);
-		if (!m) return json({ error: 'unserveable media encoding' }, { status: 500 });
-		return new Response(Buffer.from(m[2], 'base64'), {
-			headers: { 'content-type': m[1], 'cache-control': 'private, max-age=3600' }
-		});
 	}
 
 	// --- tags ---

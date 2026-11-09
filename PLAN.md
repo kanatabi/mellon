@@ -1555,3 +1555,243 @@ type-don't-save rule; runtime chaining stays in collection variables. Validation
 rank: 41 read-only examples + 19 defaults replayed against the live server, zero status
 mismatches, before commit. The stateful lifecycle moved to its proper home — the Go
 battery IS the walkthrough; the collection is the reference.
+
+### 2026-11-09 — PHASE C (scoped): both portals cut over to the real lumen
+
+Owner: _"execute PHASE C, only the earendil + mellon cutover… hold the vortex,
+etc later."_ Branches: earendil `feature/lumen-cutover` (`33bcaec`, pushed),
+mellon `feature/lumen-cutover` (pushed with this entry). Merges remain #3.
+
+- **earendil: zero request-path code.** The mock-first seam was built for this
+  day — `API_BASE` (server loads, direct) + `PUBLIC_API_BASE=/` (browser rides
+  the same-origin proxy). One `dev:lumen` script + docs. Proved it's the REAL
+  backend, not a twin trick: the proxy 503s without API_BASE, a dead API_BASE
+  makes SSR pages 500 (the feed is now genuinely lumen-dependent), engine-
+  ranked search hits, leak-bait unlinked (0), plain `npm run dev` still 200
+  on the twin. Contract harness: 13/13 vs :8080 throughout.
+- **mellon: the fetch adapter the placeholder promised.** `src/lib/api/
+fetch-adapter.ts` implements all of AdminApi against §8/§9 (multipart upload
+  converts the browser's dataUrl; lumen's DECODE owns dims; CAS/409/conflict
+  statuses surface verbatim — "the relay forwards, never decides"). `createApi
+(bearer)` threads the session cookie at 10 call sites (loads/actions/relay);
+  login stays bearer-free. Mock mode untouched — unset API_BASE is still the
+  twin.
+- **The wire taught two lessons before merge, exactly as designed:**
+  ① **412→409** — the mock era had invented 412 for CAS conflicts; lumen ships
+  409 on BOTH CAS surfaces (rev + secret). Aligned mock, UI branches, tests,
+  and the types comment to the shipped wire (mirror ritual: mellon moved —
+  lumen's 409 was already merged, tested, and Postman-published).
+  ② **session expiry had no real-mode story** — the layout only checked cookie
+  PRESENCE (mock-era laziness). Now: `search('')` (the cheapest authenticated
+  call — short-circuits before the engine) asks lumen whether the bearer lives;
+  401 → clear cookie → `/login?expired=1`; 503 → honest error, NEVER a fake
+  logout (an outage must not kill good sessions — mellon cannot verify, only
+  lumen can; asking IS forwarding).
+- **Live proof (running :5100 build against :8080 lumen + OpenBao + devs3):**
+  login 200 with real JWT cookie; desk lists DRAFTS (lumen data, camelCase,
+  rev); palette door finds `drafts-are-fantasies` through the relay; secrets
+  paths list `lumen/{dev,staging,production}` from the real plane; stale-rev
+  PUT → `{"error":"stale rev — someone saved first"} [409]` passthrough;
+  publish 200 (with Origin — Kit's CSRF check on body-less POST bit the probe,
+  not the product); upload via dataUrl → `…/media/4e/4e54….png` content-
+  addressed src, `gallery:false`, filename-derived alt; cleanup deletes 200;
+  logout 303 → stale-token replay → 303 `/login?next=%2F&expired=1`.
+- **Gates:** mellon lint 0 / check 0-0 / test:unit 50 passed + 6 live-gated
+  (they pass 6/6 with LUMEN_URL set) / build ✓. earendil lint / check 0-0 /
+  47 unit / build ✓. QA-tool lesson journaled: `grep -c` exits 1 on zero
+  matches — a `&&` chain after a should-be-empty assertion breaks when the
+  assertion PASSES.
+
+**Cutover vindication (same round):** the mellon e2e's soft-deleted probe post
+exposed a real lumen bug the mock era structurally could not see — `PostDocByID`
+ignored `deleted_at`, so the indexing worker RE-INDEXED soft-deleted published
+rows: items stayed honest (truth re-checking hydration, as designed) but the
+engine's TOTAL carried a ghost (13 vs truth's 12 — the contract suite caught the
+arithmetic). Fixed on lumen `fix/softdel-index-convergence` (`e74e993`, pushed)
+with a regression subtest pinning `total == len(items)` after publish→delete→drain,
+plus an ops purge of the two existing ghost docs (a WHERE-clause fix cannot
+re-enqueue jobs for rows nobody touches again — the engine had to be told).
+Consumer harnesses re-verified against the fixed binary: contract 13/13, live 6/6,
+Postman replays 60/60. This is the program's thesis in one paragraph: mock-mode
+green proves the LOGIC; only the live wire proves the SYSTEM.
+
+## PENDING TASKS — session handoff (2026-11-09, owner stepped away)
+
+**Owner side (gates — nothing here may be self-resolved):**
+
+1. **GATE #3 merges** (all branches pushed, every gate green on each tip):
+   - lumen `fix/softdel-index-convergence` (`e74e993`) → merge to `main`
+   - earendil `milestone/1-contract-harness` (`8e11c10`) and
+     `feature/lumen-cutover` (`c6cbb25`) — merge the harness FIRST: the new
+     `make contract` target needs `src/lib/api/contract.spec.ts` on the tree
+   - mellon `feature/lumen-cutover` (this commit)
+2. **Root pins** — bump after each child merges (main-only rule).
+3. **GATE #5** — final read of `mellon/THREAT-NOTE.md`; it gates prod seeding
+   and GATE #10. Provisionally ack'd, NOT finalized.
+4. **GATE #9** — media provider choice; then bucket/endpoint/CDN/keys become
+   Bao `lumen/{env}` VALUES (code never learns the vendor).
+5. **GATE #10** — console go-public checklist, run at launch (items listed in
+   DESIGN §exposure + the threat note's finalization sequence).
+
+**Phase C-infra (explicitly held by owner — the next execution slice):**
+
+- vortex manifests: lumen/meilisearch/openbao Deployments (placement, budget
+  line, ESO ExternalSecret CRs, unrouted 9090 + prometheus annotations,
+  `overlays/production/lumen`)
+- CI wiring (INFRA Phase 8): build → GHCR → `kustomize edit set image` hook
+- §5.6 prod seed procedure — with the AppRole **CIDR-bound** (dev is not);
+  `scripts/dev-plane.sh` is the shape reference
+- k3d rehearsal (root README §5): placement, failover, selfHeal, proxy
+- staging Application CRs when a staging target exists
+- put contract.spec + api.live.test behind a CI job with a lumen service container
+
+**Recorded-deferred (each has a written why):** D2/RSS routing decision;
+webp encoder story; fenced-media GC rows; presigned-direct uploads; strict-CSP
+hue refactor; content-revision audit trail (threat note R4).
+
+**Dev-stack state at leave:** everything STOPPED (`docker compose down`; no
+go/node processes). pg + meili volumes persist; **OpenBao dev storage is
+in-memory — rerun `make dev-plane` before wanting /admin/bao back.** Resume
+loop: `cd lumen && make dev` (+ `make devs3` for uploads) → `make lumen` in
+earendil/mellon (PORT/LUMEN overridable; default 5173/5173 — pass PORTs).
+Last full verification before stop: lumen battery 2× green, earendil contract
+13/13, mellon live 6/6, Postman example replays 60/60 — all against the fixed
+binary including the soft-delete convergence patch.
+
+**Addendum 2026-11-09 — real-by-default (mock exits the runtime).** Owner
+superseded the mock-first doctrine: `createApi()` now ALWAYS returns the
+fetch adapter (unset `API_BASE` = dev fallback :8080, cluster env wins);
+`index.ts` no longer imports `mock.ts`, and the relay's mock-era
+`GET /api/media/<id>` byte-store route retired exactly as its comment
+promised (src has been real URLs since the upload relay shipped). The twin
+stays — as the test-only semantics reference `api.test.ts` already imported
+directly: 50 offline tests still pass with zero backend, now with a runtime
+that ships no fixtures at all. `make dev` folded the old two-target split
+into one readyz-gated entry. Gates: lint / check 0-0 / 50+6-gated / build;
+live: login → desk → secrets → dead /api/media 404 — all against the running
+stack. Lumen's dev loop went idempotent the same session (23d650a: reuse
+containers/server, seed never clobbers real data without FORCE=1).
+
+**2026-11-09 — console behaviour round (owner-reported, all Playwright-proven).**
+Three fixes + one system, committed as `39f6657`/`63f3c75` on `feature/lumen-cutover`:
+① hover-preload storm — the fix proposed weeks ago finally LANDED, with a
+committed harness (`scripts/console-harness.mjs`, `npm run test:console`) so it
+cannot evaporate a third time; tap for data, hover for code. ② palette jumps
+left the editor on the OLD post (SvelteKit reuses the route component; PostEditor
+seeds state once — and `rev` could have carried across posts) — fixed with
+`{#key slug}`; the pre-existing unsaved-changes guard is now genuinely exercised
+(dismiss keeps / accept navigates). ③ long posts scrolled the whole app — the
+shell is viewport-locked at every breakpoint now; scroll lives inside the editor,
+preview and rails (T4: window at 0, cm-scroller at +1200, chrome pixels fixed).
+④ Error states designed straight into code (owner: no mockup round): ErrorPanel
+
+- both boundaries, status-mapped calm copy (401/404/409/backend/500), §11.3 hues
+  honoured — red stays destructive-only, warnings get one amber dot; dev-only
+  diagnostics; the 500-whose-message-says-unreachable honest-503 translation;
+  in-chrome rendering keeps the palette one keystroke from escape. Harness 9/9;
+  units 50 green; lint exit 0 verified directly after a pipe swallowed a prettier
+  warning (own lesson logged: pipes eat gates — check the exit, not the tail).
+
+**2026-11-09 — rail containment (`560fccc`):** owner screenshot caught the
+inspector cropping mid-timeline — the shell lock had bounded the document, but
+rails still sized to content (editor: `self-stretch` inside a `lg:block` wrapper =
+decorative; desk/photos: `min-h-full` sections + scroller-less asides). Pattern now
+uniform: viewport-bounded sections, `h-full overflow-y-auto overscroll-contain`
+rails, own-scroller center columns. Diagnosis was pure measurement (Playwright
+ancestor-chain probe), never theory — and it caught two lies the eye accepted:
+the editor rail looked fine at desktop sizes under content height until the probe
+showed 1235px clipped inside 796px. Harness now asserts every rail: bounded,
+internally scrollable, page motionless — 15/15.
+
+**2026-11-09 — collapsible section panes (`0a644e3`):** every labeled group in
+the config sidebars (editor inspector, desk & photos filters) became an
+independent pane — vertical-pill collapse (dirty dot on collapsed ACTIONS),
+strict stacking, reorder by drag or Alt+arrows, persisted per rail, header
+dbl-click resets. The ACTIONS pin is data-shape, not default: stored order
+carries only movable ids — nothing expressible can move the verb block.
+Deferred honestly: the photo-DETAIL rail (different markup shape; same
+treatment owed, next round). Harness now 21/21 including five pane asserts.
+Round-honesty note: three scripting traps in one pass (f-string vs Svelte
+braces ×2, tab-prefix substring matches, unanchored close-tag search) — each
+caught by gates, not shipped silently; anchors-at-newline is now the house
+style for markup surgery.
+
+**2026-11-09 — accordion pivot (`8ebec42`):** owner saw the edge-tab-strip cut and
+redirected — collapse happens IN PLACE, vertically; rearrange by drag. Pills/edge-dock
+dropped; SectionCard's closed form is now a full-width slim bar (grip, icon, label,
+dirty dot, chevron) with vertical slide. Order model tidied: header -1, pinned ACTIONS 0,
+movables from 1 (the first screenshot exposed ACTIONS floating above the POST header).
+Everything persisted survived: open-state, order, keyboard parity, pinned wall, reset.
+Harness 21/21, visual proof shots/accordion.png.
+
+**2026-11-09 — accordion finished properly (`fcaf3a7`):** owner's three
+observations were all correct. Collapse affordance = arrow (points where the
+click goes). The animation jank had a structural cause: card/bar were TWO
+branches racing out-vs-in transitions — now ONE persistent shell whose body
+slides in place. Drag became the real model: lift closes the source gap
+immediately (FLIP), hovering opens a dashed ghost slot and neighbors make
+room LIVE, the drop lands exactly where the ghost already is — plus fast-
+fading rail scrollbars (rail-scroll). Per-pane ondrop props died; a single
+container action (drag-reorder.ts) owns drag mechanics via data-pane
+delegation, pin excluded from landing slots. Self-review caught an inverted
+chevron between runs. Harness 22/21→22 with the ghost-slot assert.
+
+**2026-11-09 — drag determinism (`cb50484`):** owner: "order is messy after
+rearranging… sometimes cannot put the pane in some place." Root cause was
+structural: hit-testing iterated DOM/markup order while CSS `order` arranges the
+visual stack — some slots were unreachable and landings looked random. Also two
+smaller defects: `place(id, null)` inserted FIRST while the ghost showed LAST,
+and `settle()` blanked inline order styles (Svelte only re-writes changed attrs,
+so untouched panes drifted to DOM order). Landing semantics now live in a pure
+module (pane-order.ts — vitest can't transform `.svelte.ts` $state) with 7 unit
+asserts pinning every rule; the settle restores canonical pos per pane; FLIP
+skips degenerate (hidden) rects. Probe against a rendered rail proves MEDIA
+lands between tags and export when dropped on EXPORT's top quarter. Lesson:
+a probe whose target rail is display:none measures zeros and lies — assert
+visibility before trusting a synthetic drag. 57 units, harness 22/22, gates green.
+
+**2026-11-09 — smoothness round (`perf(rails)`):** owner asked for render
+performance and got an audit instead of tuning knobs. Drag cost was per
+EVENT (2-4x/frame); now per FRAME: rAF coalescing + a slot cache that makes
+steady-state pointer travel zero-layout-read — guarded by a harness assert
+that spies `getBoundingClientRect` (its first run correctly FAILED until it
+learned to warm the cache — the rebuild after a real change is legitimate;
+the waste was per-event measuring, and that is what the test forbids). FLIPs
+retarget instead of stacking; the drag image is a slim captured bar, not a
+full-pane snapshot (expensive on the media pane). `contain: layout style` on
+panes, verified against a live DOM sweep for re-anchoring risk. Owner's two
+UI calls shipped with it: cover preview shimmers until decoded (broken loads
+keep the shimmer rather than paint a broken icon), and the rail scrollbar is
+now fully invisible. Harness 27/27 (+5), gates green.
+
+**2026-11-09 — container pivot + touch drag (`6470882`):** the split/tab
+breakpoint was measuring the WRONG box — the viewport, when the nav+rail
+already ate ~550px — so 1280 laptops got two unreadable half-panes. All
+editor-column layout decisions now ride Tailwind CONTAINER QUERIES on the
+column itself (@container/editor, 48rem): tabs arrive when the column
+actually runs out of room, and rail-collapse buys the split back live. The
+rail's own visibility stayed viewport-keyed per the owner ("as-is"). Touch:
+HTML5 DnD is a mouse-only API, so a 380ms long-press now lifts panes into
+the same FLIP machine — finger-following slim bar, live ghost slots, edge
+autoscroll while parked at the rail's rim, tap/scroll/typing never arm.
+The synthetic-pointer test caught a real bug on first run (autoscroll slid
+the landing out from under a below-fold target) — proof the harness earns
+its keep. Shimmer lifecycle (overlay must STOP on decode; img.complete for
+warm caches) and invisible rail scrollbars shipped in the same commit.
+Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
+layout — columns measure containers, chrome measures viewport.
+
+**2026-11-09 — the INTERNAL 200 (`e0fd672`):** owner asked what a 200 was
+doing inside an error boundary. It was never a backend code: SSR succeeded,
+the hydrated component crashed, and Kit's root error page inherits the
+navigation's status — 200. The crash was a self-rearming `$effect` (wrote
+`rows`, read `rows` in the same run → new object every arm → never converged
+→ effect_update_depth_exceeded). Resync now guards on a PRIMITIVE key; the
+false-fix trap (storing the payload object in $state and `===`-comparing it
+later — deep proxies never match) is documented in-code so nobody rewrites
+it. Typing no longer gets its dirty/message state wiped mid-keystroke as a
+bonus. T-secrets (x3) pins the page alive; the shimmer gate stopped pinning
+a cover HOST and now discovers the live URL from SSR HTML — it had silently
+degraded the day the owner's cover moved unsplash→picsum. Harness 38/38.
+Lesson: a guard inside an effect must be a PRIMITIVE; and a test that gates
+the wrong URL tests nothing but PASSes quietly.

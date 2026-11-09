@@ -118,7 +118,7 @@ describe('mock AdminApi contract', () => {
 		const before = await api.getPost('queues-unacked');
 		await expect(
 			api.updatePost('queues-unacked', draft({ slug: 'queues-unacked' }), 99)
-		).rejects.toMatchObject({ status: 412 });
+		).rejects.toMatchObject({ status: 409 });
 		const after = await api.updatePost(
 			'queues-unacked',
 			draft({ slug: 'queues-unacked' }),
@@ -150,7 +150,7 @@ describe('mock AdminApi contract', () => {
 		const v = await api.secretMeta('lumen', 'staging');
 		expect(v?.currentVersion).toBe(2);
 		await expect(api.writeSecret('lumen', 'staging', { A: '1' }, 1)).rejects.toMatchObject({
-			status: 412
+			status: 409
 		});
 		const next = await api.writeSecret('lumen', 'staging', { A: '1' }, 2);
 		expect(next).toBe(3);

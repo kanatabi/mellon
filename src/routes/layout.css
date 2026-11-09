@@ -281,3 +281,57 @@
 		animation-duration: 0.01ms !important;
 	}
 }
+
+/* Rail scrollbars (owner ask 2026-11-09, second pass): INVISIBLE. The rail
+   stays scrollable (wheel/trackpad/drag), but no bar ever paints — the fade
+   experiment still left a thumb the owner didn't want. */
+.rail-scroll {
+	scrollbar-width: none;
+}
+.rail-scroll::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+}
+
+/* Pane layout containment: an animating pane (accordion slide, ghost resize)
+   cannot drag other panes' subtrees into the same recalculation. No paint
+   containment — the focus-visible ring must keep escaping the box. */
+[data-pane] {
+	contain: layout style;
+}
+
+/* Long-press-to-drag (touch): while a press decides between tap/scroll/drag,
+   suppress selection & the iOS callout so arming never becomes a
+   text-selection mess. Interactive children are excluded by the JS arm rule
+   (they keep native long-press paste). */
+.pane-arming,
+.pane-arming * {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+/* Media thumbnail preview shimmer: the box paints its own loading state while
+   the cover decodes (same philosophy as the diagram placeholder — the
+   skeleton is there before the pixels are). */
+.thumb-shimmer {
+	background: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.thumb-shimmer::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		100deg,
+		transparent 30%,
+		color-mix(in oklab, var(--muted-foreground) 14%, transparent) 50%,
+		transparent 70%
+	);
+	transform: translateX(-100%);
+	animation: thumb-sweep 1.15s ease-in-out infinite;
+}
+@keyframes thumb-sweep {
+	to {
+		transform: translateX(100%);
+	}
+}

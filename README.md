@@ -19,6 +19,20 @@ Mirror earendil's conventions: SvelteKit 3 + Svelte 5 runes + TS + Tailwind v4 +
 npm run dev · npm run check · npm run lint · npm run test:unit · npm run build
 ```
 
+**Real by default** (owner ruling 2026-11-09): the runtime has one data
+source — lumen. Unset `API_BASE` falls back to `http://localhost:8080`;
+`src/lib/api/fetch-adapter.ts` maps every `AdminApi` method 1:1 onto the
+§8/§9 wire, the browser never sees lumen or the token, and the fixture
+twin lives on ONLY in test scope (`api.test.ts` imports it directly — the
+runtime graph never does). Start the backend first: `cd ../lumen && make dev`
+(portal login: `gofar` / `mellon-dev-password`, the dev placeholder).
+
+Makefile included: `make help` lists the verbs — `make dev` (readyz-gated
+real mode, `LUMEN=`/`PORT=` overridable, reuses a live server), `make live`
+(the gated acceptance suite vs a running lumen: login, drafts-at-the-door,
+CAS 409s, multipart upload, secrets relay, instant revocation),
+check/lint/test/build.
+
 Branch-per-milestone, PR-reviewed — never commit directly to `main`.
 
 ## Repo bootstrap (remote not yet created)

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto, beforeNavigate } from '$app/navigation';
 	import {
-		Clock,
 		ClipboardCopy,
 		Download,
 		Eye,
@@ -15,6 +14,19 @@
 	} from 'lucide-svelte';
 	import { onMount, tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
+	import SectionCard from '#lib/components/SectionCard.svelte';
+	import { postSections } from '#lib/sections.svelte.ts';
+	import { reorderable } from '#lib/drag-reorder.ts';
+	import {
+		AlignLeft,
+		CalendarDays,
+		Type,
+		Link as LinkIcon,
+		Tags as TagsIcon,
+		Image,
+		History,
+		Send
+	} from 'lucide-svelte';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import Combobox from '#lib/components/Combobox.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
@@ -98,6 +110,7 @@ flowchart LR
 	let saving = $state(false);
 
 	$effect(() => editorRail.init());
+	$effect(() => postSections.init());
 
 	// item #2: slug auto-derives from the title until the author edits it by
 	// hand. Only meaningful pre-create — a shipped slug never changes (URL
@@ -150,6 +163,18 @@ flowchart LR
 	// from the editor bands or the rail media section. `insert` mode writes
 	// through the CodeMirror handle — the docChanged listener does the rest
 	// (value, dirty, preview — all for free).
+	// the cover that has ACTUALLY decoded — until then the preview box shimmers,
+	// and the sweep STOPS once it paints (the ::after overlays the img: leaving
+	// the class on meant a permanent gloss — owner screenshot, right it did).
+	let coverDecoded: string | null = $state(null);
+	let coverImgEl: HTMLImageElement | undefined = $state();
+	$effect(() => {
+		// cached reloads never fire onload — complete+decoded is caught here
+		if (coverImgEl && coverImgEl.complete && coverImgEl.naturalWidth > 0) {
+			coverDecoded = draft.thumbnail;
+		}
+	});
+	let coverReady = $derived(coverDecoded != null && coverDecoded === draft.thumbnail);
 	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | 'upload-cover' | null>(null);
 	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
@@ -231,7 +256,7 @@ flowchart LR
 			message = { kind: 'ok', text: `saved · rev ${rev}` };
 			return true;
 		} catch (e) {
-			if (e instanceof ApiError && e.status === 412) {
+			if (e instanceof ApiError && e.status === 409) {
 				message = {
 					kind: 'conflict',
 					text: 'conflict: someone saved first — reload to take theirs'
@@ -636,8 +661,8 @@ flowchart LR
      anyway, since CodeMirror stops keydown propagation). -->
 <svelte:window onkeydown={onKey} />
 
-<section class="flex min-h-full flex-1 gap-4">
-	<div class="flex min-w-0 grow flex-col gap-4">
+<section class="flex h-full min-h-0 flex-1 gap-4">
+	<div class="@container/editor flex min-w-0 grow flex-col gap-4">
 		<!-- Meta bar: entity title wears the serif; only the preview toggle
 		     lives here — verbs moved to the post rail's actions block. -->
 		<div class="flex flex-wrap items-center justify-between gap-3">
@@ -664,12 +689,12 @@ flowchart LR
 						unsaved
 					</span>
 				{/if}
-				{@render wrapToggle('hidden lg:flex')}
-				{@render imageTrigger('hidden lg:flex')}
+				{@render wrapToggle('hidden @min-[48rem]/editor:flex')}
+				{@render imageTrigger('hidden @min-[48rem]/editor:flex')}
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
-					class="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors lg:flex {showPreview
+					class="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors @min-[48rem]/editor:flex {showPreview
 						? 'border-brand bg-brand/10 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-pressed={showPreview}
@@ -694,24 +719,25 @@ flowchart LR
 			</p>
 		{/if}
 
-		<!-- Pane area. Below lg: a fixed viewport-height box (NOT flex-1 — its
+		<!-- Pane area. Narrow editor COLUMN (container 48rem — the rail & nav
+		     steal width long before the viewport hits lg): a fixed box with layered (NOT flex-1 — its
 		     0% flex-basis overrides the explicit height in an indefinite
 		     column and collapsed the panes to zero: the empty-editor bug) with
 		     the two panes layered; tabs decide which is visible. lg+: flex
 		     fills the row and the split grid animates 1fr↔0fr — the pane never
 		     leaves layout, so nothing can reflow (old ghost bug). -->
 		<div
-			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out lg:grid lg:h-auto lg:min-h-0 lg:flex-1 {showPreview
-				? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-4'
-				: 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-0'}"
+			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out @min-[48rem]/editor:grid @min-[48rem]/editor:h-full @min-[48rem]/editor:min-h-0 @min-[48rem]/editor:flex-1 {showPreview
+				? '@min-[48rem]/editor:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @min-[48rem]/editor:gap-4'
+				: '@min-[48rem]/editor:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] @min-[48rem]/editor:gap-0'}"
 		>
 			<div
 				id="pane-write"
 				role="tabpanel"
 				aria-labelledby="tab-write"
-				class="absolute inset-0 overflow-hidden rounded-lg border border-border bg-card transition-opacity duration-150 lg:static lg:min-h-0 {editorTab ===
+				class="absolute inset-0 overflow-hidden rounded-lg border border-border bg-card transition-opacity duration-150 @min-[48rem]/editor:static @min-[48rem]/editor:min-h-0 {editorTab ===
 				'preview'
-					? 'max-lg:invisible max-lg:opacity-0'
+					? '@max-[48rem]/editor:invisible @max-[48rem]/editor:opacity-0'
 					: ''}"
 			>
 				<CodeMirrorEditor
@@ -728,13 +754,15 @@ flowchart LR
 				id="pane-preview"
 				role="tabpanel"
 				aria-labelledby="tab-preview"
-				class="absolute inset-0 min-h-0 min-w-0 overflow-hidden transition-opacity duration-150 lg:static {showPreview
+				class="absolute inset-0 min-h-0 min-w-0 overflow-hidden transition-opacity duration-150 @min-[48rem]/editor:static {showPreview
 					? ''
-					: 'hidden lg:block'} {editorTab === 'write' ? 'max-lg:invisible max-lg:opacity-0' : ''}"
+					: 'hidden @min-[48rem]/editor:block'} {editorTab === 'write'
+					? '@max-[48rem]/editor:invisible @max-[48rem]/editor:opacity-0'
+					: ''}"
 			>
 				<div
 					bind:this={previewEl}
-					class="preview h-full min-w-0 overflow-y-auto rounded-lg border border-border bg-card p-5 transition-opacity duration-150 lg:min-w-[360px] {showPreview
+					class="preview h-full min-w-0 overflow-y-auto rounded-lg border border-border bg-card p-5 transition-opacity duration-150 @min-[48rem]/editor:min-w-[360px] {showPreview
 						? 'opacity-100'
 						: 'opacity-0'}"
 					aria-label="Rendered preview"
@@ -753,7 +781,7 @@ flowchart LR
 		     panels stay mounted, the inactive one is visibility-hidden via
 		     max-lg: variants so desktop semantics are untouched. Roving
 		     tabindex: Tab lands on the selected tab, arrows walk. -->
-		<div class="flex items-center gap-2 lg:hidden">
+		<div class="flex items-center gap-2 @min-[48rem]/editor:hidden">
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
 				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
@@ -811,7 +839,7 @@ flowchart LR
 					aria-expanded={railSheet}
 					aria-label="Open post settings"
 					title="Post settings"
-					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+					class="flex h-9 w-11 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] max-lg:hidden"
 				>
 					<FileCog class="size-4" />
 				</button>
@@ -842,10 +870,18 @@ flowchart LR
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex w-72 flex-col gap-5 self-stretch overflow-y-auto rounded-lg border border-border bg-card p-4"
+				use:reorderable={{ store: postSections }}
+				class="rail-scroll flex h-full w-72 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Post actions and settings"
 			>
-				<div class="flex items-center justify-between">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- dblclick is a progressive enhancement: keyboard users move panes per-card -->
+				<div
+					style="order:-1"
+					class="flex items-center justify-between"
+					title="Double-click resets pane order"
+					ondblclick={postSections.reset}
+				>
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">post</p>
 					<button
 						type="button"
@@ -921,8 +957,16 @@ flowchart LR
 		<!-- Actions block (owner call): save/publish/delete live at the
 				     top of the rail under their own label — the CMS "publish
 				     box" position, never under "settings". -->
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">actions</p>
+		<SectionCard
+			id="actions"
+			label="actions"
+			icon={Send}
+			open={postSections.isOpen('actions')}
+			pinned
+			{dirty}
+			ontoggle={() => postSections.toggle('actions')}
+			order={postSections.pos('actions')}
+		>
 			<button
 				type="button"
 				disabled={saving}
@@ -959,34 +1003,52 @@ flowchart LR
 					delete
 				</button>
 			{/if}
-		</div>
+		</SectionCard>
 
-		<label class="flex flex-col gap-1">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>title</span
-			>
+		<SectionCard
+			id="title"
+			label="title"
+			icon={Type}
+			open={postSections.isOpen('title')}
+			ontoggle={() => postSections.toggle('title')}
+			onmove={(d) => postSections.move('title', d)}
+			order={postSections.pos('title')}
+		>
 			<input
+				aria-label="Title"
 				class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-border focus-visible:border-brand"
 				bind:value={draft.title}
 				oninput={touch}
 			/>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>subtitle</span
-			>
+		</SectionCard>
+		<SectionCard
+			id="subtitle"
+			label="subtitle"
+			icon={AlignLeft}
+			open={postSections.isOpen('subtitle')}
+			ontoggle={() => postSections.toggle('subtitle')}
+			onmove={(d) => postSections.move('subtitle', d)}
+			order={postSections.pos('subtitle')}
+		>
 			<textarea
+				aria-label="Subtitle"
 				rows="3"
 				class="w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-snug outline-none hover:border-border focus-visible:border-brand"
 				bind:value={draft.subtitle}
 				oninput={touch}></textarea>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>slug</span
-			>
+		</SectionCard>
+		<SectionCard
+			id="slug"
+			label="slug"
+			icon={LinkIcon}
+			open={postSections.isOpen('slug')}
+			ontoggle={() => postSections.toggle('slug')}
+			onmove={(d) => postSections.move('slug', d)}
+			order={postSections.pos('slug')}
+		>
 			{#if isNew}
 				<input
+					aria-label="Slug"
 					class="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs outline-none hover:border-border focus-visible:border-brand"
 					placeholder="auto from title"
 					bind:value={draft.slug}
@@ -1005,10 +1067,17 @@ flowchart LR
 				/>
 				<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move</span>
 			{/if}
-		</label>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">date</p>
+		<SectionCard
+			id="date"
+			label="date"
+			icon={CalendarDays}
+			open={postSections.isOpen('date')}
+			ontoggle={() => postSections.toggle('date')}
+			onmove={(d) => postSections.move('date', d)}
+			order={postSections.pos('date')}
+		>
 			<!-- earendil's calendar popover, single-pick shape (item #6): the
 					     native date input is stock, not ours. -->
 			<DatePicker
@@ -1018,10 +1087,17 @@ flowchart LR
 					touch();
 				}}
 			/>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1.5">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">tags</p>
+		<SectionCard
+			id="tags"
+			label="tags"
+			icon={TagsIcon}
+			open={postSections.isOpen('tags')}
+			ontoggle={() => postSections.toggle('tags')}
+			onmove={(d) => postSections.move('tags', d)}
+			order={postSections.pos('tags')}
+		>
 			<Combobox
 				items={tags.map((t) => ({ name: t.name, count: t.posts }))}
 				multiple
@@ -1033,20 +1109,37 @@ flowchart LR
 					touch();
 				}}
 			/>
-		</div>
+		</SectionCard>
 
 		<!-- Media section (owner call): cover + body-insert entries live here;
 		     the stock <select> became a real preview + dialog (one ImagePicker
 		     for both jobs — the library grid and the upload queue are shared
 		     with the photos page). -->
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">media</p>
+		<SectionCard
+			id="media"
+			label="media"
+			icon={Image}
+			open={postSections.isOpen('media')}
+			ontoggle={() => postSections.toggle('media')}
+			onmove={(d) => postSections.move('media', d)}
+			order={postSections.pos('media')}
+		>
 			{#if draft.thumbnail}
-				<img
-					src={draft.thumbnail}
-					alt="Cover preview"
-					class="aspect-video w-full rounded-md border border-border object-cover"
-				/>
+				<div
+					class="relative aspect-video w-full overflow-hidden rounded-md border border-border {coverReady
+						? ''
+						: 'thumb-shimmer'}"
+				>
+					<img
+						bind:this={coverImgEl}
+						src={draft.thumbnail}
+						alt="Cover preview"
+						class="h-full w-full object-cover transition-opacity duration-200 {coverReady
+							? 'opacity-100'
+							: 'opacity-0'}"
+						onload={() => (coverDecoded = draft.thumbnail)}
+					/>
+				</div>
 			{/if}
 			<div class="flex flex-wrap gap-1.5">
 				<button
@@ -1077,10 +1170,17 @@ flowchart LR
 				<ImagePlus class="size-3" />
 				insert image…
 			</button>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1.5 border-t border-border pt-4">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">export</p>
+		<SectionCard
+			id="export"
+			label="export"
+			icon={Download}
+			open={postSections.isOpen('export')}
+			ontoggle={() => postSections.toggle('export')}
+			onmove={(d) => postSections.move('export', d)}
+			order={postSections.pos('export')}
+		>
 			<div class="flex flex-col gap-1.5">
 				<button
 					type="button"
@@ -1113,20 +1213,25 @@ flowchart LR
 					{exportMsg}
 				</p>
 			{/if}
-		</div>
+		</SectionCard>
 
 		{#if !isNew && seed}
-			<div
-				class="flex flex-col gap-1 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground"
+			<SectionCard
+				id="timeline"
+				label="timeline"
+				icon={History}
+				open={postSections.isOpen('timeline')}
+				ontoggle={() => postSections.toggle('timeline')}
+				onmove={(d) => postSections.move('timeline', d)}
+				order={postSections.pos('timeline')}
 			>
-				<p class="mb-1 flex items-center gap-2 text-[10px] tracking-widest uppercase">
-					<Clock class="size-3" />timeline
-				</p>
-				<span>created · {fmtDay(seed.createdAt)}</span>
-				<span>published · {fmtDay(publishedAt)}</span>
-				<span>updated · {updatedAt ? fmtDay(updatedAt) : '—'}</span>
-				<span>rev {rev}</span>
-			</div>
+				<div class="flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
+					<span>created · {fmtDay(seed.createdAt)}</span>
+					<span>published · {fmtDay(publishedAt)}</span>
+					<span>updated · {updatedAt ? fmtDay(updatedAt) : '—'}</span>
+					<span>rev {rev}</span>
+				</div>
+			</SectionCard>
 		{/if}
 	{/snippet}
 

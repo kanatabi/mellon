@@ -1,9 +1,10 @@
 import { createApi } from '#lib/api/index.ts';
+import { SESSION_COOKIE } from '#lib/session.ts';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
-	const api = createApi();
+export const load: PageServerLoad = async ({ url, cookies }) => {
+	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const paths = await api.listSecretPaths();
 	const app = url.searchParams.get('app') ?? paths[0]?.app ?? '';
 	const env = url.searchParams.get('env') ?? paths.find((p) => p.app === app)?.env ?? '';

@@ -29,9 +29,24 @@
 	let historyVersions = $state<number[]>([]);
 	let historyDiff = $state<DiffOp[] | null>(null);
 
+	// Resync the editor when the SERVER returns a fresh payload (mount +
+	// invalidateAll after save). Guarded by a PRIMITIVE key: an effect must
+	// never read state it writes — the first cut did `rows = {...}` then
+	// `Object.keys(rows)`, so every run re-armed itself with a new object,
+	// never converged, and Svelte killed the page with
+	// effect_update_depth_exceeded (the "INTERNAL 200" boundary: 200 is the
+	// navigation status the crash inherited, not an upstream code). Beware
+	// the second trap: storing the PAYLOAD OBJECT in $state to compare later
+	// also loops forever — Svelte deep-proxies what you store, so `===` is
+	// proxy-vs-proxy and never true. Only primitives converge.
+	let syncKey = $state('');
 	$effect(() => {
-		rows = { ...data.secret?.data };
-		order = Object.keys(rows);
+		const key = `${data.app}|${data.env}|${data.meta?.currentVersion ?? 0}|${JSON.stringify(data.secret?.data ?? null)}`;
+		if (key === syncKey) return;
+		syncKey = key;
+		const nextRows = { ...(data.secret?.data ?? {}) };
+		rows = nextRows;
+		order = Object.keys(nextRows); // the LOCAL clone — not `rows` state
 		cas = data.meta?.currentVersion ?? 0;
 		dirty = false;
 		message = null;
@@ -64,7 +79,7 @@
 			message = {
 				kind: 'err',
 				text:
-					e instanceof ApiError && e.status === 412
+					e instanceof ApiError && e.status === 409
 						? 'CAS rejected — someone wrote first; reloading theirs'
 						: String(e)
 			};

@@ -1,4 +1,5 @@
 import { createApi } from '#lib/api/index.ts';
+import { SESSION_COOKIE } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -7,7 +8,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // &gallery=&from=&to=&sort=&dir=, mapping 1:1 onto PhotoListOpts. Returned
 // filter keys are prefixed "active*" so they never collide with the
 // collections VOCABULARY the page also needs.
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, cookies }) => {
 	const sp = url.searchParams;
 	const gallery = sp.get('gallery');
 	const sortRaw = sp.get('sort');
@@ -19,7 +20,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		sortRaw === 'title' || sortRaw === 'collection' || sortRaw === 'created'
 			? (sortRaw as 'title' | 'collection' | 'created')
 			: undefined;
-	const api = createApi();
+	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const [paged, collections] = await Promise.all([
 		api.listPhotos({
 			collections: activeCollections.length ? activeCollections : undefined,

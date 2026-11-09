@@ -15,7 +15,10 @@
 		Plus,
 		SlidersHorizontal,
 		Table,
-		X
+		X,
+		ArrowUpDown,
+		CalendarDays,
+		Folder
 	} from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -27,6 +30,9 @@
 	import Watermark from '#lib/components/Watermark.svelte';
 	import { client } from '#lib/api/client.ts';
 	import { photosRail } from '#lib/rails.svelte.ts';
+	import SectionCard from '#lib/components/SectionCard.svelte';
+	import { photosSections } from '#lib/sections.svelte.ts';
+	import { reorderable } from '#lib/drag-reorder.ts';
 	import { editField, stateToggle, vocabSubmenu } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import { parseDateExpr } from '#lib/date-expr.ts';
@@ -313,14 +319,16 @@
 		{ label: 'size', field: null },
 		{ label: 'created', field: 'created' }
 	];
+
+	$effect(() => photosSections.init());
 </script>
 
 <svelte:head>
 	<title>photos · mellon</title>
 </svelte:head>
 
-<section class="flex min-h-full gap-4">
-	<div class="flex min-w-0 grow flex-col gap-6">
+<section class="flex h-full min-h-0 gap-4">
+	<div class="flex min-w-0 grow flex-col gap-6 overflow-y-auto overscroll-contain pr-1">
 		<div class="flex items-center justify-between gap-4">
 			<h1 class="font-brand text-4xl font-semibold tracking-tight">Photos</h1>
 			<div class="flex items-center gap-3">
@@ -744,10 +752,18 @@
 		{:else}
 			<aside
 				transition:fade={{ duration: 120 }}
-				class="flex w-60 flex-col gap-6 rounded-lg border border-border bg-card p-4"
+				use:reorderable={{ store: photosSections }}
+				class="rail-scroll flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
 				aria-label="Photo filters"
 			>
-				<div class="flex items-center justify-between">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- dblclick reset is enhancement; keyboard moves live on each pane -->
+				<div
+					style="order:-1"
+					class="flex items-center justify-between"
+					title="Double-click resets pane order"
+					ondblclick={photosSections.reset}
+				>
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">filters</p>
 					<button
 						type="button"
@@ -764,8 +780,15 @@
 	</div>
 
 	{#snippet filtersBody()}
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">sort</p>
+		<SectionCard
+			id="sort"
+			label="sort"
+			icon={ArrowUpDown}
+			open={photosSections.isOpen('sort')}
+			ontoggle={() => photosSections.toggle('sort')}
+			onmove={(d) => photosSections.move('sort', d)}
+			order={photosSections.pos('sort')}
+		>
 			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Sort photos">
 				{#each sortChips as chip (chip.label)}
 					{@const on = data.sort === chip.sort && data.dir === chip.dir}
@@ -783,22 +806,33 @@
 					</a>
 				{/each}
 			</div>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-2">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">dates</p>
+		<SectionCard
+			id="dates"
+			label="dates"
+			icon={CalendarDays}
+			open={photosSections.isOpen('dates')}
+			ontoggle={() => photosSections.toggle('dates')}
+			onmove={(d) => photosSections.move('dates', d)}
+			order={photosSections.pos('dates')}
+		>
 			<DateRange
 				from={data.from}
 				to={data.to}
 				onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
 			/>
-		</div>
+		</SectionCard>
 
-		<div class="flex flex-col gap-1.5">
-			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-				collections{#if data.activeCollections.length}
-					· {data.activeCollections.length} on{/if}
-			</p>
+		<SectionCard
+			id="collections"
+			label="collections"
+			icon={Folder}
+			open={photosSections.isOpen('collections')}
+			ontoggle={() => photosSections.toggle('collections')}
+			onmove={(d) => photosSections.move('collections', d)}
+			order={photosSections.pos('collections')}
+		>
 			<!-- OR semantics across toggled names, like posts' tags. -->
 			<div class="flex flex-wrap gap-1.5">
 				{#each data.collections as c (c.name)}
@@ -826,7 +860,7 @@
 					uncategorized
 				</a>
 			</div>
-		</div>
+		</SectionCard>
 
 		<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
 			filters ride the URL — the API does the work, the page never sorts

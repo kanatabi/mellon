@@ -277,8 +277,8 @@
 	<title>{data.photo.alt || data.photo.id} · photos · mellon</title>
 </svelte:head>
 
-<section class="flex min-h-full gap-4">
-	<div class="flex min-w-0 grow flex-col gap-4">
+<section class="flex h-full min-h-0 gap-4">
+	<div class="flex min-w-0 grow flex-col gap-4 overflow-y-auto overscroll-contain pr-1">
 		<!-- Breadcrumb: the way home, both hops keyboard-reachable. -->
 		<nav
 			class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"

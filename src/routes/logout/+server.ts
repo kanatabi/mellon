@@ -8,7 +8,7 @@ export const POST: RequestHandler = async ({ cookies }) => {
 	// outstanding token dies, not just this browser's copy), best-effort:
 	// the cookie is ours to clear even when the backend is unreachable.
 	try {
-		await createApi().logout();
+		await createApi(cookies.get(SESSION_COOKIE) ?? '').logout();
 	} catch {
 		/* end session never depends on the network */
 	}
