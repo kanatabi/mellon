@@ -1781,6 +1781,22 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-10 — mobile honesty sweep (this commit):** owner reports cleared the
+last mobile debt, including two self-inflicted regressions I own: the sheet
+trigger carried a BACKWARDS `max-lg:hidden` (vanished exactly on phones), and my
+`contain: layout` perf tweak made panes stacking contexts that painted over each
+other's popovers — removed, since correctness outranks a cheap win the slot cache
+already delivers. The hidden older bug it masked: popovers opened downward
+unconditionally and fell off-screen in the tall rail — Combobox/DatePicker now
+flip above when space says so. Ruling implemented: SHEET = pre-drag view
+(reorderable prop gates grips/drag/keys/hints; railBody/filtersBody take
+movable; desktop true, sheet false — all three rails). RailDrawer chrome
+(band + X) restructured to never scroll (lesson #2 again: absolute lives at the
+scroller's ORIGIN). Palette right-anchored; breadcrumb finally truncates
+(justify-self-start had sized it to content — truncate needs a bound).
+Harness 64/64 (+7). Two self-own lines in the commit: regressions named as
+mine, with the class each belongs to.
+
 **2026-11-10 — split stacking + wrap (follow-up commit):** owner's second
 screenshot: 2-col split on a 390px phone is two unreadable slivers — below
 md the panes now STACK (from above to), side-by-side resumes at md+. A
