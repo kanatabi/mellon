@@ -301,6 +301,90 @@ check(
 	(await page.locator('[data-pane="actions"]').getAttribute('draggable')) !== 'true'
 );
 
+// --- T-pane7..: perf contract + rail cosmetics (owner round 2) ---
+check(
+	'T-pane7 rail scrollbar is invisible (no bar paints)',
+	await page.evaluate(
+		() => getComputedStyle(document.querySelector('aside.rail-scroll')).scrollbarWidth === 'none'
+	)
+);
+{
+	const expandMedia = page.locator('button[aria-label="Expand media"]');
+	if (await expandMedia.count()) await expandMedia.first().click();
+	await sleep(300);
+	check(
+		'T-pane8 media cover preview carries a loading shimmer box',
+		(await page.locator('aside .thumb-shimmer img[alt="Cover preview"]').count()) === 1
+	);
+}
+{
+	// synthetic drag sweep: lift → open slot → steady moves must measure ZERO
+	// rects (the cache is the point), and the drag image must be a slim bar.
+	const perf = await page.evaluate(async () => {
+		const raf = () => new Promise((r) => requestAnimationFrame(r));
+		const aside = document.querySelector('aside.rail-scroll');
+		const media = aside.querySelector('[data-pane="media"]');
+		const dt = new DataTransfer();
+		let dragImages = 0;
+		const sdi = DataTransfer.prototype.setDragImage;
+		DataTransfer.prototype.setDragImage = function (...a) {
+			dragImages++;
+			return sdi.apply(this, a);
+		};
+		media.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+		await new Promise((r) => setTimeout(r, 300)); // lift FLIP + anim window done
+		const exp = aside.querySelector('[data-pane="export"]').getBoundingClientRect();
+		const y = exp.top + exp.height * 0.25;
+		aside.dispatchEvent(new DragEvent('dragover', { bubbles: true, clientY: y, dataTransfer: dt }));
+		await raf();
+		await new Promise((r) => setTimeout(r, 300)); // preview FLIP + anim window done
+		// one warm hover: the preview's own FLIP invalidates the cache once —
+		// absorb that rebuild, then measure the STEADY state
+		aside.dispatchEvent(new DragEvent('dragover', { bubbles: true, clientY: y, dataTransfer: dt }));
+		await raf();
+		await raf();
+		const orig = Element.prototype.getBoundingClientRect;
+		let rectReads = 0;
+		Element.prototype.getBoundingClientRect = function (...a) {
+			rectReads++;
+			return orig.apply(this, a);
+		};
+		for (let i = 0; i < 3; i++) {
+			aside.dispatchEvent(
+				new DragEvent('dragover', { bubbles: true, clientY: y + i, dataTransfer: dt })
+			);
+			await raf();
+			await raf();
+		}
+		const steadyRectReads = rectReads;
+		Element.prototype.getBoundingClientRect = orig;
+		DataTransfer.prototype.setDragImage = sdi;
+		aside.dispatchEvent(new DragEvent('drop', { bubbles: true, clientY: y + 2, dataTransfer: dt }));
+		await new Promise((r) => setTimeout(r, 150));
+		const order = JSON.parse(localStorage.getItem('mellon.sections.post')).order;
+		return {
+			steadyRectReads,
+			dragImages,
+			landed: order.indexOf('media') === order.indexOf('export') - 1
+		};
+	});
+	check(
+		'T-pane9 steady dragover reads zero layout rects (slot cache works)',
+		perf.steadyRectReads === 0,
+		JSON.stringify(perf)
+	);
+	check(
+		'T-pane10 drag uses the slim captured bar (setDragImage)',
+		perf.dragImages === 1,
+		JSON.stringify(perf)
+	);
+	check(
+		'T-pane11 synthetic drag lands media right before export',
+		perf.landed,
+		JSON.stringify(perf)
+	);
+}
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

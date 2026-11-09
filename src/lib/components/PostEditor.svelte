@@ -163,6 +163,8 @@ flowchart LR
 	// from the editor bands or the rail media section. `insert` mode writes
 	// through the CodeMirror handle — the docChanged listener does the rest
 	// (value, dirty, preview — all for free).
+	// the cover that has ACTUALLY decoded — until then the preview box shimmers
+	let coverDecoded: string | null = $state(null);
 	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | 'upload-cover' | null>(null);
 	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
@@ -1110,11 +1112,19 @@ flowchart LR
 			order={postSections.pos('media')}
 		>
 			{#if draft.thumbnail}
-				<img
-					src={draft.thumbnail}
-					alt="Cover preview"
-					class="aspect-video w-full rounded-md border border-border object-cover"
-				/>
+				<div
+					class="thumb-shimmer relative aspect-video w-full overflow-hidden rounded-md border border-border"
+				>
+					<img
+						src={draft.thumbnail}
+						alt="Cover preview"
+						class="h-full w-full object-cover transition-opacity duration-200 {!coverDecoded ||
+						coverDecoded !== draft.thumbnail
+							? 'opacity-0'
+							: 'opacity-100'}"
+						onload={() => (coverDecoded = draft.thumbnail)}
+					/>
+				</div>
 			{/if}
 			<div class="flex flex-wrap gap-1.5">
 				<button
