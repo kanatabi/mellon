@@ -1749,3 +1749,17 @@ skips degenerate (hidden) rects. Probe against a rendered rail proves MEDIA
 lands between tags and export when dropped on EXPORT's top quarter. Lesson:
 a probe whose target rail is display:none measures zeros and lies — assert
 visibility before trusting a synthetic drag. 57 units, harness 22/22, gates green.
+
+**2026-11-09 — smoothness round (`perf(rails)`):** owner asked for render
+performance and got an audit instead of tuning knobs. Drag cost was per
+EVENT (2-4x/frame); now per FRAME: rAF coalescing + a slot cache that makes
+steady-state pointer travel zero-layout-read — guarded by a harness assert
+that spies `getBoundingClientRect` (its first run correctly FAILED until it
+learned to warm the cache — the rebuild after a real change is legitimate;
+the waste was per-event measuring, and that is what the test forbids). FLIPs
+retarget instead of stacking; the drag image is a slim captured bar, not a
+full-pane snapshot (expensive on the media pane). `contain: layout style` on
+panes, verified against a live DOM sweep for re-anchoring risk. Owner's two
+UI calls shipped with it: cover preview shimmers until decoded (broken loads
+keep the shimmer rather than paint a broken icon), and the rail scrollbar is
+now fully invisible. Harness 27/27 (+5), gates green.
