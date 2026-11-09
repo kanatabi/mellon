@@ -570,7 +570,9 @@ check(
 	check('T-secrets2 mount converged with zero console errors', errs.length === 0, errs[0] ?? '');
 	const saveBtn = sp.locator('button:has-text("save as")');
 	const armedBefore = await saveBtn.isEnabled().catch(() => true);
-	const valInput = sp.locator('main input').nth(1);
+	// TYPE INTO A VALUE FIELD — nth-based selectors broke when the search
+	// bar joined main (it correctly does NOT arm SAVE — pin by aria-label).
+	const valInput = sp.locator('input[aria-label^="value of "]').first();
 	await valInput.click({ clickCount: 3 });
 	await valInput.type('-X');
 	await sleep(200);
@@ -581,6 +583,124 @@ check(
 		`before=${armedBefore} after=${armedAfter}`
 	);
 	await sp.close();
+}
+
+// --- T-plane: the secrets CONTROL PLANE end-to-end through the real UI
+// (onboard → mirror fan-out → search → pin intent → restore overlay →
+// add-env). The dev plane persists, so the app name is RUN-FRESH (no
+// teardown by design — D5 refuses destroy-grants; FORCE=1 make seed resets) ---
+{
+	const APP = 'harness-' + Date.now().toString(36);
+	const hp = await ctx.newPage();
+	await hp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await hp.locator('[aria-label="Onboard app"]').click();
+	await hp.locator('input[placeholder="credit"]').fill(APP);
+	await hp.locator('form button[type="submit"]', { hasText: 'onboard' }).click();
+	await hp.waitForFunction((a) => document.body.innerText.includes(`kv / ${a} / dev`), APP, {
+		timeout: 15000
+	});
+	check(
+		`T-plane1 onboard ${APP}: dialog → trio tabs (D4)`,
+		(await hp
+			.locator(
+				'[aria-label="Environment dev"], [aria-label="Environment staging"], [aria-label="Environment production"]'
+			)
+			.count()) === 3
+	);
+	// structural save in dev ⇒ the MIRROR lands on siblings (empty value)
+	await hp.locator('button:has-text("+ key")').click();
+	const KEY = 'NEW_KEY_1';
+	await hp.locator(`input[aria-label="value of ${KEY}"]`).fill('HARNESS-SAVED-VALUE');
+	await hp.locator(`button:has-text("save as v2")`).click();
+	await hp.waitForFunction(() => document.body.innerText.includes('saved as version 2'), null, {
+		timeout: 15000
+	});
+	await hp.locator('[aria-label="Environment staging"]').click();
+	await hp.waitForFunction(
+		(a) => document.body.innerText.includes(`kv / ${a} / staging · v2`),
+		APP,
+		{ timeout: 15000 }
+	);
+	const stagedVal = await hp.locator(`input[aria-label="value of ${KEY}"]`).inputValue();
+	check(
+		'T-plane2 key-set mirror fanned out to staging — empty value, own version bump',
+		stagedVal === '' && (await hp.locator(`input[aria-label="key ${KEY}"]`).count()) === 1,
+		`staged value "${stagedVal}"`
+	);
+	// search (D3): key match keeps the row, garbage empties it, clear restores
+	await hp.locator('[aria-label="Search keys and values"]').fill('newk');
+	await hp.waitForFunction(
+		(k) => document.querySelectorAll(`input[aria-label="key ${k}"]`).length === 1,
+		KEY,
+		{ timeout: 5000 }
+	);
+	await hp.locator('[aria-label="Search keys and values"]').fill('zzzz');
+	const emptyState = await hp.locator('text=no keys match').count();
+	await hp.locator('[aria-label="Clear search"]').click();
+	const restored = await hp.locator(`input[aria-label="key ${KEY}"]`).count();
+	check(
+		'T-plane3 fuzzy search filters rows, empty state, clear restores',
+		emptyState === 1 && restored === 1
+	);
+	// pin = intent (D1): badge appears on dev, disappears on unpin
+	await hp.locator('[aria-label="Environment dev"]').click();
+	await hp.waitForFunction(() => document.body.innerText.includes(' / dev ·'), null, {
+		timeout: 10000
+	});
+	await hp.locator('button:has-text("history")').click();
+	await hp.locator(`[aria-label="Pin v2"]`).click();
+	await hp.waitForFunction(() => document.body.innerText.includes('pinned v2'), null, {
+		timeout: 10000
+	});
+	check('T-plane4 pin records intent — badge in the header', true);
+	await hp.locator(`[aria-label="Unpin v2"]`).click();
+	await hp.waitForFunction(() => !document.body.innerText.includes('pinned v2'), null, {
+		timeout: 10000
+	});
+	check('T-plane5 unpin clears the intent', true);
+	// restore (D2): overlay v2's values onto the CURRENT shape → dirty → save
+	await hp.locator('button:has-text("close")').first().click();
+	await hp.locator(`input[aria-label="value of ${KEY}"]`).fill('DRIFTED-VALUE');
+	await hp.locator('button:has-text("save as v3")').click();
+	await hp.waitForFunction(() => document.body.innerText.includes('saved as version 3'), null, {
+		timeout: 15000
+	});
+	await hp.locator('button:has-text("history")').click();
+	await hp.locator('button[aria-label^="Restore v2"]').click();
+	await hp.waitForFunction(() => document.body.innerText.includes('overlaid'), null, {
+		timeout: 10000
+	});
+	check(
+		'T-plane6 restore v2 overlays values onto current keys (dirty armed)',
+		(await hp.locator('button:has-text("save as v4")').isEnabled()) === true
+	);
+	// add-env: the late env gets the canonical union — never a smaller shape
+	// (the history drawer is a modal covering the right edge — close it
+	// honestly like a user does, or the +env click hits the drawer)
+	await hp.locator('aside[aria-label="Version history"] button:has-text("close")').click();
+	await hp.waitForFunction(
+		() => !document.querySelector('aside[aria-label="Version history"]'),
+		null,
+		{ timeout: 5000 }
+	);
+	await hp.locator('[aria-label="Add environment"]').click();
+	await hp.locator('input[placeholder="lab"]').fill('lab');
+	await hp.locator('form button[type="submit"]', { hasText: 'add env' }).click();
+	// the UI stays on the CURRENT env after adding (no surprise travel); the
+	// proof is the tab arriving, then the seeded shape when we visit it
+	await hp.waitForFunction(() => !!document.querySelector('[aria-label="Environment lab"]'), null, {
+		timeout: 15000
+	});
+	await hp.locator('[aria-label="Environment lab"]').click();
+	await hp.waitForFunction((a) => document.body.innerText.includes(`kv / ${a} / lab`), APP, {
+		timeout: 15000
+	});
+	check(
+		'T-plane7 add-env seeded the canonical key set (union, empty values)',
+		(await hp.locator(`input[aria-label="key ${KEY}"]`).count()) === 1 &&
+			(await hp.locator(`input[aria-label="value of ${KEY}"]`).inputValue()) === ''
+	);
+	await hp.close();
 }
 
 // --- T5: error boundary with a dead backend ---
