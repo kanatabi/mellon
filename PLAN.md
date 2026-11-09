@@ -1781,6 +1781,15 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-10 — sheet order finalized:** the pre-drag view means the FIXED
+order too, not just hidden affordances — cards carry `order={movable ? pos :
+undefined}` and SectionCard omits the style when undefined, so the sheet is
+pure DOM order (actions, title, subtitle, slug, date, tags, media, export,
+timeline — the owner's list) while the desktop keeps its dragged taste.
+The previous commit had stripped the grips but leaked the saved ORDER —
+half a ruling is how regressions hide; the harness now asserts the sequence
+verbatim (66/66).
+
 **2026-11-10 — mobile honesty sweep (this commit):** owner reports cleared the
 last mobile debt, including two self-inflicted regressions I own: the sheet
 trigger carried a BACKWARDS `max-lg:hidden` (vanished exactly on phones), and my
