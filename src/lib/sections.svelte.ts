@@ -1,5 +1,3 @@
-import { browser } from '$app/env';
-
 /**
  * Per-section collapse + order state for the config sidebars (owner call
  * 2026-11-09): every labeled pane collapses individually to a vertical pill,
@@ -9,6 +7,10 @@ import { browser } from '$app/env';
  * no drag, and no keystroke can move it. Same arrow-bound lesson as Rail:
  * these are fields, not prototype methods — the markup passes references.
  */
+const isBrowser = () => typeof window !== 'undefined';
+
+import { placeInto, posOf, sanitizeOrder } from './pane-order.ts';
+
 export class SectionSet {
 	movable: string[];
 	pinned: string | null;
@@ -25,20 +27,15 @@ export class SectionSet {
 	}
 
 	init = () => {
-		if (!browser) return;
+		if (!isBrowser()) return;
 		try {
 			const raw = localStorage.getItem(this.storageKey);
 			if (!raw) return;
 			const v = JSON.parse(raw) as { order?: string[]; open?: Record<string, boolean> };
 			// accept a stored order ONLY if it is exactly the movable set — a
 			// hand-edited or stale value cannot smuggle the pin or drop a pane
-			if (
-				Array.isArray(v.order) &&
-				v.order.length === this.movable.length &&
-				this.movable.every((id) => v.order!.includes(id))
-			) {
-				this.order = v.order;
-			}
+			const clean = sanitizeOrder(v.order, this.movable);
+			if (clean) this.order = clean;
 			if (v.open && typeof v.open === 'object') this.open = v.open;
 		} catch {
 			/* corrupt store = defaults, never a crash */
@@ -46,7 +43,7 @@ export class SectionSet {
 	};
 
 	persist = () => {
-		if (browser)
+		if (isBrowser())
 			localStorage.setItem(this.storageKey, JSON.stringify({ order: this.order, open: this.open }));
 	};
 
@@ -59,7 +56,7 @@ export class SectionSet {
 
 	/** flex order: the header owns the rail top, the pinned pane leads the
 	 *  cards (0), movables follow (1..) — no negative orders anywhere. */
-	pos = (id: string) => (id === this.pinned ? 0 : (this.pinned ? 1 : 0) + this.order.indexOf(id));
+	pos = (id: string) => posOf(this.pinned, this.order, id);
 
 	/** keyboard: Alt+↑/↓ — swaps with the neighbor in the MOVABLE list only
 	 *  (index 0 moving up onto ACTIONS is a silent no-op: the pin is a wall). */
@@ -88,12 +85,7 @@ export class SectionSet {
 	/** drag landing: place dragId immediately before beforeId (null = last;
 	 *  the pinned id as target means "first among the movables"). */
 	place = (dragId: string, beforeId: string | null) => {
-		if (!this.order.includes(dragId)) return;
-		const next = this.order.filter((id) => id !== dragId);
-		let at = beforeId == null || beforeId === this.pinned ? 0 : next.indexOf(beforeId);
-		if (at < 0) at = next.length;
-		next.splice(at, 0, dragId);
-		this.order = next;
+		this.order = placeInto(this.order, this.pinned, dragId, beforeId);
 		this.persist();
 	};
 

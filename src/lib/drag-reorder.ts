@@ -26,13 +26,16 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 	const visiblePanes = () => allPanes().filter((el) => el.dataset.pane !== dragId);
 
 	function flip(mutate: () => void) {
-		const els = [...visiblePanes(), ...(placeholder.hidden ? [] : [placeholder])];
+		const shown = !placeholder.classList.contains('hidden'); // CLASS, not .hidden attr
+		const els = [...visiblePanes(), ...(shown ? [placeholder] : [])];
 		const before = els.map((el) => el.getBoundingClientRect());
 		mutate();
 		const after = els.map((el) => el.getBoundingClientRect());
 		els.forEach((el, i) => {
 			const dy = before[i].top - after[i].top;
-			if (Math.abs(dy) > 0.5) {
+			// skip degenerate measurements (display:none rects are all-zero —
+			// animating those makes the ghost fly in from the page corner)
+			if (Math.abs(dy) > 0.5 && before[i].height > 2 && after[i].height > 2) {
 				el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
 					duration: 160,
 					easing: 'ease-out'
@@ -42,10 +45,16 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 	}
 
 	function insertionBefore(clientY: number): string | null {
-		for (const el of visiblePanes()) {
-			if (el.dataset.pane === store.pinned) continue; // the pin has no landing line
-			const r = el.getBoundingClientRect();
-			if (clientY < r.top + r.height / 2) return el.dataset.pane ?? null;
+		// Visual order, NOT DOM order: panes sit where CSS `order` puts them, so
+		// iterating querySelectorAll (markup order) decides the slot against the
+		// wrong neighbor — slots between visually-adjacent panes become
+		// unreachable (owner: "cannot put MEDIA between DATE and EXPORT").
+		const byTop = visiblePanes()
+			.filter((el) => el.dataset.pane !== store.pinned) // the pin has no landing line
+			.map((el) => ({ id: el.dataset.pane!, r: el.getBoundingClientRect() }))
+			.sort((a, b) => a.r.top - b.r.top);
+		for (const { id, r } of byTop) {
+			if (clientY < r.top + r.height / 2) return id;
 		}
 		return null;
 	}
@@ -105,14 +114,18 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 		const before = lastBefore;
 		dragId = null;
 		lastBefore = undefined;
+		if (id && before !== undefined) store.place(id, before);
 		flip(() => {
 			placeholder.classList.add('hidden');
-			placeholder.style.order = '';
 			allPanes().forEach((el) => {
 				el.style.display = '';
-				el.style.order = ''; // hand control back to the store-driven attr
+				// CRITICAL: restore the CANONICAL order, never blank it. Svelte
+				// only re-writes a style attr whose value actually CHANGED —
+				// blanking left untouched panes at order:0 (DOM order), which is
+				// the "messy/random" corruption the owner saw.
+				const pane = el.dataset.pane;
+				el.style.order = String(pane ? store.pos(pane) : 0);
 			});
-			if (id && before !== undefined) store.place(id, before);
 		});
 	}
 
@@ -122,17 +135,21 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 		settle();
 	}
 
+	function ondragend() {
+		if (dragId) settle(); // cancelled drags restore the same animated way
+	}
+
 	node.addEventListener('dragstart', ondragstart);
 	node.addEventListener('dragover', ondragover);
 	node.addEventListener('drop', ondrop);
-	node.addEventListener('dragend', () => dragId && settle());
+	node.addEventListener('dragend', ondragend);
 
 	return {
 		destroy() {
 			node.removeEventListener('dragstart', ondragstart);
 			node.removeEventListener('dragover', ondragover);
 			node.removeEventListener('drop', ondrop);
-			node.removeEventListener('dragend', () => dragId && settle());
+			node.removeEventListener('dragend', ondragend);
 			placeholder.remove();
 		}
 	};
