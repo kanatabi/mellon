@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { ArrowLeftRight, Eye, EyeOff, GitCompareArrows } from 'lucide-svelte';
+	import { ArrowLeftRight, Eye, EyeOff, GitCompareArrows, WrapText } from 'lucide-svelte';
 	import { stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -27,6 +27,9 @@
 	let presentation = $state<'table' | 'split' | 'inline'>('split');
 	let content = $state<CompareContent>('parsed');
 	let revealAll = $state(false); // display-only, never persisted (masked is the safe default)
+	// wrap: long secret lines wrap instead of hiding behind a horizontal
+	// scrollbar — the mobile default the owner asked for; persisted furniture.
+	let wrap = $state(true);
 	let hideSame = $state(false);
 
 	// Preferences survive navigation but NOT the first-paint: read once on
@@ -43,10 +46,12 @@
 			const c = localStorage.getItem('mellon.compare.content');
 			if (p === 'table' || p === 'split' || p === 'inline') presentation = p;
 			if (c === 'parsed' || c === 'raw') content = c;
+			wrap = localStorage.getItem('mellon.compare.wrap') !== '0';
 			return;
 		}
 		localStorage.setItem('mellon.compare.presentation', presentation);
 		localStorage.setItem('mellon.compare.content', content);
+		localStorage.setItem('mellon.compare.wrap', wrap ? '1' : '0');
 	});
 
 	const apps = $derived.by(() => {
@@ -63,6 +68,10 @@
 		[...(data.meta?.versions ?? [])].sort((a, b) => b.version - a.version)
 	);
 	const pinned = $derived(data.meta?.pinnedVersion ?? null);
+	// one class source for every scrolling text mode (split rows + inline
+	// ops) — table is cells, not lines, so wrap doesn't apply there
+	const lineCls = (tone: string) =>
+		`${wrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'} ${tone}`;
 
 	const fmt = new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric' });
 	const stamp = (iso: string) => {
@@ -122,6 +131,14 @@
 				onHint: 'raw',
 				offHint: 'parsed',
 				run: () => (content = content === 'parsed' ? 'raw' : 'parsed')
+			}),
+			stateToggle({
+				id: 'compare.wrap',
+				title: wrap ? 'Turn off line wrap' : 'Wrap long lines',
+				on: wrap,
+				onHint: 'wrapped',
+				offHint: 'nowrap',
+				run: () => (wrap = !wrap)
 			}),
 			stateToggle({
 				id: 'compare.reveal',
@@ -293,6 +310,22 @@
 		</div>
 		<button
 			type="button"
+			onclick={() => (wrap = !wrap)}
+			aria-pressed={wrap}
+			aria-label="Wrap long lines"
+			title={presentation === 'table'
+				? 'Table cells wrap on their own — wrap applies to split/inline'
+				: 'Wrap long diff lines instead of scrolling'}
+			disabled={presentation === 'table'}
+			class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors disabled:opacity-40 {wrap
+				? 'text-foreground'
+				: 'text-muted-foreground hover:text-foreground'}"
+		>
+			<WrapText class="size-3.5" />
+			wrap
+		</button>
+		<button
+			type="button"
 			onclick={() => (revealAll = !revealAll)}
 			aria-pressed={revealAll}
 			aria-label={revealAll ? 'Hide all values' : 'Show all values'}
@@ -362,7 +395,7 @@
 			</p>
 		</div>
 	{:else if presentation === 'split'}
-		<div class="grid min-w-0 grid-cols-2 gap-3">
+		<div class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
 			<div class="min-w-0 overflow-x-auto rounded-lg border border-border bg-card">
 				<p
 					class="border-b border-border px-3 py-1.5 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
@@ -371,7 +404,9 @@
 				</p>
 				<div class="px-3 py-2 font-mono text-[11px] leading-relaxed">
 					{#each splitRows as r, i (i)}
-						<div class={r.left?.kind === 'del' ? 'whitespace-pre text-diff-del' : 'whitespace-pre'}>
+						<div
+							class={lineCls(r.left?.kind === 'del' ? 'text-diff-del' : 'text-muted-foreground/80')}
+						>
 							{r.left?.text ?? '\u00A0'}
 						</div>
 					{/each}
@@ -386,7 +421,9 @@
 				<div class="px-3 py-2 font-mono text-[11px] leading-relaxed">
 					{#each splitRows as r, i (i)}
 						<div
-							class={r.right?.kind === 'add' ? 'whitespace-pre text-diff-add' : 'whitespace-pre'}
+							class={lineCls(
+								r.right?.kind === 'add' ? 'text-diff-add' : 'text-muted-foreground/80'
+							)}
 						>
 							{r.right?.text ?? '\u00A0'}
 						</div>
@@ -399,11 +436,13 @@
 			<div class="font-mono text-[11px] leading-relaxed">
 				{#each ops as op, i (i + ':' + op.kind + ':' + op.text)}
 					<div
-						class={op.kind === 'add'
-							? 'whitespace-pre text-diff-add'
-							: op.kind === 'del'
-								? 'whitespace-pre text-diff-del'
-								: 'whitespace-pre text-muted-foreground'}
+						class={lineCls(
+							op.kind === 'add'
+								? 'text-diff-add'
+								: op.kind === 'del'
+									? 'text-diff-del'
+									: 'text-muted-foreground'
+						)}
 					>
 						{op.kind === 'add' ? '+' : op.kind === 'del' ? '-' : '\u00A0'}
 						{op.text}

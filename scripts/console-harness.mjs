@@ -875,8 +875,41 @@ check(
 		overflow === 0,
 		`overflow=${overflow}px`
 	);
+	// MOBILE SPLIT: panes stack top-to-bottom (owner screenshot) — 'to'
+	// sits BELOW 'from', not beside it
+	await mp.goto(`${BASE}/secrets/compare?app=${APP}&env=dev&from=2&to=3`, {
+		waitUntil: 'networkidle'
+	});
+	await mp.waitForTimeout(400);
+	await mp.locator('button:has-text("split")').click();
+	await mp.waitForTimeout(250);
+	const fromBox = await mp.locator('p:has-text("— from")').boundingBox();
+	const toBox = await mp.locator('p:has-text("— to")').boundingBox();
+	check(
+		'T-cmp8 mobile split STACKS panes vertically',
+		!!fromBox && !!toBox && toBox.y > fromBox.y + 60 && Math.abs(toBox.x - fromBox.x) < 8,
+		JSON.stringify({
+			from: fromBox && [Math.round(fromBox.x), Math.round(fromBox.y)],
+			to: toBox && [Math.round(toBox.x), Math.round(toBox.y)]
+		})
+	);
+	// wrap toggle: on by default (whitespace-pre-wrap rows), flips to nowrap
+	const wrapOn = await mp.locator('[aria-label="Wrap long lines"]').getAttribute('aria-pressed');
+	const rowCls = await mp.evaluate(
+		() =>
+			document.querySelector('.grid [class*="break-words"]')?.className ??
+			document.querySelector('.grid [class*="whitespace-pre"]')?.className ??
+			''
+	);
+	await mp.locator('[aria-label="Wrap long lines"]').click();
+	await mp.waitForTimeout(200);
+	const wrapOff = await mp.locator('[aria-label="Wrap long lines"]').getAttribute('aria-pressed');
+	check(
+		'T-cmp9 wrap defaults ON and flips (rows follow)',
+		wrapOn === 'true' && rowCls.includes('break-words') && wrapOff === 'false',
+		`on=${wrapOn} cls=${rowCls ? 'wrapped' : 'EMPTY'} off=${wrapOff}`
+	);
 	await mp.close();
-	cp.__APP = APP;
 	await cp.close();
 }
 
