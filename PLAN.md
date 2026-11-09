@@ -1715,3 +1715,11 @@ Round-honesty note: three scripting traps in one pass (f-string vs Svelte
 braces ×2, tab-prefix substring matches, unanchored close-tag search) — each
 caught by gates, not shipped silently; anchors-at-newline is now the house
 style for markup surgery.
+
+**2026-11-09 — accordion pivot (`8ebec42`):** owner saw the edge-tab-strip cut and
+redirected — collapse happens IN PLACE, vertically; rearrange by drag. Pills/edge-dock
+dropped; SectionCard's closed form is now a full-width slim bar (grip, icon, label,
+dirty dot, chevron) with vertical slide. Order model tidied: header -1, pinned ACTIONS 0,
+movables from 1 (the first screenshot exposed ACTIONS floating above the POST header).
+Everything persisted survived: open-state, order, keyboard parity, pinned wall, reset.
+Harness 21/21, visual proof shots/accordion.png.
