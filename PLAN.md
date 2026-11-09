@@ -1671,3 +1671,23 @@ into one readyz-gated entry. Gates: lint / check 0-0 / 50+6-gated / build;
 live: login → desk → secrets → dead /api/media 404 — all against the running
 stack. Lumen's dev loop went idempotent the same session (23d650a: reuse
 containers/server, seed never clobbers real data without FORCE=1).
+
+**2026-11-09 — console behaviour round (owner-reported, all Playwright-proven).**
+Three fixes + one system, committed as `39f6657`/`63f3c75` on `feature/lumen-cutover`:
+① hover-preload storm — the fix proposed weeks ago finally LANDED, with a
+committed harness (`scripts/console-harness.mjs`, `npm run test:console`) so it
+cannot evaporate a third time; tap for data, hover for code. ② palette jumps
+left the editor on the OLD post (SvelteKit reuses the route component; PostEditor
+seeds state once — and `rev` could have carried across posts) — fixed with
+`{#key slug}`; the pre-existing unsaved-changes guard is now genuinely exercised
+(dismiss keeps / accept navigates). ③ long posts scrolled the whole app — the
+shell is viewport-locked at every breakpoint now; scroll lives inside the editor,
+preview and rails (T4: window at 0, cm-scroller at +1200, chrome pixels fixed).
+④ Error states designed straight into code (owner: no mockup round): ErrorPanel
+
+- both boundaries, status-mapped calm copy (401/404/409/backend/500), §11.3 hues
+  honoured — red stays destructive-only, warnings get one amber dot; dev-only
+  diagnostics; the 500-whose-message-says-unreachable honest-503 translation;
+  in-chrome rendering keeps the palette one keystroke from escape. Harness 9/9;
+  units 50 green; lint exit 0 verified directly after a pipe swallowed a prettier
+  warning (own lesson logged: pipes eat gates — check the exit, not the tail).
