@@ -1538,3 +1538,16 @@ seed → dev user → serve :8080), `make dev-plane` bootstraps this box's OpenB
 M1-era quickstart had been dead since M3 (the Makefile never exported the signing
 secret the config fail-fasts on). lumen gates green throughout; no mellon code changed
 (it consumed neither bug — mellon→lumen cutover is still Phase C).
+
+**2026-11-09 — Postman restructured as an ENDPOINT CATALOG (`920ecac`).** Owner call: the
+scenario-per-request shape was an unreadable API reference. Now 32 endpoints / 10 folders;
+the 81 executed cases became 78 EXAMPLES carrying their own originalRequest + the REAL
+response captured live off the dev binary (ids/timestamps = dev artifacts, JWTs truncated;
+4 marked `x-lumen-state: historical` — e.g. the revoked-token replay, frozen by nature).
+Docs on every endpoint: auth, param semantics, each status code's WHY, doctrine lines.
+New `postman/environments/{dev,staging,production}` — staging/prod ship localhost baseUrl
+**by doctrine** (no public API ever; reach = port-forward) with EMPTY passwords and the
+type-don't-save rule; runtime chaining stays in collection variables. Validation kept its
+rank: 41 read-only examples + 19 defaults replayed against the live server, zero status
+mismatches, before commit. The stateful lifecycle moved to its proper home — the Go
+battery IS the walkthrough; the collection is the reference.
