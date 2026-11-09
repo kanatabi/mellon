@@ -1702,3 +1702,16 @@ ancestor-chain probe), never theory — and it caught two lies the eye accepted:
 the editor rail looked fine at desktop sizes under content height until the probe
 showed 1235px clipped inside 796px. Harness now asserts every rail: bounded,
 internally scrollable, page motionless — 15/15.
+
+**2026-11-09 — collapsible section panes (`0a644e3`):** every labeled group in
+the config sidebars (editor inspector, desk & photos filters) became an
+independent pane — vertical-pill collapse (dirty dot on collapsed ACTIONS),
+strict stacking, reorder by drag or Alt+arrows, persisted per rail, header
+dbl-click resets. The ACTIONS pin is data-shape, not default: stored order
+carries only movable ids — nothing expressible can move the verb block.
+Deferred honestly: the photo-DETAIL rail (different markup shape; same
+treatment owed, next round). Harness now 21/21 including five pane asserts.
+Round-honesty note: three scripting traps in one pass (f-string vs Svelte
+braces ×2, tab-prefix substring matches, unanchored close-tag search) — each
+caught by gates, not shipped silently; anchors-at-newline is now the house
+style for markup surgery.
