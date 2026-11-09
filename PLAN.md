@@ -1780,3 +1780,18 @@ its keep. Shimmer lifecycle (overlay must STOP on decode; img.complete for
 warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
+
+**2026-11-09 — the INTERNAL 200 (`e0fd672`):** owner asked what a 200 was
+doing inside an error boundary. It was never a backend code: SSR succeeded,
+the hydrated component crashed, and Kit's root error page inherits the
+navigation's status — 200. The crash was a self-rearming `$effect` (wrote
+`rows`, read `rows` in the same run → new object every arm → never converged
+→ effect_update_depth_exceeded). Resync now guards on a PRIMITIVE key; the
+false-fix trap (storing the payload object in $state and `===`-comparing it
+later — deep proxies never match) is documented in-code so nobody rewrites
+it. Typing no longer gets its dirty/message state wiped mid-keystroke as a
+bonus. T-secrets (x3) pins the page alive; the shimmer gate stopped pinning
+a cover HOST and now discovers the live URL from SSR HTML — it had silently
+degraded the day the owner's cover moved unsplash→picsum. Harness 38/38.
+Lesson: a guard inside an effect must be a PRIMITIVE; and a test that gates
+the wrong URL tests nothing but PASSes quietly.
