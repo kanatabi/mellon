@@ -1735,3 +1735,17 @@ fading rail scrollbars (rail-scroll). Per-pane ondrop props died; a single
 container action (drag-reorder.ts) owns drag mechanics via data-pane
 delegation, pin excluded from landing slots. Self-review caught an inverted
 chevron between runs. Harness 22/21→22 with the ghost-slot assert.
+
+**2026-11-09 — drag determinism (`cb50484`):** owner: "order is messy after
+rearranging… sometimes cannot put the pane in some place." Root cause was
+structural: hit-testing iterated DOM/markup order while CSS `order` arranges the
+visual stack — some slots were unreachable and landings looked random. Also two
+smaller defects: `place(id, null)` inserted FIRST while the ghost showed LAST,
+and `settle()` blanked inline order styles (Svelte only re-writes changed attrs,
+so untouched panes drifted to DOM order). Landing semantics now live in a pure
+module (pane-order.ts — vitest can't transform `.svelte.ts` $state) with 7 unit
+asserts pinning every rule; the settle restores canonical pos per pane; FLIP
+skips degenerate (hidden) rects. Probe against a rendered rail proves MEDIA
+lands between tags and export when dropped on EXPORT's top quarter. Lesson:
+a probe whose target rail is display:none measures zeros and lies — assert
+visibility before trusting a synthetic drag. 57 units, harness 22/22, gates green.
