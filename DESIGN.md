@@ -151,6 +151,22 @@ path exists in the UI by doctrine (D5): namespaces are born here, they are
 retired by operators. History drawer is a modal covering the right edge -
 the harness learned to dismiss it between steps.
 
+**Compare versions** (`/secrets/compare?app&env&from&to`, owner round
+2026-11-10): two versions of ONE path — never cross-env (values are per-env
+secrets by doctrine; a side-by-side env diff is a leak pattern). Three
+presentations — `table` (one row per key, added/removed/changed/same chips,
+hide-unchanged, honest "N of M keys changed"), `split` (Gitlab-style aligned
+panes: del/add runs paired index-for-index, null-padded so both sides keep
+EQUAL row counts), `inline` (unified ± lines) — over two content forms:
+`parsed` (sorted KEY=value lines) or `raw` JSON (visibly disabled in table
+mode, which is parsed by nature). Masking is a property of WHAT IS DIFFED,
+not what is painted: `displayValue` runs BEFORE serialization, so even raw
+mode cannot leak on the default view; "show values" is display-only and
+never persisted (masked is the safe direction of failure). The engine is
+`secrets-diff.ts` — pure, offline-tested; presentation/content preferences
+persist behind the primitive-flag guard. The nav carries it under OPS with
+LONGEST-MATCH highlighting — nested hrefs light exactly one row.
+
 ## 7. Keyboard-first
 
 - **Command palette**: ⌘K / Ctrl+K (aliases of one binding). Sections, ranked in order:
