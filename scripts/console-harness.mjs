@@ -700,6 +700,64 @@ check(
 		(await hp.locator(`input[aria-label="key ${KEY}"]`).count()) === 1 &&
 			(await hp.locator(`input[aria-label="value of ${KEY}"]`).inputValue()) === ''
 	);
+	// palette verbs (DESIGN §7): the page registers; the shell composes.
+	// HARDENED LESSONS: target the palette BY ITS aria-label ('[role="dialog"]
+	// input' is ambiguous — a still-open page dialog wins the selector and
+	// keystrokes land in the wrong input); close the onboard dialog with its
+	// CANCEL button (explicit), not Escape (focus-dependent); and let the
+	// reactive list settle before counting (plane10's rows>0 non-vacuity
+	// guard is what exposed all of this).
+	const openPalette = async () => {
+		await hp.keyboard.press('Control+k');
+		const input = hp.locator('[aria-label="Command palette"] input').first();
+		await input.waitFor({ state: 'visible', timeout: 4000 });
+		await input.click();
+		return input;
+	};
+	const pal = await openPalette();
+	await pal.fill('onboard');
+	await sleep(200);
+	const onboardRow = await hp.locator('[role="option"]', { hasText: 'Onboard app…' }).count();
+	await hp.keyboard.press('Enter');
+	await hp
+		.waitForFunction(() => !!document.querySelector('[aria-label="Onboard app namespace"]'), null, {
+			timeout: 5000
+		})
+		.catch(() => {});
+	const dialogUp = await hp.locator('[aria-label="Onboard app namespace"]').count();
+	await hp.locator('[aria-label="Onboard app namespace"] button', { hasText: 'cancel' }).click();
+	await hp.waitForFunction(
+		() => !document.querySelector('[aria-label="Onboard app namespace"]'),
+		null,
+		{ timeout: 4000 }
+	);
+	check(
+		'T-plane8 palette lists secrets verbs — Onboard runs through the dialog',
+		onboardRow >= 1 && dialogUp === 1,
+		`row=${onboardRow} dialog=${dialogUp}`
+	);
+	const pal2 = await openPalette();
+	await pal2.fill('pin');
+	await sleep(200);
+	const pinRow = await hp.locator('[role="option"]', { hasText: /Pin v|Unpin v/ }).count();
+	await hp.keyboard.press('Escape');
+	check('T-plane9 palette carries the live pin verb (stateToggle)', pinRow >= 1, `rows=${pinRow}`);
+	// leaving the page must clear the verbs (the registration contract)
+	await hp.goto(`${BASE}/posts`, { waitUntil: 'networkidle' });
+	const pal3 = await openPalette();
+	// non-vacuity measured BEFORE filtering: an empty query must show the
+	// base rows; then `onboard` may legitimately match NOTHING on /posts —
+	// that empty list is the proof, not a failure
+	const anyRows = await hp.locator('[aria-label="Command palette"] [role="option"]').count();
+	await pal3.fill('onboard');
+	await sleep(200);
+	const ghosts = await hp.locator('[role="option"]', { hasText: 'Onboard app…' }).count();
+	await hp.keyboard.press('Escape');
+	check(
+		'T-plane10 leaving secrets unregisters its palette verbs',
+		ghosts === 0 && anyRows > 0,
+		`ghosts=${ghosts} rows=${anyRows}`
+	);
 	await hp.close();
 }
 

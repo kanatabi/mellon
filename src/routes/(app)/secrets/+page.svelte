@@ -7,6 +7,9 @@
 	import { ApiError, client } from '#lib/api/client.ts';
 	import { diffLines, type DiffOp } from '#lib/diff.ts';
 	import { rankByFuzzy } from '#lib/fuzzy.ts';
+	import { editField, stateToggle } from '#lib/command-kit.ts';
+	import { setPageCommands } from '#lib/page-commands.svelte.ts';
+	import type { Command } from '#lib/commands.ts';
 	import type { SecretPayload } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
 
@@ -49,6 +52,81 @@
 	// or RESTORE (overlay onto the current key set → dirty → save). Separate from
 	// historyDiff (which is a shape diff, not the secret bytes).
 	let viewing = $state<{ version: number; data: Record<string, string> } | null>(null);
+	let searchEl: HTMLInputElement | undefined = $state();
+
+	// Palette verbs (DESIGN §7 contract): the page owns its actions, the
+	// shell composes them. The effect RE-READS live state (dirty target,
+	// open drawer, pin, filter) so every row's title/hint is the truth at
+	// the moment Enter falls — and unmount clears, no stale secrets-verbs
+	// haunting the dashboard.
+	$effect(() => {
+		const loaded = !!(data.secret && data.meta);
+		const cmds: Command[] = [];
+		if (loaded) {
+			cmds.push({
+				id: 'secrets.save',
+				title: `save as v${cas + 1}`,
+				group: 'actions',
+				shortcut: dirty ? 'unsaved' : 'clean',
+				run: () => void save()
+			});
+			cmds.push({ id: 'secrets.add-key', title: 'Add key', group: 'actions', run: addRow });
+			cmds.push(
+				stateToggle({
+					id: 'secrets.history',
+					title: 'Version history',
+					on: historyOpen,
+					onHint: 'open',
+					offHint: 'close',
+					run: () => void openHistory()
+				})
+			);
+			cmds.push(
+				stateToggle({
+					id: 'secrets.pin',
+					title: pinnedVersion !== null ? `Unpin v${pinnedVersion}` : `Pin v${cas} (intent)`,
+					on: pinnedVersion !== null,
+					onHint: 'pinned',
+					offHint: 'unpinned',
+					run: () => void togglePin(cas)
+				})
+			);
+			cmds.push({
+				id: 'secrets.add-env',
+				title: 'Add environment…',
+				group: 'actions',
+				run: () => (addEnvOpen = true)
+			});
+			cmds.push({
+				id: 'secrets.filter',
+				title: 'Filter keys and values',
+				group: 'actions',
+				run: () => searchEl?.focus()
+			});
+			// the keyboard-first door: SET the filter through the buffer
+			cmds.push(
+				editField({
+					id: 'secrets.set-filter',
+					title: 'Set search filter',
+					pill: 'filter',
+					seed: query,
+					commit: (v) => {
+						query = v;
+						return true;
+					}
+				})
+			);
+		}
+		// onboarding is legal even in the EMPTY state (no paths granted yet)
+		cmds.push({
+			id: 'secrets.onboard',
+			title: 'Onboard app…',
+			group: 'actions',
+			run: () => (onboardOpen = true)
+		});
+		setPageCommands(cmds);
+		return () => setPageCommands([]);
+	});
 
 	// Resync the editor when the SERVER returns a fresh payload (mount +
 	// invalidateAll after save). Guarded by a PRIMITIVE key: an effect must
@@ -365,6 +443,7 @@
 			/>
 			<input
 				type="search"
+				bind:this={searchEl}
 				bind:value={query}
 				placeholder="filter keys and values…"
 				aria-label="Search keys and values"
