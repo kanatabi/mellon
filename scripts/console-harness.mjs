@@ -76,11 +76,20 @@ for (let i = 0; i < 40; i++) {
 }
 
 const browser = await pw.chromium.launch({
-	executablePath: ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome'].find(existsSync)
+	executablePath: ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome'].find(
+		existsSync
+	)
 });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 await ctx.addCookies([
-	{ name: 'mellon_session', value: session.token, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Strict' }
+	{
+		name: 'mellon_session',
+		value: session.token,
+		domain: 'localhost',
+		path: '/',
+		httpOnly: true,
+		sameSite: 'Strict'
+	}
 ]);
 const page = await ctx.newPage();
 
@@ -113,7 +122,9 @@ await sleep(300);
 await page.keyboard.type('field guide');
 await sleep(700);
 await page.keyboard.press('Enter');
-await page.waitForURL('**/posts/a-small-field-guide-to-idempotency', { timeout: 5000 }).catch(() => {});
+await page
+	.waitForURL('**/posts/a-small-field-guide-to-idempotency', { timeout: 5000 })
+	.catch(() => {});
 const titleAfter = await page.locator('h1').first().textContent();
 check(
 	'T2 palette nav switches the rendered post',
@@ -137,7 +148,11 @@ await page.keyboard.type('owns the clock');
 await sleep(700);
 await page.keyboard.press('Enter');
 await sleep(600);
-check('T3a unsaved-changes confirm fires on SPA nav', dialogSeen !== null, dialogSeen ?? 'no dialog');
+check(
+	'T3a unsaved-changes confirm fires on SPA nav',
+	dialogSeen !== null,
+	dialogSeen ?? 'no dialog'
+);
 check('T3b dismissing keeps the editor', page.url() === urlAtT3, page.url());
 // and accepting DOES move (keyed remount carries us to the new post)
 page.once('dialog', async (d) => await d.accept());
@@ -147,11 +162,19 @@ await page.keyboard.type('owns the clock');
 await sleep(700);
 await page.keyboard.press('Enter');
 await page.waitForURL('**/posts/one-service-owns-the-clock', { timeout: 5000 }).catch(() => {});
-check('T3c accepting navigates + remounts', page.url().includes('one-service-owns-the-clock'), page.url());
+check(
+	'T3c accepting navigates + remounts',
+	page.url().includes('one-service-owns-the-clock'),
+	page.url()
+);
 
 // --- T4: viewport-locked shell — wheel inside editor scrolls the PANE ---
 await page.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
-const toolbarBox = await page.locator('header').first().boundingBox().catch(() => null);
+const toolbarBox = await page
+	.locator('header')
+	.first()
+	.boundingBox()
+	.catch(() => null);
 const box = await page.locator('.cm-scroller').first().boundingBox();
 await page.mouse.move(box.x + box.width / 2, box.y + 200);
 await page.mouse.wheel(0, 1200);
@@ -163,8 +186,15 @@ const state = await page.evaluate(() => ({
 }));
 check('T4a window never scrolls', state.y === 0 && state.body === 0, JSON.stringify(state));
 check('T4b editor pane scrolls internally', state.cm > 0, `scrollTop ${state.cm}`);
-const toolbarAfter = await page.locator('header').first().boundingBox().catch(() => null);
-check('T4c chrome stays put', toolbarBox && toolbarAfter && Math.abs(toolbarBox.y - toolbarAfter.y) < 0.5);
+const toolbarAfter = await page
+	.locator('header')
+	.first()
+	.boundingBox()
+	.catch(() => null);
+check(
+	'T4c chrome stays put',
+	toolbarBox && toolbarAfter && Math.abs(toolbarBox.y - toolbarAfter.y) < 0.5
+);
 await page.screenshot({ path: '/tmp/opencode/shots/shell-locked.png' });
 
 // --- T5: error boundary with a dead backend ---
