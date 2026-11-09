@@ -1601,3 +1601,16 @@ fetch-adapter.ts` implements all of AdminApi against §8/§9 (multipart upload
   47 unit / build ✓. QA-tool lesson journaled: `grep -c` exits 1 on zero
   matches — a `&&` chain after a should-be-empty assertion breaks when the
   assertion PASSES.
+
+**Cutover vindication (same round):** the mellon e2e's soft-deleted probe post
+exposed a real lumen bug the mock era structurally could not see — `PostDocByID`
+ignored `deleted_at`, so the indexing worker RE-INDEXED soft-deleted published
+rows: items stayed honest (truth re-checking hydration, as designed) but the
+engine's TOTAL carried a ghost (13 vs truth's 12 — the contract suite caught the
+arithmetic). Fixed on lumen `fix/softdel-index-convergence` (`e74e993`, pushed)
+with a regression subtest pinning `total == len(items)` after publish→delete→drain,
+plus an ops purge of the two existing ghost docs (a WHERE-clause fix cannot
+re-enqueue jobs for rows nobody touches again — the engine had to be told).
+Consumer harnesses re-verified against the fixed binary: contract 13/13, live 6/6,
+Postman replays 60/60. This is the program's thesis in one paragraph: mock-mode
+green proves the LOGIC; only the live wire proves the SYSTEM.
