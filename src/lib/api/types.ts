@@ -123,6 +123,16 @@ export interface SecretPath {
 	env: string;
 }
 
+/** One matrix cell (C1): counts over truth — values never leave lumen. */
+export interface EstateRow {
+	app: string;
+	env: string;
+	version: number;
+	pinnedVersion: number | null;
+	keys: number;
+	emptyKeys: number;
+}
+
 /** Paged envelope — same shape the public §1 list endpoints use, so the
  *  portal can answer "is there a next page?" honestly (total, not vibes). */
 export interface Paged<T> {
@@ -279,4 +289,7 @@ export interface AdminApi {
 	pinSecret(app: string, env: string, version: number): Promise<{ pinnedVersion: number }>;
 	/** Clear the intent (no sentinel values — absence is the null). */
 	unpinSecret(app: string, env: string): Promise<void>;
+	/** The estate matrix feed (C1): one sweep of every app/env — head
+	 *  version, pin intent, key counts, empty-key counts. Arithmetic only. */
+	estateSummary(): Promise<EstateRow[]>;
 }

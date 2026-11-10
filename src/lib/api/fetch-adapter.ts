@@ -22,6 +22,7 @@ import type {
 	PostListOpts,
 	SecretMeta,
 	SecretPayload,
+	EstateRow,
 	SecretPath,
 	SearchResults,
 	TagCount
@@ -218,7 +219,8 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 			call<{ pinnedVersion: number }>('PUT', `/admin/bao/${enc(app)}/${enc(env)}/pin`, {
 				body: { version }
 			}),
-		unpinSecret: (app, env) => call<void>('DELETE', `/admin/bao/${enc(app)}/${enc(env)}/pin`)
+		unpinSecret: (app, env) => call<void>('DELETE', `/admin/bao/${enc(app)}/${enc(env)}/pin`),
+		estateSummary: () => call<EstateRow[]>('GET', '/admin/bao/summary')
 	};
 }
 

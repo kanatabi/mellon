@@ -8,6 +8,7 @@ import type {
 	AdminApi,
 	AdminPhoto,
 	CollectionCount,
+	EstateRow,
 	Paged,
 	PostDetailAdmin,
 	PostStatus,
@@ -147,7 +148,8 @@ export const client: AdminApi = {
 			method: 'PUT',
 			body: JSON.stringify({ version })
 		}),
-	unpinSecret: (app, env) => call(`/secrets/${app}/${env}/pin`, { method: 'DELETE' })
+	unpinSecret: (app, env) => call(`/secrets/${app}/${env}/pin`, { method: 'DELETE' }),
+	estateSummary: () => call<EstateRow[]>('/secrets/summary')
 };
 
 export async function preview(
