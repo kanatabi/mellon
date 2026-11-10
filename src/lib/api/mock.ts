@@ -7,6 +7,7 @@ import {
 } from './types.ts';
 import { slugify } from '../slug.ts';
 import type {
+	EstateRow,
 	AdminPhoto,
 	PostDetailAdmin,
 	PostSummaryAdmin,
@@ -750,6 +751,21 @@ export function createMockApi(): AdminApi {
 			const k = secretKey(app, env);
 			if (!secrets[k]) throw new AdminApiError(404, 'secret path not found');
 			delete PINNED[k];
+		},
+
+		async estateSummary(): Promise<EstateRow[]> {
+			return Object.keys(secrets).map((k) => {
+				const [app, env] = k.split('/');
+				const head = secrets[k].at(-1)!;
+				return {
+					app,
+					env,
+					version: head.version,
+					pinnedVersion: PINNED[k] ?? null,
+					keys: Object.keys(head.data).length,
+					emptyKeys: Object.values(head.data).filter((v) => v === '').length
+				};
+			});
 		}
 	};
 }

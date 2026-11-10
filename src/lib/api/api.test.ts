@@ -206,6 +206,25 @@ describe('mock AdminApi contract', () => {
 		expect((await api.secretMeta('twinapp', 'dev'))?.pinnedVersion).toBeNull();
 	});
 
+	it('estate matrix (twin): counts, empties, pins — arithmetic over truth', async () => {
+		const api = createMockApi();
+		const app = 'twin-sum-' + Date.now().toString(36).slice(-4);
+		await api.onboardApp(app);
+		await api.writeSecret(app, 'dev', { EMPTY_A: '', FILLED_B: 'v' }, 1);
+		await api.pinSecret(app, 'dev', 1);
+		const rows = (await api.estateSummary()).filter((r) => r.app === app);
+		const dev = rows.find((r) => r.env === 'dev');
+		const staging = rows.find((r) => r.env === 'staging');
+		expect(dev?.keys).toBe(2);
+		expect(dev?.emptyKeys).toBe(1);
+		expect(dev?.pinnedVersion).toBe(1);
+		expect(dev?.version).toBe(2);
+		// the mirror fanned the shape sideways — empties everywhere (C1 signal)
+		expect(staging?.keys).toBe(2);
+		expect(staging?.emptyKeys).toBe(2);
+		expect(staging?.pinnedVersion).toBeNull();
+	});
+
 	it('tag desk (twin baseline): feature/rename-propagates/delete-guard mirror lumen', async () => {
 		const api = createMockApi();
 		// create + feature

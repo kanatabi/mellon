@@ -1237,6 +1237,79 @@ check(
 	await dp.close();
 }
 
+// --- T-sum: the secrets summary matrix (C1) ---
+{
+	const APP = 'sum-' + Date.now().toString(36).slice(-5);
+	const auth = { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' };
+	await fetch(`${LUMEN}/admin/bao/apps`, {
+		method: 'POST',
+		headers: auth,
+		body: JSON.stringify({ app: APP })
+	});
+	await fetch(`${LUMEN}/admin/bao/${APP}/dev`, {
+		method: 'PUT',
+		headers: auth,
+		body: JSON.stringify({ data: { KEEP: 'filled', WAITING: '' }, cas: 1 })
+	});
+	await fetch(`${LUMEN}/admin/bao/${APP}/dev/pin`, {
+		method: 'PUT',
+		headers: auth,
+		body: JSON.stringify({ version: 1 })
+	});
+
+	const sp = await ctx.newPage();
+	await sp.goto(`${BASE}/secrets/summary`, { waitUntil: 'networkidle' });
+	await sp.waitForTimeout(500);
+	const body = await sp.evaluate(() => document.body.innerText);
+	// innerText honors the uppercase CSS — match case-insensitively
+	check(
+		'T-sum1 matrix lists the estate (lumen sample + fresh app)',
+		body.includes('lumen') && body.includes(APP) && /staging/i.test(body),
+		APP
+	);
+	const appRow = sp.locator('tr', { hasText: APP });
+	const rowTxt = await appRow.innerText();
+	check(
+		'T-sum2 cells carry version, pin intent, empty-key signal',
+		rowTxt.includes('v2') && rowTxt.includes('pin v1') && rowTxt.includes('○'),
+		rowTxt.replace(/\s+/g, ' ').slice(0, 90)
+	);
+	await sp.locator(`a[href*="app=${APP}"][href*="env=staging"]`).first().click();
+	await sp.waitForTimeout(1200);
+	check(
+		'T-sum3 cell deep-links the cockpit at that path',
+		sp.url().includes(`/secrets?app=${APP}&env=staging`) &&
+			(await sp.evaluate(() => document.body.innerText)).includes(`kv / ${APP} / staging`),
+		sp.url()
+	);
+	// siblings mirrored as all-empty (C1 signal proven through the UI)
+	await sp.goto(`${BASE}/secrets/summary`, { waitUntil: 'networkidle' });
+	await sp.waitForTimeout(400);
+	const rowTxt2 = await sp.locator('tr', { hasText: APP }).innerText();
+	check(
+		'T-sum4 mirrored siblings show the empty-count signal',
+		rowTxt2.includes('○2'),
+		rowTxt2.replace(/\s+/g, ' ').slice(0, 90)
+	);
+	// nav + registry
+	check(
+		'T-sum5 nav carries the summary',
+		(await sp.locator('a[href="/secrets/summary"]').count()) >= 1
+	);
+	await sp.keyboard.press('Control+k');
+	await sp.waitForTimeout(250);
+	const input = sp.locator('[aria-label="Command palette"] input').first();
+	await input.click();
+	await input.fill('summary');
+	await sp.waitForTimeout(300);
+	check(
+		'T-sum6 palette offers the matrix (group-labeled row)',
+		(await sp.locator('[role="option"]', { hasText: 'Secrets summary' }).count()) >= 1
+	);
+	await sp.keyboard.press('Escape');
+	await sp.close();
+}
+
 // --- T5: error boundary with a dead backend ---
 const page2 = await ctx.newPage();
 await page2

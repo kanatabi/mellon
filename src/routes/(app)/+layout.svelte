@@ -8,6 +8,7 @@
 		House,
 		Images,
 		GitCompareArrows,
+		LayoutGrid,
 		KeyRound,
 		LogOut,
 		Menu,
@@ -147,6 +148,12 @@
 					href: '/secrets/compare',
 					icon: GitCompareArrows,
 					label: 'compare',
+					hue: 'var(--accent-amber)'
+				},
+				{
+					href: '/secrets/summary',
+					icon: LayoutGrid,
+					label: 'summary',
 					hue: 'var(--accent-amber)'
 				},
 				{ href: '/settings', icon: Settings, label: 'settings', hue: 'var(--accent-slate)' }

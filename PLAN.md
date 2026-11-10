@@ -1797,6 +1797,18 @@ faith). The dev server had to RESTART for the migration'd schema — old binary 
 migrated DB = 500s; noted in the runbook sense: after lumen migrations, rebuild the
 running server.
 
+**2026-11-10 — estate round (C5 + C1):** the battery now OWNS kv/itest/relay (C5)
+— proven when the dev plane restarted mid-round and wiped the in-memory tree:
+human paths and test paths no longer share fate. C1 shipped the estate matrix at
+/secrets/summary: lumen's /admin/bao/summary sweep (Meta+head Read per path →
+counts only — values never leave the relay), the page renders versions, pin intent
+(amber on ≠ head drift), ○n empty-key signals, and shape-drift markers; cells
+deep-link the cockpit. Nav + palette registry joined (longest-match highlighting
+already handles /secrets/*). Twin carries estateSummary semantics + contract test
+(mirror fan-out visible as all-empty siblings — the matrix's own thesis).
+Harness 85/85 (+6 T-sum; one assert learned that uppercase CSS edits innerText —
+match the rendered truth, not the source case). check 0-0, 74 units, build green.
+
 **2026-11-10 — tag desk round (engine cutover):** the vocabulary now SEARCHES like
 everything else — {id,name} docs in Meilisearch (ruling superseded "a name, not a
 document"; counts/featured hydrate from Postgres so the index owns no fact), desk
