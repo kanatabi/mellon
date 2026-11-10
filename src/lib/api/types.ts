@@ -89,6 +89,10 @@ export interface TagCount {
 	/** The desk's manual promotion flag (lumen 0005: was `cloud`): membership
 	 *  in the earendil TOPICS widget. Vocabulary exists WITHOUT it. */
 	featured: boolean;
+	/** ISO instants (lumen tag-desk round): the desk sorts/filters on these;
+	 *  the portal renders them as-is. */
+	createdAt: string;
+	updatedAt: string;
 }
 
 /** Mirrors Bao KV-v2: the double-`data` envelope flattened to what the UI needs. */
@@ -222,6 +226,14 @@ export interface AdminApi {
 	createCollection(name: string): Promise<CollectionCount>;
 
 	listTags(): Promise<TagCount[]>;
+	/** Same array shape, ordered by created_at DESC (lumen `?order=newest`). */
+	listNewestTags(): Promise<TagCount[]>;
+	/** Typo-tolerant NAME search (lumen engine, relevance-ordered) — paged
+	 *  like the other lists so the desk can answer "is there a next page?". */
+	searchTags(q: string, page?: number, pageSize?: number): Promise<Paged<TagCount>>;
+	/** Feature/un-feature a SET of names in one round trip; resolves to the
+	 *  number of rows that actually changed. */
+	bulkFeatureTags(names: string[], featured: boolean): Promise<number>;
 	/** One call serves ALL content groups for the palette (≤8 each). */
 	search(q: string): Promise<SearchResults>;
 	/** Vocabulary is a first-class store (not derived): a tag exists once

@@ -211,7 +211,7 @@ describe('mock AdminApi contract', () => {
 		// create + feature
 		await api.createTag('Harness Desk Tag');
 		const row = await api.updateTag('harness-desk-tag', { featured: true });
-		expect(row).toEqual({ name: 'harness-desk-tag', posts: 0, featured: true });
+		expect(row).toMatchObject({ name: 'harness-desk-tag', posts: 0, featured: true });
 		// rename propagates: attach to a draft, rename, the post follows
 		const created = await api.createPost(
 			draft({ slug: 'desk-rename-me', tags: ['harness-desk-tag'] })
@@ -242,9 +242,9 @@ describe('mock AdminApi contract', () => {
 		const api = createMockApi();
 		const before = await api.listTags();
 		const t = await api.createTag('Edge Computing!!');
-		expect(t).toEqual({ name: 'edge-computing', posts: 0, featured: false });
+		expect(t).toMatchObject({ name: 'edge-computing', posts: 0, featured: false });
 		const after = await api.listTags();
-		expect(after.find((x) => x.name === 'edge-computing')).toEqual({
+		expect(after.find((x) => x.name === 'edge-computing')).toMatchObject({
 			name: 'edge-computing',
 			posts: 0,
 			featured: false
@@ -260,6 +260,51 @@ describe('mock AdminApi contract', () => {
 		expect(tags.find((t2) => t2.name === 'latency')?.posts).toBe(0); // seeded-but-unpublished tag
 		for (let i = 1; i < tags.length; i++)
 			expect(tags[i - 1].posts).toBeGreaterThanOrEqual(tags[i].posts);
+	});
+
+	it('tag desk api layer (twin): timestamps, fuzzy search pages, newest order, bulk', async () => {
+		const api = createMockApi();
+		// rows carry lifecycle stamps: live creates get now(), seeds stable fixtures
+		const obs = await api.createTag('Observability');
+		expect(obs.name).toBe('observability');
+		expect(obs.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+		expect(obs.updatedAt).toBe(obs.createdAt);
+		const seeded = (await api.listTags()).find((t) => t.name === 'queues')!;
+		expect(seeded.createdAt).toBe(seeded.updatedAt); // untouched seed
+
+		// searchTags: lumen's fuzzy engine approximated prefix-then-contains,
+		// paged honestly (total = FULL match count, not the page's size)
+		const hit = await api.searchTags('obs');
+		expect(hit.total).toBeGreaterThanOrEqual(1);
+		expect(hit.items.map((t) => t.name)).toContain('observability');
+		// typo-tolerant-ish stem: a truncated name still finds the full one
+		expect((await api.searchTags('backpress')).items.map((t) => t.name)).toContain('backpressure');
+		// pagination across 2 pages: backpressure, latency, observability hold 'a'
+		const p1 = await api.searchTags('a', 1, 2);
+		expect(p1.pageSize).toBe(2);
+		expect(p1.page).toBe(1);
+		expect(p1.items).toHaveLength(2);
+		expect(p1.total).toBe(3);
+		const p2 = await api.searchTags('a', 2, 2);
+		expect(p2.total).toBe(3);
+		expect(p2.items).toHaveLength(1);
+		const names = new Set([...p1.items, ...p2.items].map((t) => t.name));
+		expect(names.size).toBe(3); // pages don't overlap
+
+		// listNewestTags: created_at DESC — the fresh tag leads the fixture stamps
+		const newest = await api.listNewestTags();
+		expect(newest[0].name).toBe('observability');
+
+		// bulk feature reports the honest delta: 'queues' is seeded-featured,
+		// observability is not → exactly ONE row changes
+		expect(await api.bulkFeatureTags(['queues', 'observability'], true)).toBe(1);
+		const rows = await api.listTags();
+		expect(rows.find((t) => t.name === 'observability')?.featured).toBe(true);
+		expect(rows.find((t) => t.name === 'queues')!.updatedAt).toBe(seeded.updatedAt);
+		// flipping BOTH off moves BOTH rows
+		expect(await api.bulkFeatureTags(['queues', 'observability'], false)).toBe(2);
+		// unknown names are not failures — they simply changed nothing
+		expect(await api.bulkFeatureTags(['ghost-tag'], true)).toBe(0);
 	});
 
 	it('photos: uploads land bytes in the media store, src is a serving URL', async () => {

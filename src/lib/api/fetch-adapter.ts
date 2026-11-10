@@ -173,6 +173,15 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 		createCollection: (name) =>
 			call<CollectionCount>('POST', '/admin/collections', { body: { name } }),
 		listTags: () => call<TagCount[]>('GET', '/admin/tags'),
+		listNewestTags: () => call<TagCount[]>('GET', '/admin/tags', { query: { order: ['newest'] } }),
+		searchTags: (needle, page, pageSize) =>
+			call<Paged<TagCount>>('GET', '/admin/tags/search', {
+				query: q({ q: needle, page, pageSize })
+			}),
+		bulkFeatureTags: (names, featured) =>
+			call<{ updated: number }>('PATCH', '/admin/tags/bulk', {
+				body: { names, featured }
+			}).then((r) => r.updated),
 		createTag: (name) => call<TagCount>('POST', '/admin/tags', { body: { name } }),
 		updateTag: (name, patch) =>
 			call<TagCount>('PATCH', `/admin/tags/${enc(name)}`, { body: patch }),

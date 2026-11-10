@@ -231,9 +231,17 @@ export function createMockApi(): AdminApi {
 	let seq = 100;
 	// Tag vocabulary — first-class, seeded from the corpus. A tag exists from
 	// creation, used or not; posts may only carry vocabulary names (lumen §8
-	// enforces the same; the UI never offers a non-vocab tag).
-	const vocab = new Set<string>();
-	for (const p of posts) for (const t of p.tags) vocab.add(t);
+	// enforces the same; the UI never offers a non-vocab tag). Names key a
+	// stamp row (tag-desk round): fixture seeds get stable timestamps derived
+	// from creation order; live creates get `now()`.
+	const vocab = new Map<string, { createdAt: string; updatedAt: string }>();
+	const FIXTURE_T0 = Date.parse('2024-01-06T00:00:00Z');
+	let fixtureSeq = 0;
+	const fixtureStamp = () => {
+		const iso = new Date(FIXTURE_T0 + fixtureSeq++ * 3_600_000).toISOString();
+		return { createdAt: iso, updatedAt: iso };
+	};
+	for (const p of posts) for (const t of p.tags) if (!vocab.has(t)) vocab.set(t, fixtureStamp());
 	// The desk's manual promotion set (lumen 0005 `featured`; seeded cloud
 	// tags mirror the corpus's curated widget). Deletion frees membership.
 	const featuredVocab = new Set<string>();
@@ -248,6 +256,19 @@ export function createMockApi(): AdminApi {
 		return p;
 	};
 	const secretKey = (app: string, env: string) => `${app}/${env}`;
+	// The ONE TagCount compiler for the twin: published-corpus counts +
+	// featured membership + the vocabulary stamp. Every tag verb routes
+	// through it so rows never drift shape between endpoints.
+	const tagRow = (name: string) => {
+		const stamp = vocab.get(name)!;
+		return {
+			name,
+			posts: posts.filter((p) => p.status === 'published' && p.tags.includes(name)).length,
+			featured: featuredVocab.has(name),
+			createdAt: stamp.createdAt,
+			updatedAt: stamp.updatedAt
+		};
+	};
 
 	return {
 		async login(username, password) {
@@ -474,38 +495,67 @@ export function createMockApi(): AdminApi {
 		},
 
 		async listTags() {
-			const counts = new Map<string, number>();
-			for (const p of posts) {
-				if (p.status !== 'published') continue; // counts = published corpus
-				for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-			}
 			// Every vocabulary name appears — unused tags at 0, `featured`
 			// carried for the desk (the PUBLIC widget's posts>0 rule lives in
 			// lumen's read; the desk shows the whole truth either way).
-			return [...vocab]
-				.map((name) => ({ name, posts: counts.get(name) ?? 0, featured: featuredVocab.has(name) }))
+			return [...vocab.keys()]
+				.map(tagRow)
 				.sort((a, b) => b.posts - a.posts || a.name.localeCompare(b.name));
+		},
+
+		async listNewestTags() {
+			// lumen `?order=newest`: created_at DESC, mirrors the wire shape 1:1.
+			return [...vocab.keys()].map(tagRow).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+		},
+
+		async searchTags(qRaw, page, pageSize) {
+			// The lumen engine is fuzzy; the twin approximates it case-insensitively:
+			// prefix matches rank first, then contains matches, names stable-sorted
+			// within each rank tier. total = full match count, honest paging.
+			const needle = String(qRaw ?? '')
+				.trim()
+				.toLowerCase();
+			const prefixes: string[] = [];
+			const contains: string[] = [];
+			for (const name of vocab.keys()) {
+				const k = name.toLowerCase();
+				if (k.startsWith(needle)) prefixes.push(name);
+				else if (k.includes(needle)) contains.push(name);
+			}
+			const byName = (a: string, b: string) => a.localeCompare(b);
+			const ranked = [...prefixes.sort(byName), ...contains.sort(byName)].map(tagRow);
+			return paged(ranked, page ?? 1, pageSize ?? 30);
+		},
+
+		async bulkFeatureTags(names, featured) {
+			// One call promotes/un-promotes a SET; the number is rows that
+			// ACTUALLY changed (unknown names move nothing, lumen counts them out).
+			let updated = 0;
+			for (const n of names) {
+				const stamp = vocab.get(n);
+				if (!stamp || featuredVocab.has(n) === featured) continue;
+				if (featured) featuredVocab.add(n);
+				else featuredVocab.delete(n);
+				stamp.updatedAt = now();
+				updated++;
+			}
+			return updated;
 		},
 
 		async createTag(raw) {
 			const name = slugify(String(raw ?? '')).slice(0, 32);
 			if (!name) throw new AdminApiError(400, 'tag name has no letters or digits');
 			if (vocab.has(name)) throw new AdminApiError(409, `tag exists: ${name}`);
-			vocab.add(name);
-			return { name, posts: 0, featured: false };
+			const iso = now();
+			vocab.set(name, { createdAt: iso, updatedAt: iso });
+			return tagRow(name);
 		},
 
 		async updateTag(name, patch) {
 			if (!vocab.has(name)) throw new AdminApiError(404, 'vocabulary row not found');
 			let cur = name;
-			const countOf = (n: string) => {
-				const counts = new Map<string, number>();
-				for (const p of posts) {
-					if (p.status !== 'published') continue;
-					for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-				}
-				return counts.get(n) ?? 0;
-			};
+			const stamp = vocab.get(name)!;
+			let dirty = false;
 			if (patch.name !== undefined) {
 				const next = slugify(String(patch.name)).slice(0, 32);
 				if (!next) throw new AdminApiError(400, 'tag name has no letters or digits');
@@ -515,15 +565,18 @@ export function createMockApi(): AdminApi {
 					for (const p of posts) p.tags = p.tags.map((t) => (t === cur ? next : t));
 					vocab.delete(cur);
 					if (featuredVocab.delete(cur)) featuredVocab.add(next);
-					vocab.add(next);
+					vocab.set(next, stamp); // the stamp survives the rename
 					cur = next;
+					dirty = true;
 				}
 			}
 			if (patch.featured !== undefined) {
+				if (featuredVocab.has(cur) !== patch.featured) dirty = true;
 				if (patch.featured) featuredVocab.add(cur);
 				else featuredVocab.delete(cur);
 			}
-			return { name: cur, posts: countOf(cur), featured: featuredVocab.has(cur) };
+			if (dirty) stamp.updatedAt = now();
+			return tagRow(cur);
 		},
 
 		async deleteTag(name) {
@@ -561,16 +614,11 @@ export function createMockApi(): AdminApi {
 				.map(clone);
 			// tags are a VOCABULARY prefix match (name lookup, not relevance
 			// search) — lumen serves it from Postgres, not Meilisearch
-			const tagHits = [...vocab]
+			const tagHits = [...vocab.keys()]
 				.filter((t) => t.startsWith(q))
 				.sort()
 				.slice(0, 8)
-				.map((name) => ({
-					name,
-					// same counting rule as listTags: published corpus
-					posts: posts.filter((p) => p.status === 'published' && p.tags.includes(name)).length,
-					featured: featuredVocab.has(name)
-				}));
+				.map(tagRow); // same counting rule as listTags: published corpus
 			return { posts: matched, photos: pics, tags: tagHits };
 		},
 

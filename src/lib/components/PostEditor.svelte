@@ -569,7 +569,12 @@ flowchart LR
 				onCreated: (name) => {
 					// eager vocabulary: the tag exists from creation, used or not —
 					// ride it locally so the submenu row flips ✓ without a reload
-					createdTags = [...createdTags, { name, posts: 0, featured: false }];
+					// (the stamp is the local mirror of what createTag just minted)
+					const iso = new Date().toISOString();
+					createdTags = [
+						...createdTags,
+						{ name, posts: 0, featured: false, createdAt: iso, updatedAt: iso }
+					];
 					toggleTag(name);
 				}
 			})

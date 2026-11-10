@@ -103,6 +103,18 @@ export const client: AdminApi = {
 		call<CollectionCount>('/collections', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listTags: () => call<TagCount[]>('/tags'),
+	listNewestTags: () => call<TagCount[]>('/tags?order=newest'),
+	searchTags: (q, page, pageSize) => {
+		const params = new URLSearchParams({ q });
+		if (page) params.set('page', String(page));
+		if (pageSize) params.set('pageSize', String(pageSize));
+		return call<Paged<TagCount>>(`/tags/search?${params.toString()}`);
+	},
+	bulkFeatureTags: (names, featured) =>
+		call<{ updated: number }>('/tags/bulk', {
+			method: 'PATCH',
+			body: JSON.stringify({ names, featured })
+		}).then((r) => r.updated),
 	search: (q) => call<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
 	createTag: (name) => call<TagCount>('/tags', { method: 'POST', body: JSON.stringify({ name }) }),
 	updateTag: (name, patch) =>
