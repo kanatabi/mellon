@@ -18,7 +18,8 @@
 		X,
 		ArrowUpDown,
 		CalendarDays,
-		Folder
+		Folder,
+		Search
 	} from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -113,6 +114,7 @@
 	type PhotoSort = 'created' | 'title' | 'collection';
 	function buildUrl(opts: {
 		toggleCollection?: string;
+		q?: string | null;
 		gallery?: boolean | null;
 		from?: string | null;
 		to?: string | null;
@@ -131,6 +133,12 @@
 				? cur.filter((c) => c !== opts.toggleCollection)
 				: [...cur, opts.toggleCollection];
 			for (const c of next) sp.append('collection', c);
+			touchesQuery = true;
+		}
+		if ('q' in opts) {
+			// empty/whitespace clears the param — absent q IS the SQL browse door
+			if (opts.q?.trim()) sp.set('q', opts.q.trim());
+			else sp.delete('q');
 			touchesQuery = true;
 		}
 		if ('gallery' in opts) {
@@ -175,8 +183,44 @@
 		{ label: 'collection', sort: 'collection', dir: 'asc', Icon: undefined }
 	] as const;
 
+	/* ── Engine search (lumen M3 desk round): the input is LOCAL, the URL is
+	   the truth. ~250ms debounce → goto; empty commits drop the param (the
+	   SQL browse door reopens). Back button / palette "clear" move the URL
+	   under us — the resync effect adopts a q it didn't send. While q lives
+	   the engine ignores sort AND the date window (PhotoDoc carries no date
+	   attribute) — those controls rest until the field clears. ────────────── */
+	const searching = $derived(!!data.q);
+	// Seed once from the URL — the resync effect below owns any drift.
+	// svelte-ignore state_referenced_locally
+	let qInput = $state(data.q ?? '');
+	// svelte-ignore state_referenced_locally
+	let qApplied = data.q ?? ''; // what we last pushed to (or read from) the URL
+	let qTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		const fromUrl = data.q ?? '';
+		if (fromUrl !== qApplied) {
+			qApplied = fromUrl;
+			qInput = fromUrl;
+		}
+	});
+	function searchSoon() {
+		clearTimeout(qTimer);
+		qTimer = setTimeout(() => {
+			qApplied = qInput.trim();
+			void goto(buildUrl({ q: qApplied }));
+		}, 250);
+	}
+	function clearSearch() {
+		clearTimeout(qTimer);
+		qInput = '';
+		qApplied = '';
+		void goto(buildUrl({ q: null }));
+	}
+	$effect(() => () => clearTimeout(qTimer));
+
 	const hasFilters = $derived(
 		data.activeCollections.length > 0 ||
+			!!data.q ||
 			data.gallery !== undefined ||
 			!!data.from ||
 			!!data.to ||
@@ -191,6 +235,7 @@
 	$effect(() => {
 		const galNow = data.gallery === undefined ? 'any' : data.gallery ? 'in gallery' : 'hidden';
 		const colsNow = data.activeCollections;
+		const qNow = data.q ?? '';
 		const sortNow = `${data.sort}·${data.dir}`;
 		const cmds: Command[] = [
 			vocabSubmenu({
@@ -210,6 +255,21 @@
 				})),
 				isOn: (n) => colsNow.includes(n),
 				pick: (n) => void goto(buildUrl({ toggleCollection: n }))
+			}),
+			// engine search is a filter like any other: the buffer commits through
+			// buildUrl, so ⌘K and the desk input can never disagree (§7 parity)
+			editField({
+				id: 'photos.search',
+				title: 'Search the library',
+				pill: 'search',
+				seed: qNow,
+				commit: (v) => {
+					clearTimeout(qTimer);
+					qApplied = v.trim();
+					qInput = qApplied;
+					void goto(buildUrl({ q: qApplied }));
+					return true;
+				}
 			}),
 			editField({
 				id: 'photos.dates',
@@ -371,6 +431,37 @@
 			</div>
 		</div>
 
+		<!-- Engine search: debounced into the URL (?q=), lumen routes it to
+		     Meilisearch — typo-tolerant over the whole library (alt text and
+		     collection), gallery/collection facets honored, order becomes
+		     relevance. Full width at every viewport. -->
+		<div class="relative">
+			<Search
+				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+				aria-hidden="true"
+			/>
+			<input
+				type="text"
+				bind:value={qInput}
+				oninput={searchSoon}
+				autocomplete="off"
+				aria-label="Search photos"
+				placeholder="search photos — alt text, collections"
+				class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand/40"
+			/>
+			{#if qInput}
+				<button
+					type="button"
+					onclick={clearSearch}
+					aria-label="Clear search"
+					title="Clear search"
+					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+				>
+					<X class="size-3.5" />
+				</button>
+			{/if}
+		</div>
+
 		<!-- Filter strip: the always-visible axes (gallery state, select-all) live
 	     here; collection + dates + sort moved to the sidebar (like posts). -->
 		<div
@@ -492,6 +583,14 @@
 			</p>
 		{/if}
 
+		<!-- The engine answers in its own voice: count of the FULL match set,
+		     and the order it picked. Sort and the date window rest while q lives. -->
+		{#if data.q}
+			<p class="font-mono text-xs text-muted-foreground" role="status">
+				engine results · {data.total} matching “{data.q}” — order is relevance
+			</p>
+		{/if}
+
 		{#if rows.length === 0}
 			<div class="relative flex flex-col items-center gap-3 py-24">
 				<Watermark
@@ -500,9 +599,11 @@
 				/>
 				<Images class="relative size-6 text-muted-foreground" />
 				<p class="relative font-mono text-xs text-muted-foreground">
-					{hasFilters
-						? 'nothing matches these filters'
-						: 'no photographs yet — the darkroom is empty'}
+					{data.q
+						? `nothing matches “${data.q}”`
+						: hasFilters
+							? 'nothing matches these filters'
+							: 'no photographs yet — the darkroom is empty'}
 				</p>
 			</div>
 		{:else}
@@ -591,16 +692,19 @@
 							{#if col.field}
 								<a
 									role="columnheader"
-									href={sortUrl(col.field)}
+									href={searching ? undefined : sortUrl(col.field)}
+									aria-disabled={searching || undefined}
+									title={searching ? 'relevance order while searching' : undefined}
 									aria-sort={data.sort === col.field
 										? data.dir === 'asc'
 											? 'ascending'
 											: 'descending'
 										: 'none'}
-									class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {data.sort ===
-									col.field
-										? 'text-foreground'
-										: 'text-muted-foreground hover:text-foreground'}"
+									class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {searching
+										? 'opacity-40'
+										: data.sort === col.field
+											? 'text-foreground'
+											: 'text-muted-foreground hover:text-foreground'}"
 								>
 									{col.label}
 									{#if data.sort === col.field}
@@ -794,11 +898,15 @@
 				{#each sortChips as chip (chip.label)}
 					{@const on = data.sort === chip.sort && data.dir === chip.dir}
 					<a
-						href={buildUrl({ sort: chip.sort, dir: chip.dir })}
+						href={searching ? undefined : buildUrl({ sort: chip.sort, dir: chip.dir })}
 						aria-current={on ? 'true' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {on
-							? 'border-brand bg-brand/10 text-foreground'
-							: 'border-border text-muted-foreground hover:text-foreground'}"
+						aria-disabled={searching || undefined}
+						title={searching ? 'relevance order while searching' : undefined}
+						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
+							? 'opacity-40'
+							: on
+								? 'border-brand bg-brand/10 text-foreground'
+								: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
 						{#if chip.Icon}
 							<chip.Icon class="size-3" />
@@ -819,11 +927,20 @@
 			onmove={(d) => photosSections.move('dates', d)}
 			order={movable ? photosSections.pos('dates') : undefined}
 		>
-			<DateRange
-				from={data.from}
-				to={data.to}
-				onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
-			/>
+			<!-- PhotoDoc carries no date attribute: the engine cannot honor a
+			     window while q lives, so the control PAUSES (inert = keyboard-
+			     honest, not just pointer-blocked) instead of lying. -->
+			<div
+				class={searching ? 'opacity-40' : ''}
+				inert={searching || undefined}
+				title={searching ? 'date windows pause during engine search' : undefined}
+			>
+				<DateRange
+					from={data.from}
+					to={data.to}
+					onchange={(f, t) => void goto(buildUrl({ from: f ?? null, to: t ?? null }))}
+				/>
+			</div>
 		</SectionCard>
 
 		<SectionCard

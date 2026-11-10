@@ -92,6 +92,7 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 				query: q({
 					status: o?.status,
 					tag: o?.tag,
+					q: o?.q,
 					from: o?.from,
 					to: o?.to,
 					sort: o?.sort,
@@ -117,6 +118,7 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 			call<Paged<AdminPhoto>>('GET', '/admin/photos', {
 				query: q({
 					collection: o?.collections,
+					q: o?.q,
 					gallery: o?.gallery === undefined ? undefined : o.gallery ? '1' : '0',
 					from: o?.from,
 					to: o?.to,

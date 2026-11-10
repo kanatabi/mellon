@@ -5,7 +5,7 @@ import type { PageServerLoad } from './$types';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Curation filters relay to the API (doctrine #1) — ?collection=(repeated)
-// &gallery=&from=&to=&sort=&dir=, mapping 1:1 onto PhotoListOpts. Returned
+// &q=&gallery=&from=&to=&sort=&dir=, mapping 1:1 onto PhotoListOpts. Returned
 // filter keys are prefixed "active*" so they never collide with the
 // collections VOCABULARY the page also needs.
 export const load: PageServerLoad = async ({ url, cookies }) => {
@@ -16,6 +16,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	const from = sp.get('from');
 	const to = sp.get('to');
 	const page = Number.parseInt(sp.get('page') ?? '1', 10) || 1;
+	// engine search door: trimmed; empty/absent = the SQL browse door.
+	const q = (sp.get('q') ?? '').trim() || undefined;
 	const sort =
 		sortRaw === 'title' || sortRaw === 'collection' || sortRaw === 'created'
 			? (sortRaw as 'title' | 'collection' | 'created')
@@ -24,6 +26,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	const [paged, collections] = await Promise.all([
 		api.listPhotos({
 			collections: activeCollections.length ? activeCollections : undefined,
+			q,
 			gallery: gallery === '1' ? true : gallery === '0' ? false : undefined,
 			from: from && DATE_RE.test(from) ? from : undefined,
 			to: to && DATE_RE.test(to) ? to : undefined,
@@ -42,6 +45,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		// page opens the shared picker once on arrival
 		upload: sp.has('upload'),
 		collections,
+		q,
 		activeCollections,
 		gallery: gallery === '1' ? true : gallery === '0' ? false : undefined,
 		from: from && DATE_RE.test(from) ? from : undefined,

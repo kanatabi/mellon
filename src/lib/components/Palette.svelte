@@ -150,9 +150,9 @@
 			title: t.name,
 			group: 'tags' as const,
 			shortcut: `${t.posts} ${t.posts === 1 ? 'post' : 'posts'}`,
-			// a tag is a FILTER AXIS, not a page — Enter lands on the post
-			// list already narrowed to it (the URL rides the API filter)
-			run: () => void goto(`/posts?tag=${encodeURIComponent(t.name)}`)
+			// a tag's home is the desk: Enter lands on /tags with that tag's
+			// settings dialog open (deep-link contract of the tag desk)
+			run: () => void goto(`/tags?tag=${encodeURIComponent(t.name)}`)
 		}))
 	);
 

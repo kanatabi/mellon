@@ -1033,15 +1033,26 @@ check(
 	await pp.close();
 }
 
-// --- T-tags: the tag desk end-to-end (featured IS the manual promotion the
-// earendil TOPICS widget lacked; guards and propagation asserted live) ---
+// --- T-tags: the tag desk end-to-end (dialog settings, engine search,
+// bulk curation, deep links). Engine convergence is SERVER-async: the SSR
+// page is a snapshot, so polling the engine means RELOADING the page. ---
 {
 	const tp = await ctx.newPage();
+	const pollTags = async (q, predicate, timeoutMs = 10000) => {
+		const end = Date.now() + timeoutMs;
+		for (;;) {
+			await tp.goto(`${BASE}/tags?q=${encodeURIComponent(q)}`, { waitUntil: 'networkidle' });
+			const ok = await predicate(tp);
+			if (ok || Date.now() > end) return ok;
+			await sleep(600);
+		}
+	};
+
 	await tp.goto(`${BASE}/tags`, { waitUntil: 'networkidle' });
 	await tp.waitForTimeout(400);
 	check('T-tags1 desk lists the vocabulary', (await tp.locator('text=observability').count()) > 0);
-	// create — take the CANONICAL name from the API response, never a
-	// client-side guess of lumen's Slugify (the guess was the first FAIL)
+
+	// create — canonical slug from the API response; engine finds the FRESH tag
 	await tp
 		.locator('[aria-label="New tag name"]')
 		.fill('Harness Desk ' + Date.now().toString(36).slice(-4));
@@ -1049,69 +1060,181 @@ check(
 		(r) => r.url().endsWith('/api/tags') && r.request().method() === 'POST',
 		{ timeout: 10000 }
 	);
-	await tp.locator('button:has-text("create")').click();
+	await tp.getByRole('button', { name: 'create', exact: false }).first().click();
 	const madeName = (await (await respPromise).json()).name;
-	// the HTTP response lands BEFORE the desk re-renders — wait for the ROW
-	await tp.waitForSelector(`[aria-label="Feature ${madeName}"]`, { timeout: 8000 }).catch(() => {});
-	const rowSel = `[aria-label="Feature ${madeName}"], [aria-label="Unfeature ${madeName}"]`;
-	check(
-		`T-tags2 create slugifies + rows appear (${madeName})`,
-		(await tp.locator(rowSel).count()) === 1
+	const landed = await pollTags(madeName, (t) =>
+		t
+			.locator(`[aria-label^="Open settings for ${madeName}"]`)
+			.count()
+			.then((c) => c === 1)
 	);
-	// feature it — but with ZERO posts the public widget must NOT show it (rule)
-	await tp.locator(`[aria-label="Feature ${madeName}"]`).click();
-	await tp.waitForTimeout(700);
-	const pressed = await tp
-		.locator(`[aria-label="Unfeature ${madeName}"]`)
-		.getAttribute('aria-pressed');
-	const pub = await (await fetch(`${LUMEN}/api/tags`)).text();
+	check(`T-tags2 create lands AND engine answers by own name (${madeName})`, landed);
+
+	// typo tolerance over the whole vocabulary
+	await tp.locator('[aria-label="Search tags"]').fill('obseability');
+	await tp.waitForTimeout(1400);
+	const searched = await tp.evaluate(() => document.body.innerText);
 	check(
-		'T-tags3 feature sticks; unused featured tag stays OUT of the public widget',
-		pressed === 'true' && !pub.includes(madeName),
-		`pressed=${pressed} leak=${pub.includes(madeName)}`
+		'T-tags3 typo query hits the engine: "obseability" finds observability',
+		searched.includes('observability') && searched.includes('engine results'),
+		`found=${searched.includes('observability')}`
 	);
-	// rename via the row input (change fires on blur)
-	await tp.locator(`[aria-label="Rename ${madeName}"]`).fill(madeName + '-renamed');
-	await tp.locator(`[aria-label="Rename ${madeName}"]`).press('Tab');
-	await tp.waitForTimeout(700);
-	const gone = await tp.locator(`[aria-label="Rename ${madeName}"]`).count();
-	const there = await tp.locator(`[aria-label="Rename ${madeName}-renamed"]`).count();
-	check('T-tags4 rename moves the row', gone === 0 && there === 1);
-	// collision refuses VERBATIM
-	await tp.locator(`[aria-label="Rename ${madeName}-renamed"]`).fill('queues');
-	await tp.locator(`[aria-label="Rename ${madeName}-renamed"]`).press('Tab');
-	await tp.waitForTimeout(700);
-	const clash = await tp.evaluate(
+
+	// dialog: timestamps + used-by roster
+	await tp.goto(`${BASE}/tags?q=observability`, { waitUntil: 'networkidle' });
+	await tp.waitForTimeout(800);
+	await tp.locator('[aria-label^="Open settings for observability"]').click();
+	await tp.waitForTimeout(900);
+	const dlgTxt = await tp.evaluate(
+		() => document.querySelector('[aria-label="Tag settings"]')?.textContent ?? ''
+	);
+	check(
+		'T-tags4 dialog shows timestamps and the used-by roster',
+		dlgTxt.includes('created') && dlgTxt.includes('touched') && dlgTxt.includes('used by'),
+		dlgTxt.replace(/\s+/g, ' ').slice(0, 70)
+	);
+	await tp.keyboard.press('Escape');
+	await tp.waitForTimeout(400);
+
+	// deep link (?tag=) opens the dialog directly
+	await tp.goto(`${BASE}/tags?tag=observability`, { waitUntil: 'networkidle' });
+	await tp.waitForTimeout(800);
+	check(
+		'T-tags5 deep link opens the tag dialog',
+		(await tp.locator('[aria-label="Tag settings"]').count()) === 1
+	);
+
+	// BULK: two fresh tags sharing a numeric token — one query surfaces both
+	const shared = Date.now().toString(36).slice(-4);
+	await tp.goto(`${BASE}/tags`, { waitUntil: 'networkidle' });
+	await tp.waitForTimeout(400);
+	// seed the two bulk subjects via the API (the UI create path is already
+	// asserted by T-tags2; racing it twice against SSR churn is plumbing)
+	const auth = { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' };
+	const bulkA = (
+		await (
+			await fetch(`${LUMEN}/admin/tags`, {
+				method: 'POST',
+				headers: auth,
+				body: JSON.stringify({ name: `bulk-one-${shared}` })
+			})
+		).json()
+	).name;
+	const bulkB = (
+		await (
+			await fetch(`${LUMEN}/admin/tags`, {
+				method: 'POST',
+				headers: auth,
+				body: JSON.stringify({ name: `bulk-two-${shared}` })
+			})
+		).json()
+	).name;
+	// wait for BOTH rows: sibling tags converge independently in the engine —
+	// a predicate that passes on the first arrival races the second (30s stall)
+	await pollTags(
+		shared,
+		async (t) =>
+			(await t.locator(`[aria-label="Select ${bulkA}"]`).count()) === 1 &&
+			(await t.locator(`[aria-label="Select ${bulkB}"]`).count()) === 1
+	);
+	await tp.locator(`[aria-label="Select ${bulkA}"]`).click();
+	await tp.locator(`[aria-label="Select ${bulkB}"]`).click();
+	await tp.getByRole('button', { name: 'feature all', exact: true }).click();
+	await tp.waitForTimeout(1300);
+	const bulkMsg = await tp.evaluate(
 		() => document.querySelector('[role="status"]')?.textContent ?? ''
 	);
 	check(
-		'T-tags5 rename collision 409 surfaces verbatim',
-		clash.includes('exists'),
-		clash.slice(0, 80)
+		'T-tags6 bulk feature reports the real changed count',
+		/2 tags featured/.test(bulkMsg),
+		bulkMsg.trim()
 	);
-	// delete-guard on a USED tag: refusal names the count
+
+	// delete guard: a USED tag refuses FROM THE DIALOG, count verbatim
+	await tp.goto(`${BASE}/tags?q=queues`, { waitUntil: 'networkidle' });
+	await tp.waitForTimeout(800);
+	await tp.locator('[aria-label^="Open settings for queues"]').click();
+	await tp.waitForTimeout(700);
 	tp.once('dialog', (d) => d.accept());
-	await tp.locator('[aria-label="Delete queues"]').click();
-	await tp.waitForTimeout(900);
+	await tp.locator('[aria-label="Tag settings"] button:has-text("delete")').click();
+	await tp.waitForTimeout(1100);
 	const guard = await tp.evaluate(
-		() => document.querySelector('[role="status"]')?.textContent ?? ''
+		() => document.querySelector('[aria-label="Tag settings"]')?.textContent ?? ''
 	);
 	check(
-		'T-tags6 deleting a used tag refuses with the referencing COUNT',
+		'T-tags7 dialog delete refuses used tags, count verbatim',
 		guard.includes('still reference it'),
-		guard.slice(0, 90)
+		guard.match(/\d+ posts still reference it/)?.[0] ?? 'no count'
 	);
-	// freed tag deletes cleanly
-	tp.once('dialog', (d) => d.accept());
-	await tp.locator(`[aria-label="Delete ${madeName}-renamed"]`).click();
-	await tp.waitForTimeout(900);
-	check(
-		'T-tags7 unused tag deletes away',
-		(await tp.locator(`[aria-label*="${madeName}-renamed"]`).count()) === 0
+	await tp.keyboard.press('Escape');
+	await tp.waitForTimeout(300);
+
+	// unused tags delete cleanly via the dialog (doubles as cleanup)
+	for (const name of [bulkA, bulkB, madeName]) {
+		await pollTags(name, (t) =>
+			t
+				.locator(`[aria-label^="Open settings for ${name}"]`)
+				.count()
+				.then((c) => c === 1)
+		);
+		await tp.locator(`[aria-label^="Open settings for ${name}"]`).click();
+		await tp.waitForTimeout(500);
+		tp.once('dialog', (d) => d.accept());
+		await tp.locator('[aria-label="Tag settings"] button:has-text("delete")').click();
+		await tp.waitForTimeout(900);
+		await tp.keyboard.press('Escape');
+		await tp.waitForTimeout(250);
+	}
+	const gone = await pollTags(bulkA, (t) =>
+		t
+			.locator(`[aria-label^="Open settings for ${bulkA}"]`)
+			.count()
+			.then((c) => c === 0)
 	);
-	// nav + registry
-	check('T-tags8 nav carries the tags desk', (await tp.locator('a[href="/tags"]').count()) >= 1);
+	check('T-tags8 unused tags delete away (engine eventually drops them)', gone);
+	check('T-tags9 nav carries the tags desk', (await tp.locator('a[href="/tags"]').count()) >= 1);
 	await tp.close();
+}
+
+// --- T-dash: the dashboard card grid + palette tag rows land on the desk ---
+{
+	const dp = await ctx.newPage();
+	await dp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+	await dp.waitForTimeout(700);
+	const dash = await dp.evaluate(() => document.body.innerText);
+	check(
+		'T-dash1 dashboard shows the three insight cards',
+		/Latest posts/i.test(dash) && /Newest tags/i.test(dash) && /photos/i.test(dash)
+	);
+	const tiles = await dp.locator('section a[href^="/photos/"] img').count();
+	check('T-dash2 latest-photos tiles render as links', tiles >= 4, `tiles=${tiles}`);
+	check(
+		'T-dash3 tag chips deep-link the desk dialog',
+		(await dp.locator('a[href^="/tags?tag="]').count()) >= 1
+	);
+	// palette tag rows land on /tags?tag=
+	await dp.keyboard.press('Control+k');
+	await dp.waitForTimeout(300);
+	const input = dp.locator('[aria-label="Command palette"] input').first();
+	await input.click();
+	await input.fill('observability');
+	await dp.waitForTimeout(700);
+	// 'observability' matches post TITLES too — select the row by its GROUP
+	// label ('tags observability N posts'), never by position or blind-Enter
+	const row = dp.locator('[role="option"]', { hasText: 'tags observability' }).first();
+	if (await row.count()) {
+		await row.click();
+		await dp.waitForTimeout(1500);
+		check(
+			'T-dash4 palette tag row navigates to the desk dialog',
+			dp.url().includes('/tags?tag=observability'),
+			dp.url()
+		);
+	} else {
+		check('T-dash4 palette tag row navigates to the desk dialog', false, 'row never rendered');
+		await dp.keyboard.press('Escape');
+	}
+	await dp.close();
 }
 
 // --- T5: error boundary with a dead backend ---

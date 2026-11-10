@@ -57,6 +57,7 @@ export const client: AdminApi = {
 		const params = new URLSearchParams();
 		if (opts?.status) params.set('status', opts.status);
 		for (const t of opts?.tag ?? []) params.append('tag', t);
+		if (opts?.q) params.set('q', opts.q);
 		if (opts?.from) params.set('from', opts.from);
 		if (opts?.to) params.set('to', opts.to);
 		if (opts?.sort) params.set('sort', opts.sort);
@@ -81,6 +82,7 @@ export const client: AdminApi = {
 	listPhotos: (opts) => {
 		const params = new URLSearchParams();
 		for (const c of opts?.collections ?? []) params.append('collection', c);
+		if (opts?.q) params.set('q', opts.q);
 		if (opts?.gallery !== undefined) params.set('gallery', opts.gallery ? '1' : '0');
 		if (opts?.from) params.set('from', opts.from);
 		if (opts?.to) params.set('to', opts.to);

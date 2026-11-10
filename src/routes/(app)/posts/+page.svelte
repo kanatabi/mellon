@@ -11,7 +11,8 @@
 		X,
 		ArrowUpDown,
 		CalendarDays,
-		Tags as TagsIcon
+		Tags as TagsIcon,
+		Search
 	} from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -72,6 +73,7 @@
 	function buildUrl(opts: {
 		status?: PostStatus | null;
 		toggleTag?: string;
+		q?: string | null;
 		sort?: 'updated' | 'created' | 'published' | 'title';
 		dir?: 'asc' | 'desc';
 		from?: string | null;
@@ -94,6 +96,12 @@
 				? cur.filter((t) => t !== opts.toggleTag)
 				: [...cur, opts.toggleTag];
 			for (const t of next) sp.append('tag', t);
+			touchesQuery = true;
+		}
+		if ('q' in opts) {
+			// empty/whitespace clears the param — absent q IS the SQL browse door
+			if (opts.q?.trim()) sp.set('q', opts.q.trim());
+			else sp.delete('q');
 			touchesQuery = true;
 		}
 		if ('from' in opts) {
@@ -138,9 +146,44 @@
 		return buildUrl({ sort: field, dir });
 	}
 
+	/* ── Engine search (lumen M3 desk round): the input is LOCAL, the URL is
+	   the truth. ~250ms debounce → goto; empty commits drop the param (the
+	   SQL browse door reopens). Back button / palette "clear" move the URL
+	   under us — the resync effect adopts a q it didn't send. Same-route
+	   query navigation keeps this component mounted, so the caret survives. ── */
+	const searching = $derived(!!data.q);
+	// Seed once from the URL — the resync effect below owns any drift.
+	// svelte-ignore state_referenced_locally
+	let qInput = $state(data.q ?? '');
+	// svelte-ignore state_referenced_locally
+	let qApplied = data.q ?? ''; // what we last pushed to (or read from) the URL
+	let qTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		const fromUrl = data.q ?? '';
+		if (fromUrl !== qApplied) {
+			qApplied = fromUrl;
+			qInput = fromUrl;
+		}
+	});
+	function searchSoon() {
+		clearTimeout(qTimer);
+		qTimer = setTimeout(() => {
+			qApplied = qInput.trim();
+			void goto(buildUrl({ q: qApplied }));
+		}, 250);
+	}
+	function clearSearch() {
+		clearTimeout(qTimer);
+		qInput = '';
+		qApplied = '';
+		void goto(buildUrl({ q: null }));
+	}
+	$effect(() => () => clearTimeout(qTimer));
+
 	const hasFilters = $derived(
 		data.statusFilter !== null ||
 			data.tag.length > 0 ||
+			!!data.q ||
 			!!data.from ||
 			!!data.to ||
 			data.sort !== 'updated' ||
@@ -156,6 +199,7 @@
 	$effect(() => {
 		const statusNow = data.statusFilter ?? 'all';
 		const tagsNow = data.tag;
+		const qNow = data.q ?? '';
 		const sortNow = `${data.sort}·${data.dir}`;
 		const cmds: Command[] = [
 			vocabSubmenu({
@@ -178,6 +222,21 @@
 				// OR semantics, like the sidebar chips: toggle keeps the palette
 				// open so tag→tag→date chains in one session
 				pick: (n) => void goto(buildUrl({ toggleTag: n }))
+			}),
+			// engine search is a filter like any other: the buffer commits through
+			// buildUrl, so ⌘K and the desk input can never disagree (§7 parity)
+			editField({
+				id: 'posts.search',
+				title: 'Search the corpus',
+				pill: 'search',
+				seed: qNow,
+				commit: (v) => {
+					clearTimeout(qTimer);
+					qApplied = v.trim();
+					qInput = qApplied;
+					void goto(buildUrl({ q: qApplied }));
+					return true;
+				}
 			}),
 			editField({
 				id: 'posts.dates',
@@ -246,6 +305,36 @@
 			</a>
 		</div>
 
+		<!-- Engine search: debounced into the URL (?q=), lumen routes it to
+		     Meilisearch — typo-tolerant over the whole corpus, facets honored,
+		     order becomes relevance. Full width at every viewport. -->
+		<div class="relative">
+			<Search
+				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+				aria-hidden="true"
+			/>
+			<input
+				type="text"
+				bind:value={qInput}
+				oninput={searchSoon}
+				autocomplete="off"
+				aria-label="Search posts"
+				placeholder="search posts — title, body, tags"
+				class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand/40"
+			/>
+			{#if qInput}
+				<button
+					type="button"
+					onclick={clearSearch}
+					aria-label="Clear search"
+					title="Clear search"
+					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+				>
+					<X class="size-3.5" />
+				</button>
+			{/if}
+		</div>
+
 		<!-- Status row — the §4 machine's three states, filterable. -->
 		<!-- Status strip + pinned filters key (owner call): the chips scroll
 		     sideways at phone widths (no wrap — the row keeps one line), the
@@ -300,6 +389,14 @@
 			</button>
 		</div>
 
+		<!-- The engine answers in its own voice: count of the FULL match set,
+		     and the order it picked. Sort controls below rest while q lives. -->
+		{#if data.q}
+			<p class="font-mono text-xs text-muted-foreground" role="status">
+				engine results · {data.total} matching “{data.q}” — order is relevance
+			</p>
+		{/if}
+
 		<!-- The list: stacked rows below lg (the view the owner keeps for
 		     phones), a columnar TABLE at lg+ — one loop so the two never
 		     drift. Rows are link-cards: the title's ::after spans the row, so
@@ -313,16 +410,19 @@
 				{#each headerCols as col (col.field)}
 					<a
 						role="columnheader"
-						href={sortUrl(col.field)}
+						href={searching ? undefined : sortUrl(col.field)}
+						aria-disabled={searching || undefined}
+						title={searching ? 'relevance order while searching' : undefined}
 						aria-sort={data.sort === col.field
 							? data.dir === 'asc'
 								? 'ascending'
 								: 'descending'
 							: 'none'}
-						class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {data.sort ===
-						col.field
-							? 'text-foreground'
-							: 'text-muted-foreground hover:text-foreground'}"
+						class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {searching
+							? 'opacity-40'
+							: data.sort === col.field
+								? 'text-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
 					>
 						{col.label}
 						{#if data.sort === col.field}
@@ -388,7 +488,7 @@
 				</div>
 			{:else}
 				<p class="border-t border-border py-10 text-center font-mono text-xs text-muted-foreground">
-					nothing matches these filters
+					{data.q ? `nothing matches “${data.q}”` : 'nothing matches these filters'}
 				</p>
 			{/each}
 		</div>
@@ -485,11 +585,15 @@
 				{#each sortChips as chip (chip.label)}
 					{@const on = data.sort === chip.sort && data.dir === chip.dir}
 					<a
-						href={buildUrl({ sort: chip.sort, dir: chip.dir })}
+						href={searching ? undefined : buildUrl({ sort: chip.sort, dir: chip.dir })}
 						aria-current={on ? 'true' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {on
-							? 'border-brand bg-brand/10 text-foreground'
-							: 'border-border text-muted-foreground hover:text-foreground'}"
+						aria-disabled={searching || undefined}
+						title={searching ? 'relevance order while searching' : undefined}
+						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
+							? 'opacity-40'
+							: on
+								? 'border-brand bg-brand/10 text-foreground'
+								: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
 						{#if chip.Icon}
 							<chip.Icon class="size-3" />

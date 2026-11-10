@@ -74,6 +74,12 @@ export interface PhotoListOpts {
 	 *  the null bucket. */
 	collections?: string[];
 	gallery?: boolean;
+	/** Engine search (lumen M3 desk round): non-empty q routes through the
+	 *  Meilisearch `photos` index — typo-tolerant, collection/gallery facets
+	 *  honored; from/to are NOT (the PhotoDoc carries no date attribute).
+	 *  Order BECOMES RELEVANCE (sort ignored while q lives); total is the
+	 *  FULL match count. Empty/absent = the old SQL browse door. */
+	q?: string;
 	/** Inclusive YYYY-MM-DD window on createdAt. */
 	from?: string;
 	to?: string;
@@ -135,8 +141,16 @@ export interface PostListOpts {
 	status?: PostStatus;
 	/** OR semantics on tags, mirroring earendil's §3 list contract.
 	 *  (2026-11-08 audit: a `q` filter here was the palette's pre-search()
-	 *  hack — dead surface, retired; content search is search(q) alone.) */
+	 *  hack — dead surface, retired; content search is search(q) alone.
+	 *  The desk `q` below is NOT that surface reborn: it is lumen's ratified
+	 *  engine door on the list verb (M3 desk-search round), URL-driven.) */
 	tag?: string[];
+	/** Engine search: non-empty q routes the desk list through Meilisearch —
+	 *  typo-tolerant across the whole corpus, facets honored (status, tag,
+	 *  from, to), `page` pages through. ORDER BECOMES RELEVANCE (sort is
+	 *  ignored server-side while q lives); total = FULL match count.
+	 *  Empty/absent = the old SQL browse door, unchanged behavior. */
+	q?: string;
 	/** Inclusive YYYY-MM-DD window on the editorial date. */
 	from?: string;
 	to?: string;

@@ -49,6 +49,9 @@ async function route(ctx: Ctx) {
 			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 			const from = url.searchParams.get('from');
 			const to = url.searchParams.get('to');
+			// engine search door: trimmed, relayed verbatim; empty = the SQL
+			// browse door (the adapter drops empty strings) — no logic here
+			const q = (url.searchParams.get('q') ?? '').trim();
 			return json(
 				await api.listPosts({
 					status:
@@ -56,6 +59,7 @@ async function route(ctx: Ctx) {
 							? status
 							: undefined,
 					tag: url.searchParams.getAll('tag'),
+					q: q || undefined,
 					page: Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1,
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
@@ -94,9 +98,12 @@ async function route(ctx: Ctx) {
 			const from = url.searchParams.get('from');
 			const to = url.searchParams.get('to');
 			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+			// engine search door, relay-only like posts' (empty = SQL browse door)
+			const q = (url.searchParams.get('q') ?? '').trim();
 			return json(
 				await api.listPhotos({
 					collections: col.length ? col : undefined,
+					q: q || undefined,
 					gallery: gal === '1' ? true : gal === '0' ? false : undefined,
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
