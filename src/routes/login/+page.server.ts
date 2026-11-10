@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { AdminApiError } from '#lib/api/index.ts';
 import { createApi } from '#lib/api/index.ts';
-import { SESSION_COOKIE } from '#lib/session.ts';
+import { SESSION_COOKIE, cookieTrust } from '#lib/session.ts';
 import type { Actions } from './$types';
 
 // If already authed, straight through to the app.
@@ -22,6 +22,7 @@ export const actions: Actions = {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'strict',
+				...cookieTrust(url),
 				maxAge: expiresIn
 			});
 		} catch (e) {

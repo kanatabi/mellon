@@ -27,7 +27,11 @@ export default defineConfig({
 			},
 
 			// adapter-node build/ is the self-contained SSR server for the cluster
-			// deploy (ClusterIP only — mellon/DESIGN.md §2; no Ingress, ever, in P0).
+			// deploy. Amended 2026-11-08: console.gofar.id IS a sanctioned public
+			// surface (TLS + GATE #10). Consequence for origin reconstruction: the
+			// Deployment sets PROTOCOL_HEADER=x-forwarded-proto + HOST_HEADER=x-forwarded-host
+			// (adapter-node's opt-in env knobs; default protocol is 'https', which would
+			// break CSRF AND cookie derivation on plain-http local runs).
 			adapter: adapter({ out: 'build' })
 		})
 	]

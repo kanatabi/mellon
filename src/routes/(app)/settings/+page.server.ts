@@ -1,3 +1,4 @@
+import { cookieTrust } from '#lib/session.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = ({ cookies }) => ({
@@ -5,13 +6,18 @@ export const load: PageServerLoad = ({ cookies }) => ({
 });
 
 export const actions: Actions = {
-	default: async ({ cookies, request }) => {
+	default: async ({ cookies, request, url }) => {
 		const form = await request.formData();
 		// Non-httpOnly: the editor reads it at init to choose keymaps.
 		if (form.get('vim') === '1') {
-			cookies.set('mellon_vim', '1', { path: '/', sameSite: 'strict', maxAge: 31536000 });
+			cookies.set('mellon_vim', '1', {
+				path: '/',
+				sameSite: 'strict',
+				...cookieTrust(url),
+				maxAge: 31536000
+			});
 		} else {
-			cookies.delete('mellon_vim', { path: '/' });
+			cookies.delete('mellon_vim', { path: '/', ...cookieTrust(url) });
 		}
 	}
 };
