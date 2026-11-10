@@ -13,6 +13,9 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	const dirRaw = sp.get('dir');
 	const from = sp.get('from');
 	const to = sp.get('to');
+	// engine search door: trimmed; empty/absent = the SQL browse door. Sort
+	// still ships — lumen ignores it while q lives (relevance is the order).
+	const q = (sp.get('q') ?? '').trim() || undefined;
 	const page = Number.parseInt(sp.get('page') ?? '1', 10) || 1;
 	const opts = {
 		status:
@@ -20,6 +23,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 				? (status as 'draft' | 'published' | 'unpublished')
 				: undefined,
 		tag: sp.getAll('tag'),
+		q,
 		from: from && DATE_RE.test(from) ? from : undefined,
 		to: to && DATE_RE.test(to) ? to : undefined,
 		sort:

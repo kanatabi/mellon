@@ -1781,6 +1781,40 @@ warm caches) and invisible rail scrollbars shipped in the same commit.
 Harness 34/34 (+7). Lesson: breakpoint = what actually constrains the
 layout — columns measure containers, chrome measures viewport.
 
+**2026-11-10 — the tag desk:** earendil's TOPICS mystery (new tags never surface)
+traced to its root: the widget reads a curated FLAG (`cloud` — renamed `featured` by
+lumen migration 0005), and only the SEED ever set it; publish maintains counts,
+nothing promoted. Ruling: promotion is a human decision, so the desk page `/tags`
+makes it — create/rename/feature/delete with lumen's guards shown verbatim (the
+delete refusal names the referencing count; rename collision 409). The public widget
+rule `featured AND posts > 0` means a featured tag with no posts is READY, not
+display-worthy — earendil itself needed ZERO changes (public shape preserved). The
+twin gained the full desk semantics (rename propagates through post tag lists) + 1
+contract test; harness T-tags1..8 drive the desk live (74/74). Truths the battery
+taught: never client-side guess a server's slugify (take the name from the response),
+and the HTTP response arrives before the UI re-renders (waitForSelector, not
+faith). The dev server had to RESTART for the migration'd schema — old binary +
+migrated DB = 500s; noted in the runbook sense: after lumen migrations, rebuild the
+running server.
+
+**2026-11-10 — tag desk round (engine cutover):** the vocabulary now SEARCHES like
+everything else — {id,name} docs in Meilisearch (ruling superseded "a name, not a
+document"; counts/featured hydrate from Postgres so the index owns no fact), desk
+doors /posts & /photos accept ?q straight to the engine (facets where docs support;
+photo date windows visibly PAUSE — honest disabled chips beat silent ignores),
+featured is desk-manual promotion only, the /tags page grew dialog-per-row (rename
+/feature/used-by/timestamps/guarded delete), bulk feature (updated = actual changes),
+engine search bar + pager (fresh zero-post tags sort last — asserts go THROUGH the
+search, which proves it), URL-deep `?tag=` links shared by palette rows and dashboard
+chips, and the dashboard is now a card grid with a commented append contract for the
+Traffic round. Orchestration: 5 subagents total — 2 recon, 3 implementation over
+disjoint file ownership, ALL convergence gates held centrally by the main session.
+Battery truths owned: an OLD lumen worker sharing the dev queue rejected index_tag
+jobs (restart discipline after queue-affecting deploys); pgrep -f matched my own
+shell's cmdline — a self-kill, twice is a pattern: filter by /proc comm; a paginating
+desk broke row asserts that assumed page 1 (reality again correct). Harness 71/71,
+73 units, check 0-0.
+
 **2026-11-10 — sheet order finalized:** the pre-drag view means the FIXED
 order too, not just hidden affordances — cards carry `order={movable ? pos :
 undefined}` and SectionCard omits the style when undefined, so the sheet is

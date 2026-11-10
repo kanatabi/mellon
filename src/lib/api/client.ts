@@ -15,7 +15,8 @@ import type {
 	SecretMeta,
 	SecretPath,
 	SecretPayload,
-	TagCount
+	TagCount,
+	SearchResults
 } from './types.ts';
 
 export class ApiError extends Error {
@@ -56,6 +57,7 @@ export const client: AdminApi = {
 		const params = new URLSearchParams();
 		if (opts?.status) params.set('status', opts.status);
 		for (const t of opts?.tag ?? []) params.append('tag', t);
+		if (opts?.q) params.set('q', opts.q);
 		if (opts?.from) params.set('from', opts.from);
 		if (opts?.to) params.set('to', opts.to);
 		if (opts?.sort) params.set('sort', opts.sort);
@@ -80,6 +82,7 @@ export const client: AdminApi = {
 	listPhotos: (opts) => {
 		const params = new URLSearchParams();
 		for (const c of opts?.collections ?? []) params.append('collection', c);
+		if (opts?.q) params.set('q', opts.q);
 		if (opts?.gallery !== undefined) params.set('gallery', opts.gallery ? '1' : '0');
 		if (opts?.from) params.set('from', opts.from);
 		if (opts?.to) params.set('to', opts.to);
@@ -102,13 +105,23 @@ export const client: AdminApi = {
 		call<CollectionCount>('/collections', { method: 'POST', body: JSON.stringify({ name }) }),
 
 	listTags: () => call<TagCount[]>('/tags'),
-	search: (q) =>
-		call<{
-			posts: PostSummaryAdmin[];
-			photos: AdminPhoto[];
-			tags: { name: string; posts: number }[];
-		}>(`/search?q=${encodeURIComponent(q)}`),
+	listNewestTags: () => call<TagCount[]>('/tags?order=newest'),
+	searchTags: (q, page, pageSize) => {
+		const params = new URLSearchParams({ q });
+		if (page) params.set('page', String(page));
+		if (pageSize) params.set('pageSize', String(pageSize));
+		return call<Paged<TagCount>>(`/tags/search?${params.toString()}`);
+	},
+	bulkFeatureTags: (names, featured) =>
+		call<{ updated: number }>('/tags/bulk', {
+			method: 'PATCH',
+			body: JSON.stringify({ names, featured })
+		}).then((r) => r.updated),
+	search: (q) => call<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
 	createTag: (name) => call<TagCount>('/tags', { method: 'POST', body: JSON.stringify({ name }) }),
+	updateTag: (name, patch) =>
+		call<TagCount>(`/tags/${name}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+	deleteTag: (name) => call(`/tags/${name}`, { method: 'DELETE' }),
 
 	listSecretPaths: () => call<SecretPath[]>('/secrets'),
 	readSecret: (app, env, version) =>

@@ -60,6 +60,7 @@ export const baseCommands: Command[] = [
 	nav('go.dashboard', 'Dashboard', '/', 'g d'),
 	nav('go.posts', 'Posts', '/posts', 'g p'),
 	nav('go.photos', 'Photos', '/photos'),
+	nav('go.tags', 'Tags', '/tags'),
 	nav('go.secrets', 'Secrets', '/secrets'),
 	nav('go.compare', 'Compare versions', '/secrets/compare'),
 	nav('go.settings', 'Settings', '/settings'),

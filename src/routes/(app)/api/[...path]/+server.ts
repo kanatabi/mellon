@@ -49,6 +49,9 @@ async function route(ctx: Ctx) {
 			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 			const from = url.searchParams.get('from');
 			const to = url.searchParams.get('to');
+			// engine search door: trimmed, relayed verbatim; empty = the SQL
+			// browse door (the adapter drops empty strings) — no logic here
+			const q = (url.searchParams.get('q') ?? '').trim();
 			return json(
 				await api.listPosts({
 					status:
@@ -56,6 +59,7 @@ async function route(ctx: Ctx) {
 							? status
 							: undefined,
 					tag: url.searchParams.getAll('tag'),
+					q: q || undefined,
 					page: Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1,
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
@@ -94,9 +98,12 @@ async function route(ctx: Ctx) {
 			const from = url.searchParams.get('from');
 			const to = url.searchParams.get('to');
 			const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+			// engine search door, relay-only like posts' (empty = SQL browse door)
+			const q = (url.searchParams.get('q') ?? '').trim();
 			return json(
 				await api.listPhotos({
 					collections: col.length ? col : undefined,
+					q: q || undefined,
 					gallery: gal === '1' ? true : gal === '0' ? false : undefined,
 					from: from && DATE_RE.test(from) ? from : undefined,
 					to: to && DATE_RE.test(to) ? to : undefined,
@@ -131,11 +138,49 @@ async function route(ctx: Ctx) {
 		}
 	}
 
-	// --- tags ---
-	if (seg === 'tags' && request.method === 'GET') return json(await api.listTags());
+	// --- tags (the desk's 1:1 relay: GET/POST/PATCH/DELETE + static bulk/search) ---
+	if (seg === 'tags' && request.method === 'GET') {
+		// `?order=newest` routes to its own 1:1 method — a mapping, not a decision
+		return json(
+			url.searchParams.get('order') === 'newest' ? await api.listNewestTags() : await api.listTags()
+		);
+	}
 	if (seg === 'tags' && request.method === 'POST') {
 		const { name } = (await body()) as { name: string };
 		return json(await api.createTag(String(name ?? '')), { status: 201 });
+	}
+	// bulk/search are STATIC segments — matched before the {name} routes below
+	// (lumen's own router precedence, mirrored here)
+	if (p[0] === 'tags' && p.length === 2 && p[1] === 'search' && request.method === 'GET') {
+		return json(
+			await api.searchTags(
+				url.searchParams.get('q') ?? '',
+				Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1,
+				Number.parseInt(url.searchParams.get('pageSize') ?? '30', 10) || 30
+			)
+		);
+	}
+	if (p[0] === 'tags' && p.length === 2 && p[1] === 'bulk' && request.method === 'PATCH') {
+		const { names, featured } = (await body()) as { names: string[]; featured: boolean };
+		return json({
+			updated: await api.bulkFeatureTags(
+				Array.isArray(names) ? names.map(String) : [],
+				Boolean(featured)
+			)
+		});
+	}
+	if (p[0] === 'tags' && p.length === 2 && request.method === 'PATCH') {
+		const patch = (await body()) as { name?: string; featured?: boolean };
+		return json(
+			await api.updateTag(p[1], {
+				...(patch.name !== undefined ? { name: String(patch.name) } : {}),
+				...(patch.featured !== undefined ? { featured: Boolean(patch.featured) } : {})
+			})
+		);
+	}
+	if (p[0] === 'tags' && p.length === 2 && request.method === 'DELETE') {
+		await api.deleteTag(p[1]);
+		return json({ ok: true });
 	}
 
 	// --- search (palette content door) ---

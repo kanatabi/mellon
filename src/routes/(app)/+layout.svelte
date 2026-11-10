@@ -15,6 +15,7 @@
 		PanelLeftOpen,
 		Search,
 		Settings,
+		Tag,
 		X
 	} from 'lucide-svelte';
 	import Palette from '#lib/components/Palette.svelte';
@@ -134,7 +135,8 @@
 			items: [
 				{ href: '/', icon: House, label: 'dashboard', hue: 'var(--brand)' },
 				{ href: '/posts', icon: FileText, label: 'posts', hue: 'var(--accent-blue)' },
-				{ href: '/photos', icon: Images, label: 'photos', hue: 'var(--accent-teal)' }
+				{ href: '/photos', icon: Images, label: 'photos', hue: 'var(--accent-teal)' },
+				{ href: '/tags', icon: Tag, label: 'tags', hue: 'var(--accent-slate)' }
 			]
 		},
 		{

@@ -92,6 +92,7 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 				query: q({
 					status: o?.status,
 					tag: o?.tag,
+					q: o?.q,
 					from: o?.from,
 					to: o?.to,
 					sort: o?.sort,
@@ -117,6 +118,7 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 			call<Paged<AdminPhoto>>('GET', '/admin/photos', {
 				query: q({
 					collection: o?.collections,
+					q: o?.q,
 					gallery: o?.gallery === undefined ? undefined : o.gallery ? '1' : '0',
 					from: o?.from,
 					to: o?.to,
@@ -173,7 +175,19 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 		createCollection: (name) =>
 			call<CollectionCount>('POST', '/admin/collections', { body: { name } }),
 		listTags: () => call<TagCount[]>('GET', '/admin/tags'),
+		listNewestTags: () => call<TagCount[]>('GET', '/admin/tags', { query: { order: ['newest'] } }),
+		searchTags: (needle, page, pageSize) =>
+			call<Paged<TagCount>>('GET', '/admin/tags/search', {
+				query: q({ q: needle, page, pageSize })
+			}),
+		bulkFeatureTags: (names, featured) =>
+			call<{ updated: number }>('PATCH', '/admin/tags/bulk', {
+				body: { names, featured }
+			}).then((r) => r.updated),
 		createTag: (name) => call<TagCount>('POST', '/admin/tags', { body: { name } }),
+		updateTag: (name, patch) =>
+			call<TagCount>('PATCH', `/admin/tags/${enc(name)}`, { body: patch }),
+		deleteTag: (name) => call<void>('DELETE', `/admin/tags/${enc(name)}`),
 
 		// --- palette content door (§8) ---
 		search: (needle) => call<SearchResults>('GET', '/admin/search', { query: { q: [needle] } }),

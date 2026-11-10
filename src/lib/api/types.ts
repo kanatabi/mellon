@@ -74,6 +74,12 @@ export interface PhotoListOpts {
 	 *  the null bucket. */
 	collections?: string[];
 	gallery?: boolean;
+	/** Engine search (lumen M3 desk round): non-empty q routes through the
+	 *  Meilisearch `photos` index — typo-tolerant, collection/gallery facets
+	 *  honored; from/to are NOT (the PhotoDoc carries no date attribute).
+	 *  Order BECOMES RELEVANCE (sort ignored while q lives); total is the
+	 *  FULL match count. Empty/absent = the old SQL browse door. */
+	q?: string;
 	/** Inclusive YYYY-MM-DD window on createdAt. */
 	from?: string;
 	to?: string;
@@ -86,6 +92,13 @@ export interface PhotoListOpts {
 export interface TagCount {
 	name: string;
 	posts: number;
+	/** The desk's manual promotion flag (lumen 0005: was `cloud`): membership
+	 *  in the earendil TOPICS widget. Vocabulary exists WITHOUT it. */
+	featured: boolean;
+	/** ISO instants (lumen tag-desk round): the desk sorts/filters on these;
+	 *  the portal renders them as-is. */
+	createdAt: string;
+	updatedAt: string;
 }
 
 /** Mirrors Bao KV-v2: the double-`data` envelope flattened to what the UI needs. */
@@ -128,8 +141,16 @@ export interface PostListOpts {
 	status?: PostStatus;
 	/** OR semantics on tags, mirroring earendil's §3 list contract.
 	 *  (2026-11-08 audit: a `q` filter here was the palette's pre-search()
-	 *  hack — dead surface, retired; content search is search(q) alone.) */
+	 *  hack — dead surface, retired; content search is search(q) alone.
+	 *  The desk `q` below is NOT that surface reborn: it is lumen's ratified
+	 *  engine door on the list verb (M3 desk-search round), URL-driven.) */
 	tag?: string[];
+	/** Engine search: non-empty q routes the desk list through Meilisearch —
+	 *  typo-tolerant across the whole corpus, facets honored (status, tag,
+	 *  from, to), `page` pages through. ORDER BECOMES RELEVANCE (sort is
+	 *  ignored server-side while q lives); total = FULL match count.
+	 *  Empty/absent = the old SQL browse door, unchanged behavior. */
+	q?: string;
 	/** Inclusive YYYY-MM-DD window on the editorial date. */
 	from?: string;
 	to?: string;
@@ -219,11 +240,25 @@ export interface AdminApi {
 	createCollection(name: string): Promise<CollectionCount>;
 
 	listTags(): Promise<TagCount[]>;
+	/** Same array shape, ordered by created_at DESC (lumen `?order=newest`). */
+	listNewestTags(): Promise<TagCount[]>;
+	/** Typo-tolerant NAME search (lumen engine, relevance-ordered) — paged
+	 *  like the other lists so the desk can answer "is there a next page?". */
+	searchTags(q: string, page?: number, pageSize?: number): Promise<Paged<TagCount>>;
+	/** Feature/un-feature a SET of names in one round trip; resolves to the
+	 *  number of rows that actually changed. */
+	bulkFeatureTags(names: string[], featured: boolean): Promise<number>;
 	/** One call serves ALL content groups for the palette (≤8 each). */
 	search(q: string): Promise<SearchResults>;
 	/** Vocabulary is a first-class store (not derived): a tag exists once
 	 *  created, used or not. Name is slugified; 409 on duplicates. */
 	createTag(name: string): Promise<TagCount>;
+	/** The desk's row verb: rename propagates to every post (id-keyed FKs),
+	 *  featured toggles the widget. 409 on collision. */
+	updateTag(name: string, patch: { name?: string; featured?: boolean }): Promise<TagCount>;
+	/** Refuses (409, message naming the COUNT) while any live post references
+	 *  the tag — unassignment is the editor's job, never a side effect. */
+	deleteTag(name: string): Promise<void>;
 
 	listSecretPaths(): Promise<SecretPath[]>;
 	readSecret(app: string, env: string, version?: number): Promise<SecretPayload | null>;
