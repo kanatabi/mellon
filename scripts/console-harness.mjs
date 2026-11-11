@@ -1329,23 +1329,25 @@ await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 	await dp.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
 	const defOrder = ['title', 'subtitle', 'slug', 'date', 'tags', 'media', 'export', 'timeline'];
 	const order = () =>
-		dp.evaluate(
-			(def) => {
-				try {
-					const j = JSON.parse(localStorage.getItem('mellon.sections.post') || '{}');
-					return Array.isArray(j.order) ? j.order : def;
-				} catch {
-					return def;
-				}
-			},
-			defOrder
-		);
+		dp.evaluate((def) => {
+			try {
+				const j = JSON.parse(localStorage.getItem('mellon.sections.post') || '{}');
+				return Array.isArray(j.order) ? j.order : def;
+			} catch {
+				return def;
+			}
+		}, defOrder);
 	await dp.waitForSelector('[data-pane="timeline"]', { timeout: 6000 }).catch(() => {});
 	const before = await order();
 	const idx = (o, id) => o.indexOf(id);
 	if (idx(before, 'media') < 0) {
 		check('T-dragm real mouse drag reorders (setup)', false, JSON.stringify(before));
 	} else {
+		// the rail scrolls independently — the source must be ON SCREEN for a
+		// human-real drag (and for CDP mouse events to touch it at all)
+		await dp.locator('[data-pane="media"]').scrollIntoViewIfNeeded();
+		await dp.locator('[data-pane="timeline"]').scrollIntoViewIfNeeded();
+		await dp.waitForTimeout(150);
 		await dp
 			.dragAndDrop('[data-pane="media"]', '[data-pane="timeline"]', { timeout: 8000 })
 			.catch((e) => console.log('   dragAndDrop threw:', String(e).slice(0, 80)));

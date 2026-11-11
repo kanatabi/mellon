@@ -61,6 +61,7 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 	let animUntil = 0; // FLIPs run 160ms — re-measure each frame until they end
 
 	const live = new Map<Element, Animation>();
+	let dragBarCleanup: (() => void) | null = null;
 
 	const placeholder = document.createElement('div');
 	placeholder.setAttribute('data-pane-ghost', '');
@@ -202,10 +203,28 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 			if (bar) {
 				bar.style.top = '-1000px';
 				e.dataTransfer.setDragImage(bar, 16, 16);
-				setTimeout(() => bar.remove(), 0);
+				// The bar must OUTLIVE the image capture, not just the handler:
+				// real Chrome snapshots the drag image on the NEXT FRAME (an
+				// off-screen-removed element captures empty and the drag dies —
+				// invisible to headless, fatal in the owner's browser). Keep it
+				// until dragend + a belt-and-braces timer.
+				dragBarCleanup = () => {
+					bar.remove();
+					dragBarCleanup = null;
+				};
+				setTimeout(() => dragBarCleanup?.(), 1000);
 			}
 		}
-		liftPane(el);
+		// DEFERRED lift — the Chrome fix, in one line: Chromium commits the drag
+		// session AFTER dragstart returns and requires the source to still have
+		// a layout box; hiding it synchronously (the FLIP "gap closes now" spec)
+		// cancelled every drag there while Firefox/Safari forgave it. One task
+		// later the session is alive and the animation is imperceptible
+		// (owner-found live 2026-11-11; T-dragm keeps the engines honest).
+		const id2 = id;
+		setTimeout(() => {
+			if (dragId === id2) liftPane(el);
+		}, 0);
 	}
 
 	function ondragover(e: DragEvent) {
@@ -267,6 +286,8 @@ export const reorderable: Action<HTMLElement, { store: SectionSet }> = (node, pa
 	}
 
 	function ondragend() {
+		dragBarCleanup?.();
+		dragBarCleanup = null;
 		if (dragId) settle(); // cancelled drags restore the same animated way
 	}
 
