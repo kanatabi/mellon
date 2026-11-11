@@ -1,6 +1,12 @@
 import { error, redirect } from '@sveltejs/kit';
 import { createApi, AdminApiError } from '#lib/api/index.ts';
-import { isAuthed, RECENT_COOKIE, SESSION_COOKIE, type RecentEntry } from '#lib/session.ts';
+import {
+	cookieTrust,
+	isAuthed,
+	RECENT_COOKIE,
+	SESSION_COOKIE,
+	type RecentEntry
+} from '#lib/session.ts';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ cookies, url }) => {
@@ -19,7 +25,7 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 			await createApi(bearer).search('');
 		} catch (e) {
 			if (e instanceof AdminApiError && e.status === 401) {
-				cookies.delete(SESSION_COOKIE, { path: '/' });
+				cookies.delete(SESSION_COOKIE, { path: '/', ...cookieTrust(url) });
 				redirect(303, `/login?next=${encodeURIComponent(url.pathname)}&expired=1`);
 			}
 			if (e instanceof AdminApiError && e.status === 503) {

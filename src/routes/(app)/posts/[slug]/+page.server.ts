@@ -1,10 +1,10 @@
 import { createApi } from '#lib/api/index.ts';
 import { SESSION_COOKIE } from '#lib/session.ts';
 import { error } from '@sveltejs/kit';
-import { RECENT_COOKIE, type RecentEntry } from '#lib/session.ts';
+import { RECENT_COOKIE, cookieTrust, type RecentEntry } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
+export const load: PageServerLoad = async ({ params, cookies, url, setHeaders }) => {
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	let post;
 	try {
@@ -33,6 +33,7 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 		path: '/',
 		httpOnly: false, // read by the palette's client commands — non-secret
 		sameSite: 'strict',
+		...cookieTrust(url),
 		maxAge: 60 * 60 * 24 * 30
 	});
 
