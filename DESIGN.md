@@ -536,3 +536,14 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
 Screenshot any mellon page beside gofar.id: it must read as **the same maker's tool** —
 same zinc, same violet, same mono data, same restraint — while being unmistakably an
 instrument, not an article. If either half fails, the page is not done.
+
+## Setup wizard surfaces (2026-11-11)
+
+`/setup` is the portal's bootstrap door (owner naming: setup, not password):
+register mode while lumen reports the estate unclaimed (TOFU, dies on first
+claim), change mode for must_change arrivals (admin temps and resets) —
+login and the layout's whoami probe route into it; the 428 lock is honored
+server-side, never merely styled. `/settings/users` (admin card + desk)
+mints users and re-issues temps; the one-time reveal is exactly that — once.
+Doctrine intact: the portal holds no credentials and decides nothing — every
+rule the wizard renders is lumen's.
