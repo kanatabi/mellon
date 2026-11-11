@@ -537,6 +537,18 @@ Screenshot any mellon page beside gofar.id: it must read as **the same maker's t
 same zinc, same violet, same mono data, same restraint — while being unmistakably an
 instrument, not an article. If either half fails, the page is not done.
 
+## Information architecture (2026-11-11, owner)
+
+Three nav sections — Content (editorial), **Control Plane** (Configs landing =
+summary matrix · Vault = the value cockpit · Compare; future GitOps features
+land here), Admin (Users, role-gated and reactive). Settings + identity
+(username · role) + End session form the footer story: the account lives
+where the account is managed. Sentence case across all rendered chrome
+(one-word labels Title, mid-sentence wraps untouched); 'mellon' stays
+lowercase — it is the mark, not a sentence. Password changes run through ONE
+server flow (performPasswordChange: change → revoke → re-mint) behind two
+doors: the wizard's forced mode and the Settings security card.
+
 ## Setup wizard surfaces (2026-11-11)
 
 `/setup` is the portal's bootstrap door (owner naming: setup, not password):
