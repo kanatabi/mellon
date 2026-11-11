@@ -58,7 +58,7 @@
 				<StatusPill status={post.status} />
 			</a>
 		{:else}
-			<p class="px-3 py-6 font-mono text-xs text-muted-foreground">nothing recent</p>
+			<p class="px-3 py-6 font-mono text-xs text-muted-foreground">Nothing recent</p>
 		{/each}
 	</div>
 {/snippet}
@@ -82,7 +82,7 @@
 				/>
 			</a>
 		{:else}
-			<p class="col-span-4 py-6 font-mono text-xs text-muted-foreground">no photos yet</p>
+			<p class="col-span-4 py-6 font-mono text-xs text-muted-foreground">No photos yet</p>
 		{/each}
 	</div>
 	<p class="mt-3 font-mono text-[10px] text-muted-foreground/70">
@@ -117,13 +117,13 @@
 				</span>
 			</a>
 		{:else}
-			<p class="px-3 py-6 font-mono text-xs text-muted-foreground">no tags yet</p>
+			<p class="px-3 py-6 font-mono text-xs text-muted-foreground">No tags yet</p>
 		{/each}
 	</div>
 {/snippet}
 
 <svelte:head>
-	<title>dashboard · mellon</title>
+	<title>Dashboard · mellon</title>
 </svelte:head>
 
 <section class="flex flex-col gap-8">

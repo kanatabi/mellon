@@ -163,7 +163,7 @@
 				class="flex items-center justify-center gap-3 rounded-lg border border-dashed border-border px-4 py-5 transition-colors"
 			>
 				<Upload class="size-4 text-muted-foreground" />
-				<span class="font-mono text-xs text-muted-foreground">drop images, or</span>
+				<span class="font-mono text-xs text-muted-foreground">Drop images, or</span>
 				<label
 					class="flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-brand hover:text-foreground has-[input:focus-visible]:border-brand has-[input:focus-visible]:text-foreground"
 				>
@@ -278,7 +278,7 @@
 					onclick={onClose}
 					class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
 				>
-					done
+					Done
 				</button>
 			</div>
 		{/if}

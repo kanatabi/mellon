@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { Moon, Sun, Users } from 'lucide-svelte';
+	import { Moon, ShieldCheck, Sun, Users } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
 	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
 	interface Props {
 		data: PageData;
+		form: ActionData;
 	}
 
-	let { data }: Props = $props();
+	let { data, form }: Props = $props();
 
 	// svelte-ignore state_referenced_locally
 	let vim = $state(data.vim);
@@ -21,7 +22,7 @@
 </script>
 
 <svelte:head>
-	<title>settings · mellon</title>
+	<title>Settings · mellon</title>
 </svelte:head>
 
 <section class="mx-auto flex w-full max-w-xl flex-col gap-6 py-4">
@@ -32,7 +33,7 @@
 	     View Transition) shared with the topbar toggle and the palette. -->
 	<div class="flex flex-col gap-4">
 		<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-			appearance
+			Appearance
 		</p>
 		<div class="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4">
 			<span class="flex flex-col gap-1">
@@ -58,7 +59,7 @@
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					<Sun class="size-3.5" />
-					light
+					Light
 				</button>
 				<button
 					type="button"
@@ -71,7 +72,7 @@
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					<Moon class="size-3.5" />
-					dark
+					Dark
 				</button>
 			</div>
 		</div>
@@ -117,19 +118,97 @@
 				type="submit"
 				class="w-fit rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
 			>
-				save
+				Save
 			</button>
 			{#if saved}
 				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 180 }}>
-					saved
+					Saved
 				</p>
 			{/if}
 		</div>
 	</form>
 
+	<!-- Security: the voluntary sibling of the wizard's forced change — same
+	     server flow (performPasswordChange re-mints the session lumen revoked),
+	     different door. -->
+	<form
+		method="POST"
+		action="?/password"
+		class="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
+		use:enhance={() => {
+			return ({ update }) => update();
+		}}
+	>
+		<div class="flex items-start justify-between gap-4">
+			<span class="flex flex-col gap-1">
+				<span class="flex items-center gap-2 text-sm font-medium">
+					<ShieldCheck class="size-4 text-muted-foreground" aria-hidden="true" />
+					Password
+				</span>
+				<span class="font-mono text-[10px] text-muted-foreground"
+					>changing it signs out every device (lumen revokes on write) — you stay signed in here</span
+				>
+			</span>
+		</div>
+		<input type="hidden" name="username" value={data.account?.username ?? ''} />
+		<div class="flex flex-col gap-3">
+			<label class="flex flex-col gap-1.5">
+				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
+					>current password</span
+				>
+				<input
+					type="password"
+					name="current"
+					required
+					autocomplete="current-password"
+					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
+				/>
+			</label>
+			<label class="flex flex-col gap-1.5">
+				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
+					>new password</span
+				>
+				<input
+					type="password"
+					name="next"
+					required
+					minlength={10}
+					autocomplete="new-password"
+					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
+				/>
+			</label>
+			<label class="flex flex-col gap-1.5">
+				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
+					>confirm</span
+				>
+				<input
+					type="password"
+					name="confirm"
+					required
+					minlength={10}
+					autocomplete="new-password"
+					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
+				/>
+			</label>
+		</div>
+		{#if form?.pw && !form.pw.ok}
+			<p class="font-mono text-xs text-danger" role="alert">{form.pw.message}</p>
+		{:else if form?.pw?.ok}
+			<p class="font-mono text-xs text-brand" role="status">
+				{form.pw.loginAgain ? 'Password updated — sign in again to continue.' : 'Password updated.'}
+			</p>
+		{/if}
+		<button
+			type="submit"
+			class="w-fit rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
+		>
+			Update password
+		</button>
+	</form>
+
 	{#if page.data.principal?.role === 'admin'}
 		<a
-			href="/settings/users"
+			href="/admin/users"
 			class="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:border-brand/60"
 		>
 			<span class="flex flex-col gap-1">

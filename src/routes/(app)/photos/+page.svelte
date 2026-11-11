@@ -384,7 +384,7 @@
 </script>
 
 <svelte:head>
-	<title>photos · mellon</title>
+	<title>Photos · mellon</title>
 </svelte:head>
 
 <section class="flex h-full min-h-0 gap-4">
@@ -544,7 +544,7 @@
 						multiple={false}
 						selected={[]}
 						emptyLabel="set collection…"
-						noneLabel="uncategorized"
+						noneLabel="Uncategorized"
 						create={(n) => client.createCollection(n)}
 						onchange={(next) => void bulk({ collection: next[0] ?? null })}
 					/>
@@ -666,8 +666,8 @@
 								items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
 								multiple={false}
 								selected={p.collection ? [p.collection] : []}
-								emptyLabel="uncategorized"
-								noneLabel="uncategorized"
+								emptyLabel="Uncategorized"
+								noneLabel="Uncategorized"
 								create={(n) => client.createCollection(n)}
 								onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
 							/>
@@ -764,8 +764,8 @@
 									items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
 									multiple={false}
 									selected={p.collection ? [p.collection] : []}
-									emptyLabel="uncategorized"
-									noneLabel="uncategorized"
+									emptyLabel="Uncategorized"
+									noneLabel="Uncategorized"
 									create={(n) => client.createCollection(n)}
 									onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
 								/>
@@ -977,7 +977,7 @@
 						? 'border-brand text-foreground'
 						: 'border-border hover:text-foreground'}"
 				>
-					uncategorized
+					Uncategorized
 				</a>
 			</div>
 		</SectionCard>

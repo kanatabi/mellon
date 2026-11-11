@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>users · mellon</title>
+	<title>Users · mellon</title>
 </svelte:head>
 
 <section class="flex flex-col gap-6">
@@ -74,10 +74,10 @@
 						<td class="px-4 py-2">
 							{#if u.mustChange}
 								<span class="text-accent-amber" title="temp password — guided change on next login"
-									>temp</span
+									>Temp</span
 								>
 							{:else}
-								<span class="text-muted-foreground">set</span>
+								<span class="text-muted-foreground">Set</span>
 							{/if}
 						</td>
 						<td class="px-4 py-2 text-muted-foreground">{u.createdAt}</td>
@@ -94,7 +94,7 @@
 									type="submit"
 									class="rounded-full border border-border px-3 py-1 transition-colors hover:border-accent-amber/60 hover:text-accent-amber"
 								>
-									issue new temp
+									Issue new temp
 								</button>
 							</form>
 						</td>
@@ -142,7 +142,7 @@
 			class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
 		>
 			<UserPlus class="size-4" aria-hidden="true" />
-			create
+			Create
 		</button>
 	</form>
 

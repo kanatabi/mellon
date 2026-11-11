@@ -559,7 +559,7 @@ check(
 	const sp = await ctx.newPage();
 	const errs = [];
 	sp.on('console', (m) => m.type() === 'error' && errs.push(m.text().slice(0, 120)));
-	await sp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await sp.goto(`${BASE}/configs/vault`, { waitUntil: 'networkidle' });
 	await sleep(400);
 	check(
 		'T-secrets1 secrets page renders rows, no error boundary',
@@ -592,7 +592,7 @@ check(
 {
 	const APP = 'harness-' + Date.now().toString(36);
 	const hp = await ctx.newPage();
-	await hp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await hp.goto(`${BASE}/configs/vault`, { waitUntil: 'networkidle' });
 	await hp.locator('[aria-label="Onboard app"]').click();
 	await hp.locator('input[placeholder="credit"]').fill(APP);
 	await hp.locator('form button[type="submit"]', { hasText: 'onboard' }).click();
@@ -787,7 +787,7 @@ check(
 		})
 	});
 	const cp = await ctx.newPage();
-	await cp.goto(`${BASE}/secrets/compare?app=${APP}&env=dev&from=2&to=3`, {
+	await cp.goto(`${BASE}/configs/compare?app=${APP}&env=dev&from=2&to=3`, {
 		waitUntil: 'networkidle'
 	});
 	await cp.waitForTimeout(600);
@@ -841,8 +841,8 @@ check(
 		`after reload: ${persisted}`
 	);
 	// the nav child + canonical env order on the editor (lumen has the trio)
-	const navHasCompare = await cp.locator('a[href="/secrets/compare"]').count();
-	await cp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	const navHasCompare = await cp.locator('a[href="/configs/compare"]').count();
+	await cp.goto(`${BASE}/configs/vault`, { waitUntil: 'networkidle' });
 	await cp.waitForTimeout(400);
 	const envOrder = await cp.evaluate(() =>
 		[
@@ -865,7 +865,7 @@ check(
 	// mobile: the header stacks, nothing overflows horizontally
 	const mp = await ctx.newPage();
 	await mp.setViewportSize({ width: 390, height: 844 });
-	await mp.goto(`${BASE}/secrets`, { waitUntil: 'networkidle' });
+	await mp.goto(`${BASE}/configs/vault`, { waitUntil: 'networkidle' });
 	await mp.waitForTimeout(400);
 	const overflow = await mp.evaluate(
 		() => document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -877,7 +877,7 @@ check(
 	);
 	// MOBILE SPLIT: panes stack top-to-bottom (owner screenshot) — 'to'
 	// sits BELOW 'from', not beside it
-	await mp.goto(`${BASE}/secrets/compare?app=${APP}&env=dev&from=2&to=3`, {
+	await mp.goto(`${BASE}/configs/compare?app=${APP}&env=dev&from=2&to=3`, {
 		waitUntil: 'networkidle'
 	});
 	await mp.waitForTimeout(400);
@@ -1258,7 +1258,7 @@ check(
 	});
 
 	const sp = await ctx.newPage();
-	await sp.goto(`${BASE}/secrets/summary`, { waitUntil: 'networkidle' });
+	await sp.goto(`${BASE}/configs`, { waitUntil: 'networkidle' });
 	await sp.waitForTimeout(500);
 	const body = await sp.evaluate(() => document.body.innerText);
 	// innerText honors the uppercase CSS — match case-insensitively
@@ -1278,12 +1278,12 @@ check(
 	await sp.waitForTimeout(1200);
 	check(
 		'T-sum3 cell deep-links the cockpit at that path',
-		sp.url().includes(`/secrets?app=${APP}&env=staging`) &&
+		sp.url().includes(`/configs/vault?app=${APP}&env=staging`) &&
 			(await sp.evaluate(() => document.body.innerText)).includes(`kv / ${APP} / staging`),
 		sp.url()
 	);
 	// siblings mirrored as all-empty (C1 signal proven through the UI)
-	await sp.goto(`${BASE}/secrets/summary`, { waitUntil: 'networkidle' });
+	await sp.goto(`${BASE}/configs`, { waitUntil: 'networkidle' });
 	await sp.waitForTimeout(400);
 	const rowTxt2 = await sp.locator('tr', { hasText: APP }).innerText();
 	check(
@@ -1292,19 +1292,16 @@ check(
 		rowTxt2.replace(/\s+/g, ' ').slice(0, 90)
 	);
 	// nav + registry
-	check(
-		'T-sum5 nav carries the summary',
-		(await sp.locator('a[href="/secrets/summary"]').count()) >= 1
-	);
+	check('T-sum5 nav carries the summary', (await sp.locator('a[href="/configs"]').count()) >= 1);
 	await sp.keyboard.press('Control+k');
 	await sp.waitForTimeout(250);
 	const input = sp.locator('[aria-label="Command palette"] input').first();
 	await input.click();
-	await input.fill('summary');
+	await input.fill('configs');
 	await sp.waitForTimeout(300);
 	check(
 		'T-sum6 palette offers the matrix (group-labeled row)',
-		(await sp.locator('[role="option"]', { hasText: 'Secrets summary' }).count()) >= 1
+		(await sp.locator('[role="option"]', { hasText: 'Configs' }).count()) >= 1
 	);
 	await sp.keyboard.press('Escape');
 	await sp.close();
@@ -1345,7 +1342,7 @@ await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 	await sp.goto(`${BASE}/setup`, { waitUntil: 'networkidle' });
 	check('T-wiz2b signed-in admin is bounced to /', sp.url().endsWith('/'), sp.url());
 	// admin session-holder reaches the users desk (whoami-gated)
-	await sp.goto(`${BASE}/settings/users`, { waitUntil: 'networkidle' });
+	await sp.goto(`${BASE}/admin/users`, { waitUntil: 'networkidle' });
 	const ubody = await sp.evaluate(() => document.body.innerText);
 	check(
 		'T-wiz3 users desk lists the estate',
@@ -1354,12 +1351,13 @@ await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 	);
 	// settings carries the admin-only door
 	await sp.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+	// scoped to the CARD (its help text) — the sidebar also links /admin/users
 	check(
 		'T-wiz4 settings shows the Users card to admins',
-		(await sp.locator('a[href="/settings/users"]').count()) === 1
+		(await sp.locator('a[href="/admin/users"]', { hasText: 'add people' }).count()) === 1
 	);
 	// create via the form: one-time syllable temp appears
-	await sp.goto(`${BASE}/settings/users`, { waitUntil: 'networkidle' });
+	await sp.goto(`${BASE}/admin/users`, { waitUntil: 'networkidle' });
 	// scope to the create form: every table row carries a hidden username input
 	await sp.fill('form[action="?/create"] input[name="username"]', NEWUSER);
 	await sp.selectOption('form[action="?/create"] select[name="role"]', 'editor');

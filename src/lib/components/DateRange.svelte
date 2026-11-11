@@ -140,7 +140,7 @@
 			onclick={() => onchange(undefined, undefined)}
 			class="!px-2.5 !py-0.5 !text-[11px]"
 		>
-			all
+			All
 		</Pill>
 	</div>
 

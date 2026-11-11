@@ -223,7 +223,7 @@
 						: 'bg-muted text-foreground'}">{mode}{sub ? `·${sub}` : ''}</span
 				>
 			{:else if !vimOn}
-				<span class="tracking-wider">insert</span>
+				<span class="tracking-wider">Insert</span>
 			{/if}
 			<span>Ln {pos.line}, Col {pos.col}</span>
 		</span>

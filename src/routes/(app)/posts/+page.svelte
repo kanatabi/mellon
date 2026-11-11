@@ -290,7 +290,7 @@
 </script>
 
 <svelte:head>
-	<title>posts · mellon</title>
+	<title>Posts · mellon</title>
 </svelte:head>
 
 <section class="flex h-full min-h-0 gap-4">
@@ -438,7 +438,7 @@
 					role="columnheader"
 					class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
 				>
-					status
+					Status
 				</span>
 			</div>
 			{#each data.posts as post (post.slug)}

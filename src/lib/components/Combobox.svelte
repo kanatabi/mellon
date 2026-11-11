@@ -237,7 +237,7 @@
 									></span>
 								{/if}
 								{#if row.kind === 'create'}
-									<span class="text-muted-foreground">create</span>
+									<span class="text-muted-foreground">Create</span>
 									<span class="text-brand">“{row.name}”</span>
 								{:else if row.kind === 'none'}
 									{noneLabel}

@@ -33,7 +33,7 @@
 </script>
 
 <svelte:head>
-	<title>secrets summary · mellon</title>
+	<title>Configs · mellon</title>
 </svelte:head>
 
 <section class="flex flex-col gap-6">
@@ -48,10 +48,10 @@
 			</p>
 		</div>
 		<a
-			href="/secrets"
+			href="/configs/vault"
 			class="self-start rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 		>
-			← cockpit
+			← Vault
 		</a>
 	</div>
 
@@ -73,7 +73,7 @@
 					<tr class="border-b border-border/50 last:border-0">
 						<td class="px-4 py-2">
 							<a
-								href="/secrets?app={encodeURIComponent(app)}"
+								href="/configs/vault?app={encodeURIComponent(app)}"
 								class="text-foreground underline-offset-2 hover:underline"
 							>
 								{app}
@@ -85,7 +85,9 @@
 								{#if r}
 									{@const { drift, pinDrift } = status(r, appMax)}
 									<a
-										href="/secrets?app={encodeURIComponent(app)}&env={encodeURIComponent(env)}"
+										href="/configs/vault?app={encodeURIComponent(app)}&env={encodeURIComponent(
+											env
+										)}"
 										class="inline-flex min-w-16 flex-col items-center gap-0.5 rounded-md border px-2 py-1 transition-colors hover:border-brand/60 {drift ||
 										pinDrift
 											? 'border-accent-amber/50'
