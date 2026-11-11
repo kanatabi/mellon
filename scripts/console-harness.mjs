@@ -1320,6 +1320,46 @@ check(
 );
 await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 
+// --- T-dragm: REAL mouse DnD through Chromium's own drag session (CDP
+// Input — not synthetic DragEvents, which bypass the browser's gatekeeper).
+// Owner-found 2026-11-11: Chrome cancelled every drag because ondragstart hid
+// the source synchronously (liftPane); other engines commit first and forgive.
+{
+	const dp = await ctx.newPage();
+	await dp.goto(`${BASE}/posts/observability-is-a-contract`, { waitUntil: 'networkidle' });
+	const defOrder = ['title', 'subtitle', 'slug', 'date', 'tags', 'media', 'export', 'timeline'];
+	const order = () =>
+		dp.evaluate(
+			(def) => {
+				try {
+					const j = JSON.parse(localStorage.getItem('mellon.sections.post') || '{}');
+					return Array.isArray(j.order) ? j.order : def;
+				} catch {
+					return def;
+				}
+			},
+			defOrder
+		);
+	await dp.waitForSelector('[data-pane="timeline"]', { timeout: 6000 }).catch(() => {});
+	const before = await order();
+	const idx = (o, id) => o.indexOf(id);
+	if (idx(before, 'media') < 0) {
+		check('T-dragm real mouse drag reorders (setup)', false, JSON.stringify(before));
+	} else {
+		await dp
+			.dragAndDrop('[data-pane="media"]', '[data-pane="timeline"]', { timeout: 8000 })
+			.catch((e) => console.log('   dragAndDrop threw:', String(e).slice(0, 80)));
+		await dp.waitForTimeout(500);
+		const after = await order();
+		check(
+			'T-dragm real mouse drag moves media past timeline',
+			idx(after, 'media') > idx(before, 'media'),
+			`${JSON.stringify(before)} -> ${JSON.stringify(after)}`
+		);
+	}
+	await dp.close();
+}
+
 // --- T-wiz: setup-wizard surfaces + user administration (multi-user round) ---
 {
 	const NEWUSER = 'itest-ui-' + Date.now().toString(36).slice(-5);
