@@ -141,7 +141,7 @@
 			const t = await client.updateTag(current.name, patch);
 			dialogTag = t.name;
 			draftName = t.name;
-			return patch.name ? `renamed → ${t.name} — every referencing post followed` : 'saved';
+			return patch.name ? `renamed → ${t.name} — every referencing post followed` : 'Saved';
 		});
 	}
 
@@ -247,7 +247,7 @@
 </script>
 
 <svelte:head>
-	<title>tags · mellon</title>
+	<title>Tags · mellon</title>
 </svelte:head>
 
 <section class="flex flex-col gap-6">
@@ -519,7 +519,7 @@
 				aria-label="Toggle featured"
 				class="flex items-center justify-between rounded-md border border-border px-3 py-2 font-mono text-xs transition-colors hover:border-brand/60"
 			>
-				<span class="text-muted-foreground">in the earendil TOPICS widget</span>
+				<span class="text-muted-foreground">In the earendil TOPICS widget</span>
 				<span
 					class="flex items-center gap-1.5 {current.featured
 						? 'text-brand'
@@ -579,7 +579,7 @@
 						onclick={closeDialog}
 						class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 					>
-						close
+						Close
 					</button>
 					<button
 						type="button"
@@ -587,7 +587,7 @@
 						onclick={() => void saveDialog()}
 						class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
 					>
-						save
+						Save
 					</button>
 				</div>
 			</div>

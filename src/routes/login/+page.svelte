@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>login · mellon</title>
+	<title>Sign in · mellon</title>
 </svelte:head>
 
 <section
@@ -66,7 +66,7 @@
 			type="submit"
 			class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
 		>
-			enter
+			Enter
 		</button>
 		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
 			sessions are minted by lumen — the portal only carries the cookie

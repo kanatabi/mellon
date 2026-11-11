@@ -17,6 +17,7 @@
 		Search,
 		Settings,
 		Tag,
+		Users,
 		X
 	} from 'lucide-svelte';
 	import Palette from '#lib/components/Palette.svelte';
@@ -130,36 +131,48 @@
 	// Wayfinding cast (owner call 2026-11-08): one hue per destination, all at
 	// the same chroma/lightness band. Hues ride INLINE styles — Tailwind cannot
 	// generate dynamic utility names (the literal-scan lesson, again).
-	const navGroups = [
+	// IA 2026-11-11 (owner): three honest groups. Content = the editorial
+	// work; Control Plane = the infra surfaces (configs matrix, vault,
+	// compare — future GitOps features land here); Admin = people & access,
+	// shown only to admins (lumen enforces the 403 regardless; hiding a door
+	// that answers 403 is courtesy, and we are polite). Settings is NOT a
+	// destination group: it lives in the footer with the identity it edits.
+	const navGroups = $derived([
 		{
-			label: 'content',
+			label: 'Content',
 			items: [
-				{ href: '/', icon: House, label: 'dashboard', hue: 'var(--brand)' },
-				{ href: '/posts', icon: FileText, label: 'posts', hue: 'var(--accent-blue)' },
-				{ href: '/photos', icon: Images, label: 'photos', hue: 'var(--accent-teal)' },
-				{ href: '/tags', icon: Tag, label: 'tags', hue: 'var(--accent-slate)' }
+				{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' },
+				{ href: '/posts', icon: FileText, label: 'Posts', hue: 'var(--accent-blue)' },
+				{ href: '/photos', icon: Images, label: 'Photos', hue: 'var(--accent-teal)' },
+				{ href: '/tags', icon: Tag, label: 'Tags', hue: 'var(--accent-slate)' }
 			]
 		},
 		{
-			label: 'ops',
+			label: 'Control plane',
 			items: [
-				{ href: '/secrets', icon: KeyRound, label: 'secrets', hue: 'var(--accent-amber)' },
+				// landing = the summary matrix; the word "Configs" owns the
+				// section, Vault is the old cockpit, Compare as-is
+				{ href: '/configs', icon: LayoutGrid, label: 'Configs', hue: 'var(--accent-amber)' },
+				{ href: '/configs/vault', icon: KeyRound, label: 'Vault', hue: 'var(--accent-amber)' },
 				{
-					href: '/secrets/compare',
+					href: '/configs/compare',
 					icon: GitCompareArrows,
-					label: 'compare',
+					label: 'Compare',
 					hue: 'var(--accent-amber)'
-				},
-				{
-					href: '/secrets/summary',
-					icon: LayoutGrid,
-					label: 'summary',
-					hue: 'var(--accent-amber)'
-				},
-				{ href: '/settings', icon: Settings, label: 'settings', hue: 'var(--accent-slate)' }
+				}
 			]
-		}
-	];
+		},
+		...(data.principal?.role === 'admin'
+			? [
+					{
+						label: 'Admin',
+						items: [
+							{ href: '/admin/users', icon: Users, label: 'Users', hue: 'var(--accent-teal)' }
+						]
+					}
+				]
+			: [])
+	]);
 
 	// The longest matching href is the active row: on /secrets/compare the
 	// 'compare' item wins, not both it and 'secrets' (startsWith alone would
@@ -285,7 +298,7 @@
 							>
 						{/if}
 					{:else}
-						<span aria-current="page" class="text-foreground">dashboard</span>
+						<span aria-current="page" class="text-foreground">Dashboard</span>
 					{/each}
 				</nav>
 			</div>
@@ -419,21 +432,65 @@
      the label but the icon ALWAYS stays visible — the old opacity-0 label
      left a focusable invisible button in the tab order (trap, fixed). -->
 {#snippet navFooter(rail: boolean)}
-	<form method="POST" action="/logout" class={rail ? '' : 'mt-auto'}>
+	<!-- The account block: who you are, what you can set, how you leave —
+	     one story at the foot of the nav (identity above Settings because the
+	     settings you're about to change are THIS user's). -->
+	<div class={rail ? '' : 'mt-auto'}>
 		<div class="mx-3 mb-1 border-t border-border/70" aria-hidden="true"></div>
-		<button
-			type="submit"
-			aria-label="End session"
-			class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+		{#if data.principal}
+			<div class="flex items-center gap-3 px-3 pb-1 text-xs">
+				<span
+					class="grid size-4 shrink-0 place-items-center rounded-full bg-brand/15 font-mono text-[9px] font-bold text-brand uppercase"
+					aria-hidden="true">{data.principal.username.slice(0, 1)}</span
+				>
+				<span
+					class={rail
+						? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+						: ''}
+				>
+					<span class="font-medium text-foreground/90">{data.principal.username}</span>
+					<span class="ml-1.5 font-mono text-[10px] tracking-wide text-muted-foreground uppercase"
+						>{data.principal.role}</span
+					>
+				</span>
+			</div>
+		{/if}
+		<a
+			href="/settings"
+			aria-label="Settings"
+			aria-current={page.url.pathname.startsWith('/settings') ? 'page' : undefined}
+			class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {page.url.pathname.startsWith(
+				'/settings'
+			)
+				? 'bg-accent font-medium text-foreground'
+				: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'} {rail
+				? 'overflow-hidden'
+				: ''}"
 		>
-			<LogOut class="size-4 shrink-0" />
+			<Settings class="size-4 shrink-0" style="color: var(--accent-slate); opacity: 0.85" />
 			<span
 				class={rail
 					? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
 					: ''}
 			>
-				end session
+				Settings
 			</span>
-		</button>
-	</form>
+		</a>
+		<form method="POST" action="/logout">
+			<button
+				type="submit"
+				aria-label="End session"
+				class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+			>
+				<LogOut class="size-4 shrink-0" />
+				<span
+					class={rail
+						? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+						: ''}
+				>
+					End session
+				</span>
+			</button>
+		</form>
+	</div>
 {/snippet}

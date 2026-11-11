@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-	<title>{registering ? 'claim the estate' : 'set your password'} · mellon</title>
+	<title>{registering ? 'Claim the estate' : 'Set your password'} · mellon</title>
 </svelte:head>
 
 <section

@@ -1,11 +1,10 @@
-import { createApi } from '#lib/api/index.ts';
-import { SESSION_COOKIE } from '#lib/session.ts';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-/** C1 — the estate matrix (owner: "every app, every env, at a glance"):
- *  head versions, pin intents, key/empty counts. The sweep happens once
- *  server-side through the relay; the page is pure arithmetic over truth. */
-export const load: PageServerLoad = async ({ cookies }) => {
-	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
-	return { rows: await api.estateSummary() };
+// IA move (2026-11-11): this route's content lives at /configs now. 308
+// (permanent, method-preserving) with the query riding along — matrix
+// deep-links and old bookmarks keep working; the word-goes-here mapping
+// is the owner's DECIDE-2 call.
+export const load: PageServerLoad = ({ url }) => {
+	redirect(308, `/configs${url.search}`);
 };

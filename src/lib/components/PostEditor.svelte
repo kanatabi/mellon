@@ -691,7 +691,7 @@ flowchart LR
 						role="status"
 					>
 						<span class="size-1.5 rounded-full bg-brand"></span>
-						unsaved
+						Unsaved
 					</span>
 				{/if}
 				{@render wrapToggle('hidden @min-[48rem]/editor:flex')}
@@ -705,7 +705,7 @@ flowchart LR
 					aria-pressed={showPreview}
 				>
 					{#if showPreview}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-					preview
+					Preview
 				</button>
 			</div>
 		</div>
@@ -815,7 +815,7 @@ flowchart LR
 						? 'bg-brand/15 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
-					write
+					Write
 				</button>
 				<button
 					type="button"
@@ -830,7 +830,7 @@ flowchart LR
 						? 'bg-brand/15 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
-					preview
+					Preview
 				</button>
 			</div>
 			<div class="ml-auto flex items-center gap-2">
@@ -924,7 +924,7 @@ flowchart LR
 				aria-label="Insert image into the post"
 			>
 				<ImagePlus class="size-3.5" />
-				image
+				Image
 			</button>
 		{/if}
 	{/snippet}
@@ -953,7 +953,7 @@ flowchart LR
 					: 'text-muted-foreground hover:text-foreground'}"
 			>
 				<WrapText class="size-3.5" />
-				wrap
+				Wrap
 			</button>
 		{/if}
 	{/snippet}
@@ -988,7 +988,7 @@ flowchart LR
 					onclick={() => void unpublish()}
 					class="w-full rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 				>
-					unpublish
+					Unpublish
 				</button>
 			{:else}
 				<button
@@ -997,7 +997,7 @@ flowchart LR
 					onclick={() => void publish()}
 					class="w-full rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 				>
-					publish
+					Publish
 				</button>
 			{/if}
 			{#if !isNew}
@@ -1006,7 +1006,7 @@ flowchart LR
 					onclick={() => (confirmDelete = true)}
 					class="w-full rounded-full px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
 				>
-					delete
+					Delete
 				</button>
 			{/if}
 		</SectionCard>
@@ -1066,7 +1066,7 @@ flowchart LR
 						touch();
 					}}
 				/>
-				<span class="font-mono text-[10px] text-muted-foreground/60">fixed at creation</span>
+				<span class="font-mono text-[10px] text-muted-foreground/60">Fixed at creation</span>
 			{:else}
 				<input
 					class="w-full rounded-md border border-border bg-muted/40 px-1 py-0.5 font-mono text-xs text-muted-foreground outline-none"
@@ -1170,7 +1170,7 @@ flowchart LR
 						}}
 						class="rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-danger"
 					>
-						clear
+						Clear
 					</button>
 				{/if}
 			</div>

@@ -162,7 +162,7 @@
 </script>
 
 <svelte:head>
-	<title>compare · secrets · mellon</title>
+	<title>Compare · Configs · mellon</title>
 </svelte:head>
 
 <section class="flex flex-col gap-4">
@@ -177,7 +177,7 @@
 			</p>
 		</div>
 		<a
-			href="/secrets?app={data.app}&env={data.env}"
+			href="/configs/vault?app={data.app}&env={data.env}"
 			class="self-start rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground md:self-auto"
 		>
 			← editor
@@ -322,7 +322,7 @@
 				: 'text-muted-foreground hover:text-foreground'}"
 		>
 			<WrapText class="size-3.5" />
-			wrap
+			Wrap
 		</button>
 		<button
 			type="button"
@@ -339,7 +339,7 @@
 		{#if presentation === 'table'}
 			<label class="ml-auto flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
 				<input type="checkbox" bind:checked={hideSame} class="accent-[var(--brand)]" />
-				hide unchanged
+				Hide unchanged
 			</label>
 		{/if}
 	</div>

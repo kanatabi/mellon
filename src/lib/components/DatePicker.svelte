@@ -183,7 +183,7 @@
 					onclick={() => pick(today())}
 					class="w-full rounded-md py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
-					today
+					Today
 				</button>
 			</div>
 		</div>

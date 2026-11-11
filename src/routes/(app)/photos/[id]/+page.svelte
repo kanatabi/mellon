@@ -274,7 +274,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.photo.alt || data.photo.id} · photos · mellon</title>
+	<title>{data.photo.alt || data.photo.id} · Photos · mellon</title>
 </svelte:head>
 
 <section class="flex h-full min-h-0 gap-4">
@@ -355,7 +355,7 @@
 			>
 				<div class="flex items-center justify-between px-4 pt-4 pb-2">
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-						metadata
+						Metadata
 					</p>
 					<button
 						type="button"
@@ -394,7 +394,7 @@
 				{#if dirtyAlt}
 					<span class="size-1.5 rounded-full bg-brand" title="unsaved"></span>
 				{/if}
-				alt text
+				Alt text
 			</span>
 			<textarea
 				rows="2"
@@ -410,7 +410,7 @@
 				{#if dirtyCollection}
 					<span class="size-1.5 rounded-full bg-brand" title="unsaved"></span>
 				{/if}
-				collection
+				Collection
 			</span>
 			<Combobox
 				items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
@@ -431,10 +431,10 @@
 					{#if dirtyGallery}
 						<span class="size-1.5 rounded-full bg-brand" title="unsaved"></span>
 					{/if}
-					public gallery
+					Public gallery
 				</span>
 				<span class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-					shown on the blog's Gallery page
+					Shown on the blog's Gallery page
 				</span>
 			</span>
 			<!-- teal: photos' wayfinding hue, switch grammar -->
@@ -516,7 +516,7 @@
 			</button>
 			{#if saved}
 				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 180 }}>
-					saved
+					Saved
 				</p>
 			{/if}
 		</div>

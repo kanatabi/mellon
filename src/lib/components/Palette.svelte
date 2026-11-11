@@ -452,7 +452,7 @@
 			/>
 			<kbd
 				class="shrink-0 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
-				>esc</kbd
+				>Esc</kbd
 			>
 		</label>
 		<ul

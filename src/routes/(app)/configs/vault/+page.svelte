@@ -354,7 +354,7 @@
 </script>
 
 <svelte:head>
-	<title>secrets · mellon</title>
+	<title>Vault · mellon</title>
 </svelte:head>
 
 {#if !data.secret || !data.meta}
@@ -601,14 +601,14 @@
 			>
 				<div class="mb-4 flex items-center justify-between">
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-						versions
+						Versions
 					</p>
 					<button
 						type="button"
 						onclick={() => (historyOpen = false)}
 						class="font-mono text-xs text-muted-foreground hover:text-foreground"
 					>
-						close
+						Close
 					</button>
 				</div>
 				<div class="flex flex-col gap-1">
@@ -631,7 +631,7 @@
 									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
 									aria-label={`View v${v}`}
 								>
-									view
+									View
 								</button>
 								<button
 									type="button"
@@ -639,7 +639,7 @@
 									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
 									aria-label={`Diff v${v}`}
 								>
-									diff
+									Diff
 								</button>
 								<button
 									type="button"
@@ -647,7 +647,7 @@
 									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
 									aria-label={`Restore v${v}`}
 								>
-									restore
+									Restore
 								</button>
 								<a
 									href={`/secrets/compare?app=${data.app}&env=${data.env}&from=${v}&to=${cas}`}
@@ -696,7 +696,7 @@
 							onclick={() => viewing && void restoreVersion(viewing.version)}
 							class="mt-3 rounded-full border border-border px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
 						>
-							restore these values
+							Restore these values
 						</button>
 					</div>
 				{/if}
@@ -769,7 +769,7 @@
 					onclick={() => (onboardOpen = false)}
 					class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
-					cancel
+					Cancel
 				</button>
 				<button
 					type="submit"
@@ -803,7 +803,7 @@
 			<h2 class="font-brand text-lg font-semibold">Add environment to {data.app}</h2>
 			<p class="font-mono text-xs leading-relaxed text-muted-foreground">
 				seeded to the app's canonical key set (union of live siblings, empty values) — a late env
-				never drifts a smaller shape.
+				Never drifts a smaller shape.
 			</p>
 			<label class="flex flex-col gap-1">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
@@ -825,14 +825,14 @@
 					onclick={() => (addEnvOpen = false)}
 					class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
-					cancel
+					Cancel
 				</button>
 				<button
 					type="submit"
 					disabled={!addEnvName.trim()}
 					class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
 				>
-					add env
+					Add env
 				</button>
 			</div>
 		</form>

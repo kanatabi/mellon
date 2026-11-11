@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { AdminApiError } from '#lib/api/index.ts';
 import { createApi } from '#lib/api/index.ts';
 import { SESSION_COOKIE, cookieTrust } from '#lib/session.ts';
+import { performPasswordChange } from '#lib/password-flow.server.ts';
 import type { Principal } from '#lib/api/types.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -61,28 +62,19 @@ export const actions: Actions = {
 		if (password !== confirm) return fail(400, { message: 'the two passwords must agree' });
 
 		if (mode === 'change') {
-			const bearer = cookies.get(SESSION_COOKIE) ?? '';
 			const current = String(form.get('current') ?? '');
-			try {
-				await createApi(bearer).changePassword(current, password);
-			} catch (e) {
-				if (e instanceof AdminApiError && e.status === 401)
-					return fail(400, { message: 'the current password is not right' });
-				return fail(e instanceof AdminApiError ? e.status : 500, {
-					message: e instanceof AdminApiError ? e.message : 'could not change the password'
-				});
-			}
-			// lumen revoked every session on the change (bump ships with the
-			// write) — re-mint with the NEW password so the visitor lands
-			// INSIDE, not back at the gate. A failed mint is never a trap:
-			// /login?changed=1 says the truth and lets them in.
-			try {
-				const { token, expiresIn } = await createApi().login(username, password);
-				setSession(cookies, url, token, expiresIn);
-				redirect(303, '/');
-			} catch {
-				redirect(303, '/login?changed=1');
-			}
+			const res = await performPasswordChange({
+				cookies,
+				url,
+				username,
+				current,
+				next: password,
+				confirm
+			});
+			if (!res.ok) return fail(res.status, { message: res.message });
+			// a failed re-mint is never a trap: /login?changed=1 says the
+			// truth (password IS changed) and lets them in normally
+			redirect(303, res.loginAgain ? '/login?changed=1' : '/');
 		}
 
 		try {
