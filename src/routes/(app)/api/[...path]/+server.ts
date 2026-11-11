@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import { createApi, AdminApiError } from '#lib/api/index.ts';
-import { renderMarkdown } from '#lib/preview/render.ts';
 import { isAuthed, SESSION_COOKIE } from '#lib/session.ts';
 import type { RequestHandler } from './$types';
 
@@ -36,7 +35,11 @@ async function route(ctx: Ctx) {
 	// preview: pure local render helper (not lumen's surface — deviating
 	// endpoint, journaled). Lives here to reuse the auth guard.
 	if (seg === 'preview' && request.method === 'POST') {
+		// DYNAMIC import: the markdown stack is preview-only; a static import
+		// here let one broken chunk kill the ENTIRE relay (live incident
+		// 2026-11-11). Blast radius now cannot exceed this one endpoint.
 		const { md } = (await body()) as { md: string };
+		const { renderMarkdown } = await import('#lib/preview/render.ts');
 		return json(await renderMarkdown(String(md ?? '')));
 	}
 
