@@ -80,6 +80,7 @@
 
 	<form
 		method="POST"
+		action="?/vim"
 		class="flex flex-col gap-4"
 		use:enhance={() => {
 			saved = false;

@@ -27,7 +27,11 @@ export const actions: Actions = {
 		if (!res.ok) return fail(res.status, { pw: res });
 		return { pw: { ok: true as const, loginAgain: res.loginAgain } };
 	},
-	default: async ({ cookies, request, url }) => {
+	// named-only: Kit v3 forbids `default` alongside named actions ("When using
+	// named actions, the default action cannot be used") — adding ?/password
+	// silently poisoned EVERY settings POST (action_default_with_named 500,
+	// found live by the owner the same hour).
+	vim: async ({ cookies, request, url }) => {
 		const form = await request.formData();
 		// Non-httpOnly: the editor reads it at init to choose keymaps.
 		if (form.get('vim') === '1') {

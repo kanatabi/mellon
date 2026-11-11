@@ -1380,6 +1380,19 @@ await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 		'T-wiz7 the created user sits in the table with temp state',
 		new RegExp(NEWUSER).test(txt2) && /temp/.test(txt2)
 	);
+	// settings Security card: wrong current must surface the honest 400
+	// message — NOT the action_default_with_named 500 the mixed actions object
+	// caused before the named-only fix
+	await sp.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+	await sp.fill('form[action="?/password"] input[name="current"]', 'definitely-not-it-1');
+	await sp.fill('form[action="?/password"] input[name="next"]', 'some-new-password-1');
+	await sp.fill('form[action="?/password"] input[name="confirm"]', 'some-new-password-1');
+	await sp.click('form[action="?/password"] button[type="submit"]');
+	await sp.waitForTimeout(1200);
+	check(
+		'T-wiz9 wrong current password fails with a message, not a 500',
+		(await sp.evaluate(() => document.body.innerText)).includes('The current password is not right')
+	);
 	// palette registry
 	await sp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 	await sp.keyboard.press('Control+k');
