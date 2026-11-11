@@ -20,18 +20,34 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 	// bearer is DEAD (expired claim or tv revocation) — clear the cookie and
 	// send the user to login; anything else (503, timeouts) is an OUTAGE and
 	// must NOT log anyone out of a good session.
+	// whoami (lumen GET /admin/session) replaces the old search('') probe: one
+	// authenticated read that also HANDS US the identity — role gates the nav,
+	// mustChange routes the forced-change users to /setup (428 is lumen's
+	// transport-level lock; the portal honors it, it does not decorate it)
+	let principal: { username: string; role: 'admin' | 'editor'; mustChange: boolean } | null = null;
 	if (process.env.API_BASE && bearer) {
 		try {
-			await createApi(bearer).search('');
+			principal = await createApi(bearer).whoami();
 		} catch (e) {
 			if (e instanceof AdminApiError && e.status === 401) {
 				cookies.delete(SESSION_COOKIE, { path: '/', ...cookieTrust(url) });
 				redirect(303, `/login?next=${encodeURIComponent(url.pathname)}&expired=1`);
 			}
+			if (e instanceof AdminApiError && e.status === 428) {
+				redirect(303, '/setup?change=1');
+			}
 			if (e instanceof AdminApiError && e.status === 503) {
 				error(503, 'the backend is unreachable — try again shortly');
 			}
 			throw e;
+		}
+	} else if (!process.env.API_BASE) {
+		// twin/mock mode: whoami from the same contract (permissive, mirrors
+		// a comfortable first admin)
+		try {
+			principal = await createApi(bearer).whoami();
+		} catch {
+			principal = null;
 		}
 	}
 	let recent: RecentEntry[];
@@ -42,5 +58,5 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 	}
 	// Non-httpOnly preference cookie: the CodeMirror component reads it at init.
 	const vim = cookies.get('mellon_vim') === '1';
-	return { recent, vim };
+	return { recent, vim, principal };
 };

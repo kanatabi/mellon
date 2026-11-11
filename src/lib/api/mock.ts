@@ -230,6 +230,16 @@ export function createMockApi(): AdminApi {
 	let photos = clone(PHOTOS);
 	const secrets: Record<string, SecretPayload[]> = structuredClone(SECRETS);
 	let seq = 100;
+	// wizard/user state — EMPTY start: the twin begins as an unclaimed estate,
+	// so a fresh createMockApi() exercises exactly the sequence lumen's scratch
+	// schema runs in TestSetupWizardE2E (per-instance state IS the reset button)
+	const users = new Map<
+		string,
+		{ role: 'admin' | 'editor'; mustChange: boolean; createdAt: string }
+	>();
+	const today = () => new Date().toISOString().slice(0, 10);
+	const TW = ['malu', 'rore', 'tade', 'pagi', 'kino', 'vela', 'dumi', 'saro'];
+
 	// Tag vocabulary — first-class, seeded from the corpus. A tag exists from
 	// creation, used or not; posts may only carry vocabulary names (lumen §8
 	// enforces the same; the UI never offers a non-vocab tag). Names key a
@@ -274,13 +284,82 @@ export function createMockApi(): AdminApi {
 	return {
 		async login(username, password) {
 			if (!username || !password) throw new AdminApiError(401, 'credentials required');
-			// mock accepts anything non-empty; lumen will actually check (Phase B).
-			// Phase B mints an HS256 JWT; the mock mints an honest stand-in —
-			// no fake crypto, no fake claims (the mock never verified anything)
+			// mock accepts anything non-empty; lumen actually checks. role +
+			// mustChange mirror the multi-user row semantics (wizard users carry
+			// their real flags; the legacy permissive login reads as a
+			// comfortable admin, as it has since before users existed)
+			const u = users.get(username);
 			return {
 				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
-				expiresIn: 60 * 60 * 12
+				expiresIn: 60 * 60 * 12,
+				role: u?.role ?? 'admin',
+				mustChange: u?.mustChange ?? false
 			};
+		},
+
+		// ---- setup wizard + user administration (lumen mirror, 2026-11-11) ----
+		async setupStatus() {
+			return { unclaimed: users.size === 0 };
+		},
+		async registerFirstAdmin(username, password) {
+			if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username))
+				throw new AdminApiError(
+					400,
+					'username must be 2-32 chars: lowercase letters, digits, dot, dash, underscore'
+				);
+			if (password.length < 10)
+				throw new AdminApiError(400, 'password must be at least 10 characters');
+			if (users.size > 0) throw new AdminApiError(410, 'setup already completed');
+			users.set(username, { role: 'admin', mustChange: false, createdAt: today() });
+			return {
+				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
+				expiresIn: 60 * 60 * 12,
+				role: 'admin',
+				mustChange: false
+			};
+		},
+		async whoami() {
+			// the twin has no bearer plumbing; first admin answers, as the
+			// server would for the account the wizard just minted for
+			const [username, u] = [...users.entries()][0] ?? [];
+			if (!username) throw new AdminApiError(401, 'unauthorized');
+			return { username, role: u.role, mustChange: u.mustChange };
+		},
+		async changePassword(current, next) {
+			if (!current) throw new AdminApiError(401, 'invalid credentials');
+			if (next.length < 10) throw new AdminApiError(400, 'password must be at least 10 characters');
+			if (current === next)
+				throw new AdminApiError(400, 'the new password must differ from the current one');
+			const who = [...users.keys()][0];
+			const u = users.get(who);
+			if (u) u.mustChange = false;
+		},
+		async listUsers() {
+			return [...users.entries()].map(([username, u]) => ({ ...u, username }));
+		},
+		async createUser(username, role) {
+			if (users.has(username)) throw new AdminApiError(409, 'username taken');
+			if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username))
+				throw new AdminApiError(
+					400,
+					'username must be 2-32 chars: lowercase letters, digits, dot, dash, underscore'
+				);
+			if (role !== 'admin' && role !== 'editor') throw new AdminApiError(400, 'bad role');
+			// lumen GENERATES the temp server-side (syllable form, once in the
+			// response); the twin forges the same shape without pretending to
+			// the crypto entropy — what matters to callers is the contract
+			const temp =
+				Array.from({ length: 4 }, (_, i) => TW[(seq + i * 3) % TW.length]).join('-') +
+				'-' +
+				String(1000 + ((seq * 7919) % 9000));
+			users.set(username, { role, mustChange: true, createdAt: today() });
+			return { username, role, mustChange: true, createdAt: today(), tempPassword: temp };
+		},
+		async resetUserPassword(username) {
+			const u = users.get(username);
+			if (!u) throw new AdminApiError(404, 'no such user');
+			u.mustChange = true;
+			return { tempPassword: `reset-${seq++}-temp-word-0000` };
 		},
 		async logout() {
 			// mock era: nothing verifies tokens, so there is nothing to revoke —

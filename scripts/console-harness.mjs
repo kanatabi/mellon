@@ -1323,6 +1323,81 @@ check(
 );
 await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 
+// --- T-wiz: setup-wizard surfaces + user administration (multi-user round) ---
+{
+	const NEWUSER = 'itest-ui-' + Date.now().toString(36).slice(-5);
+	// STRANGERS get their own cookieless context — the wizard's redirect logic
+	// distinguishes session states; so must the test
+	const anon = await browser.newContext();
+	const ap = await anon.newPage();
+	await ap.goto(`${BASE}/setup`, { waitUntil: 'networkidle' });
+	check('T-wiz1 claimed estate sends strangers to /login', ap.url().includes('/login'), ap.url());
+	await ap.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+	check(
+		'T-wiz2 login remains the normal door',
+		(await ap.locator('input[name="password"]').count()) === 1
+	);
+	// a COMFORTABLE session visiting /setup bounces to the desk (not login)
+	await ap.goto(`${BASE}/setup`, { waitUntil: 'networkidle' });
+	await ap.context().close?.();
+	await anon.close();
+	const sp = await ctx.newPage();
+	await sp.goto(`${BASE}/setup`, { waitUntil: 'networkidle' });
+	check('T-wiz2b signed-in admin is bounced to /', sp.url().endsWith('/'), sp.url());
+	// admin session-holder reaches the users desk (whoami-gated)
+	await sp.goto(`${BASE}/settings/users`, { waitUntil: 'networkidle' });
+	const ubody = await sp.evaluate(() => document.body.innerText);
+	check(
+		'T-wiz3 users desk lists the estate',
+		/Users/.test(ubody) && /gofar/.test(ubody) && /admin/.test(ubody),
+		ubody.slice(0, 70).replace(/\s+/g, ' ')
+	);
+	// settings carries the admin-only door
+	await sp.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+	check(
+		'T-wiz4 settings shows the Users card to admins',
+		(await sp.locator('a[href="/settings/users"]').count()) === 1
+	);
+	// create via the form: one-time syllable temp appears
+	await sp.goto(`${BASE}/settings/users`, { waitUntil: 'networkidle' });
+	// scope to the create form: every table row carries a hidden username input
+	await sp.fill('form[action="?/create"] input[name="username"]', NEWUSER);
+	await sp.selectOption('form[action="?/create"] select[name="role"]', 'editor');
+	await sp.click('button[type="submit"]:has-text("create")');
+	await sp.waitForTimeout(1600);
+	const txt = await sp.evaluate(() => document.body.innerText);
+	const m = txt.match(/([a-z]{4}-){4}[0-9]{4}/);
+	check('T-wiz5 create reveals a once-only temp password', !!m, m ? m[0] : txt.slice(0, 90));
+	// reset re-issues a DIFFERENT temp (and rearms must_change visibly in the row)
+	await sp.click(`tr:has-text("${NEWUSER}") button:has-text("issue new temp")`);
+	await sp.waitForTimeout(1600);
+	const txt2 = await sp.evaluate(() => document.body.innerText);
+	const m2 = txt2.match(/([a-z]{4}-){4}[0-9]{4}/);
+	check(
+		'T-wiz6 reset issues a fresh temp',
+		!!m2 && (!m || m2[0] !== m[0]),
+		m2 ? m2[0] : txt2.slice(0, 90)
+	);
+	check(
+		'T-wiz7 the created user sits in the table with temp state',
+		new RegExp(NEWUSER).test(txt2) && /temp/.test(txt2)
+	);
+	// palette registry
+	await sp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+	await sp.keyboard.press('Control+k');
+	await sp.waitForTimeout(250);
+	const pinput = sp.locator('[aria-label="Command palette"] input').first();
+	await pinput.click();
+	await pinput.fill('users');
+	await sp.waitForTimeout(300);
+	check(
+		'T-wiz8 palette offers the users desk',
+		(await sp.locator('[role="option"]', { hasText: 'Users' }).count()) >= 1
+	);
+	await sp.keyboard.press('Escape');
+	await sp.close();
+}
+
 await browser.close();
 console.log(`\nconsole harness: ${failures} failure(s)`);
 process.exit(failures ? 1 : 0);

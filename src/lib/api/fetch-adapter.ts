@@ -11,6 +11,9 @@
  */
 import { AdminApiError } from './types.ts';
 import type {
+	AdminUserRow,
+	LoginResponse,
+	Principal,
 	AdminApi,
 	AdminPhoto,
 	CollectionCount,
@@ -81,9 +84,24 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 	return {
 		// --- session ---
 		login: (username, password) =>
-			call<{ token: string; expiresIn: number }>('POST', '/admin/session', {
-				body: { username, password }
+			call<LoginResponse>('POST', '/admin/session', { body: { username, password } }),
+		setupStatus: () => call<{ unclaimed: boolean }>('GET', '/admin/setup'),
+		registerFirstAdmin: (username, password) =>
+			call<LoginResponse>('POST', '/admin/setup/register', { body: { username, password } }),
+		whoami: () => call<Principal>('GET', '/admin/session'),
+		changePassword: (current, next) =>
+			call<void>('POST', '/admin/session/password', { body: { current, next } }),
+		listUsers: () => call<AdminUserRow[]>('GET', '/admin/users'),
+		createUser: (username, role) =>
+			call<AdminUserRow & { tempPassword: string }>('POST', '/admin/users', {
+				body: { username, role }
 			}),
+		resetUserPassword: (username) =>
+			call<{ tempPassword: string }>(
+				'POST',
+				`/admin/users/${encodeURIComponent(username)}/reset-password`,
+				{ body: {} }
+			),
 		// DELETE is 204-no-body; call() returns undefined for empty text
 		logout: () => call<void>('DELETE', '/admin/session'),
 

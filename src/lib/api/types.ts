@@ -194,16 +194,73 @@ export class AdminApiError extends Error {
 	}
 }
 
+/** The identity a live bearer resolves to (lumen reads role + must_change
+ *  from the user row PER REQUEST — the JWT carries identity, never privileges,
+ *  so resets and demotions bite on the next call, not the next login). */
+export interface Principal {
+	username: string;
+	role: 'admin' | 'editor';
+	mustChange: boolean;
+}
+
+/** Login/register wire shape (lumen answers exactly these four fields —
+ *  identity comes from whoami, not from guessing the login subject): the
+ *  session plus what the portal ROUTES on — mustChange sends the fresh/temp
+ *  user straight to /setup?change instead of the desk. */
+export interface LoginResponse {
+	token: string;
+	expiresIn: number;
+	role: 'admin' | 'editor';
+	mustChange: boolean;
+}
+
+/** One line of the admin user list (lumen GET /admin/users). */
+export interface AdminUserRow {
+	username: string;
+	role: 'admin' | 'editor';
+	mustChange: boolean;
+	createdAt: string;
+}
+
 export interface AdminApi {
 	// session (mock: any non-empty identity; lumen: real credentials)
 	/** Phase B: `token` is an HS256 JWT (claims sub/iat/exp/tv/jti, 12h TTL —
 	 *  lumen §8); `expiresIn` is seconds, and the login action sizes the cookie
-	 *  from it — "session length is set by lumen" is a mechanism, not a slogan. */
-	login(username: string, password: string): Promise<{ token: string; expiresIn: number }>;
+	 *  from it — "session length is set by lumen" is a mechanism, not a slogan.
+	 *  role/mustChange (multi-user round 2026-11-11) drive portal routing:
+	 *  mustChange lands the visitor on /setup?change instead of the desk. */
+	login(username: string, password: string): Promise<LoginResponse>;
 	/** Revoke server-side (lumen bumps `token_version` — every outstanding
 	 *  token dies). Server-side verb: the /logout action calls it best-effort
 	 *  before clearing the cookie; the browser client throws like login. */
 	logout(): Promise<void>;
+
+	/** Wizard probe (lumen GET /admin/setup — PUBLIC): unclaimed == the users
+	 *  table is empty and /setup should be the front door. */
+	setupStatus(): Promise<{ unclaimed: boolean }>;
+	/** TOFU claim (lumen POST /admin/setup/register): succeeds exactly once,
+	 *  ever; after the estate is claimed lumen answers 410 Gone. Resolves to
+	 *  a full LoginResponse — the wizard session is minted on the spot. */
+	registerFirstAdmin(username: string, password: string): Promise<LoginResponse>;
+	/** Who the bearer is (lumen GET /admin/session): the portal's layout and
+	 *  the admin-only surfaces (users) gate on this, never on cookie folklore. */
+	whoami(): Promise<Principal>;
+	/** The forced-change flow's write (lumen POST /admin/session/password):
+	 *  clears must_change and REVOKES old sessions — the caller re-mints via
+	 *  login(next) to keep the visitor comfortably logged in. */
+	changePassword(current: string, next: string): Promise<void>;
+	/** Admin-eyes-only (lumen enforces 403; the portal hides the door too). */
+	listUsers(): Promise<AdminUserRow[]>;
+	/** lumen generates the temp server-side (syllable form ~50 bits);
+	 *  tempPassword appears in THIS response exactly once — never logged,
+	 *  never stored unhashed, never re-readable. */
+	createUser(
+		username: string,
+		role: 'admin' | 'editor'
+	): Promise<AdminUserRow & { tempPassword: string }>;
+	/** New temp, must_change rearms, token_version bumps (their live sessions
+	 *  die immediately). Once-only reveal like create. */
+	resetUserPassword(username: string): Promise<{ tempPassword: string }>;
 
 	listPosts(opts?: PostListOpts): Promise<Paged<PostSummaryAdmin>>;
 	getPost(slug: string): Promise<PostDetailAdmin>;

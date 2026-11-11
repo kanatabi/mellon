@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Moon, Sun } from 'lucide-svelte';
+	import { Moon, Sun, Users } from 'lucide-svelte';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
 	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
@@ -126,7 +127,25 @@
 		</div>
 	</form>
 
+	{#if page.data.principal?.role === 'admin'}
+		<a
+			href="/settings/users"
+			class="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:border-brand/60"
+		>
+			<span class="flex flex-col gap-1">
+				<span class="flex items-center gap-2 text-sm font-medium">
+					<Users class="size-4 text-muted-foreground" aria-hidden="true" />
+					Users
+				</span>
+				<span class="font-mono text-[10px] text-muted-foreground"
+					>add people (server-issued temp passwords), reset access</span
+				>
+			</span>
+			<span aria-hidden="true" class="text-muted-foreground">→</span>
+		</a>
+	{/if}
+
 	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-		session length is set by lumen (Phase B) — today a 12h mock
+		session length is set by lumen — today a 12h TTL, re-minted on every login
 	</p>
 </section>

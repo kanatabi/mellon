@@ -69,7 +69,7 @@
 			enter
 		</button>
 		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
-			mock session — real auth is minted by lumen in Phase B
+			sessions are minted by lumen — the portal only carries the cookie
 		</p>
 	</form>
 </section>
