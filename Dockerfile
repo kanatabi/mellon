@@ -9,10 +9,17 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
+# keep only runtime deps for the copy into the output stage
+RUN npm prune --omit=dev
 
 FROM node:22-alpine AS output
 WORKDIR /app
 ENV NODE_ENV=production
+# Amended 2026-11-11: mellon's SSR preview chain (jsdom, shiki, isomorphic-
+# dompurify) is intentionally EXTERNAL (see vite.config ssr.external — they
+# resolve assets/require paths against their package layout and break bundled).
+# The runtime stage therefore carries PRUNED production node_modules.
+COPY --from=build /app/node_modules ./node_modules
 # PORT (listen) and API_BASE (cluster-internal relay target) come from the
 # Deployment's env in Git — don't bake anything host-specific in here.
 # (The ExternalSecret CR for mellon lands with its vortex manifests, Phase C-infra.)

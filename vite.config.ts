@@ -10,17 +10,29 @@ export default defineConfig({
 	// made every /api/* request die at runtime with ERR_MODULE_NOT_FOUND while
 	// dev (vite) and the harness (vite dev) were blind to it. Live catch 2026-11-11.
 	ssr: {
+		// The markdown-IT family bundles cleanly (pure JS, no fs). The PREVIEW's
+		// heavy chain does NOT: jsdom resolves ./xhr-sync-worker.js relative to
+		// its OWN package layout, and shiki reads grammar/wasm assets via fs —
+		// bundling them breaks at runtime (proven twice, live walk 2026-11-11,
+		// both CJS and ESM output). So they stay EXTERNAL and the runtime image
+		// carries production node_modules (Dockerfile amended accordingly —
+		// "self-contained, no node_modules" held for earendil, not for this).
+		external: [
+			'isomorphic-dompurify',
+			'jsdom',
+			'shiki',
+			'@shikijs/markdown-it',
+			'@shikijs/core',
+			'@shikijs/engine-oniguruma',
+			'@shikijs/langs',
+			'@shikijs/themes',
+			'@shikijs/types'
+		],
 		noExternal: [
 			'markdown-it',
-			// shiki is the transitive core of @shikijs/markdown-it — externalize it and
-			// the bundled render.js dies at runtime (live: Cannot find package 'shiki')
-			'shiki',
-			'@shikijs/types',
-			'isomorphic-dompurify',
 			'markdown-it-anchor',
 			'markdown-it-container',
-			'markdown-it-task-lists',
-			'@shikijs/markdown-it'
+			'markdown-it-task-lists'
 		]
 	},
 	server: {
@@ -51,7 +63,12 @@ export default defineConfig({
 			// Deployment sets PROTOCOL_HEADER=x-forwarded-proto + HOST_HEADER=x-forwarded-host
 			// (adapter-node's opt-in env knobs; default protocol is 'https', which would
 			// break CSRF AND cookie derivation on plain-http local runs).
-			adapter: adapter({ out: 'build' })
+			adapter: adapter({
+				out: 'build'
+				// NOTE: importTarget:'esm' was TRIED for the jsdom require breakage
+				// and did not fix it (the class is package-layout resolution, not
+				// output format) — see the ssr.external block above for the real fix.
+			})
 		})
 	]
 });
