@@ -4,6 +4,20 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+	// The markdown-it stack (preview render path) must BUNDLE into build/, not
+	// externalize to node_modules: the adapter-node runtime stage is a self-
+	// contained image with NO node_modules — vite's default SSR externalization
+	// made every /api/* request die at runtime with ERR_MODULE_NOT_FOUND while
+	// dev (vite) and the harness (vite dev) were blind to it. Live catch 2026-11-11.
+	ssr: {
+		noExternal: [
+			'markdown-it',
+			'markdown-it-anchor',
+			'markdown-it-container',
+			'markdown-it-task-lists',
+			'@shikijs/markdown-it'
+		]
+	},
 	server: {
 		// Same tunnel habit as earendil: ngrok hands out a fresh hostname per
 		// session, so match by suffix. Extra hosts: ALLOWED_HOSTS=h1,h2.
