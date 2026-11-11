@@ -225,6 +225,30 @@ describe('mock AdminApi contract', () => {
 		expect(staging?.pinnedVersion).toBeNull();
 	});
 
+	it('setup wizard (twin): TOFU-once, flags, one-time temps — mirror of lumen e2e', async () => {
+		const api = createMockApi();
+		expect((await api.setupStatus()).unclaimed).toBe(true);
+		const reg = await api.registerFirstAdmin('owner', 'chosen-password-1');
+		expect(reg.role).toBe('admin');
+		expect(reg.mustChange).toBe(false);
+		expect((await api.setupStatus()).unclaimed).toBe(false);
+		await expect(api.registerFirstAdmin('squatter', 'not-happening-1')).rejects.toMatchObject({
+			status: 410
+		});
+		await expect(api.registerFirstAdmin('A BAD NAME', 'x'.repeat(11))).rejects.toMatchObject({
+			status: 400
+		});
+		const created = await api.createUser('helper', 'editor');
+		expect(created.tempPassword).toMatch(/^(?:[a-z]{4}-){4}[0-9]{4}$/);
+		const login = await api.login('helper', created.tempPassword);
+		expect(login.mustChange).toBe(true); // lumen answers the same; 428 gates the rest
+		const rows = await api.listUsers();
+		expect(rows.map((r) => r.username)).toEqual(['owner', 'helper']);
+		const reset = await api.resetUserPassword('helper');
+		expect(reset.tempPassword).not.toBe(created.tempPassword);
+		expect((await api.listUsers()).find((u) => u.username === 'helper')?.mustChange).toBe(true);
+		await expect(api.resetUserPassword('nobody')).rejects.toMatchObject({ status: 404 });
+	});
 	it('tag desk (twin baseline): feature/rename-propagates/delete-guard mirror lumen', async () => {
 		const api = createMockApi();
 		// create + feature

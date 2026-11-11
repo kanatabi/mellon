@@ -5,6 +5,8 @@
  * invisible up the stack — the whole point of the relay doctrine.
  */
 import type {
+	AdminUserRow,
+	Principal,
 	AdminApi,
 	AdminPhoto,
 	CollectionCount,
@@ -48,6 +50,25 @@ export const client: AdminApi = {
 		// only to satisfy the interface; never callable meaningfully here.
 		throw new ApiError(500, 'login is served by the form action, not the browser client');
 	},
+	setupStatus: () => call<{ unclaimed: boolean }>('/setup'),
+	registerFirstAdmin: () => {
+		throw new ApiError(500, 'setup registration is served by the /setup form action');
+	},
+	whoami: () => call<Principal>('/session'),
+	changePassword: () => {
+		throw new ApiError(500, 'password change is served by the /setup form action');
+	},
+	listUsers: () => call<AdminUserRow[]>('/users'),
+	createUser: (username, role) =>
+		call<AdminUserRow & { tempPassword: string }>('/users', {
+			method: 'POST',
+			body: JSON.stringify({ username, role })
+		}),
+	resetUserPassword: (username) =>
+		call<{ tempPassword: string }>(`/users/${encodeURIComponent(username)}/reset-password`, {
+			method: 'POST',
+			body: '{}'
+		}),
 	logout: () => {
 		// symmetric with login: end-session is the /logout server action — the
 		// browser never learns the token, and never revokes with it either
