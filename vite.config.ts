@@ -12,6 +12,11 @@ export default defineConfig({
 	ssr: {
 		noExternal: [
 			'markdown-it',
+			// shiki is the transitive core of @shikijs/markdown-it — externalize it and
+			// the bundled render.js dies at runtime (live: Cannot find package 'shiki')
+			'shiki',
+			'@shikijs/types',
+			'isomorphic-dompurify',
 			'markdown-it-anchor',
 			'markdown-it-container',
 			'markdown-it-task-lists',
