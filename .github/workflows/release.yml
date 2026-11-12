@@ -1,0 +1,74 @@
+name: release
+# Dispatch IS the deploy decision: merging to main only gates — nothing ships.
+# Only released v-tags are deployable artifacts (no branch builds, no mutable
+# aliases reach vortex). First release of this repo: hand-fired major → v1.0.0.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check
+      - run: npm run test:unit
+      - run: npm run build
+
+  semver:
+    needs: gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.rel.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git describe needs the tags
+      - name: next v-tag
+        id: rel
+        uses: kanatabi/anvil/actions/semver-release@59e8090cee545241f95c7bb68f7d5a0858033619
+        with:
+          bump: ${{ inputs.bump }}
+
+  build:
+    needs: semver
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.semver.outputs.version }}
+      - name: publish image
+        uses: kanatabi/anvil/actions/publish-image@59e8090cee545241f95c7bb68f7d5a0858033619
+        with:
+          app: mellon
+          tag: ${{ needs.semver.outputs.version }}
+          alias: latest
+
+  deploy:
+    needs: [semver, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: bump vortex pin
+        uses: kanatabi/anvil/actions/deploy-bump@59e8090cee545241f95c7bb68f7d5a0858033619
+        with:
+          app: mellon
+          tag: ${{ needs.semver.outputs.version }}
+          vortex-bot-pat: ${{ secrets.VORTEX_BOT_PAT }}
