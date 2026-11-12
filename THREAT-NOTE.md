@@ -117,6 +117,57 @@ read the DB or the signing key — no new class).
 - Detection: Bao-independent — post `updated_at`/`rev` visible on the desk;
   git is not the content store, so there is no PR trail (honest gap, see R4).
 
+### V7 — The TOFU window: the setup wizard before the owner (`POST /admin/setup/register`)
+
+Added 2026-11-13 — the wizard shipped after this note's last revision, and the
+estate's only unauthenticated **write** endpoint deserves first-class analysis.
+While `users` is empty, register answers before any credentials exist. (The
+rest of the pre-auth surface is the wizard's probe — `GET /admin/setup`, one
+bit, nothing enumerable — and login, which writes nothing.)
+
+- **What is atomic:** lumen wraps count+insert in one transaction under a
+  `pg_advisory_xact_lock` — exactly one of N concurrent registrations wins an
+  empty table; the winner's session is minted in the same response (the wizard
+  IS the door), every loser gets `410 Gone`, and 410 is terminal: the wizard
+  is dead forever, not "try later". The claim itself is validated (username
+  shape, 10-char floor, argon2id hash) and audited (`setup.register` logs the
+  new username, no credentials — the one who claimed, recorded).
+- **The window:** between "cluster up with empty `users`" and "the owner's
+  first visit", anyone who can reach `console.gofar.id` becomes the estate's
+  first admin — and the probe tells any prober the window is open. Bounded by
+  doctrine, not luck: the console is dark (no DNS, no ingress) until GATE #10,
+  and lumen has no public ingress ever (V3) — the portal surface is the only
+  doorway, and it opens last.
+- **Residuals, named:** (a) on the VPS there is real wall-clock between the
+  surface going live and a human standing in front of it; (b) a squatter-claim
+  is silent-until-noticed — the owner learns someone else won only when
+  `/setup` bounces to `/login`, and the audit line pays only if someone reads
+  logs.
+- **Mitigations, cheapest first:** RUNBOOK Part-B ordering makes the claim the
+  FIRST human act after `console.gofar.id` resolves (Part A already scripts
+  the bounce-then-claim as "the owner's manual act"). If a public pre-claim
+  window is ever unavoidable: `BOOTSTRAP_PIN` — a one-time code seeded into
+  Bao before the surface opens, which the wizard must echo — turns "whoever
+  reaches it wins" into "whoever reaches it AND the seed plane wins". Not
+  built; proposed only.
+- **What the wizard does NOT expose — temp passwords:** the server-generated,
+  once-only, never-logged temp (admin-created accounts, resets) is not on the
+  wizard's path; the first admin is born from the owner's own typed password,
+  `must_change=false` — nothing interceptable in flight.
+- **What the wizard does NOT expose — the 428 lock:** the forced-change gate
+  lives in the authenticator for every bearer (escape triad: whoami,
+  change-password, logout); claiming the estate does not route around it.
+- **What the wizard does NOT expose — revocation:** the claim mints an
+  ordinary 12h `tv`-bearing bearer — V2's kill switch (logout, rotation)
+  kills it exactly like any other token. A squatted admin is a revocable
+  admin, not a permanent one.
+- **Proof:** `wizard_integration_test.go` — TOFU is terminal (second register
+  → 410); the 428 gate on a first login; race-proofing is structural in
+  `store.InsertFirstAdmin` (one tx, one lock, one winner).
+- **GATE #5 question (owner):** is the default posture — bare TOFU + Part-B
+  ordering — acceptable for VPS go-live, or must `BOOTSTRAP_PIN` be built
+  before the console gets its first public walk?
+
 ## 4. Residual risks (accepted, with rationale)
 
 - **R1 — per-replica throttle.** Two lumen replicas = 2× the guess budget.
@@ -153,14 +204,15 @@ The owner's final read-through of this document is what unblocks (in order):
 
 ## 6. Evidence index
 
-| Claim                                           | Where it is proven                                                 |
-| :---------------------------------------------- | :----------------------------------------------------------------- |
-| alg:none / garbage / expired tokens refused     | `lumen/internal/session/session_test.go`                           |
-| tv revocation kills live tokens (over-the-wire) | `admin_integration_test.go` + live battery run 2×                  |
-| one indistinguishable auth-failure body         | same test, response-equality assert                                |
-| throttle engages with Retry-After               | same suite + Postman catalog 429 capture                           |
-| values never in lumen logs                      | `bao_integration_test.go` slog-capture redaction proof             |
-| CAS conflicts are 409, never clobbers           | same test + driftcheck walks on OpenBao                            |
-| relay surface = 4 operations, no sys/           | `internal/httpapi/admin_bao.go` (mount table) + §9 contract        |
-| drafts never on §1 surfaces                     | earendil `contract.spec.ts` (13/13 live) + Postman leak examples   |
-| dev plane == prod product                       | compose `ghcr.io/openbao/openbao:2.5.3` + battery re-run `938ce69` |
+| Claim                                           | Where it is proven                                                    |
+| :---------------------------------------------- | :-------------------------------------------------------------------- |
+| alg:none / garbage / expired tokens refused     | `lumen/internal/session/session_test.go`                              |
+| tv revocation kills live tokens (over-the-wire) | `admin_integration_test.go` + live battery run 2×                     |
+| one indistinguishable auth-failure body         | same test, response-equality assert                                   |
+| throttle engages with Retry-After               | same suite + Postman catalog 429 capture                              |
+| values never in lumen logs                      | `bao_integration_test.go` slog-capture redaction proof                |
+| CAS conflicts are 409, never clobbers           | same test + driftcheck walks on OpenBao                               |
+| relay surface = 4 operations, no sys/           | `internal/httpapi/admin_bao.go` (mount table) + §9 contract           |
+| drafts never on §1 surfaces                     | earendil `contract.spec.ts` (13/13 live) + Postman leak examples      |
+| TOFU register: one winner, 410 ever after       | `wizard_integration_test.go` + `store.InsertFirstAdmin` advisory lock |
+| dev plane == prod product                       | compose `ghcr.io/openbao/openbao:2.5.3` + battery re-run `938ce69`    |
