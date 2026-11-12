@@ -1,0 +1,44 @@
+name: ci
+# Gates on PRs; main publishes + bumps. (The console harness stays a local
+# discipline — it wants the dev plane; wiring it into CI is a known follow-up.)
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check
+      - run: npm run test:unit
+      - run: npm run build
+
+  ship:
+    needs: gates
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: short sha
+        id: sid
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: publish-and-pin
+        uses: kanatabi/anvil/actions/publish-and-pin@50e1257eda6354b4b27d46c9ee75cca62881cdef # v1
+        with:
+          app: mellon
+          tag: sha-${{ steps.sid.outputs.short }}
+          vortex-bot-pat: ${{ secrets.VORTEX_BOT_PAT }}
