@@ -1,6 +1,7 @@
 name: ci
-# Gates on PRs; main publishes + bumps. (The console harness stays a local
-# discipline — it wants the dev plane; wiring it into CI is a known follow-up.)
+# Gates only — merges to main never deploy; released v-tags do (release.yml).
+# (The console harness stays a local discipline — it wants the dev plane;
+# wiring it into CI is a known follow-up.)
 on:
   push:
     branches: [main]
