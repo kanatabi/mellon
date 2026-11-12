@@ -3,6 +3,12 @@ name: release
 # in ci.yml pushes vX.Y.Z via RELEASE_BOT_PAT specifically so this fires
 # (a GITHUB_TOKEN-pushed tag never cascades — silent no-deploy). The optional
 # manual run re-deploys an EXISTING tag: rollback without a revert.
+# Informed deploy: build + deploy-plan run AUTOMATICALLY — the plan prints the
+# evidence (current pin -> proposed pin, full manifest validation, rendered
+# diff) and writes NOTHING to vortex. `deploy` then PARKS on the PROTECTED
+# environment `deploy`: a human reads the deploy-plan evidence BEFORE
+# approving; that approval opens the bump PR, which itself lands only on its
+# own human review. A deploy is a deliberate, evidenced act, never a cascade.
 on:
   push:
     # documented glob syntax; push-release.sh is the ONLY tag author (vX.Y.Z enforced)
@@ -28,18 +34,38 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref_name }}
       - name: publish-image
-        uses: kanatabi/anvil/actions/publish-image@7183eb2808bc82d05eef7cc427c239802463f432 # v2 approval cascade
+        uses: kanatabi/anvil/actions/publish-image@259da810613d1d42a792a536bc3e1f3271701526 # v2 approval cascade
         with:
           app: mellon
           tag: ${{ inputs.tag || github.ref_name }}
           alias: latest
 
-  deploy:
+  # deploy-plan: the EVIDENCE half, automatic. Runs the bump against the real
+  # vortex main state and prints current-pin -> proposed-pin plus the rendered
+  # manifest diff — pushes nothing. Read THIS log before approving `deploy`.
+  deploy-plan:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: deploy-bump
-        uses: kanatabi/anvil/actions/deploy-bump@7183eb2808bc82d05eef7cc427c239802463f432 # v2 approval cascade
+      - name: plan the bump (evidence only)
+        uses: kanatabi/anvil/actions/deploy-plan@259da810613d1d42a792a536bc3e1f3271701526 # v3 informed deploy
+        with:
+          app: mellon
+          tag: ${{ inputs.tag || github.ref_name }}
+          vortex-bot-pat: ${{ secrets.VORTEX_BOT_PAT }}
+
+  # deploy: PARKS on the PROTECTED environment `deploy` until a human — who has
+  # read the deploy-plan evidence — approves this job. Approving opens the
+  # vortex bump PR; nothing deploys until THAT PR merges.
+  # No Waiting badge => this env lost protection (fail-open) — fix
+  # Settings → Environments before trusting deploys.
+  deploy:
+    needs: [build, deploy-plan]
+    runs-on: ubuntu-latest
+    environment: deploy
+    steps:
+      - name: open the bump PR (human-approved)
+        uses: kanatabi/anvil/actions/deploy-bump@259da810613d1d42a792a536bc3e1f3271701526 # v3 informed deploy
         with:
           app: mellon
           tag: ${{ inputs.tag || github.ref_name }}
