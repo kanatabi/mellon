@@ -1,5 +1,8 @@
 name: ci
-# Gates only — merges to main never deploy; released v-tags do (release.yml).
+# Gates + three release-approval jobs. A merge deploys NOTHING: the
+# semver-patch|minor|major jobs park on the protected `release` environment
+# until a human approves EXACTLY ONE; the v-tag it pushes is the only thing
+# that deploys (via release.yml).
 # (The console harness stays a local discipline — it wants the dev plane;
 # wiring it into CI is a known follow-up.)
 on:
