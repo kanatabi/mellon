@@ -1,6 +1,6 @@
 name: ci
 # Gates + three release-approval jobs. A merge deploys NOTHING: the
-# semver-patch|minor|major jobs park on the protected `release` environment
+# semver-patch|minor|major jobs park on per-bump protected environments (release-patch|minor|major)
 # until a human approves EXACTLY ONE; the v-tag it pushes is the only thing
 # that deploys (via release.yml).
 # (The console harness stays a local discipline — it wants the dev plane;
@@ -32,16 +32,18 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
 
-  # semver-patch: one of THREE approval jobs. Merge to main queues them on the
-  # PROTECTED `release` environment; a human approves EXACTLY ONE — approving
-  # IS the release decision. If these ever run WITHOUT a Waiting badge, the
-  # environment protection is missing (fail-open) — stop and fix Settings →
-  # Environments before trusting any release.
+  # semver-patch: approval-gated release. Waits on the PROTECTED
+  # environment `release-patch` until a human approves THIS job —
+  # approving IS the release decision; the bump level is literal,
+  # nothing derived. Environments are NEVER shared between bump jobs:
+  # one environment approval releases EVERY job waiting on it (proven
+  # live 2026-11-13). No Waiting badge => this env lost protection
+  # (fail-open) — fix Settings → Environments before trusting releases.
   semver-patch:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: gates
     runs-on: ubuntu-latest
-    environment: release
+    environment: release-patch
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,14 +53,18 @@ jobs:
           bump: patch
           release-bot-pat: ${{ secrets.RELEASE_BOT_PAT }}
 
-  # semver-minor: same contract as semver-patch — exactly one of the three
-  # may be approved per merge; approving IS the release decision. Fail-open
-  # check: no Waiting badge ⇒ the `release` environment is unprotected.
+  # semver-minor: approval-gated release. Waits on the PROTECTED
+  # environment `release-minor` until a human approves THIS job —
+  # approving IS the release decision; the bump level is literal,
+  # nothing derived. Environments are NEVER shared between bump jobs:
+  # one environment approval releases EVERY job waiting on it (proven
+  # live 2026-11-13). No Waiting badge => this env lost protection
+  # (fail-open) — fix Settings → Environments before trusting releases.
   semver-minor:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: gates
     runs-on: ubuntu-latest
-    environment: release
+    environment: release-minor
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,14 +74,18 @@ jobs:
           bump: minor
           release-bot-pat: ${{ secrets.RELEASE_BOT_PAT }}
 
-  # semver-major: same contract as the other two — exactly one of the three
-  # may be approved per merge; approving IS the release decision. Fail-open
-  # check: no Waiting badge ⇒ the `release` environment is unprotected.
+  # semver-major: approval-gated release. Waits on the PROTECTED
+  # environment `release-major` until a human approves THIS job —
+  # approving IS the release decision; the bump level is literal,
+  # nothing derived. Environments are NEVER shared between bump jobs:
+  # one environment approval releases EVERY job waiting on it (proven
+  # live 2026-11-13). No Waiting badge => this env lost protection
+  # (fail-open) — fix Settings → Environments before trusting releases.
   semver-major:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: gates
     runs-on: ubuntu-latest
-    environment: release
+    environment: release-major
     steps:
       - uses: actions/checkout@v4
         with:
