@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AdminApiError, POSTS_PAGE_SIZE, type PostDraft } from './types.ts';
 import { createMockApi, mediaStore } from './mock.ts';
+import { orderEnvs } from '../secrets-diff.ts';
 
 /**
  * Contract tests for the mock AdminApi — the Phase A source of truth that the
@@ -238,6 +239,40 @@ describe('mock AdminApi contract', () => {
 		expect(staging?.keys).toBe(2);
 		expect(staging?.emptyKeys).toBe(2);
 		expect(staging?.pinnedVersion).toBeNull();
+	});
+
+	it('unified-vault twin (role-split round): shared + staging + production coexist, ranked shared-first', async () => {
+		const api = createMockApi();
+		// the seeded estate carries lumen's THREE plane rows side by side —
+		// driftcheck feeds the matrix the lumen/shared path like any other
+		const paths = await api.listSecretPaths();
+		for (const env of ['shared', 'staging', 'production'])
+			expect(paths).toContainEqual({ app: 'lumen', env });
+		const lumenEnvs = paths
+			.filter((p) => p.app === 'lumen')
+			.map((p) => p.env)
+			.sort();
+		expect(lumenEnvs).toEqual(['production', 'shared', 'staging']);
+		// and the RANKED column puts shared first, staging before production
+		expect(orderEnvs(lumenEnvs)).toEqual(['shared', 'staging', 'production']);
+		// shared = cluster-wide values; production = its own truth, per env
+		expect((await api.readSecret('lumen', 'shared'))?.data.DB_HOST).toContain('lumen-pg');
+		expect((await api.readSecret('lumen', 'production'))?.data.DB_USER).toBe('lumen_production');
+		expect((await api.readSecret('lumen', 'staging'))?.data.DB_USER).toBe('lumen_staging');
+		// mellon's own wiring is vault data too: ADMIN_URL shared estate-wide,
+		// CMS_URL per env — the same image, two portals (docs sibling:
+		// seed these exact kv keys)
+		expect((await api.readSecret('mellon', 'shared'))?.data.ADMIN_URL).toContain('lumen-admin');
+		expect((await api.readSecret('mellon', 'staging'))?.data.CMS_URL).toContain('lumen-staging');
+		expect((await api.readSecret('mellon', 'production'))?.data.CMS_URL).toContain(
+			'lumen-http-server'
+		);
+		// the matrix sweep serves all of it, arithmetic intact
+		const rows = await api.estateSummary();
+		const cell = (app: string, env: string) => rows.find((r) => r.app === app && r.env === env);
+		expect(cell('lumen', 'shared')?.keys).toBe(2); // trails staging — ↓ by truth
+		expect(cell('lumen', 'production')?.keys).toBe(4);
+		expect(cell('mellon', 'staging')?.keys).toBe(1);
 	});
 
 	it('setup wizard (twin): TOFU-once, flags, one-time temps — mirror of lumen e2e', async () => {

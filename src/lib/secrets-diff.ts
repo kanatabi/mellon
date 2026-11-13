@@ -112,10 +112,12 @@ export function tableDiff(from: Data, to: Data): TableRow[] {
 	});
 }
 
-/** Envs in HUMAN order: dev → staging → production; anything else sorts in
- *  after them alphabetically. The rail data is alphabetical; nobody reads
- *  'dev, production, staging' (owner screenshot, twice). */
-const ENV_RANK: Record<string, number> = { dev: 0, staging: 1, production: 2 };
+/** Envs in HUMAN order: shared → dev → staging → production; anything else
+ *  sorts in after them alphabetically. The rail data is alphabetical; nobody
+ *  reads 'dev, production, staging' (owner screenshot, twice). SHARED rides
+ *  FIRST (unified-vault round, 2026-11-13): the values every env reads
+ *  through belong at the head of any row or column that shows them. */
+const ENV_RANK: Record<string, number> = { shared: 0, dev: 1, staging: 2, production: 3 };
 
 export function orderEnvs(envs: string[]): string[] {
 	return [...envs].sort((a, b) => {

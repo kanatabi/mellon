@@ -20,7 +20,12 @@ npm run dev · npm run check · npm run lint · npm run test:unit · npm run bui
 ```
 
 **Real by default** (owner ruling 2026-11-09): the runtime has one data
-source — lumen. Unset `API_BASE` falls back to `http://localhost:8080`;
+source — lumen. **Dual upstreams** (lumen role split, 2026-11-13): the
+cluster wires `ADMIN_URL` (control plane — sessions, users, TOFU, Bao) and
+`CMS_URL` (this env's content lumen); which call goes where is one auditable
+table in `src/lib/api/routing.ts`, and unknown paths refuse loudly. Legacy
+`API_BASE` still feeds both planes (single-binary), and unset everywhere
+falls back to `http://localhost:8080`;
 `src/lib/api/fetch-adapter.ts` maps every `AdminApi` method 1:1 onto the
 §8/§9 wire, the browser never sees lumen or the token, and the fixture
 twin lives on ONLY in test scope (`api.test.ts` imports it directly — the

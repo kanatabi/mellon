@@ -5,10 +5,13 @@ import type { RequestHandler } from './$types';
 
 /**
  * mellon's local API surface (`/api/*`, auth-guarded). The browser NEVER talks
- * to lumen (DESIGN §4): today this handler resolves against the mock; in Phase
- * B it becomes the dumb same-origin relay that forwards to `API_BASE` —
- * "the relay forwards; it never decides" starts honest HERE: every route below
- * maps 1:1 to an AdminApi method, no logic of its own.
+ * to lumen (DESIGN §4): this handler is the dumb same-origin relay that ships
+ * AdminApi calls upstream — "the relay forwards; it never decides" starts
+ * honest HERE: every route below maps 1:1 to an AdminApi method, no logic of
+ * its own. WHICH lumen answers — the control plane (ADMIN_URL) or this env's
+ * content plane (CMS_URL) — is decided by the one routing table in
+ * #lib/api/routing.ts, keyed on the wire path; nothing in this file picks
+ * an upstream.
  */
 
 const http = (e: unknown): number =>

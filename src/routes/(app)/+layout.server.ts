@@ -1,5 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
-import { createApi, AdminApiError } from '#lib/api/index.ts';
+import { createApi, isUpstreamConfigured, AdminApiError } from '#lib/api/index.ts';
 import {
 	cookieTrust,
 	isAuthed,
@@ -23,9 +23,12 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 	// whoami (lumen GET /admin/session) replaces the old search('') probe: one
 	// authenticated read that also HANDS US the identity — role gates the nav,
 	// mustChange routes the forced-change users to /setup (428 is lumen's
-	// transport-level lock; the portal honors it, it does not decorate it)
+	// transport-level lock; the portal honors it, it does not decorate it).
+	// DUAL UPSTREAMS: /admin/session is a CONTROL-PLANE path (routing.ts), so
+	// this ONE call rides ADMIN_URL wherever it lands — identity truth lives
+	// with the users, and the users live with lumen-admin. No fan-out.
 	let principal: { username: string; role: 'admin' | 'editor'; mustChange: boolean } | null = null;
-	if (process.env.API_BASE && bearer) {
+	if (isUpstreamConfigured() && bearer) {
 		try {
 			principal = await createApi(bearer).whoami();
 		} catch (e) {
@@ -41,9 +44,10 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 			}
 			throw e;
 		}
-	} else if (!process.env.API_BASE) {
-		// twin/mock mode: whoami from the same contract (permissive, mirrors
-		// a comfortable first admin)
+	} else if (!isUpstreamConfigured()) {
+		// dev-default mode: no upstream env wired at all — the probe rides
+		// the same contract, permissively (a missing local plane leaves the
+		// nav ungated rather than eating the page)
 		try {
 			principal = await createApi(bearer).whoami();
 		} catch {
