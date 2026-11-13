@@ -14,7 +14,7 @@
 	import { fade, slide } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import Watermark from '#lib/components/Watermark.svelte';
-	import { ApiError, client } from '#lib/api/client.ts';
+	import { client, errorText } from '#lib/api/client.ts';
 	import { diffLines, type DiffOp } from '#lib/diff.ts';
 	import { rankByFuzzy } from '#lib/fuzzy.ts';
 	import { displayValue, orderEnvs } from '#lib/secrets-diff.ts';
@@ -43,6 +43,12 @@
 	let historyVersions = $state<number[]>([]);
 	let historyDiff = $state<DiffOp[] | null>(null);
 	let pinnedVersion = $state<number | null>(seed.meta?.pinnedVersion ?? null);
+	// `restoredSeed` marks a draft's origin (the version a Restore overlaid);
+	// `offerPin` holds a promoted version awaiting the re-pin offer. Set by
+	// restoreVersion/save, cleared on accept, dismiss, or travel to another
+	// path. Numbers only — no values ride this state.
+	let restoredSeed = $state<number | null>(null);
+	let offerPin = $state<number | null>(null);
 
 	// search (B2/D3): current-env rows only, key names AND values, client-side.
 	let query = $state('');
@@ -99,7 +105,10 @@
 			cmds.push(
 				stateToggle({
 					id: 'secrets.pin',
-					title: pinnedVersion !== null ? `Unpin v${pinnedVersion}` : `Pin v${cas} (intent)`,
+					title:
+						pinnedVersion !== null
+							? `Unpin v${pinnedVersion} (release the lock)`
+							: `Pin v${cas} (lock writes)`,
 					on: pinnedVersion !== null,
 					onHint: 'pinned',
 					offHint: 'unpinned',
@@ -175,10 +184,19 @@
 	// the same resync (it is meta, and meta changes exactly when a fresh
 	// payload does — plus local pin/unpin set it eagerly for instant feedback).
 	let syncKey = $state('');
+	let syncPath = $state('');
 	$effect(() => {
 		const key = `${data.app}|${data.env}|${data.meta?.currentVersion ?? 0}|${JSON.stringify(data.secret?.data ?? null)}`;
 		if (key === syncKey) return;
 		syncKey = key;
+		// TRAVEL guard: a restore-seeded draft and its re-pin offer belong to
+		// ONE path — moving to another app/env must not carry them over.
+		const path = `${data.app}|${data.env}`;
+		if (path !== syncPath) {
+			syncPath = path;
+			restoredSeed = null;
+			offerPin = null;
+		}
 		const nextRows = { ...(data.secret?.data ?? {}) };
 		rows = nextRows;
 		order = Object.keys(nextRows); // the LOCAL clone — not `rows` state
@@ -211,9 +229,11 @@
 		dirty = true;
 	}
 
-	// ONE error path for all control ops: 409 stories (mirror-stale,
-	// collisions) arrive VERBATIM from lumen — they NAME the env; the
-	// success text is returned by the op itself, so nothing double-writes.
+	// ONE error path for all control ops: RELAYED server stories arrive
+	// VERBATIM (errorText) — 409 mirror/collision lines NAME the env, and the
+	// 403 pin write-lock refusal IS the wire copy "pinned at v<N> — unpin
+	// first"; the success text is returned by the op itself, so nothing
+	// double-writes.
 	async function run(fn: () => Promise<string>): Promise<boolean> {
 		message = null;
 		try {
@@ -221,20 +241,28 @@
 			await invalidateAll();
 			return true;
 		} catch (e) {
-			message = {
-				kind: 'err',
-				text: e instanceof ApiError && e.status === 409 ? e.message : String(e)
-			};
+			message = { kind: 'err', text: errorText(e) };
 			await invalidateAll();
 			return false;
 		}
 	}
 
+	// RESTORE → re-pin follow-through (the lock's release ritual): a save
+	// seeded from a restore promotes recovered values to head, and under
+	// "pin is a lock" nothing freezes that version unless the operator says
+	// so. PLAIN saves never touch these; values never ride them — offerPin
+	// is a version NUMBER, the masked-values doctrine stays untouched.
 	async function save() {
-		await run(async () => {
-			const v = await client.writeSecret(data.app, data.env, rows, cas);
-			return `saved as version ${v} — key-set mirrored to siblings, Bao has the audit`;
+		const seed = restoredSeed;
+		let promoted = 0;
+		const ok = await run(async () => {
+			promoted = await client.writeSecret(data.app, data.env, rows, cas);
+			return `saved as version ${promoted} — key-set mirrored to siblings, Bao has the audit`;
 		});
+		if (ok && seed !== null) {
+			restoredSeed = null;
+			offerPin = promoted;
+		}
 	}
 
 	function toggleReveal(k: string, on: boolean) {
@@ -268,12 +296,15 @@
 	// RESTORE (D2): overlay a past version's VALUES onto the CURRENT key set —
 	// keys the shape no longer has do NOT resurrect; the result is a dirty edit
 	// the user saves, so the mirror fan-out + CAS apply exactly as any write.
+	// The save this seeds gets the re-pin offer (lock follow-through).
 	async function restoreVersion(version: number) {
 		const past = await client.readSecret(data.app, data.env, version);
 		if (!past) return;
 		for (const k of order) if (k in past.data) rows[k] = past.data[k];
 		dirty = true;
 		viewing = null;
+		restoredSeed = version;
+		offerPin = null;
 		message = {
 			kind: 'ok',
 			text: `values from v${version} overlaid on the current keys — save to promote`
@@ -285,12 +316,22 @@
 			if (pinnedVersion === version) {
 				await client.unpinSecret(data.app, data.env);
 				pinnedVersion = null; // eager: a pin-only change never moves the meta resync key
-				return 'unpinned — head is all you need';
+				offerPin = null;
+				return 'unpinned — the write lock is released';
 			}
 			await client.pinSecret(data.app, data.env, version);
 			pinnedVersion = version;
-			return `pinned v${version} — intent only; reads still serve head (D1)`;
+			offerPin = null;
+			return `pinned v${version} — writes to this path are locked until unpin; reads still serve head`;
 		});
+	}
+
+	// The offer's YES: pin the version a restore-just-save promoted, using the
+	// SAME pin endpoint the drawer icon calls — the offer is a shortcut, not a
+	// new surface.
+	async function acceptOfferPin() {
+		if (offerPin === null) return;
+		await togglePin(offerPin);
 	}
 
 	/** Version payloads → sorted K=V lines → pure diff. */
@@ -333,7 +374,7 @@
 			await goto(`?app=${res.app}&env=${res.envs[0]}`);
 			message = { kind: 'ok', text: `onboarded ${res.app} — seeded ${res.envs.join(', ')}` };
 		} catch (e) {
-			message = { kind: 'err', text: e instanceof ApiError ? e.message : String(e) };
+			message = { kind: 'err', text: errorText(e) };
 		} finally {
 			onboardBusy = false;
 		}
@@ -389,7 +430,7 @@
 							class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] {pinnedVersion === cas
 								? 'bg-brand/10 text-brand'
 								: 'bg-accent-amber/15 text-accent-amber'}"
-							title="D1: pin is intent — reads still serve head"
+							title="pin is a lock: writes to this path are refused until unpin — reads still serve head"
 						>
 							<Pin class="mr-1 inline size-3 align-[-2px]" />pinned v{pinnedVersion}
 							{#if pinnedVersion !== cas}· head v{cas}{/if}
@@ -583,6 +624,34 @@
 			>
 				<History class="size-3.5" /> history
 			</button>
+			{#if offerPin !== null}
+				<!-- RE-PIN OFFER (lock follow-through): a restore-seeded save
+				     just promoted v{offerPin}; pinning it is the release
+				     ritual's last step. Icon + number only — masked values
+				     doctrine untouched. Plain saves never reach this chip. -->
+				<span
+					class="ml-3 flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 py-1 pr-1 pl-3 font-mono text-xs text-brand"
+					role="status"
+				>
+					<Pin class="size-3" />
+					<button
+						type="button"
+						onclick={() => void acceptOfferPin()}
+						class="transition-colors hover:brightness-125"
+						aria-label={`Pin v${offerPin} — lock the restored head`}
+					>
+						pin v{offerPin}?
+					</button>
+					<button
+						type="button"
+						onclick={() => (offerPin = null)}
+						aria-label="Dismiss the pin offer"
+						class="p-0.5 text-brand/70 transition-colors hover:text-brand"
+					>
+						<X class="size-3" />
+					</button>
+				</span>
+			{/if}
 			<button
 				type="button"
 				disabled={!dirty}
@@ -619,7 +688,7 @@
 							<span class="flex items-center gap-2">
 								<span>v{v}</span>
 								{#if envIsPinned(v)}
-									<span class="text-accent-amber" title="pinned (intent)">
+									<span class="text-accent-amber" title="pinned — writes to this path are locked">
 										<Pin class="inline size-3 align-[-2px]" />
 									</span>
 								{/if}

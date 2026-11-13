@@ -160,7 +160,8 @@ const COLLECTIONS = ['landscapes', 'street'];
 const APP_SLUG = /^[a-z][a-z0-9-]{1,31}$/;
 const ENV_SLUG = /^[a-z][a-z0-9-]{0,31}$/;
 const DEFAULT_ENVS = ['dev', 'staging', 'production'];
-/** pinned intent per app/env (D1) — null/absence is the honest unpinned. */
+/** pin write-lock per app/env (D1, redefined 2026-11-13: pin is a LOCK —
+ *  pinned path refuses CAS writes until unpin). Absence is the honest unpinned. */
 const PINNED: Record<string, number> = {};
 
 const SECRETS: Record<string, SecretPayload[]> = {
@@ -733,6 +734,13 @@ export function createMockApi(): AdminApi {
 
 		async writeSecret(app, env, data, cas) {
 			const key = secretKey(app, env);
+			// PIN WRITE-LOCK (lumen 230783b — "pin is a lock"): a pinned path
+			// refuses CAS writes BEFORE anything else, and the copy below is
+			// WIRE CONTRACT TEXT asserted at byte level on the lumen side —
+			// the twin mirrors it verbatim. A refused save writes NOTHING:
+			// no bump here, no mirror fan-out.
+			const pinned = PINNED[key];
+			if (pinned !== undefined) throw new AdminApiError(403, `pinned at v${pinned} — unpin first`);
 			const list = (secrets[key] ??= []);
 			const current = list.length ? list[list.length - 1].version : 0;
 			if (cas !== current)

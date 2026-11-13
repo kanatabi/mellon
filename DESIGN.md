@@ -128,8 +128,8 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 | `/posts/[slug]`    | editor + preview (split or toggle), save/publish (`Ctrl+Enter`)                                                                                                                                                                                                                                                                                                                                                                        |
 | `/photos`          | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker, engine search bar (date chips visibly pause while searching — PhotoDoc carries no day) (owner calls 2026-11-08/2026-11-10)                                                                                                                                                                          |
 | `/photos/[id]`     | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08)                                                                                                                                                                                                                                         |
-| `/secrets`         | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-intent badge, restore-by-overlay                                                                                                                                                                                                                                                 |
-| `/secrets/summary` | the **estate matrix** (C1): every app × env — head version, pin intent (amber when ≠ head), key counts with empty-key signals (○n = onboarded-unfilled), shape-drift marker; cells deep-link the cockpit. Counts only — values never leave Bao                                                                                                                                                                                         |
+| `/secrets`         | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-lock badge (saves refused while pinned), restore-by-overlay + re-pin offer                                                                                                                                                                                                       |
+| `/secrets/summary` | the **estate matrix** (C1): every app × env — head version, pin lock state (amber when ≠ head), key counts with empty-key signals (○n = onboarded-unfilled), shape-drift marker; cells deep-link the cockpit. Counts only — values never leave Bao                                                                                                                                                                                     |
 | `/tags`            | the **tag desk** — lean rows (checkbox · name · posts · featured pill), row click opens the **settings dialog** (rename → propagates via id-keyed FKs, feature toggle, used-by roster, timestamps, guarded delete naming the COUNT), engine typo search across the whole vocabulary, bulk feature for the multi-select, pager — all filters ride the URL; `?tag=` deep-links the dialog (palette tag rows + dashboard chips land here) |
 | `/settings`        | appearance (theme segment), vim toggle, session                                                                                                                                                                                                                                                                                                                                                                                        |
 
@@ -142,10 +142,16 @@ knows `lumen`. Onboard seeds the `dev/staging/production` trio (a default, not
 a schema - add-env extends an app, seeded to the canonical key-set union). The
 **key-set mirror is lumen's invariant**, enforced on the write path: the UI
 edits ONE env; siblings receive the shape (adds land empty - values are
-per-env), so the picker never shows drifted apps. **Pins are intent** (D1):
-the header badge (`pinned vN . head vM`, amber on drift) records operator
-decision; reads and consumers always see head - any version is viewable,
-diff-able, and **restorable as a value overlay onto the current key set**
+per-env), so the picker never shows drifted apps. **Pins are a LOCK** (D1, redefined 2026-11-13 with lumen 230783b — was
+"intent"): the header badge (`pinned vN . head vM`, amber on drift) means
+writes to that path are REFUSED while pinned — lumen answers 403 with the
+wire copy `pinned at vN — unpin first` and mellon renders it verbatim (the
+ghost-field doctrine: relayed server copy is never decorated). The release
+ritual is unpin → restore-draft → save as vN → optionally re-pin vN; after
+a restore-seeded save the vault offers exactly that last step (plain saves
+never get the offer). Reads and consumers always see head — any version is
+viewable, diff-able, and **restorable as a value overlay onto the current
+key set**
 (D2 - removed keys do not resurrect). **Search is client-side, current-env
 only** (D3) - key names AND values, via the pure fuzzy scorer; a server search
 would push secret bytes through a surface that never needs them. No destroy

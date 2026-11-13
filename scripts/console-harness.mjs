@@ -586,7 +586,7 @@ check(
 }
 
 // --- T-plane: the secrets CONTROL PLANE end-to-end through the real UI
-// (onboard → mirror fan-out → search → pin intent → restore overlay →
+// (onboard → mirror fan-out → search → pin lock → restore overlay →
 // add-env). The dev plane persists, so the app name is RUN-FRESH (no
 // teardown by design — D5 refuses destroy-grants; FORCE=1 make seed resets) ---
 {
@@ -642,7 +642,7 @@ check(
 		'T-plane3 fuzzy search filters rows, empty state, clear restores',
 		emptyState === 1 && restored === 1
 	);
-	// pin = intent (D1): badge appears on dev, disappears on unpin
+	// pin = LOCK (D1 redefined): badge appears on dev, disappears on unpin
 	await hp.locator('[aria-label="Environment dev"]').click();
 	await hp.waitForFunction(() => document.body.innerText.includes(' / dev ·'), null, {
 		timeout: 10000
@@ -652,12 +652,12 @@ check(
 	await hp.waitForFunction(() => document.body.innerText.includes('pinned v2'), null, {
 		timeout: 10000
 	});
-	check('T-plane4 pin records intent — badge in the header', true);
+	check('T-plane4 pin locks the path — badge in the header', true);
 	await hp.locator(`[aria-label="Unpin v2"]`).click();
 	await hp.waitForFunction(() => !document.body.innerText.includes('pinned v2'), null, {
 		timeout: 10000
 	});
-	check('T-plane5 unpin clears the intent', true);
+	check('T-plane5 unpin releases the lock', true);
 	// restore (D2): overlay v2's values onto the CURRENT shape → dirty → save
 	await hp.locator('button:has-text("close")').first().click();
 	await hp.locator(`input[aria-label="value of ${KEY}"]`).fill('DRIFTED-VALUE');
@@ -1270,7 +1270,7 @@ check(
 	const appRow = sp.locator('tr', { hasText: APP });
 	const rowTxt = await appRow.innerText();
 	check(
-		'T-sum2 cells carry version, pin intent, empty-key signal',
+		'T-sum2 cells carry version, pin lock, empty-key signal',
 		rowTxt.includes('v2') && rowTxt.includes('pin v1') && rowTxt.includes('○'),
 		rowTxt.replace(/\s+/g, ' ').slice(0, 90)
 	);
@@ -1486,6 +1486,110 @@ await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 		(await sp.locator('[role="option"]', { hasText: 'Users' }).count()) >= 1
 	);
 	await sp.keyboard.press('Escape');
+	// --- T-wiz11: the PIN WRITE-LOCK leg (lumen 230783b "pin is a lock").
+	// The dev plane may predate the lock, so the leg RECORDS the truth it
+	// saw instead of assuming it: pin a fresh app's v2 through the drawer's
+	// existing control, arm a plain edit, try to save THROUGH the lock —
+	// a NEW plane refuses with the 403 wire copy verbatim (double proof:
+	// the relay's error rendering ships it undecorated, no ApiError prefix),
+	// a STALE plane lets the save through. Either way the label says which;
+	// neither branch fakes the other. Both converge on head v3, unpinned.
+	const WKEY = 'NEW_KEY_1';
+	const WAPP = 'wizpin-' + Date.now().toString(36).slice(-5);
+	await sp.goto(`${BASE}/configs/vault`, { waitUntil: 'networkidle' });
+	await sp.locator('[aria-label="Onboard app"]').click();
+	await sp.locator('input[placeholder="credit"]').fill(WAPP);
+	await sp.locator('form button[type="submit"]', { hasText: 'onboard' }).click();
+	await sp.waitForFunction((a) => document.body.innerText.includes(`kv / ${a} / dev`), WAPP, {
+		timeout: 15000
+	});
+	await sp.locator('button:has-text("+ key")').click();
+	await sp.locator(`input[aria-label="value of ${WKEY}"]`).fill('LOCK-PROBE');
+	await sp.locator('button:has-text("save as v2")').click();
+	await sp.waitForFunction(() => document.body.innerText.includes('saved as version 2'), null, {
+		timeout: 15000
+	});
+	await sp.locator('button:has-text("history")').click();
+	await sp.locator('[aria-label="Pin v2"]').click();
+	await sp.waitForFunction(() => document.body.innerText.includes('pinned v2'), null, {
+		timeout: 10000
+	});
+	await sp.locator('aside[aria-label="Version history"] button:has-text("close")').click();
+	const wv = sp.locator(`input[aria-label="value of ${WKEY}"]`);
+	await wv.click({ clickCount: 3 });
+	await wv.type('-THROUGH');
+	await sp.locator('button:has-text("save as v3")').click();
+	let saw = '';
+	for (let i = 0; i < 60 && !saw; i++) {
+		const t = await sp.evaluate(() => document.body.innerText);
+		if (t.includes('pinned at v2 — unpin first')) saw = 'new';
+		else if (t.includes('saved as version 3')) saw = 'stale';
+		else await sleep(250);
+	}
+	check(
+		`T-wiz11 pinned save (plane: ${saw || 'timeout'})`,
+		saw !== '',
+		saw === 'new' ? 'lock refused — wire copy surfaced' : 'plane predates the lock — save landed'
+	);
+	if (saw === 'new') {
+		const t = await sp.evaluate(() => document.body.innerText);
+		check(
+			'T-wiz11b refusal ships the wire copy VERBATIM (no ApiError-prefix drift)',
+			t.includes('pinned at v2 — unpin first') && !t.includes('ApiError:')
+		);
+		// the remedy walk, PURELY on existing controls: drawer pin icon
+		// unpins, the still-dirty editor saves, the same icon re-pins later
+		await sp.locator('button:has-text("history")').click();
+		await sp.locator('[aria-label="Unpin v2"]').click();
+		await sp.waitForFunction(() => !document.body.innerText.includes('pinned v2'), null, {
+			timeout: 10000
+		});
+		await sp.locator('aside[aria-label="Version history"] button:has-text("close")').click();
+		await sp.locator('button:has-text("save as v3")').click();
+		await sp.waitForFunction(() => document.body.innerText.includes('saved as version 3'), null, {
+			timeout: 15000
+		});
+		check('T-wiz11c unpin -> save lands the refused edit (existing controls only)', true);
+	} else if (saw === 'stale') {
+		// stale plane: the save already landed — release the pin anyway so
+		// BOTH planes enter the follow-through leg identically
+		await sp.locator('button:has-text("history")').click();
+		await sp.locator('[aria-label="Unpin v2"]').click();
+		await sp.waitForFunction(() => !document.body.innerText.includes('pinned v2'), null, {
+			timeout: 10000
+		});
+		await sp.locator('aside[aria-label="Version history"] button:has-text("close")').click();
+		check('T-wiz11c stale plane — pin released, state converged', true);
+	}
+	// --- T-wiz12: the RESTORE -> re-pin follow-through (mellon-side UI,
+	// plane-agnostic): a save seeded from a Restore must offer "pin vN?" —
+	// the lock ritual's last step — and a PLAIN save must NOT. The offer
+	// chip rides version NUMBERS only; masked-values doctrine untouched.
+	await sp.locator(`input[aria-label="value of ${WKEY}"]`).fill('PLAIN-DRIFT');
+	await sp.locator('button:has-text("save as v4")').click();
+	await sp.waitForFunction(() => document.body.innerText.includes('saved as version 4'), null, {
+		timeout: 15000
+	});
+	check(
+		'T-wiz12a plain save gets no re-pin offer',
+		(await sp.locator('button:has-text("pin v4?")').count()) === 0
+	);
+	await sp.locator('button:has-text("history")').click();
+	await sp.locator('button[aria-label^="Restore v2"]').click();
+	await sp.waitForFunction(() => document.body.innerText.includes('overlaid'), null, {
+		timeout: 10000
+	});
+	await sp.locator('aside[aria-label="Version history"] button:has-text("close")').click();
+	await sp.locator('button:has-text("save as v5")').click();
+	// the offer chip appearing IS the proof the restore-seeded save landed
+	await sp.waitForFunction(() => document.body.innerText.includes('pin v5?'), null, {
+		timeout: 15000
+	});
+	await sp.locator('button:has-text("pin v5?")').click();
+	await sp.waitForFunction(() => document.body.innerText.includes('pinned v5'), null, {
+		timeout: 10000
+	});
+	check('T-wiz12b restore-seeded save offers the re-pin — and it locks v5', true);
 	await sp.close();
 }
 
