@@ -1435,6 +1435,44 @@ await page2.screenshot({ path: '/tmp/opencode/shots/error-503.png' });
 		'T-wiz9 wrong current password fails with a message, not a 500',
 		(await sp.evaluate(() => document.body.innerText)).includes('The current password is not right')
 	);
+	// T-wiz10: full trip through the change-mode wizard in a REAL browser on
+	// a REAL form serialization — the ghost-field bug class (mellon v1.0.0:
+	// a second [name=username] rendered FIRST shadowed the submitted one via
+	// FormData.get) is pinned here because hand-built FormData can never see
+	// it. Temp user -> login -> must_change routes to /setup -> assert the
+	// form carries EXACTLY ONE username input (the carrier, holding the
+	// truth) -> change the password -> the door opens.
+	const tctx = await browser.newContext();
+	const tp = await tctx.newPage();
+	await tp.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+	await tp.fill('input[name="username"]', NEWUSER);
+	await tp.fill('input[name="password"]', m2[1]);
+	await tp.click('button[type="submit"]');
+	await tp.waitForURL(/\/setup/, { timeout: 8000 }).catch(() => {});
+	check(
+		'T-wiz10 temp user is routed to the wizard (428 door)',
+		tp.url().includes('/setup'),
+		tp.url()
+	);
+	const uFields = await tp.locator('form input[name="username"]').count();
+	const uVal =
+		uFields > 0 ? await tp.locator('form input[name="username"]').first().inputValue() : '';
+	check(
+		'T-wiz10b change-mode form has ONE username input, holding the real name',
+		uFields === 1 && uVal === NEWUSER,
+		`fields=${uFields} val=${uVal}`
+	);
+	await tp.fill('form input[name="current"]', m2[1]);
+	await tp.fill('form input[name="password"]', 'no-chu-mebit-9x1k!');
+	await tp.fill('form input[name="confirm"]', 'no-chu-mebit-9x1k!');
+	await tp.click('form button[type="submit"]');
+	await tp.waitForTimeout(1600);
+	check(
+		'T-wiz10c changing through the wizard opens the door',
+		tp.url().endsWith('/') || tp.url().includes('changed=1'),
+		tp.url()
+	);
+	await tctx.close();
 	// palette registry
 	await sp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 	await sp.keyboard.press('Control+k');
