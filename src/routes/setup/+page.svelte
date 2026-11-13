@@ -48,7 +48,13 @@
 		}}
 	>
 		<input type="hidden" name="mode" value={data.mode} />
-		<input type="hidden" name="username" value={data.username} />
+		<!-- the username carrier exists ONLY in change mode: in register mode
+		     data.username is '', and a second [name=username] field would be
+		     read FIRST by the action (FormData.get) — the empty ghost field
+		     shadowed real claims (the live wizard bug this guards). -->
+		{#if !registering}
+			<input type="hidden" name="username" value={data.username} />
+		{/if}
 		{#if !registering}
 			<label class="flex flex-col gap-1.5">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
