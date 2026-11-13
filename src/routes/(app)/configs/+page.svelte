@@ -137,8 +137,8 @@
 	</div>
 
 	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-		○n = n keys awaiting values (onboarded shape, unfilled env) · pin vN = recorded intent (head
-		stays what everything reads — amber when intent ≠ head) · ↓ = this env's key set trails its
-		widest sibling. Cells deep-link the cockpit.
+		○n = n keys awaiting values (onboarded shape, unfilled env) · pin vN = write lock (saves to that
+		path are refused until unpin — head stays what everything reads; amber when pin ≠ head) · ↓ =
+		this env's key set trails its widest sibling. Cells deep-link the cockpit.
 	</p>
 </section>

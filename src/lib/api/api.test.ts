@@ -160,7 +160,7 @@ describe('mock AdminApi contract', () => {
 		expect(gone).toBeNull();
 	});
 
-	it('secrets control plane (twin baseline for lumen): onboard trio, mirror fan-out, pin intent', async () => {
+	it('secrets control plane (twin baseline for lumen): onboard trio, mirror fan-out, pin write-lock', async () => {
 		const api = createMockApi();
 		// CAS always read from meta, never remembered: structural writes
 		// mirror to siblings and bump THEM — the same trap that the lumen
@@ -197,13 +197,28 @@ describe('mock AdminApi contract', () => {
 		expect((await api.readSecret('twinapp', 'lab'))?.data).toEqual({ DB_URL: '' });
 		await expect(api.addEnv('twinapp', 'lab')).rejects.toMatchObject({ status: 409 });
 		await expect(api.addEnv('ghostapp', 'dev')).rejects.toMatchObject({ status: 404 });
-		// pin = intent (D1): recorded, surfaced, never a routing change
+		// pin = LOCK (D1 redefined, lumen 230783b): recorded, surfaced — and
+		// it freezes WRITES while reads keep serving head.
 		await api.pinSecret('twinapp', 'dev', 2);
 		expect((await api.secretMeta('twinapp', 'dev'))?.pinnedVersion).toBe(2);
 		expect((await api.readSecret('twinapp', 'dev'))?.version).toBe(5); // head still wins
 		await expect(api.pinSecret('twinapp', 'dev', 99)).rejects.toMatchObject({ status: 404 });
+		// the lock's teeth: a CAS write through the pin REFUSES with the
+		// wire copy EXACT (lumen asserts it at byte level; mellon renders it
+		// verbatim — no ApiError-prefix drift allowed).
+		const refused = (await api
+			.writeSecret('twinapp', 'dev', { DB_URL: 'through-the-lock' }, 5)
+			.catch((e) => e)) as AdminApiError;
+		expect(refused).toBeInstanceOf(AdminApiError);
+		expect(refused.status).toBe(403);
+		expect(refused.message).toBe('pinned at v2 — unpin first');
+		// a refused save writes NOTHING: no bump, no mirror — head still v5
+		expect((await api.secretMeta('twinapp', 'dev'))?.currentVersion).toBe(5);
+		expect((await api.readSecret('twinapp', 'dev'))?.data).toEqual({ DB_URL: 'd2' });
+		// unpin releases: the SAME save lands (the lock's own remedy walk)
 		await api.unpinSecret('twinapp', 'dev');
 		expect((await api.secretMeta('twinapp', 'dev'))?.pinnedVersion).toBeNull();
+		expect(await api.writeSecret('twinapp', 'dev', { DB_URL: 'through-the-lock' }, 5)).toBe(6);
 	});
 
 	it('estate matrix (twin): counts, empties, pins — arithmetic over truth', async () => {

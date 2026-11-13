@@ -32,6 +32,18 @@ export class ApiError extends Error {
 	}
 }
 
+/**
+ * Verbatim surface for RELAYED server errors (the ghost-field lesson, made
+ * structural): the message an ApiError carries IS lumen's copy, shipped
+ * byte-for-byte through the relay — 409 conflict stories, the 403 pin
+ * write-lock refusal ("pinned at v<N> — unpin first"), all of it. Decorate
+ * or stringify only NON-API failures; an `ApiError: ` prefix in the UI means
+ * we dressed up someone else's truth.
+ */
+export function errorText(e: unknown): string {
+	return e instanceof ApiError ? e.message : String(e);
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(`/api${path}`, {
 		...init,

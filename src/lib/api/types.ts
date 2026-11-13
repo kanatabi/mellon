@@ -330,7 +330,10 @@ export interface AdminApi {
 	listSecretPaths(): Promise<SecretPath[]>;
 	readSecret(app: string, env: string, version?: number): Promise<SecretPayload | null>;
 	secretMeta(app: string, env: string): Promise<SecretMeta | null>;
-	/** CAS write — `cas` must equal currentVersion; creates a new version. */
+	/** CAS write — `cas` must equal currentVersion; creates a new version.
+	 *  While the path is PINNED this refuses with 403 and the wire copy
+	 *  "pinned at v<N> — unpin first" (pin is a lock, lumen 230783b) —
+	 *  mellon renders it verbatim. 409 CAS mismatch. */
 	writeSecret(app: string, env: string, data: Record<string, string>, cas: number): Promise<number>;
 	/** Onboard an app namespace (PLAN §2.1): envs omitted ⇒ the default trio
 	 *  (D4 — a default, not a schema). Empty bundles; 400 bad slug, 409 the
@@ -341,12 +344,13 @@ export interface AdminApi {
 	 *  drift a smaller shape. 404 unknown app (a typo, not intent),
 	 *  409 duplicate env. */
 	addEnv(app: string, env: string): Promise<{ app: string; env: string }>;
-	/** Pin a LIVE, non-destroyed version of this path (intent metadata —
-	 *  reads keep serving head, D1). 404 unknown path or unknown version. */
+	/** Pin a LIVE, non-destroyed version of this path (pin is a LOCK:
+	 *  CAS writes to the path are refused until unpin — reads keep serving
+	 *  head, D1). 404 unknown path or unknown version. */
 	pinSecret(app: string, env: string, version: number): Promise<{ pinnedVersion: number }>;
-	/** Clear the intent (no sentinel values — absence is the null). */
+	/** Release the write lock (no sentinel values — absence is the null). */
 	unpinSecret(app: string, env: string): Promise<void>;
 	/** The estate matrix feed (C1): one sweep of every app/env — head
-	 *  version, pin intent, key counts, empty-key counts. Arithmetic only. */
+	 *  version, pin lock state, key counts, empty-key counts. Arithmetic only. */
 	estateSummary(): Promise<EstateRow[]>;
 }
