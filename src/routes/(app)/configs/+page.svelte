@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LayoutGrid } from 'lucide-svelte';
+	import { orderEnvs } from '#lib/secrets-diff.ts';
 	import type { EstateRow } from '#lib/api/types.ts';
 	import type { PageData } from './$types';
 
@@ -9,16 +10,18 @@
 
 	let { data }: Props = $props();
 
-	const RANKED = ['dev', 'staging', 'production'];
 	const apps = $derived.by(() => {
 		const out: string[] = [];
 		for (const r of data.rows) if (!out.includes(r.app)) out.push(r.app);
 		return out.sort((a, b) => a.localeCompare(b));
 	});
+	// the RANKED env column — one order truth for the estate (shared → dev →
+	// staging → production, exotics last); matrix, compare rail, and vault
+	// cockpit all read it from orderEnvs so they can never disagree
 	const cols = $derived.by(() => {
 		const envs: string[] = [];
 		for (const r of data.rows) if (!envs.includes(r.env)) envs.push(r.env);
-		return [...RANKED.filter((e) => envs.includes(e)), ...envs.filter((e) => !RANKED.includes(e))];
+		return orderEnvs(envs);
 	});
 	const cell = (app: string, env: string): EstateRow | undefined =>
 		data.rows.find((r) => r.app === app && r.env === env);

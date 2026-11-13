@@ -4,12 +4,23 @@
  * the relay forwards, never decides). Errors surface as AdminApiError with
  * lumen's status codes verbatim; the UI's conflict branches read them.
  *
+ * DUAL UPSTREAMS (lumen role split, 2026-11-13): the adapter addresses TWO
+ * bases — the control plane (ADMIN_URL) and this env's content lumen
+ * (CMS_URL) — and picks per call through the routing table (routing.ts),
+ * keyed on the wire path. The table decides; this file just obeys. A lone
+ * string target means SINGLE BINARY: both classes ride the one base (the
+ * dev default and the pre-split deployments — the wire is identical).
+ *
  * Token handling mirrors the design: the bearer IS the mellon session cookie;
  * createApi receives it per call-site (loads/actions/relay all run in request
  * context). No token storage here, no refresh logic — expiry is lumen's
- * 12h claim, revocation is its token_version row, both invisible to this file.
+ * 12h claim, revocation is its token_version row, both invisible to this
+ * file. Auth forwarding is IDENTICAL for both upstreams — whatever relay
+ * headers go to lumen today (the bearer) go to BOTH bases unchanged; mellon
+ * itself holds nothing.
  */
 import { AdminApiError } from './types.ts';
+import { baseFor } from './routing.ts';
 import type {
 	AdminUserRow,
 	LoginResponse,
@@ -31,17 +42,33 @@ import type {
 	TagCount
 } from './types.ts';
 
-/** Local-dev fallback when API_BASE is unset — the cluster always overrides.
- *  Real-by-default (owner ruling 2026-11-09): there is no runtime mock path. */
+/** Local-dev fallback when no upstream env is set — the cluster always overrides.
+ *  Real-by-default (owner ruling 2026-11-09): there is no runtime mock path.
+ *  The dev default is ONE binary (:8080), so it feeds both upstream classes. */
 export const DEV_DEFAULT_API_BASE = 'http://localhost:8080';
 
-export function createLumenApi(base: string, bearer: string): AdminApi {
+/** The resolved upstream pair: the control plane and this env's content lumen. */
+export interface Upstreams {
+	admin: string;
+	cms: string;
+}
+
+const strip = (b: string) => b.replace(/\/+$/, '');
+
+export function createLumenApi(target: string | Upstreams, bearer: string): AdminApi {
+	const bases: Upstreams =
+		typeof target === 'string'
+			? { admin: strip(target), cms: strip(target) } // single binary: one base serves both classes
+			: { admin: strip(target.admin), cms: strip(target.cms) };
+	/** Resolve a wire path to its upstream base — the routing table's call. */
+	const at = (path: string) => baseFor(path, bases) + path;
+
 	async function call<T>(
 		method: string,
 		path: string,
 		opts: { query?: Record<string, string[]>; body?: unknown; nullOn404?: boolean } = {}
 	): Promise<T> {
-		const url = new URL(base + path);
+		const url = new URL(at(path));
 		for (const [k, vs] of Object.entries(opts.query ?? {}))
 			for (const v of vs) url.searchParams.append(k, v);
 		let res: Response;
@@ -160,7 +187,7 @@ export function createLumenApi(base: string, bearer: string): AdminApi {
 				new Blob([bytes], { type: mime }),
 				/\.(png|jpe?g|gif|webp)$/i.test(p.name) ? p.name : `${p.name}.${ext}`
 			);
-			const url = new URL(base + '/admin/photos');
+			const url = new URL(at('/admin/photos'));
 			let res: Response;
 			try {
 				res = await fetch(url, {

@@ -86,8 +86,15 @@ describe('secrets-diff (pure compare engine)', () => {
 		expect(rows.find((r) => r.key === 'CHANGED')?.from).toBe('a');
 	});
 
-	it('orderEnvs: dev → staging → production, exotics alphabetically after', () => {
+	it('orderEnvs: shared → dev → staging → production, exotics alphabetically after', () => {
 		expect(orderEnvs(['production', 'staging', 'dev'])).toEqual(['dev', 'staging', 'production']);
 		expect(orderEnvs(['lab', 'staging', 'dev', 'beta'])).toEqual(['dev', 'staging', 'beta', 'lab']);
+		// unified-vault round: the shared path leads wherever it exists
+		expect(orderEnvs(['production', 'shared', 'staging'])).toEqual([
+			'shared',
+			'staging',
+			'production'
+		]);
+		expect(orderEnvs(['production', 'dev', 'shared'])).toEqual(['shared', 'dev', 'production']);
 	});
 });

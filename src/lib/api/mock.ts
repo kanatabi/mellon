@@ -154,9 +154,13 @@ const PHOTOS: AdminPhoto[] = [
  *  2026-11-08: the blog ignores them; public = gallery=true, all themes). */
 const COLLECTIONS = ['landscapes', 'street'];
 
-/** Bao-shaped: app/env → payload versions, newest last. TWO apps ship in
- *  the twin (lumen + earendil) — "apps are DATA" was the corpus before it
- *  was the API (PLAN-SECRETS-CONTROL §2.2-1). */
+/** Bao-shaped: app/env → payload versions, newest last. THREE apps ship in
+ *  the twin (lumen + earendil + mellon) — "apps are DATA" was the corpus
+ *  before it was the API (PLAN-SECRETS-CONTROL §2.2-1). Unified-vault round
+ *  (lumen role split, 2026-11-13): lumen carries shared + staging AND
+ *  production rows side by side — shared holds the cluster-wide values
+ *  every env reads through; the mellon rows mirror the dual-upstream wiring
+ *  (same image, two envs: ADMIN_URL shared, CMS_URL per env). */
 const APP_SLUG = /^[a-z][a-z0-9-]{1,31}$/;
 const ENV_SLUG = /^[a-z][a-z0-9-]{0,31}$/;
 const DEFAULT_ENVS = ['dev', 'staging', 'production'];
@@ -186,6 +190,71 @@ const SECRETS: Record<string, SecretPayload[]> = {
 			},
 			createdTime: '2026-11-08T08:30:00Z',
 			version: 2,
+			destroyed: false,
+			deletionTime: null
+		}
+	],
+	'lumen/production': [
+		{
+			data: {
+				API_BASE: 'http://lumen-http-server.lumen.svc.cluster.local',
+				DB_HOST: 'lumen-pg-postgres.db.svc.cluster.local',
+				DB_USER: 'lumen_production',
+				MEILI_URL: 'http://meilisearch.search.svc.cluster.local:7700'
+			},
+			createdTime: '2026-11-12T09:40:00Z',
+			version: 1,
+			destroyed: false,
+			deletionTime: null
+		}
+	],
+	// the unified-vault shared path: cluster-wide values every env reads
+	// through — the driftcheck sweep feeds it to the matrix like any other
+	// app/env row (the ↓ marker is the shape trailing its widest sibling)
+	'lumen/shared': [
+		{
+			data: {
+				DB_HOST: 'lumen-pg-postgres.db.svc.cluster.local',
+				MEILI_URL: 'http://meilisearch.search.svc.cluster.local:7700'
+			},
+			createdTime: '2026-11-12T09:30:00Z',
+			version: 1,
+			destroyed: false,
+			deletionTime: null
+		}
+	],
+	// mellon's own wiring, vault-side (dual-upstream round): the SAME image
+	// runs both portals — ADMIN_URL is estate-wide (shared), CMS_URL is
+	// per-env truth. ES reads both paths; nothing here leaves GitOps.
+	'mellon/shared': [
+		{
+			data: {
+				ADMIN_URL: 'http://lumen-admin.lumen.svc.cluster.local'
+			},
+			createdTime: '2026-11-13T06:00:00Z',
+			version: 1,
+			destroyed: false,
+			deletionTime: null
+		}
+	],
+	'mellon/staging': [
+		{
+			data: {
+				CMS_URL: 'http://lumen-staging.lumen.svc.cluster.local'
+			},
+			createdTime: '2026-11-13T06:05:00Z',
+			version: 1,
+			destroyed: false,
+			deletionTime: null
+		}
+	],
+	'mellon/production': [
+		{
+			data: {
+				CMS_URL: 'http://lumen-http-server.lumen.svc.cluster.local'
+			},
+			createdTime: '2026-11-13T06:10:00Z',
+			version: 1,
 			destroyed: false,
 			deletionTime: null
 		}
