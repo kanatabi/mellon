@@ -133,7 +133,7 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 | `/tags`            | the **tag desk** — lean rows (checkbox · name · posts · featured pill), row click opens the **settings dialog** (rename → propagates via id-keyed FKs, feature toggle, used-by roster, timestamps, guarded delete naming the COUNT), engine typo search across the whole vocabulary, bulk feature for the multi-select, pager — all filters ride the URL; `?tag=` deep-links the dialog (palette tag rows + dashboard chips land here) |
 | `/settings`        | appearance (theme segment), vim toggle, session                                                                                                                                                                                                                                                                                                                                                                                        |
 
-### 6.1 Secrets control plane (PLAN-SECRETS-CONTROL.md, ratified D1-D5)
+### 6.1 Secrets control plane ([secrets-control-plane.md](https://github.com/kanatabi/omicron/blob/main/context-knowledge/decisions/secrets-control-plane.md), ratified D1-D5)
 
 The portal is the **central control surface for the whole infra**, and the
 secrets plane shows the pattern: **apps are DATA** - the picker, the onboarding
