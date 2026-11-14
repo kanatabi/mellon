@@ -5,10 +5,13 @@ content management for [earendil](https://github.com/kanatabi/earendil) and basi
 management for the cluster — one keyboard-first web app, talking only to
 [lumen](https://github.com/kanatabi/lumen).
 
-> _Speak, friend, and enter._ No public address; access via `kubectl port-forward`.
+> _Speak, friend, and enter._ Public at `console.gofar.id` — TLS at the shared
+> Traefik edge, sessions minted by lumen, go-live is HUMAN-GATE #10. `kubectl port-forward`
+> remains break-glass.
 
-**Status: design only.** Read [`DESIGN.md`](DESIGN.md) first — the doctrine section is
-load-bearing (UI-only, no credentials, relay-forwards-never-decides).
+Read [`DESIGN.md`](DESIGN.md) first — the doctrine section is
+load-bearing (UI-only, no credentials, relay-forwards-never-decides). The
+working guide for agents is [AGENTS.md](AGENTS.md).
 
 ## When code lands
 
@@ -40,19 +43,3 @@ check/lint/test/build.
 
 Branch-per-milestone, PR-reviewed — never commit directly to `main`.
 
-## Repo bootstrap (remote not yet created)
-
-This directory is currently a local git repo without a remote. To finish:
-
-```bash
-# 1. create the GitHub repo (private recommended — it documents admin paths)
-gh repo create kanatabi/mellon --private --description "omicron: private admin portal (design stage)"
-
-# 2. attach + push
-git remote add origin git@github.com:kanatabi/mellon.git
-git push -u origin main
-
-# 3. register as a submodule in the superproject, then bump the pin there
-cd .. && git submodule add git@github.com:kanatabi/mellon.git mellon
-git commit -m "chore: register mellon submodule"
-```
