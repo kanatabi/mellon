@@ -33,7 +33,7 @@ on:
           like main.
         required: false
         type: string
-        default: ""
+        default: ''
       env:
         description: which environment chain(s) to run
         required: true
