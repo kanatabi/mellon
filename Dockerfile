@@ -26,6 +26,11 @@ COPY --from=build /app/node_modules ./node_modules
 # src/lib/api/routing.ts. Don't bake anything host-specific in here.
 # (The ExternalSecret CR for mellon lands with its vortex manifests, Phase C-infra.)
 COPY --from=build /app/build ./build
+# package.json rides along: the #lib/* imports ALIAS lives in its "imports"
+# field — without it server.js's import of #lib/server/metrics.js throws
+# ERR_PACKAGE_IMPORT_NOT_DEFINED at boot (the v3.1.0 rollout's crash loop).
+# It also anchors "type": "module" for the .js runtime files.
+COPY --from=build /app/package.json ./package.json
 # the custom server (2026-11-15): TWO listeners in ONE process — the app
 # on PORT and the UNROUTED /metrics listener on MELLON_METRICS_PORT
 # (default 9090, the no-sidecar contract's scrape door). server.js is
