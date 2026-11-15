@@ -22,6 +22,7 @@
 import { AdminApiError } from './types.ts';
 import { REQUEST_ID_HEADER, newRequestId, echoedRequestId, logAccess } from './requestid.ts';
 import { baseFor, upstreamFor } from './routing.ts';
+import { DEP, outbound, type OpName } from '#lib/server/metrics.js';
 import type {
 	AdminUserRow,
 	LoginResponse,
@@ -67,30 +68,42 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 	async function call<T>(
 		method: string,
 		path: string,
-		opts: { query?: Record<string, string[]>; body?: unknown; nullOn404?: boolean } = {}
+		opts: { op: OpName; query?: Record<string, string[]>; body?: unknown; nullOn404?: boolean }
 	): Promise<T> {
 		// the correlation seam (2026-11-15): mint → send → the access line.
 		// The id rides EVERY call; failures log with it, and the echo lands in
 		// the thrown error — one grep chains the portal hop to lumen's logs.
+		//
+		// the observability round: the call is also COUNTED and BOUNDED —
+		// the dependency label maps from the routing table's upstream class
+		// (admin → lumen-admin, cms → lumen-cms), the op is the ENUMERATED
+		// verb the site threads (the wire paths embed slugs/usernames — a
+		// path-derived label would be a cardinality bomb), and the budget
+		// aborts a hung lumen instead of hanging the desk.
 		const requestId = newRequestId();
 		const hop = upstreamFor(path);
+		const dep = DEP[hop];
 		const url = new URL(at(path));
 		for (const [k, vs] of Object.entries(opts.query ?? {}))
 			for (const v of vs) url.searchParams.append(k, v);
 		let res: Response;
 		try {
-			res = await fetch(url, {
-				method,
-				headers: {
-					[REQUEST_ID_HEADER]: requestId,
-					...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-					...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {})
-				},
-				body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
-			});
+			res = await outbound(dep, opts.op, (signal) =>
+				fetch(url, {
+					method,
+					signal,
+					headers: {
+						[REQUEST_ID_HEADER]: requestId,
+						...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+						...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {})
+					},
+					body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
+				})
+			);
 		} catch {
-			// lumen unreachable is a 503 story, never a fake success and never
-			// a 401 (an outage must not clear good session cookies)
+			// ANY transport failure — refused, DNS, or the budget's timeout —
+			// is a 503 story to the desk (never a fake success, never a 401:
+			// an outage must not clear good session cookies)
 			logAccess(hop, method, path, 'unreachable', requestId);
 			throw new AdminApiError(503, 'lumen unreachable', requestId);
 		}
@@ -120,30 +133,41 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 	return {
 		// --- session ---
 		login: (username, password) =>
-			call<LoginResponse>('POST', '/admin/session', { body: { username, password } }),
-		setupStatus: () => call<{ unclaimed: boolean }>('GET', '/admin/setup'),
+			call<LoginResponse>('POST', '/admin/session', {
+				op: 'session.mint',
+				body: { username, password }
+			}),
+		setupStatus: () => call<{ unclaimed: boolean }>('GET', '/admin/setup', { op: 'setup.status' }),
 		registerFirstAdmin: (username, password) =>
-			call<LoginResponse>('POST', '/admin/setup/register', { body: { username, password } }),
-		whoami: () => call<Principal>('GET', '/admin/session'),
+			call<LoginResponse>('POST', '/admin/setup/register', {
+				op: 'setup.register',
+				body: { username, password }
+			}),
+		whoami: () => call<Principal>('GET', '/admin/session', { op: 'session.read' }),
 		changePassword: (current, next) =>
-			call<void>('POST', '/admin/session/password', { body: { current, next } }),
-		listUsers: () => call<AdminUserRow[]>('GET', '/admin/users'),
+			call<void>('POST', '/admin/session/password', {
+				op: 'session.password',
+				body: { current, next }
+			}),
+		listUsers: () => call<AdminUserRow[]>('GET', '/admin/users', { op: 'users.list' }),
 		createUser: (username, role) =>
 			call<AdminUserRow & { tempPassword: string }>('POST', '/admin/users', {
+				op: 'users.create',
 				body: { username, role }
 			}),
 		resetUserPassword: (username) =>
 			call<{ tempPassword: string }>(
 				'POST',
 				`/admin/users/${encodeURIComponent(username)}/reset-password`,
-				{ body: {} }
+				{ op: 'users.reset', body: {} }
 			),
 		// DELETE is 204-no-body; call() returns undefined for empty text
-		logout: () => call<void>('DELETE', '/admin/session'),
+		logout: () => call<void>('DELETE', '/admin/session', { op: 'session.logout' }),
 
 		// --- posts (§8) ---
 		listPosts: (o?: PostListOpts) =>
 			call<Paged<PostSummaryAdmin>>('GET', '/admin/posts', {
+				op: 'posts.list',
 				query: q({
 					status: o?.status,
 					tag: o?.tag,
@@ -155,22 +179,32 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 					page: o?.page
 				})
 			}),
-		getPost: (slug) => call<PostDetailAdmin>('GET', `/admin/posts/${encodeURIComponent(slug)}`),
+		getPost: (slug) =>
+			call<PostDetailAdmin>('GET', `/admin/posts/${encodeURIComponent(slug)}`, {
+				op: 'posts.read'
+			}),
 		createPost: (draft: PostDraft) =>
-			call<PostDetailAdmin>('POST', '/admin/posts', { body: draft }),
+			call<PostDetailAdmin>('POST', '/admin/posts', { op: 'posts.create', body: draft }),
 		updatePost: (slug, draft: PostDraft, rev: number) =>
 			call<PostDetailAdmin>('PUT', `/admin/posts/${encodeURIComponent(slug)}`, {
+				op: 'posts.update',
 				body: { draft, rev }
 			}),
 		publishPost: (slug) =>
-			call<PostDetailAdmin>('POST', `/admin/posts/${encodeURIComponent(slug)}/publish`),
+			call<PostDetailAdmin>('POST', `/admin/posts/${encodeURIComponent(slug)}/publish`, {
+				op: 'posts.publish'
+			}),
 		unpublishPost: (slug) =>
-			call<PostDetailAdmin>('POST', `/admin/posts/${encodeURIComponent(slug)}/unpublish`),
-		deletePost: (slug) => call<void>('DELETE', `/admin/posts/${encodeURIComponent(slug)}`),
+			call<PostDetailAdmin>('POST', `/admin/posts/${encodeURIComponent(slug)}/unpublish`, {
+				op: 'posts.unpublish'
+			}),
+		deletePost: (slug) =>
+			call<void>('DELETE', `/admin/posts/${encodeURIComponent(slug)}`, { op: 'posts.delete' }),
 
 		// --- photos (§8 + §5 relay) ---
 		listPhotos: (o?: PhotoListOpts) =>
 			call<Paged<AdminPhoto>>('GET', '/admin/photos', {
+				op: 'photos.list',
 				query: q({
 					collection: o?.collections,
 					q: o?.q,
@@ -199,13 +233,20 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 			const url = new URL(at('/admin/photos'));
 			const requestId = newRequestId();
 			const hop = upstreamFor('/admin/photos');
+			const dep = DEP[hop];
 			let res: Response;
 			try {
-				res = await fetch(url, {
-					method: 'POST',
-					headers: { Authorization: `Bearer ${bearer}`, [REQUEST_ID_HEADER]: requestId },
-					body: form
-				});
+				// COUNTED + BOUNDED like every call: the upload is the ONE slow
+				// op by nature (multi-MB bodies) — it gets the table's 30s
+				// photos.upload budget, everything else rides the dep default
+				res = await outbound(dep, 'photos.upload', (signal) =>
+					fetch(url, {
+						method: 'POST',
+						signal,
+						headers: { Authorization: `Bearer ${bearer}`, [REQUEST_ID_HEADER]: requestId },
+						body: form
+					})
+				);
 			} catch {
 				logAccess(hop, 'POST', '/admin/photos', 'unreachable', requestId);
 				throw new AdminApiError(503, 'lumen unreachable', requestId);
@@ -223,68 +264,90 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 		},
 		updatePhoto: (id, patch: { alt?: string; collection?: string | null; gallery?: boolean }) =>
 			call<AdminPhoto>('PATCH', `/admin/photos/${encodeURIComponent(id)}`, {
+				op: 'photos.update',
 				// collection: null must ship as JSON null (clears the bucket);
 				// undefined fields drop (absent = untouched) — stringify does both
 				body: patch
 			}),
-		getPhoto: (id) => call<AdminPhoto>('GET', `/admin/photos/${encodeURIComponent(id)}`),
+		getPhoto: (id) =>
+			call<AdminPhoto>('GET', `/admin/photos/${encodeURIComponent(id)}`, { op: 'photos.read' }),
 		listPhotoReferences: (id) =>
 			call<{ slug: string; title: string }[]>(
 				'GET',
-				`/admin/photos/${encodeURIComponent(id)}/references`
+				`/admin/photos/${encodeURIComponent(id)}/references`,
+				{ op: 'photos.references' }
 			),
-		deletePhoto: (id) => call<void>('DELETE', `/admin/photos/${encodeURIComponent(id)}`),
+		deletePhoto: (id) =>
+			call<void>('DELETE', `/admin/photos/${encodeURIComponent(id)}`, { op: 'photos.delete' }),
 
 		// --- vocabulary (§8) ---
-		listCollections: () => call<CollectionCount[]>('GET', '/admin/collections'),
+		listCollections: () =>
+			call<CollectionCount[]>('GET', '/admin/collections', { op: 'collections.list' }),
 		createCollection: (name) =>
-			call<CollectionCount>('POST', '/admin/collections', { body: { name } }),
-		listTags: () => call<TagCount[]>('GET', '/admin/tags'),
-		listNewestTags: () => call<TagCount[]>('GET', '/admin/tags', { query: { order: ['newest'] } }),
+			call<CollectionCount>('POST', '/admin/collections', {
+				op: 'collections.create',
+				body: { name }
+			}),
+		listTags: () => call<TagCount[]>('GET', '/admin/tags', { op: 'tags.list' }),
+		listNewestTags: () =>
+			call<TagCount[]>('GET', '/admin/tags', { op: 'tags.newest', query: { order: ['newest'] } }),
 		searchTags: (needle, page, pageSize) =>
 			call<Paged<TagCount>>('GET', '/admin/tags/search', {
+				op: 'tags.search',
 				query: q({ q: needle, page, pageSize })
 			}),
 		bulkFeatureTags: (names, featured) =>
 			call<{ updated: number }>('PATCH', '/admin/tags/bulk', {
+				op: 'tags.bulk',
 				body: { names, featured }
 			}).then((r) => r.updated),
-		createTag: (name) => call<TagCount>('POST', '/admin/tags', { body: { name } }),
+		createTag: (name) =>
+			call<TagCount>('POST', '/admin/tags', { op: 'tags.create', body: { name } }),
 		updateTag: (name, patch) =>
-			call<TagCount>('PATCH', `/admin/tags/${enc(name)}`, { body: patch }),
-		deleteTag: (name) => call<void>('DELETE', `/admin/tags/${enc(name)}`),
+			call<TagCount>('PATCH', `/admin/tags/${enc(name)}`, { op: 'tags.update', body: patch }),
+		deleteTag: (name) => call<void>('DELETE', `/admin/tags/${enc(name)}`, { op: 'tags.delete' }),
 
 		// --- palette content door (§8) ---
-		search: (needle) => call<SearchResults>('GET', '/admin/search', { query: { q: [needle] } }),
+		search: (needle) =>
+			call<SearchResults>('GET', '/admin/search', { op: 'search.query', query: { q: [needle] } }),
 
 		// --- secrets plane (§9) ---
-		listSecretPaths: () => call<SecretPath[]>('GET', '/admin/bao/paths'),
+		listSecretPaths: () => call<SecretPath[]>('GET', '/admin/bao/paths', { op: 'bao.paths' }),
 		readSecret: (app, env, version) =>
 			call<SecretPayload | null>('GET', `/admin/bao/${enc(app)}/${enc(env)}`, {
+				op: 'bao.read',
 				query: version ? { version: [String(version)] } : undefined,
 				nullOn404: true
 			}),
 		secretMeta: (app, env) =>
 			call<SecretMeta | null>('GET', `/admin/bao/${enc(app)}/${enc(env)}`, {
+				op: 'bao.meta',
 				query: { meta: [''] },
 				nullOn404: true
 			}),
 		writeSecret: (app, env, data, cas) =>
 			call<{ version: number }>('PUT', `/admin/bao/${enc(app)}/${enc(env)}`, {
+				op: 'bao.write',
 				body: { data, cas }
 			}).then((r) => r.version),
 		onboardApp: (app, envs) =>
 			call<{ app: string; envs: string[] }>('POST', '/admin/bao/apps', {
+				op: 'bao.onboard',
 				body: envs?.length ? { app, envs } : { app }
 			}),
 		addEnv: (app, env) =>
-			call<{ app: string; env: string }>('POST', `/admin/bao/${enc(app)}/envs`, { body: { env } }),
+			call<{ app: string; env: string }>('POST', `/admin/bao/${enc(app)}/envs`, {
+				op: 'bao.add-env',
+				body: { env }
+			}),
 		pinSecret: (app, env, version) =>
 			call<{ pinnedVersion: number }>('PUT', `/admin/bao/${enc(app)}/${enc(env)}/pin`, {
+				op: 'bao.pin',
 				body: { version }
 			}),
-		unpinSecret: (app, env) => call<void>('DELETE', `/admin/bao/${enc(app)}/${enc(env)}/pin`),
-		estateSummary: () => call<EstateRow[]>('GET', '/admin/bao/summary')
+		unpinSecret: (app, env) =>
+			call<void>('DELETE', `/admin/bao/${enc(app)}/${enc(env)}/pin`, { op: 'bao.unpin' }),
+		estateSummary: () => call<EstateRow[]>('GET', '/admin/bao/summary', { op: 'bao.summary' })
 	};
 }
 

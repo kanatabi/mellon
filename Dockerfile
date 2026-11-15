@@ -26,6 +26,14 @@ COPY --from=build /app/node_modules ./node_modules
 # src/lib/api/routing.ts. Don't bake anything host-specific in here.
 # (The ExternalSecret CR for mellon lands with its vortex manifests, Phase C-infra.)
 COPY --from=build /app/build ./build
-EXPOSE 3000
+# the custom server (2026-11-15): TWO listeners in ONE process — the app
+# on PORT and the UNROUTED /metrics listener on MELLON_METRICS_PORT
+# (default 9090, the no-sidecar contract's scrape door). server.js is
+# adapter-node's documented custom-server path; the metrics registry is
+# plain JS so both the SvelteKit hooks and this server share ONE
+# prom-client register.
+COPY --from=build /app/server.js ./server.js
+COPY --from=build /app/src/lib/server/metrics.js ./src/lib/server/metrics.js
+EXPOSE 3000 9090
 USER node
-CMD ["node", "build"]
+CMD ["node", "server.js"]
