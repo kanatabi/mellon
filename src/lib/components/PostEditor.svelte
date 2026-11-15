@@ -1046,6 +1046,24 @@ flowchart LR
 				oninput={touch}></textarea>
 		</SectionCard>
 		<SectionCard
+			id="preview"
+			reorderable={movable}
+			label="preview"
+			icon={AlignLeft}
+			open={postSections.isOpen('preview')}
+			ontoggle={() => postSections.toggle('preview')}
+			onmove={(d) => postSections.move('preview', d)}
+			order={movable ? postSections.pos('preview') : undefined}
+		>
+			<textarea
+				aria-label="Preview"
+				rows="2"
+				placeholder="defaults to the first paragraph at publish"
+				class="w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-snug outline-none hover:border-border focus-visible:border-brand"
+				bind:value={draft.preview}
+				oninput={touch}></textarea>
+		</SectionCard>
+		<SectionCard
 			id="slug"
 			reorderable={movable}
 			label="slug"
