@@ -1,5 +1,5 @@
 import { createApi } from '#lib/api/index.ts';
-import { SESSION_COOKIE } from '#lib/session.ts';
+import { SESSION_COOKIE, requireAuthed } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -7,6 +7,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // Filtering/sorting is RELAYED to the API (doctrine #1: the UI never sorts or
 // filters payloads itself) — these params map 1:1 onto PostListOpts.
 export const load: PageServerLoad = async ({ url, cookies }) => {
+	// the cheap gate first: a dead session never dials lumen (the
+	// layout's redirect runs in parallel and cannot stop these fetches)
+	const bearer = requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const sp = url.searchParams;
 	const status = sp.get('status');
 	const sortRaw = sp.get('sort');

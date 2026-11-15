@@ -1,3 +1,5 @@
+import { redirect } from '@sveltejs/kit';
+
 /**
  * Session plumbing. REAL sessions are minted by lumen (Phase B) — in mock mode
  * mellon issues its own opaque token so the full auth flow is exercisable now.
@@ -31,6 +33,27 @@ export interface RecentEntry {
 
 export function isAuthed(cookieValue: string | undefined): boolean {
 	return typeof cookieValue === 'string' && cookieValue.length > 0;
+}
+
+/**
+ * The cheap page-load gate (2026-11-15): a LOCAL cookie check — no lumen
+ * dial — at the top of every (app) page load that dials lumen. WHY it
+ * exists: SvelteKit runs layout and page loads in PARALLEL, so the
+ * layout's redirect does not stop a page load's fetches — the kubelet's
+ * probe on `/` (unauthenticated, every 20s) fired four 401s at lumen per
+ * probe, forever (observed live in production's logs). The layout stays
+ * the REAL auth (whoami per request, cookie-clear on 401); this gate just
+ * keeps dead sessions from dialing before the redirect lands.
+ *
+ * @param {string | undefined} cookieValue
+ * @param {URL} url
+ * @returns {string} the bearer — the page load continues with it
+ */
+export function requireAuthed(cookieValue: string | undefined, url: URL): string {
+	if (!isAuthed(cookieValue)) {
+		redirect(303, `/login?next=${encodeURIComponent(url.pathname)}`);
+	}
+	return cookieValue as string;
 }
 
 /** Non-httpOnly preference cookies the browser may write (settings action and

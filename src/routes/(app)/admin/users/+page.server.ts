@@ -1,12 +1,15 @@
 import { redirect } from '@sveltejs/kit';
 import { AdminApiError } from '#lib/api/index.ts';
 import { createApi } from '#lib/api/index.ts';
-import { SESSION_COOKIE } from '#lib/session.ts';
+import { SESSION_COOKIE, requireAuthed } from '#lib/session.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 // Admin-eyes-only (lumen enforces 403 on every /admin/users path; this guard
 // is courtesy, not security — the honest order of those two).
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, url }) => {
+	// the cheap gate first: a dead session never dials lumen (the
+	// layout's redirect runs in parallel and cannot stop these fetches)
+	const bearer = requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const principal = await createApi(cookies.get(SESSION_COOKIE) ?? '').whoami();
 	if (principal.role !== 'admin') redirect(307, '/settings');
 	return { users: await createApi(cookies.get(SESSION_COOKIE) ?? '').listUsers() };
