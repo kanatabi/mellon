@@ -8,7 +8,7 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ cookies, url }) => {
 	// the cheap gate first: a dead session never dials lumen (the
 	// layout's redirect runs in parallel and cannot stop these fetches)
-	const bearer = requireAuthed(cookies.get(SESSION_COOKIE), url);
+	requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const [tags, photos] = await Promise.all([api.listTags(), api.listPhotos()]);
 	return { tags, photos: photos.items };

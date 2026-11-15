@@ -9,7 +9,7 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ cookies, url }) => {
 	// the cheap gate first: a dead session never dials lumen (the
 	// layout's redirect runs in parallel and cannot stop these fetches)
-	const bearer = requireAuthed(cookies.get(SESSION_COOKIE), url);
+	requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const principal = await createApi(cookies.get(SESSION_COOKIE) ?? '').whoami();
 	if (principal.role !== 'admin') redirect(307, '/settings');
 	return { users: await createApi(cookies.get(SESSION_COOKIE) ?? '').listUsers() };
