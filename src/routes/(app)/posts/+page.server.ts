@@ -9,7 +9,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const load: PageServerLoad = async ({ url, cookies }) => {
 	// the cheap gate first: a dead session never dials lumen (the
 	// layout's redirect runs in parallel and cannot stop these fetches)
-	const bearer = requireAuthed(cookies.get(SESSION_COOKIE), url);
+	requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const sp = url.searchParams;
 	const status = sp.get('status');
 	const sortRaw = sp.get('sort');
