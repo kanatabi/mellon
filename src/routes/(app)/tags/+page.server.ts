@@ -1,5 +1,5 @@
 import { createApi } from '#lib/api/index.ts';
-import { SESSION_COOKIE } from '#lib/session.ts';
+import { requireAuthed, SESSION_COOKIE } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 /** 25 rows per page — display trim in browse mode, the engine's page size
@@ -7,6 +7,9 @@ import type { PageServerLoad } from './$types';
 const PAGE_SIZE = 25;
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
+	// the cheap gate first: a dead session never dials lumen (the
+	// layout's redirect runs in parallel and cannot stop these fetches)
+	requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const q = (url.searchParams.get('q') ?? '').trim();
 	const page = Math.max(1, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1);
