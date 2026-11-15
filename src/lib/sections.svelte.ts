@@ -97,7 +97,7 @@ export class SectionSet {
 
 export const postSections = new SectionSet(
 	'post',
-	['title', 'subtitle', 'slug', 'date', 'tags', 'media', 'export', 'timeline'],
+	['title', 'subtitle', 'preview', 'slug', 'date', 'tags', 'media', 'export', 'timeline'],
 	'actions'
 );
 export const deskSections = new SectionSet('desk', ['sort', 'dates', 'tags']);
