@@ -20,7 +20,8 @@
  * itself holds nothing.
  */
 import { AdminApiError } from './types.ts';
-import { baseFor } from './routing.ts';
+import { REQUEST_ID_HEADER, newRequestId, echoedRequestId, logAccess } from './requestid.ts';
+import { baseFor, upstreamFor } from './routing.ts';
 import type {
 	AdminUserRow,
 	LoginResponse,
@@ -68,6 +69,11 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 		path: string,
 		opts: { query?: Record<string, string[]>; body?: unknown; nullOn404?: boolean } = {}
 	): Promise<T> {
+		// the correlation seam (2026-11-15): mint → send → the access line.
+		// The id rides EVERY call; failures log with it, and the echo lands in
+		// the thrown error — one grep chains the portal hop to lumen's logs.
+		const requestId = newRequestId();
+		const hop = upstreamFor(path);
 		const url = new URL(at(path));
 		for (const [k, vs] of Object.entries(opts.query ?? {}))
 			for (const v of vs) url.searchParams.append(k, v);
@@ -76,6 +82,7 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 			res = await fetch(url, {
 				method,
 				headers: {
+					[REQUEST_ID_HEADER]: requestId,
 					...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
 					...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {})
 				},
@@ -84,8 +91,10 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 		} catch {
 			// lumen unreachable is a 503 story, never a fake success and never
 			// a 401 (an outage must not clear good session cookies)
-			throw new AdminApiError(503, 'lumen unreachable');
+			logAccess(hop, method, path, 'unreachable', requestId);
+			throw new AdminApiError(503, 'lumen unreachable', requestId);
 		}
+		logAccess(hop, method, path, res.status, echoedRequestId(res, requestId));
 		if (res.status === 404 && opts.nullOn404) return null as T;
 		const text = await res.text();
 		if (!res.ok) {
@@ -96,7 +105,7 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 			} catch {
 				/* non-JSON error body: status line is the message */
 			}
-			throw new AdminApiError(res.status, message);
+			throw new AdminApiError(res.status, message, echoedRequestId(res, requestId));
 		}
 		return (text ? JSON.parse(text) : undefined) as T;
 	}
@@ -188,18 +197,28 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				/\.(png|jpe?g|gif|webp)$/i.test(p.name) ? p.name : `${p.name}.${ext}`
 			);
 			const url = new URL(at('/admin/photos'));
+			const requestId = newRequestId();
+			const hop = upstreamFor('/admin/photos');
 			let res: Response;
 			try {
 				res = await fetch(url, {
 					method: 'POST',
-					headers: { Authorization: `Bearer ${bearer}` },
+					headers: { Authorization: `Bearer ${bearer}`, [REQUEST_ID_HEADER]: requestId },
 					body: form
 				});
 			} catch {
-				throw new AdminApiError(503, 'lumen unreachable');
+				logAccess(hop, 'POST', '/admin/photos', 'unreachable', requestId);
+				throw new AdminApiError(503, 'lumen unreachable', requestId);
 			}
+			logAccess(hop, 'POST', '/admin/photos', res.status, echoedRequestId(res, requestId));
 			const text = await res.text();
-			if (!res.ok) throw new AdminApiError(res.status, safeError(text, `HTTP ${res.status}`));
+			if (!res.ok) {
+				throw new AdminApiError(
+					res.status,
+					safeError(text, `HTTP ${res.status}`),
+					echoedRequestId(res, requestId)
+				);
+			}
 			return JSON.parse(text) as AdminPhoto;
 		},
 		updatePhoto: (id, patch: { alt?: string; collection?: string | null; gallery?: boolean }) =>
