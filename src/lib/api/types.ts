@@ -187,7 +187,12 @@ export interface SearchResults {
 export class AdminApiError extends Error {
 	constructor(
 		readonly status: number,
-		message: string
+		message: string,
+		/** The chain's id (2026-11-15): the minted one, or lumen's echo when it
+		 * answered — the same id both services' logs print. Never rendered in
+		 * UI copy (ghost-field doctrine: the wire message renders verbatim);
+		 * it rides for logs and support escalation. */
+		readonly requestId?: string
 	) {
 		super(message);
 		this.name = 'AdminApiError';
