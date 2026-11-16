@@ -235,10 +235,10 @@
 		<!-- The brand owns the header row; the collapse toggle lives at the
 		     footer's end in BOTH states (owner call 2026-11-16, current-GitLab
 		     grammar) — one toggle, one place, never competing with the brand. -->
-		<div class="flex h-14 items-center lg:w-full">
+		<div class="flex h-14 items-center lg:w-full {navRail.collapsed ? 'justify-center' : ''}">
 			<a
 				href="/"
-				class="font-brand text-2xl font-semibold tracking-tight"
+				class="font-brand text-2xl leading-none font-semibold tracking-tight"
 				aria-label="mellon dashboard"
 			>
 				{#if navRail.collapsed}
@@ -259,7 +259,9 @@
 					type="button"
 					onclick={navRail.toggle}
 					aria-label={navRail.collapsed ? 'Expand navigation' : 'Collapse navigation'}
-					class="flex w-full items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+					class="flex items-center gap-3 overflow-hidden rounded-md py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground {navRail.collapsed
+						? 'mx-auto w-9 justify-center px-0'
+						: 'w-full px-3'}"
 				>
 					{#if navRail.collapsed}
 						<PanelLeftOpen class="size-4 shrink-0" />
@@ -268,8 +270,8 @@
 					{/if}
 					<span
 						class="whitespace-nowrap transition-opacity duration-150 {navRail.collapsed
-							? 'opacity-0'
-							: 'opacity-100'}"
+							? 'hidden'
+							: ''}"
 					>
 						Collapse sidebar
 					</span>
@@ -354,10 +356,12 @@
 		<!-- The content box (GitLab surface grammar, owner call 2026-11-16):
 		     the chrome is ONE mass behind everything; the box is the only
 		     surface that draws an edge — rounded, bordered, inset on
-		     top/left/right, flush at the bottom. It stays the scroll
-		     container, so sticky children keep working. -->
+		     all four sides (owner call 2026-11-17 — the flush-bottom mimic is
+		     superseded: a 12px chrome ring everywhere, and the box's bottom
+		     rounding is actually visible). It stays the scroll container, so
+		     sticky children keep working. -->
 		<main
-			class="mx-3 mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6"
+			class="m-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6"
 		>
 			{@render children()}
 		</main>
@@ -415,10 +419,10 @@
 		<div class="flex flex-col gap-1">
 			<p
 				class={rail
-					? `hidden overflow-hidden text-xs font-medium tracking-widest text-muted-foreground uppercase transition-opacity duration-150 lg:block ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+					? `hidden text-xs font-medium tracking-widest text-muted-foreground uppercase ${navRail.collapsed ? '' : 'lg:block'}`
 					: 'text-xs font-medium tracking-widest text-muted-foreground uppercase'}
 			>
-				{rail && navRail.collapsed ? '\u00A0' : group.label}
+				{group.label}
 			</p>
 			<div class={rail ? 'flex gap-1 lg:flex-col' : 'flex flex-col gap-1'}>
 				{#each group.items as item (item.href)}
@@ -438,7 +442,7 @@
 								: undefined}
 							class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {rail
 								? 'overflow-hidden '
-								: ''}{current
+								: ''}{rail && navRail.collapsed ? 'mx-auto w-9 justify-center px-0' : ''}{current
 								? 'font-medium text-foreground'
 								: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
 						>
@@ -448,7 +452,7 @@
 							/>
 							<span
 								class={rail
-									? `hidden whitespace-nowrap transition-opacity duration-150 lg:inline ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+									? `hidden whitespace-nowrap ${navRail.collapsed ? '' : 'lg:inline'}`
 									: ''}
 							>
 								{item.label}

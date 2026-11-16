@@ -359,7 +359,7 @@ tool, a different posture. Every rule below serves that sentence.
 │              │ ╭──────────────────────────────╮ │   the box is the only
 │  content     │ │  content: tables/forms/editor │ │   surface that draws
 │  groups      │ ╰──────────────────────────────╯ │   an edge (rounded,
-│              │        (scrolls internally)      │   inset, flush bottom)
+│              │        (scrolls internally)      │   inset on all sides)
 │ collapse ⌄   └──────────────────────────────────┘
 └─────────────────────────────────────────────────────┘
         ⓘ = the account avatar (identity · settings · theme · sign out)
@@ -370,9 +370,21 @@ left nav + topbar + the margin ring around content — is ONE continuous `--chro
 mass; the shell never draws a line inside itself (the nav's `border-r` and the
 topbar's `border-b` are gone). The **content box** is the only surface that draws an
 edge: `rounded-2xl`, `border-border`, `bg-background` (the content color is
-unchanged — the box is geometry, not a new tone), inset top/left/right, flush at the
-bottom, and it REMAINS the scroll container (sticky children keep working). Below
-`lg` the box keeps the grammar with tighter gutters.
+unchanged — the box is geometry, not a new tone), and it REMAINS the scroll
+container (sticky children keep working). **Inset on all four sides**
+(owner amendment 2026-11-17: `m-3` supersedes the flush-bottom mimic — the
+first screenshots that inspired it clipped the box's bottom rounding
+off-screen; the ring now reads on every edge, desktop included). Below `lg`
+the box keeps the grammar with the same 12px ring and tighter gutters.
+
+**The collapsed rail is a centered icon column** (owner call 2026-11-17):
+each collapsed row is a 36px square centered in the rail (`mx-auto w-9
+justify-center px-0`) — icon dead-center, hover/active wash a centered square
+around it, equal left/right gaps BY CONSTRUCTION (the old full-width anchor
+sat the icon 24px from the left edge with ~28px dead space right). Labels
+leave the layout when collapsed (`display` owned by one ternary — never two
+competing `lg:` display classes); group headers and the `m;` mark center
+too; the footer's collapse toggle is the same square.
 
 **Dropdowns are themed, not stock** (owner call 2026-11-16): a native `<select>`
 renders the OS's own popup — off-theme by construction. The house `Select`
