@@ -350,36 +350,57 @@ tool, a different posture. Every rule below serves that sentence.
 ### 11.1 The shell
 
 ```
-┌──────────┬──────────────────────────────────────────┐
-│          │  topbar (56px): breadcrumb · ⌘K · actions│
-│ left nav ├──────────────────────────────────────────┤
-│ 240px    │                                          │
-│          │   content: tables / forms / editor       │
-│ ──────── │                                          │
-│ theme    │                                          │
-│ session  │                                          │
-└──────────┴──────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│ left nav      topbar (56px): breadcrumb · ⌘K · ⓘ    │   one chrome mass —
+│ 240px        ┌──────────────────────────────────┐   no border between them;
+│              │ ╭──────────────────────────────╮ │   the box is the only
+│  content     │ │  content: tables/forms/editor │ │   surface that draws
+│  groups      │ ╰──────────────────────────────╯ │   an edge (rounded,
+│              │        (scrolls internally)      │   inset, flush bottom)
+│ collapse ⌄   └──────────────────────────────────┘
+└─────────────────────────────────────────────────────┘
+        ⓘ = the account avatar (identity · settings · theme · sign out)
 ```
 
-- **Left nav**: grouped sections — `content` (posts · photos · tags), `ops` (secrets; the
-  future infra tab joins here). Section labels are the blog's `CardTitle` voice: mono,
-  uppercase, `text-xs tracking-widest`. At `lg+` a persistent rail (collapsible to
-  icons); **below `lg` the strip is gone — a hamburger in the topbar slides the same
-  menu in as a left drawer** (X/Esc/backdrop dismiss, closes on navigation). The
-  rail's base carries the **end session** row (owner call 2026-11-08): nav-row grammar —
-  hairline separator, `LogOut` icon + label, danger tint ON HOVER ONLY (logout is the
-  last thing you take, not the loudest) — and when the rail collapses the ICON STAYS
-  VISIBLE with an `aria-label`: the old fade-to-`opacity-0` shipped an invisible
-  focusable button in the tab order, an a11y trap wearing a style bug. One
-  `navFooter(rail)` snippet serves rail, collapsed strip and drawer alike.
+**The surface model (owner amendment 2026-11-16, the GitLab grammar):** the chrome —
+left nav + topbar + the margin ring around content — is ONE continuous `--chrome`
+mass; the shell never draws a line inside itself (the nav's `border-r` and the
+topbar's `border-b` are gone). The **content box** is the only surface that draws an
+edge: `rounded-2xl`, `border-border`, `bg-background` (the content color is
+unchanged — the box is geometry, not a new tone), inset top/left/right, flush at the
+bottom, and it REMAINS the scroll container (sticky children keep working). Below
+`lg` the box keeps the grammar with tighter gutters.
+
+- **Left nav**: grouped sections — Content (dashboard · posts · photos · tags),
+  Control plane (configs · vault · compare), Admin (users, admins only). Section
+  labels are mono, uppercase, `text-xs tracking-widest`, one hue per destination
+  (§11.3). At `lg+` a persistent rail (collapsible to icons); **below `lg` the strip
+  is gone — a hamburger in the topbar slides the same menu in as a left drawer**
+  (X/Esc/backdrop dismiss, closes on navigation). The drawer is wayfinding only —
+  identity, Settings, theme and sign-out live in the account menu (§11.1 top bar).
+  **The rail's footer carries exactly one row: the collapse toggle** (owner call
+  2026-11-16, current-GitLab grammar) — a labeled nav-row ("Collapse sidebar") when
+  expanded, icon + tooltip ("Expand sidebar") when collapsed, same slot in both
+  states; the brand owns the header row alone. Collapsed rail icons get CSS tooltips
+  on hover AND focus-visible — `aria-label`s stay regardless (the a11y-trap lesson:
+  nothing fades into an unfocusable blank).
 - **Top bar**: a three-zone flow grid — context left (hamburger below `lg`, then the
   breadcrumb, truncating BEFORE the middle zone), the **⌘K affordance centered** (a
   VS Code/Raycast convention — the shell _advertises_ the keyboard-first promise
-  rather than burying it; it reserves its space, never floats over content), page
-  actions right. The palette itself is global chrome, rendered from the §7 command
-  registry.
-- **Content area**: full-bleed; forms constrained to their measure (max ~72ch), lists
-  allowed the width.
+  rather than burying it; it reserves its space, never floats over content), and
+  right: the **account avatar** (owner amendment 2026-11-16 — the identity dot left
+  the sidebar footer, where it was `size-4`-small, for a proper `size-9` trigger).
+  Clicking it opens the **account menu** (GitHub grammar): the account card
+  (avatar + username + role), then Settings, then the theme control — the SAME
+  `ThemeSegmented` radiogroup the Settings page uses (one control, two homes) —
+  then Sign out (the same `POST /logout` the old footer row carried; the session
+  revocation is lumen's truth, only its address moved). Esc / click-outside close,
+  focus returns to the trigger, every row a real button or link. The old icon
+  ThemeToggle left the top bar with it: theme lives in the menu, Settings and the
+  palette's ⌘K command. On phones the avatar rides the same top-bar slot, so the
+  trade is one tap deeper for theme — accepted (owner, 2026-11-16).
+- **Content area**: the rounded box of the surface model; forms constrained to
+  their measure (max ~72ch), lists allowed the width.
 
 ### 11.2 Type & voice
 
@@ -530,9 +551,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
 - **Settings**: max-width form, same voice (owner call 2026-11-08: the theme became an
   ACTUAL setting — an **appearance** segment `[☀ light | ☾ dark]` above the editor group,
   radiogroup semantics, writing through the ONE `setTheme()` (store + cookie + View
-  Transition) that the topbar toggle and the palette command share; three doors, zero
-  forked logic. The stale "theme follows the toggle in the top bar" footnote died with it
-  — a control with documentation pretending to be a setting was the bug).
+  Transition) that the account menu and the palette command share; three doors, zero
+  forked logic — the segment itself is the shared `ThemeSegmented` component,
+  2026-11-16). The stale "theme follows the toggle in the top bar" footnote died with
+  it — a control with documentation pretending to be a setting was the bug).
 - **Login**: the brand moment — centered gate, the sanctioned aura radial behind
   it (§11.3), theme toggle reachable in the corner. Nothing else on the screen
   competes.
@@ -547,9 +569,10 @@ instrument, not an article. If either half fails, the page is not done.
 
 Three nav sections — Content (editorial), **Control Plane** (Configs landing =
 summary matrix · Vault = the value cockpit · Compare; future GitOps features
-land here), Admin (Users, role-gated and reactive). Settings + identity
-(username · role) + End session form the footer story: the account lives
-where the account is managed. Sentence case across all rendered chrome
+land here), Admin (Users, role-gated and reactive). The account story moved
+2026-11-16 (owner): the sidebar footer keeps ONLY the collapse toggle —
+identity, Settings, theme and End session live in the top bar's account
+avatar menu (§11.1). Sentence case across all rendered chrome
 (one-word labels Title, mid-sentence wraps untouched); 'mellon' stays
 lowercase — it is the mark, not a sentence. Password changes run through ONE
 server flow (performPasswordChange: change → revoke → re-mint) behind two

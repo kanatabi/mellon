@@ -10,18 +10,16 @@
 		GitCompareArrows,
 		LayoutGrid,
 		KeyRound,
-		LogOut,
 		Menu,
 		PanelLeftClose,
 		PanelLeftOpen,
 		Search,
-		Settings,
 		Tag,
 		Users,
 		X
 	} from 'lucide-svelte';
 	import Palette from '#lib/components/Palette.svelte';
-	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
+	import UserMenu from '#lib/components/UserMenu.svelte';
 	import { focusOnMount } from '#lib/actions.ts';
 	import { invalidateAll } from '$app/navigation';
 	import { navRail } from '#lib/rails.svelte.ts';
@@ -223,18 +221,21 @@
 	const crumb = $derived(page.url.pathname.split('/').filter(Boolean).slice(0, 2));
 </script>
 
-<div class="flex h-svh flex-col overflow-hidden lg:flex-row">
+<div class="flex h-svh flex-col overflow-hidden bg-chrome lg:flex-row">
 	<div class="route-progress" data-phase={barState} aria-hidden="true"></div>
 	<!-- Left nav: column at lg, top strip below. Folds to an icon rail (item
 	     #6) — the width transition is GPU-cheap on this small layer, and the
 	     labels fade rather than snap. -->
 	<nav
 		aria-label="Portal navigation"
-		class="hidden gap-6 border-border bg-chrome px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:border-r lg:px-3 lg:pt-4 {navRail.collapsed
+		class="hidden gap-6 bg-chrome px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:px-3 lg:pt-4 {navRail.collapsed
 			? 'lg:w-[4.25rem]'
 			: 'lg:w-60'}"
 	>
-		<div class="flex items-center justify-between lg:w-full">
+		<!-- The brand owns the header row; the collapse toggle lives at the
+		     footer's end in BOTH states (owner call 2026-11-16, current-GitLab
+		     grammar) — one toggle, one place, never competing with the brand. -->
+		<div class="flex items-center lg:w-full">
 			<a
 				href="/"
 				class="font-brand text-2xl font-semibold tracking-tight"
@@ -247,22 +248,41 @@
 					mellon<span class="text-brand">;</span>
 				{/if}
 			</a>
-			<button
-				type="button"
-				onclick={navRail.toggle}
-				aria-label={navRail.collapsed ? 'Expand navigation' : 'Collapse navigation'}
-				class="hidden rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground lg:block"
-			>
-				{#if navRail.collapsed}
-					<PanelLeftOpen class="size-4" />
-				{:else}
-					<PanelLeftClose class="size-4" />
-				{/if}
-			</button>
 		</div>
 		{@render navItems(true)}
 		<div class="flex flex-1 flex-col justify-end pb-6">
-			{@render navFooter(true)}
+			<!-- The collapse toggle: the footer's last row in BOTH states —
+			     labeled nav-row when expanded, icon + tooltip when collapsed.
+			     Same focus/hover contract as every rail row. -->
+			<div class="group/tip relative">
+				<button
+					type="button"
+					onclick={navRail.toggle}
+					aria-label={navRail.collapsed ? 'Expand navigation' : 'Collapse navigation'}
+					class="flex w-full items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+				>
+					{#if navRail.collapsed}
+						<PanelLeftOpen class="size-4 shrink-0" />
+					{:else}
+						<PanelLeftClose class="size-4 shrink-0" />
+					{/if}
+					<span
+						class="whitespace-nowrap transition-opacity duration-150 {navRail.collapsed
+							? 'opacity-0'
+							: 'opacity-100'}"
+					>
+						Collapse sidebar
+					</span>
+				</button>
+				{#if navRail.collapsed}
+					<span
+						aria-hidden="true"
+						class="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-xs whitespace-nowrap shadow-md transition-opacity duration-150 group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
+					>
+						Expand sidebar
+					</span>
+				{/if}
+			</div>
 		</div>
 	</nav>
 
@@ -272,7 +292,7 @@
 		     iPad shot caught: absolute centering doesn't truncate siblings).
 		     Below lg the left zone gains the hamburger that summons the drawer. -->
 		<header
-			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border bg-chrome px-4 lg:px-6"
+			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 bg-chrome px-4 lg:px-6"
 		>
 			<div class="col-start-1 flex min-w-0 items-center gap-1.5">
 				<button
@@ -316,7 +336,7 @@
 			</button>
 			<div class="col-start-3 flex items-center gap-2 justify-self-end">
 				<!-- Phones: the palette door the ⌘K pill is on desktop — same
-				     round-key language as the theme toggle. -->
+				     round-key language as the account avatar. -->
 				<button
 					type="button"
 					onclick={openPalette}
@@ -325,11 +345,20 @@
 				>
 					<Search class="size-4" />
 				</button>
-				<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
+				{#if data.principal}
+					<UserMenu principal={data.principal} />
+				{/if}
 			</div>
 		</header>
 
-		<main class="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+		<!-- The content box (GitLab surface grammar, owner call 2026-11-16):
+		     the chrome is ONE mass behind everything; the box is the only
+		     surface that draws an edge — rounded, bordered, inset on
+		     top/left/right, flush at the bottom. It stays the scroll
+		     container, so sticky children keep working. -->
+		<main
+			class="mx-2 mt-2 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 sm:mx-3 sm:mt-3 sm:px-6"
+		>
 			{@render children()}
 		</main>
 	</div>
@@ -369,7 +398,6 @@
 			</button>
 		</div>
 		{@render navItems(false)}
-		{@render navFooter(false)}
 	</div>
 {/if}
 
@@ -396,101 +424,47 @@
 				{#each group.items as item (item.href)}
 					{@const Icon = item.icon}
 					{@const current = activeHref === item.href}
-					<a
-						href={item.href}
-						aria-label={item.label}
-						aria-current={current ? 'page' : undefined}
-						style={current
-							? `background: color-mix(in oklab, ${item.hue} 14%, transparent)`
-							: undefined}
-						class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {rail
-							? 'overflow-hidden '
-							: ''}{current
-							? 'font-medium text-foreground'
-							: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
-					>
-						<Icon
-							class="size-4 shrink-0"
-							style={`color: ${item.hue}; opacity: ${current ? 1 : 0.72}`}
-						/>
-						<span
-							class={rail
-								? `hidden whitespace-nowrap transition-opacity duration-150 lg:inline ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
-								: ''}
+					<!-- The wrapper (not the anchor) anchors the tooltip: the
+					     anchor's overflow-hidden clips the fading label, so the
+					     tip must be a sibling to escape it. Hover AND keyboard
+					     focus — the collapsed rail is never nameless. -->
+					<div class={rail ? 'group/tip relative' : ''}>
+						<a
+							href={item.href}
+							aria-label={item.label}
+							aria-current={current ? 'page' : undefined}
+							style={current
+								? `background: color-mix(in oklab, ${item.hue} 14%, transparent)`
+								: undefined}
+							class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {rail
+								? 'overflow-hidden '
+								: ''}{current
+								? 'font-medium text-foreground'
+								: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
 						>
-							{item.label}
-						</span>
-					</a>
+							<Icon
+								class="size-4 shrink-0"
+								style={`color: ${item.hue}; opacity: ${current ? 1 : 0.72}`}
+							/>
+							<span
+								class={rail
+									? `hidden whitespace-nowrap transition-opacity duration-150 lg:inline ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
+									: ''}
+							>
+								{item.label}
+							</span>
+						</a>
+						{#if rail && navRail.collapsed}
+							<span
+								aria-hidden="true"
+								class="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-xs whitespace-nowrap shadow-md transition-opacity duration-150 group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
+							>
+								{item.label}
+							</span>
+						{/if}
+					</div>
 				{/each}
 			</div>
 		</div>
 	{/each}
-{/snippet}
-
-<!-- End-session: nav-row grammar, danger only on hover (logout is the last
-     thing you take, not the loudest). rail=true keeps the collapse fade on
-     the label but the icon ALWAYS stays visible — the old opacity-0 label
-     left a focusable invisible button in the tab order (trap, fixed). -->
-{#snippet navFooter(rail: boolean)}
-	<!-- The account block: who you are, what you can set, how you leave —
-	     one story at the foot of the nav (identity above Settings because the
-	     settings you're about to change are THIS user's). -->
-	<div class={rail ? '' : 'mt-auto'}>
-		<div class="mx-3 mb-1 border-t border-border/70" aria-hidden="true"></div>
-		{#if data.principal}
-			<div class="flex items-center gap-3 px-3 pb-1 text-xs">
-				<span
-					class="grid size-4 shrink-0 place-items-center rounded-full bg-brand/15 font-mono text-[9px] font-bold text-brand uppercase"
-					aria-hidden="true">{data.principal.username.slice(0, 1)}</span
-				>
-				<span
-					class={rail
-						? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
-						: ''}
-				>
-					<span class="font-medium text-foreground/90">{data.principal.username}</span>
-					<span class="ml-1.5 font-mono text-[10px] tracking-wide text-muted-foreground uppercase"
-						>{data.principal.role}</span
-					>
-				</span>
-			</div>
-		{/if}
-		<a
-			href="/settings"
-			aria-label="Settings"
-			aria-current={page.url.pathname.startsWith('/settings') ? 'page' : undefined}
-			class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {page.url.pathname.startsWith(
-				'/settings'
-			)
-				? 'bg-accent font-medium text-foreground'
-				: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'} {rail
-				? 'overflow-hidden'
-				: ''}"
-		>
-			<Settings class="size-4 shrink-0" style="color: var(--accent-slate); opacity: 0.85" />
-			<span
-				class={rail
-					? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
-					: ''}
-			>
-				Settings
-			</span>
-		</a>
-		<form method="POST" action="/logout">
-			<button
-				type="submit"
-				aria-label="End session"
-				class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
-			>
-				<LogOut class="size-4 shrink-0" />
-				<span
-					class={rail
-						? `whitespace-nowrap transition-opacity duration-150 ${navRail.collapsed ? 'lg:opacity-0' : 'lg:opacity-100'}`
-						: ''}
-				>
-					End session
-				</span>
-			</button>
-		</form>
-	</div>
 {/snippet}
