@@ -8,7 +8,7 @@
 </script>
 
 <div
-	class="flex shrink-0 gap-1 rounded-full border border-border bg-card p-1"
+	class="flex w-fit shrink-0 gap-1 rounded-full border border-border bg-card p-1"
 	role="radiogroup"
 	aria-label="Theme"
 >

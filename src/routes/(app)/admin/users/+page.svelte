@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { UserPlus, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
+	import Select from '#lib/components/Select.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -9,6 +10,11 @@
 	}
 
 	let { data, form }: Props = $props();
+
+	// the role picker rides the form POST via Select's hidden input — the
+	// action's formData.get('role') reads the same field as the native
+	// select it replaced (the wire is untouched)
+	let newRole = $state('editor');
 
 	// the one-time truth: temps exist in THIS render only — navigating away
 	// (or any next action) drops them, exactly like lumen's response does.
@@ -129,13 +135,18 @@
 			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
 				>role</span
 			>
-			<select
+			<Select
+				items={[
+					{ value: 'editor', label: 'editor' },
+					{ value: 'admin', label: 'admin' }
+				]}
+				value={newRole}
+				onchange={(role) => (newRole = role)}
+				ariaLabel="Role"
 				name="role"
-				class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-			>
-				<option value="editor">editor</option>
-				<option value="admin">admin</option>
-			</select>
+				size="md"
+				popWidth={160}
+			/>
 		</label>
 		<button
 			type="submit"

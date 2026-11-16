@@ -203,6 +203,9 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   result always opens `/photos/[id]`: one destination, no context-magic (the one
   exception is the declared INSERT task below — declared intent, never inferred context).
   A TAG result enters `/posts?tag=<name>`: a filter axis, not a page.
+  **Content rows wear their kind** (owner call, 2026-11-16): in content mode every
+  result carries a type pill — `posts` / `photos` / `tags` — colored by the wayfinding
+  cast (§11.3), so the palette echoes the nav's one-hue-one-destination rule.
 - **Mode grammar** (owner call, 2026-11-08): the palette also knows WHERE to look.
   A position-0 prefix + space commits a MODE, rendered as a pill inside the search row —
   the sigil characters are CONSUMED (mode is explicit state, never re-parsed text, so a
@@ -370,6 +373,15 @@ edge: `rounded-2xl`, `border-border`, `bg-background` (the content color is
 unchanged — the box is geometry, not a new tone), inset top/left/right, flush at the
 bottom, and it REMAINS the scroll container (sticky children keep working). Below
 `lg` the box keeps the grammar with tighter gutters.
+
+**Dropdowns are themed, not stock** (owner call 2026-11-16): a native `<select>`
+renders the OS's own popup — off-theme by construction. The house `Select`
+(trigger + fixed-anchored popover: the Combobox's viewport-fit grammar without
+the search box — these are small fixed lists) replaced every native select: the
+vault app picker, compare's four (app / env / from / to — long version labels
+show whole in the list, truncated on the trigger), and the users-page role
+field, which rides the form POST through a hidden input. The keyboard contract
+holds: arrows rove, Enter selects, Esc closes, focus returns to the trigger.
 
 - **Left nav**: grouped sections — Content (dashboard · posts · photos · tags),
   Control plane (configs · vault · compare), Admin (users, admins only). Section

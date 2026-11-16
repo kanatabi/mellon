@@ -199,6 +199,25 @@
 		);
 	});
 
+	// Content-mode pills (owner call 2026-11-16): content rows name their
+	// kind, colored by the wayfinding cast (§11.3) — the palette echoes the
+	// nav. Inline styles: Tailwind cannot generate dynamic color names (the
+	// literal-scan lesson, again).
+	const GROUP_HUE: Partial<Record<Cmd['group'], string>> = {
+		posts: 'var(--accent-blue)',
+		photos: 'var(--accent-teal)',
+		tags: 'var(--accent-slate)'
+	};
+
+	/** The pill's inline style — cast hue at 12% wash, 30% edge (the nav-row
+	 *  wash grammar). Empty string for non-content groups: in content mode
+	 *  they never render (the mode gate filters groups). */
+	function groupPillStyle(group: Cmd['group']): string {
+		const hue = GROUP_HUE[group];
+		if (!hue) return '';
+		return `color: ${hue}; background: color-mix(in oklab, ${hue} 12%, transparent); border-color: color-mix(in oklab, ${hue} 30%, transparent)`;
+	}
+
 	const placeholder = $derived(
 		mode === 'edit'
 			? armed?.editKind === 'date'
@@ -485,7 +504,18 @@
 							{/if}
 							{cmd.title}
 						</span>
-						{#if cmd.shortcut}
+						{#if mode === 'content' && GROUP_HUE[cmd.group]}
+							<!-- content-mode pill (owner call 2026-11-16): every content row
+							     names its kind, colored by the wayfinding cast — the palette
+							     echoes the nav. aria-hidden: the title speaks the meaning. -->
+							<span
+								aria-hidden="true"
+								class="shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase"
+								style={groupPillStyle(cmd.group)}
+							>
+								{cmd.group}
+							</span>
+						{:else if cmd.shortcut}
 							<span class="shrink-0 font-mono text-[10px] text-muted-foreground/70"
 								>{cmd.shortcut}</span
 							>
