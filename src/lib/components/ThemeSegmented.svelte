@@ -1,0 +1,41 @@
+<script lang="ts">
+	// The theme control, extracted verbatim from the Settings page
+	// (2026-11-16): one segmented Light|Dark grammar shared by Settings and
+	// the account menu — never two diverging copies of the same control.
+	// Reads/writes the global theme state directly; no props by design.
+	import { Moon, Sun } from 'lucide-svelte';
+	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
+</script>
+
+<div
+	class="flex shrink-0 gap-1 rounded-full border border-border bg-card p-1"
+	role="radiogroup"
+	aria-label="Theme"
+>
+	<button
+		type="button"
+		role="radio"
+		aria-checked={themeState.theme === 'light'}
+		onclick={() => setTheme('light')}
+		class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {themeState.theme ===
+		'light'
+			? 'bg-brand/15 text-foreground'
+			: 'text-muted-foreground hover:text-foreground'}"
+	>
+		<Sun class="size-3.5" />
+		Light
+	</button>
+	<button
+		type="button"
+		role="radio"
+		aria-checked={themeState.theme === 'dark'}
+		onclick={() => setTheme('dark')}
+		class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {themeState.theme ===
+		'dark'
+			? 'bg-brand/15 text-foreground'
+			: 'text-muted-foreground hover:text-foreground'}"
+	>
+		<Moon class="size-3.5" />
+		Dark
+	</button>
+</div>

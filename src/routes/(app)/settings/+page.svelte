@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Moon, ShieldCheck, Sun, Users } from 'lucide-svelte';
+	import { ShieldCheck, Users } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
-	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import ThemeSegmented from '#lib/components/ThemeSegmented.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -28,9 +28,9 @@
 <section class="mx-auto flex w-full max-w-xl flex-col gap-6 py-4">
 	<h1 class="font-brand text-4xl font-semibold tracking-tight">Settings</h1>
 
-	<!-- Appearance: the theme, where it belongs — a setting, not only a
-	     topbar control. One write path (setTheme: store + cookie +
-	     View Transition) shared with the topbar toggle and the palette. -->
+	<!-- Appearance: the theme, where it belongs — a setting. One control
+	     (ThemeSegmented) shared with the account menu; one write path
+	     (setTheme: store + cookie + View Transition) shared with the palette. -->
 	<div class="flex flex-col gap-4">
 		<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
 			Appearance
@@ -43,38 +43,7 @@
 					every surface
 				</span>
 			</span>
-			<div
-				class="flex shrink-0 gap-1 rounded-full border border-border bg-card p-1"
-				role="radiogroup"
-				aria-label="Theme"
-			>
-				<button
-					type="button"
-					role="radio"
-					aria-checked={themeState.theme === 'light'}
-					onclick={() => setTheme('light')}
-					class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {themeState.theme ===
-					'light'
-						? 'bg-brand/15 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
-				>
-					<Sun class="size-3.5" />
-					Light
-				</button>
-				<button
-					type="button"
-					role="radio"
-					aria-checked={themeState.theme === 'dark'}
-					onclick={() => setTheme('dark')}
-					class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {themeState.theme ===
-					'dark'
-						? 'bg-brand/15 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
-				>
-					<Moon class="size-3.5" />
-					Dark
-				</button>
-			</div>
+			<ThemeSegmented />
 		</div>
 	</div>
 
