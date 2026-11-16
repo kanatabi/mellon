@@ -228,14 +228,14 @@
 	     labels fade rather than snap. -->
 	<nav
 		aria-label="Portal navigation"
-		class="hidden gap-6 bg-chrome px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:px-3 lg:pt-4 {navRail.collapsed
+		class="hidden gap-6 bg-chrome px-4 py-3 transition-[width] duration-200 ease-out lg:flex lg:flex-col lg:px-3 lg:pt-0 {navRail.collapsed
 			? 'lg:w-[4.25rem]'
 			: 'lg:w-60'}"
 	>
 		<!-- The brand owns the header row; the collapse toggle lives at the
 		     footer's end in BOTH states (owner call 2026-11-16, current-GitLab
 		     grammar) — one toggle, one place, never competing with the brand. -->
-		<div class="flex items-center lg:w-full">
+		<div class="flex h-14 items-center lg:w-full">
 			<a
 				href="/"
 				class="font-brand text-2xl font-semibold tracking-tight"
@@ -277,7 +277,7 @@
 				{#if navRail.collapsed}
 					<span
 						aria-hidden="true"
-						class="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-xs whitespace-nowrap shadow-md transition-opacity duration-150 group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
+						class="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity duration-150 group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
 					>
 						Expand sidebar
 					</span>
@@ -357,7 +357,7 @@
 		     top/left/right, flush at the bottom. It stays the scroll
 		     container, so sticky children keep working. -->
 		<main
-			class="mx-2 mt-2 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 sm:mx-3 sm:mt-3 sm:px-6"
+			class="mx-3 mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6"
 		>
 			{@render children()}
 		</main>
@@ -457,7 +457,7 @@
 						{#if rail && navRail.collapsed}
 							<span
 								aria-hidden="true"
-								class="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-xs whitespace-nowrap shadow-md transition-opacity duration-150 group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
+								class="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md border border-border bg-card px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity duration-150 group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
 							>
 								{item.label}
 							</span>
