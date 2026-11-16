@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import Select from '#lib/components/Select.svelte';
 	import {
 		ArrowLeftRight,
 		Eye,
@@ -444,20 +445,17 @@
 				<div class="flex flex-wrap items-center gap-2 md:justify-end">
 					<label class="flex min-w-0 grow items-center gap-1.5 md:grow-0">
 						<span class="sr-only">App namespace</span>
-						<select
+						<Select
+							items={apps.map((a) => ({ value: a.app, label: a.app }))}
 							value={data.app}
-							onchange={(e) => {
-								const app = String(e.currentTarget.value);
+							onchange={(app) => {
 								const first = apps.find((a) => a.app === app)?.envs[0] ?? 'dev';
 								selectPath(app, first);
 							}}
-							aria-label="App namespace"
-							class="w-full rounded-md border border-border bg-card px-2 py-1 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-brand/40 md:w-auto"
-						>
-							{#each apps as a (a.app)}
-								<option value={a.app}>{a.app}</option>
-							{/each}
-						</select>
+							ariaLabel="App namespace"
+							fill
+							popWidth={220}
+						/>
 					</label>
 					<button
 						type="button"

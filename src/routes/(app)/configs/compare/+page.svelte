@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { ArrowLeftRight, Eye, EyeOff, GitCompareArrows, WrapText } from 'lucide-svelte';
+	import Select from '#lib/components/Select.svelte';
 	import { stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -188,73 +189,55 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">App namespace</span>
-			<select
+			<Select
+				items={apps.map((a) => ({ value: a.app, label: a.app }))}
 				value={data.app}
-				onchange={(e) =>
+				onchange={(app) =>
 					go({
-						app: String(e.currentTarget.value),
+						app,
 						env: undefined,
 						from: undefined,
 						to: undefined
 					})}
-				aria-label="App namespace"
-				class="rounded-md border border-border bg-card px-2 py-1.5 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-			>
-				{#each apps as a (a.app)}
-					<option value={a.app}>{a.app}</option>
-				{/each}
-			</select>
+				ariaLabel="App namespace"
+			/>
 		</label>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">Environment</span>
-			<select
-				value={data.env}
-				onchange={(e) => go({ env: String(e.currentTarget.value), from: undefined, to: undefined })}
-				aria-label="Environment"
-				class="rounded-md border border-border bg-card px-2 py-1.5 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-			>
-				{#each envs as env (env)}
-					<option value={env}>{env}</option>
-				{/each}
-			</select>
+			<Select
+				items={envs.map((env) => ({ value: env, label: env }))}
+				value={String(data.env)}
+				onchange={(env) => go({ env, from: undefined, to: undefined })}
+				ariaLabel="Environment"
+			/>
 		</label>
 		<span class="font-mono text-xs text-muted-foreground/60">from</span>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">From version</span>
-			<select
-				value={data.fromV}
-				onchange={(e) => go({ from: Number(e.currentTarget.value) })}
-				aria-label="From version"
-				class="rounded-md border border-border bg-card px-2 py-1.5 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-			>
-				{#each versionsDesc as v (v.version)}
-					<option value={v.version}>
-						v{v.version}{v.version === pinned ? ' · pinned' : ''}{v.version ===
-						data.meta?.currentVersion
-							? ' · head'
-							: ''} · {stamp(v.createdTime)}{v.destroyed ? ' · destroyed' : ''}
-					</option>
-				{/each}
-			</select>
+			<Select
+				items={versionsDesc.map((v) => ({
+					value: String(v.version),
+					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
+				}))}
+				value={String(data.fromV)}
+				onchange={(from) => go({ from: Number(from) })}
+				ariaLabel="From version"
+				popWidth={340}
+			/>
 		</label>
 		<span class="font-mono text-xs text-muted-foreground/60">to</span>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">To version</span>
-			<select
-				value={data.toV}
-				onchange={(e) => go({ to: Number(e.currentTarget.value) })}
-				aria-label="To version"
-				class="rounded-md border border-border bg-card px-2 py-1.5 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-			>
-				{#each versionsDesc as v (v.version)}
-					<option value={v.version}>
-						v{v.version}{v.version === pinned ? ' · pinned' : ''}{v.version ===
-						data.meta?.currentVersion
-							? ' · head'
-							: ''} · {stamp(v.createdTime)}{v.destroyed ? ' · destroyed' : ''}
-					</option>
-				{/each}
-			</select>
+			<Select
+				items={versionsDesc.map((v) => ({
+					value: String(v.version),
+					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
+				}))}
+				value={String(data.toV)}
+				onchange={(to) => go({ to: Number(to) })}
+				ariaLabel="To version"
+				popWidth={340}
+			/>
 		</label>
 		<button
 			type="button"
