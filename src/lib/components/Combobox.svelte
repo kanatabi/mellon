@@ -89,7 +89,15 @@
 	}
 
 	function toggle(name: string) {
-		const next = isSelected(name) ? selected.filter((t) => t !== name) : [...selected, name];
+		// Single mode REPLACES (the contract above: "collection-style replace +
+		// close") — appending leaked the multi idiom: with a pre-populated
+		// selection, next was [old, new] and every caller's next[0] kept the
+		// OLD name (the changed-collection PATCH silently carried it).
+		const next = isSelected(name)
+			? selected.filter((t) => t !== name)
+			: multiple
+				? [...selected, name]
+				: [name];
 		onchange(next);
 		if (!multiple) toggleOpen(); // single-select commits and closes
 	}
