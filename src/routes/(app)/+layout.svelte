@@ -217,8 +217,6 @@
 			document.documentElement.style.overflow = '';
 		};
 	});
-
-	const crumb = $derived(page.url.pathname.split('/').filter(Boolean).slice(0, 2));
 </script>
 
 <div class="flex h-svh flex-col overflow-hidden bg-chrome lg:flex-row">
@@ -290,9 +288,11 @@
 
 	<div class="flex min-h-0 min-w-0 flex-1 flex-col">
 		<!-- Top bar: three-zone flow grid (§11.1) — the centered ⌘K pill reserves
-		     its space instead of floating over the breadcrumb (the collision your
-		     iPad shot caught: absolute centering doesn't truncate siblings).
-		     Below lg the left zone gains the hamburger that summons the drawer. -->
+		     its space in the middle zone (the collision your iPad shot caught:
+		     absolute centering doesn't truncate siblings). Breadcrumbs live
+		     IN-PAGE now (owner call 2026-11-17: sub-pages carry their own above
+		     the title; parent pages show none) — the left zone is the
+		     hamburger's home below lg and empty at desktop. -->
 		<header
 			class="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 bg-chrome px-4 lg:px-6"
 		>
@@ -307,22 +307,6 @@
 				>
 					<Menu class="size-5" />
 				</button>
-				<nav class="min-w-0 truncate font-mono text-xs" aria-label="Breadcrumb">
-					{#each crumb as part, i (part + i)}
-						{#if i > 0}<span aria-hidden="true" class="mx-1 text-muted-foreground">/</span>{/if}
-						{#if i === crumb.length - 1}
-							<span aria-current="page" class="text-foreground">{part}</span>
-						{:else}
-							<a
-								href={'/' + crumb.slice(0, i + 1).join('/')}
-								class="text-muted-foreground transition-colors hover:text-foreground hover:underline"
-								>{part}</a
-							>
-						{/if}
-					{:else}
-						<span aria-current="page" class="text-foreground">Dashboard</span>
-					{/each}
-				</nav>
 			</div>
 			<button
 				type="button"
@@ -355,13 +339,14 @@
 
 		<!-- The content box (GitLab surface grammar, owner call 2026-11-16):
 		     the chrome is ONE mass behind everything; the box is the only
-		     surface that draws an edge — rounded, bordered, inset on
-		     all four sides (owner call 2026-11-17 — the flush-bottom mimic is
-		     superseded: a 12px chrome ring everywhere, and the box's bottom
-		     rounding is actually visible). It stays the scroll container, so
-		     sticky children keep working. -->
+		     surface that draws an edge — rounded, bordered, FLUSH top/left at
+		     lg (it touches the topbar and the nav, the true GitLab shape) with
+		     the 12px ring on right/bottom; below lg the ring covers the x-axis
+		     and the bottom, the top stays flush (owner call 2026-11-17, third
+		     iteration). It remains the scroll container, so sticky children
+		     keep working. -->
 		<main
-			class="m-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6"
+			class="mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6 lg:ml-0"
 		>
 			{@render children()}
 		</main>
