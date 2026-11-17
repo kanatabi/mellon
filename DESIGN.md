@@ -523,7 +523,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   controls: an **eye key** toggling the `gallery` flag (uploads default OFF —
   publishing to the blog's Gallery is a deliberate act; the public list serves
   only gallery=true photos, collection-agnostic), and a single-select
-  **collection combobox** (eager create, "uncategorized" clears). A **bulk
+  **collection combobox** (eager create, "uncategorized" clears; picking a
+  new collection REPLACES the old — the 2026-11-17 fix: the multi-mode
+  append left the old name at `next[0]`, so the PATCH silently re-sent it).
+  A **bulk
   bar** materializes only while a selection lives: set collection / in / out
   across N photos, optimistic with per-id overlays so the grid never reloads
   mid-cursor. Filters ride the URL like posts'; the vocabulary is admin-internal.
