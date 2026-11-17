@@ -15,6 +15,7 @@
 	import Combobox from '#lib/components/Combobox.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
+	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client } from '#lib/api/client.ts';
 	import type { CollectionCount } from '#lib/api/types.ts';
 	import { photoRail } from '#lib/rails.svelte.ts';
@@ -279,13 +280,10 @@
 
 <section class="flex h-full min-h-0 gap-4">
 	<div class="flex min-w-0 grow flex-col gap-4 overflow-y-auto overscroll-contain pr-1">
-		<!-- Breadcrumb: the way home, both hops keyboard-reachable. -->
-		<nav
-			class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
-			aria-label="Breadcrumb"
-		>
-			<a href="/photos" class="transition-colors hover:text-foreground">photos</a>
-			<ChevronRight class="size-3" />
+		<!-- Breadcrumb: the way home, both hops keyboard-reachable. The shared
+		     SubCrumb (owner call 2026-11-17) carries the parent hop; this page
+		     passes its current crumb ({id}) plus the details key as children. -->
+		<SubCrumb href="/photos" label="photos">
 			<span class="text-foreground select-all">{data.photo.id}</span>
 			<!-- Details key (below lg): the pane lives in a sheet there. -->
 			<button
@@ -300,7 +298,7 @@
 			>
 				<Info class="size-4" />
 			</button>
-		</nav>
+		</SubCrumb>
 
 		<!-- Preview canvas: permanently dark so a white photo still reads —
 		     a lightbox backdrop, not a theme surface (layout.css). -->

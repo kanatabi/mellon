@@ -422,7 +422,8 @@
 			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4"
 		>
 			<div class="flex flex-col gap-1">
-				<h1 class="font-brand text-4xl font-semibold tracking-tight">Secrets</h1>
+				<!-- The path crumb rides ABOVE the title (owner call 2026-11-17):
+				     the in-page crumb grammar — crumb line first, title under it. -->
 				<!-- The double-`data` KV-v2 envelope, humanized: kv/<app>/<env>. -->
 				<p class="font-mono text-xs text-muted-foreground">
 					kv / {data.app} / {data.env} · v{cas}
@@ -438,6 +439,7 @@
 						</span>
 					{/if}
 				</p>
+				<h1 class="font-brand text-4xl font-semibold tracking-tight">Secrets</h1>
 			</div>
 			<div class="flex flex-col gap-2 md:items-end">
 				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env.

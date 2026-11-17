@@ -354,13 +354,13 @@ tool, a different posture. Every rule below serves that sentence.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ left nav      topbar (56px): breadcrumb · ⌘K · ⓘ    │   one chrome mass —
+│ left nav      topbar (56px): ⌘K pill · ⓘ            │   one chrome mass —
 │ 240px        ┌──────────────────────────────────┐   no border between them;
 │              │ ╭──────────────────────────────╮ │   the box is the only
 │  content     │ │  content: tables/forms/editor │ │   surface that draws
-│  groups      │ ╰──────────────────────────────╯ │   an edge (rounded,
-│              │        (scrolls internally)      │   inset on all sides)
-│ collapse ⌄   └──────────────────────────────────┘
+│  groups      │ ╰──────────────────────────────╯ │   an edge (rounded;
+│              │        (scrolls internally)      │   flush top/left at lg,
+│ collapse ⌄   └──────────────────────────────────┘   ring right/bottom)
 └─────────────────────────────────────────────────────┘
         ⓘ = the account avatar (identity · settings · theme · sign out)
 ```
@@ -371,11 +371,21 @@ mass; the shell never draws a line inside itself (the nav's `border-r` and the
 topbar's `border-b` are gone). The **content box** is the only surface that draws an
 edge: `rounded-2xl`, `border-border`, `bg-background` (the content color is
 unchanged — the box is geometry, not a new tone), and it REMAINS the scroll
-container (sticky children keep working). **Inset on all four sides**
-(owner amendment 2026-11-17: `m-3` supersedes the flush-bottom mimic — the
-first screenshots that inspired it clipped the box's bottom rounding
-off-screen; the ring now reads on every edge, desktop included). Below `lg`
-the box keeps the grammar with the same 12px ring and tighter gutters.
+container (sticky children keep working). **Flush top/left, ring right/bottom**
+(owner call 2026-11-17, third iteration of the inset: at `lg` the box touches the
+topbar above and the nav beside it — the true GitLab shape — with the 12px ring
+(`mx-3 mb-3 lg:ml-0`) reading on the viewport edges only; below `lg` the ring
+covers the x-axis and the bottom, the top stays flush under the topbar).
+
+**Breadcrumbs live IN-PAGE, not in the topbar** (owner call 2026-11-17): the
+topbar's left zone is the hamburger's home below `lg` and empty at desktop — the
+⌘K pill stays dead-center via the three-zone grid. Only SUB-pages carry a crumb,
+rendered above the title block and naming only the PARENT (the title itself is
+the current crumb — showing it twice is noise): the post editor (`posts ›`, the
+shared `SubCrumb`), the photo detail (`photos › {id}`, the grammar's origin).
+PARENT pages show none. The Secrets page's kv-path line (`kv / <app> / <env> ·
+v<cas>` — a record identifier, not wayfinding) rides the same grammar: crumb line
+first, title under it.
 
 **The collapsed rail is a centered icon column** (owner call 2026-11-17):
 each collapsed row is a 36px square centered in the rail (`mx-auto w-9

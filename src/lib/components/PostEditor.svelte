@@ -15,6 +15,7 @@
 	import { onMount, tick } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import SectionCard from '#lib/components/SectionCard.svelte';
+	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { postSections } from '#lib/sections.svelte.ts';
 	import { reorderable } from '#lib/drag-reorder.ts';
 	import {
@@ -668,6 +669,10 @@ flowchart LR
 
 <section class="flex h-full min-h-0 flex-1 gap-4">
 	<div class="@container/editor flex min-w-0 grow flex-col gap-4">
+		<!-- The in-page back-crumb (owner call 2026-11-17): the topbar dropped
+		     breadcrumbs — sub-pages carry their own above the title. Parent-only:
+		     the title below IS the current crumb. -->
+		<SubCrumb href="/posts" label="posts" />
 		<!-- Meta bar: entity title wears the serif; only the preview toggle
 		     lives here — verbs moved to the post rail's actions block. -->
 		<div class="flex flex-wrap items-center justify-between gap-3">
