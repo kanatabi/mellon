@@ -3,8 +3,10 @@
 	import { browser } from '$app/env';
 	import { basicSetup } from 'codemirror';
 	import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+	import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 	import { Compartment, EditorState } from '@codemirror/state';
 	import { EditorView } from '@codemirror/view';
+	import { tags } from '@lezer/highlight';
 	// Community-maintained vim keymap (the npm reality: no @codemirror/vim
 	// package exists — corrected against my earlier claim, journaled).
 	// Aliased: the `vim` prop (user preference) would shadow the extension
@@ -126,6 +128,46 @@
 		{ dark: false } // all colors are vars; the flag only presets defaults
 	);
 
+	// Syntax palette — the second half of the same contract. `basicSetup`
+	// registers CodeMirror's DEFAULT highlight style as a *fallback*
+	// (`syntaxHighlighting(defaultHighlightStyle, { fallback: true })`), and
+	// that default is a LIGHT palette: link destinations and fence language
+	// words (`tags.url`, `tags.labelName` — the `mermaid` in ```mermaid) paint
+	// #219 navy, ~1.3:1 on the dark canvas — invisible (owner report
+	// 2026-11-19). A non-fallback style outranks it, so this single
+	// registration re-colors every markdown token from the SAME vars.
+	// Links mirror the preview (`.preview .prose` → --tw-prose-links:
+	// foreground, underlined) — the source pane and the article finally render
+	// the same link. No new hues enter content (§11.3: color may not live in
+	// body/label text wholesale); metadata steps down to --muted-foreground.
+	const tokens = HighlightStyle.define([
+		{
+			tag: tags.link,
+			color: 'var(--foreground)',
+			textDecoration: 'underline',
+			textUnderlineOffset: '2px'
+		},
+		{ tag: tags.url, color: 'var(--muted-foreground)' },
+		// fence language + link label: metadata, legible, quiet
+		{ tag: tags.labelName, color: 'var(--muted-foreground)' },
+		// marks: [] () ` > # - * — punctuation, not content
+		{ tag: tags.processingInstruction, color: 'var(--muted-foreground)' },
+		// inline code: prose parity (--tw-prose-code: foreground)
+		{ tag: tags.monospace, color: 'var(--foreground)' },
+		{ tag: tags.string, color: 'var(--muted-foreground)' },
+		// no underline: the default underlines headings, which the output never does
+		{ tag: tags.heading, color: 'var(--foreground)', fontWeight: '700' },
+		{ tag: tags.emphasis, fontStyle: 'italic' },
+		{ tag: tags.strong, fontWeight: '700' },
+		{ tag: tags.strikethrough, textDecoration: 'line-through' },
+		{ tag: tags.quote, color: 'var(--muted-foreground)', fontStyle: 'italic' },
+		{ tag: tags.contentSeparator, color: 'var(--border)' },
+		{ tag: tags.comment, color: 'var(--muted-foreground)' },
+		{ tag: tags.invalid, color: 'var(--danger)' },
+		{ tag: tags.inserted, color: 'var(--diff-add)' },
+		{ tag: tags.deleted, color: 'var(--diff-del)' }
+	]);
+
 	onMount(() => {
 		if (!host) return;
 		vimOn = vim && !smallScreen.matches;
@@ -136,6 +178,7 @@
 				markdown({ base: markdownLanguage }),
 				wrapCompartment.of(wrap ? [EditorView.lineWrapping] : []),
 				theme,
+				syntaxHighlighting(tokens),
 				vimCompartment.of(vimOn ? [vimKeymap()] : []),
 				EditorView.domEventHandlers({
 					// belt for transitions that resolve outside a transaction: sample

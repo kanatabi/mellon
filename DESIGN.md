@@ -471,6 +471,17 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   dashed-neutral).
 - **The one gradient exception:** the login aura (`§11.4`), brand at 15% radial.
   Every other surface is flat.
+- **The source pane obeys the same tokens (2026-11-20):** CodeMirror's
+  `basicSetup` registers its DEFAULT syntax palette as a **fallback**, and that
+  default is a light-theme one (`#219` link destinations and fence-language
+  words, `#a11` strings) — invisible on the dark canvas, exactly the
+  "washed-out `mermaid`" bug the owner reported. Mellon therefore registers its
+  own `HighlightStyle` resolving from the same semantic vars: links carry the
+  preview's underline (`--foreground`, the `--tw-prose-links` treatment); URL,
+  fence language, link title and marks step down to `--muted-foreground`;
+  inline code stays `--foreground`; headings go bold without the default
+  underline; diff/invalid ride their existing tokens. Theming the editor's
+  chrome without its syntax is half a theme.
 - Anti-rules, as binding as the rules: `rounded-lg` is the roundest anything
   gets, shadows **only** on overlays (palette, menus, sheets), and motion lives
   in overlays (150–200ms transforms/opacity — the drawer transitions) plus the
@@ -499,6 +510,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   `unpublish`), and a quiet `delete`. (Owner call 2026-11-08: actions live with
   settings, like Ghost's publish box — but labeled as their own section; publish
   verbs are not "settings".)
+  The **source pane renders the artifact in the article's own colors**: links wear
+  the preview's underline, fence-language words and destinations step down to
+  `--muted-foreground`, marks stay quiet (§11.3 token palette) — you edit what
+  publishes, down to the contrast.
   `/posts/new` opens the editor directly — no intermediate form. Below `lg`, a
   **thumb band** under the panes carries the pane controls — `[write] [preview]`
   tabs left (roving tabindex), `[wrap] [post]` right (the post chip summons the
