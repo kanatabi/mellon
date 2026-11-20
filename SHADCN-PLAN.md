@@ -39,6 +39,8 @@ is committed with the slice, so the ledger is the audit trail.
       "didn't change" proof for S1 and the "changed deliberately" proof later).
 - [ ] **P3** — the bundle baseline recorded: shell chunk gz size and total
       client build size from `npm run build` (R8 measures against this).
+      **Recorded 2026-11-20:** client `7.1M` raw, immutable js+css **1,824 KiB
+      gz**; largest chunks 438.3 / 249.4 / 133.1 / 123.3 KiB gz.
 - [ ] **P4** — `npm run test:unit` baseline: **157 passed, 6 skipped**.
 - [ ] **P5** — a dev stack that can talk to lumen (`make dev` in `../lumen`, or
       the compose plane) for the pages that need live data. SQLite-only pages
@@ -215,19 +217,29 @@ easiest one to abandon cleanly.
 ### 2.4 The content box (0.3 d)
 
 - [ ] `ui/sidebar/sidebar-inset.svelte` — replace the
-      `md:peer-data-[variant=inset]:*` chain with the **rendered contract**
-      from `(app)/+layout.svelte` today:
+      `md:peer-data-[variant=inset]:*` chain with the **doctrine** line
+      (D9: the shipped `rounded-2xl` + `shadow-sm` is drift, corrected here):
 
 ```
-mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border
-bg-background px-4 py-6 shadow-sm sm:px-6 lg:ml-0
+mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border
+bg-background px-4 py-6 sm:px-6 lg:ml-0
 ```
 
-- [ ] **Owner question, answer before coding**: the code uses `rounded-2xl` and
-      `shadow-sm`, while DESIGN says `rounded-lg` is the ceiling and shadows
-      belong to overlays. Choose (a) reproduce the code (pure parity, drift
-      preserved), or (b) fix to the doctrine (deliberate 2-line visual diff).
-      Record the choice in SHADCN.md §3.5 either way.
+- [ ] **Doctrine alignment commit** — the single declared visual diff of S2:
+
+```
+fix(ui): align the shell with the radius and shadow doctrine
+```
+
+The three surviving `rounded-xl` offenders ride it; the other six die with
+their components (`DeleteDialog`, `DatePicker`, `DateRange`, `Combobox`,
+`UserMenu`, `RailDrawer`), and `rounded-full` is untouched — a shape, not a
+corner.
+
+- [ ] `lib/components/Palette.svelte:444` — `rounded-xl` → `rounded-lg`
+- [ ] `lib/components/ImagePicker.svelte:128` — `rounded-xl` → `rounded-lg`
+- [ ] `routes/(app)/photos/[id]/+page.svelte:306` (photo canvas) — same
+
 - [ ] **Scroll audit** (R4): `Sidebar.Inset` renders `<main>`; confirm pages
       that own their scroll (`min-h-0`, `overflow-y-auto`) don't double-scroll
       and sticky headers still stick.
@@ -549,6 +561,9 @@ grep -rn '\$UTILS\$\|\$UI\$\|\$HOOKS\$\|\$LIB\$\|@lucide/svelte\|\$lib' src/lib/
 
 # no native select, ever
 grep -rc '<select' src --include='*.svelte' | grep -v ':0' || echo clean
+
+# radius ceiling (hard gate, D9) — rounded-full is exempt
+grep -rn 'rounded-\(xl\|2xl\|3xl\)\|rounded-t-2xl' src || echo clean
 
 # gates, standalone, in order
 npx prettier --check .

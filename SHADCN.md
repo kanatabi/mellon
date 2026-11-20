@@ -189,21 +189,30 @@ Same requirement for the nine core aliases (`--color-popover`, `--color-input`,
 
 ### 3.5 Geometry and motion policy
 
-- **Radius ceiling stays `rounded-lg`** (DESIGN §11.3). Vendored defaults use
-  `rounded-md` (fine) and `rounded-xl` (must be reduced when touched).
-  Pre-existing drift to resolve, not preserve: **8× `rounded-xl`** in current
-  markup, against the ceiling.
+- **Radius ceiling is `rounded-lg`, enforced** (DESIGN §11.3). Vendored
+  defaults use `rounded-md` (fine) and `rounded-xl` (reduced at restyle time).
+  The tree's existing drift is **fixed, not preserved** (D9): the box's
+  `rounded-2xl`, ten `rounded-xl`/`rounded-t-2xl` instances — six die with the
+  components that own them, three survive and are edited in S2, and one is the
+  box. `rounded-full` is **exempt**: 123 uses (avatars, pills, dots, the ⌘K
+  pill) are a shape, not a corner radius.
 - **Motion stays 150/200ms** and overlays only. `tw-animate-css` is added so
   `animate-in`-style classes in vendored files resolve; any vendored transition
-  slower than 200ms is retuned in review.
-- **The content box geometry is a restyle target, not a default**: the rendered
-  contract today is, verbatim from `(app)/+layout.svelte`:
-  `mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6 lg:ml-0`
-  — i.e. flush top/left at `lg`, the ring on x/bottom. `Sidebar.Inset` ships
-  `md:peer-data-[variant=inset]:m-2 …rounded-xl…shadow-sm` with **no padding**;
-  the restyle reproduces the line above exactly, and the `rounded-2xl` /
-  `shadow-sm` question is answered by the owner in S2 (they are documented
-  decisions §11.1/§11.3, and the code currently diverges).
+  slower than 200ms is retuned in review. Measured 2026-11-20: the tree has
+  **zero** offenders.
+- **The content box geometry is a restyle target, not a default.** The target
+  is the doctrine line, not the shipped one:
+
+  ```
+  mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border
+  bg-background px-4 py-6 sm:px-6 lg:ml-0
+  ```
+
+  Flush top/left at `lg`, the edge on x/bottom, **no shadow** — the border is
+  the edge; a shadow would make the box an overlay. What ships today is
+  `rounded-2xl … shadow-sm`, which is drift (D9), corrected in S2.
+  `Sidebar.Inset` ships its own `md:peer-data-[variant=inset]:m-2 …rounded-xl…
+shadow-sm` with **no padding** — all three are restyled away.
 
 ## 4. Component policy
 
@@ -255,7 +264,7 @@ Each slice's PR description carries this table with its own rows ticked.
 - [ ] **Mobile pass** (< `lg`): thumb band, sheets, safe-area insets, no horizontal scroll
 - [ ] **Geometry**: one chrome mass, no internal borders, box flush top/left at `lg`, ring on x/bottom
 - [ ] **Motion**: 150/200ms, overlays only, `prefers-reduced-motion` instant
-- [ ] **Radius ceiling**: no `rounded-xl`/`rounded-2xl` introduced; existing drift listed, not multiplied
+- [ ] **Radius ceiling (hard gate)**: `grep -rn 'rounded-\(xl\|2xl\|3xl\)\|rounded-t-2xl' src` → **0**. `rounded-full` is exempt
 - [ ] **⌘K palette** still opens everywhere and reaches the swapped controls
 - [ ] **Normalization grep** empty (§2.2)
 - [ ] **No new dependency** beyond the slice's declared list
@@ -293,16 +302,17 @@ before the content pages are touched.
 
 ## 9. Decision log
 
-| #   | date       | decision        | ruling                                                                                                      |
-| :-- | :--------- | :-------------- | :---------------------------------------------------------------------------------------------------------- |
-| D1  | 2026-11-20 | Migration shape | **A2** — shadcn substrate, mellon preset. Not A1 (default look), not a full rewrite of every page           |
-| D2  | 2026-11-20 | Shell           | **adopt the `sidebar` block** (`variant="inset"`, `collapsible="icon"`) rather than keep the hand-built nav |
-| D3  | 2026-11-20 | Documentation   | **no DESIGN.md edits** while experimental; this file + the plan are the record                              |
-| D4  | 2026-11-20 | Slicing         | **five slices**, each independently releasable, each carrying its own pages                                 |
-| D5  | 2026-11-20 | ⌘B              | **guard** on text surfaces; vim keeps Ctrl+B inside the editor                                              |
-| D6  | 2026-11-20 | Persistence     | keep `navRail` localStorage; the vendored cookie line is removed                                            |
-| D7  | 2026-11-20 | Icon library    | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package    |
-| D8  | 2026-11-20 | `cn`            | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                   |
+| #   | date       | decision          | ruling                                                                                                                                                                                                                                                  |
+| :-- | :--------- | :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D1  | 2026-11-20 | Migration shape   | **A2** — shadcn substrate, mellon preset. Not A1 (default look), not a full rewrite of every page                                                                                                                                                       |
+| D2  | 2026-11-20 | Shell             | **adopt the `sidebar` block** (`variant="inset"`, `collapsible="icon"`) rather than keep the hand-built nav                                                                                                                                             |
+| D3  | 2026-11-20 | Documentation     | **no DESIGN.md edits** while experimental; this file + the plan are the record                                                                                                                                                                          |
+| D4  | 2026-11-20 | Slicing           | **five slices**, each independently releasable, each carrying its own pages                                                                                                                                                                             |
+| D5  | 2026-11-20 | ⌘B                | **guard** on text surfaces; vim keeps Ctrl+B inside the editor                                                                                                                                                                                          |
+| D6  | 2026-11-20 | Persistence       | keep `navRail` localStorage; the vendored cookie line is removed                                                                                                                                                                                        |
+| D7  | 2026-11-20 | Icon library      | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package                                                                                                                                                |
+| D8  | 2026-11-20 | `cn`              | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                                                                                                                                                               |
+| D9  | 2026-11-20 | Drift vs doctrine | **doctrine wins.** The content box drops `rounded-2xl` + `shadow-sm`; the radius ceiling is a hard exit gate repo-wide. Six of the ten `rounded-xl` offenders die with their components; `Palette`, `ImagePicker` and the photo canvas are edited in S2 |
 
 ## 10. Exit gate
 
