@@ -245,29 +245,33 @@ easiest one to abandon cleanly.
 
 ### 2.2 Verify the classes the block actually emits (0.15 d)
 
-- [ ] `grep -rho 'bg-sidebar[a-z-]*\|text-sidebar[a-z-]*\|border-sidebar[a-z-]*\|ring-sidebar[a-z-]*' src/lib/components/ui/sidebar | sort -u`
-      — every name must have a `--color-*` twin from 1.5. Any miss = silent
-      invisibility (R3).
+- [x] `grep -rho 'bg-sidebar[a-z-]*\|text-sidebar[a-z-]*\|border-sidebar[a-z-]*\|ring-sidebar[a-z-]*' src/lib/components/ui/sidebar | sort -u`
+      — **6 distinct names emitted** (sidebar, -accent, -accent-foreground,
+      -border, -foreground, -ring), all six have twins. Clean.
 
 ### 2.3 Constants — match mellon's rail (0.05 d)
 
-- [ ] `ui/sidebar/constants.ts`:
-      `SIDEBAR_WIDTH = "15rem"` (240px = today's `--container-nav`),
-      `SIDEBAR_WIDTH_ICON = "3.5rem"` (56px = today's `--container-nav-rail`).
-      16rem/3rem are the block's defaults and would silently widen the rail.
+- [x] `ui/sidebar/constants.ts`: `SIDEBAR_WIDTH = "15rem"` ✓,
+      `SIDEBAR_WIDTH_ICON = "4.25rem"` — **the plan's 3.5rem was a misread**:
+      `--container-nav-rail: 56px` has ZERO consumers (dead var; DESIGN's
+      diagram puts 56px on the TOPBAR) and the rendered collapsed rail is
+      `lg:w-[4.25rem]`. Matching what renders. `SIDEBAR_WIDTH_MOBILE = "16rem"`
+      (today's `w-64`); the cookie constants deleted with the cookie (D6).
 
 ### 2.4 The content box (0.3 d)
 
-- [ ] `ui/sidebar/sidebar-inset.svelte` — replace the
-      `md:peer-data-[variant=inset]:*` chain with the **doctrine** line
-      (D9: the shipped `rounded-2xl` + `shadow-sm` is drift, corrected here):
+- [x] `ui/sidebar/sidebar-inset.svelte` — the `md:peer-data-*` chain replaced
+      by the **doctrine** line, verbatim (D9). The Inset IS the box (`<main>`);
+      the topbar rides ABOVE it as a sibling — nesting the block's main inside
+      another would be an invalid double `<main>` landmark. Class:
 
 ```
 mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border
 bg-background px-4 py-6 sm:px-6 lg:ml-0
 ```
 
-- [ ] **Doctrine alignment commit** — the single declared visual diff of S2:
+- [x] **Doctrine alignment commit** (`fcdf07e`) — the single declared visual
+      diff of S2:
 
 ```
 fix(ui): align the shell with the radius and shadow doctrine
@@ -278,9 +282,12 @@ their components (`DeleteDialog`, `DatePicker`, `DateRange`, `Combobox`,
 `UserMenu`, `RailDrawer`), and `rounded-full` is untouched — a shape, not a
 corner.
 
-- [ ] `lib/components/Palette.svelte:444` — `rounded-xl` → `rounded-lg`
-- [ ] `lib/components/ImagePicker.svelte:128` — `rounded-xl` → `rounded-lg`
-- [ ] `routes/(app)/photos/[id]/+page.svelte:306` (photo canvas) — same
+- [x] `lib/components/Palette.svelte:444` — `rounded-xl` → `rounded-lg`
+- [x] `lib/components/ImagePicker.svelte:128` — `rounded-xl` → `rounded-lg`
+- [x] `routes/(app)/photos/[id]/+page.svelte:306` (photo canvas) — same
+- [x] **Scroll audit (R4)** — structurally sound (the frame is `h-svh
+overflow-hidden`, the box keeps `min-h-0` + `overflow-y-auto`, sticky
+      children unaffected); the live double-scroll check is the owner's.
 
 - [ ] **Scroll audit** (R4): `Sidebar.Inset` renders `<main>`; confirm pages
       that own their scroll (`min-h-0`, `overflow-y-auto`) don't double-scroll
@@ -288,10 +295,9 @@ corner.
 
 ### 2.5 Vendored patches (0.55 d)
 
-- [ ] **No cookie** (D6): delete the
-      `document.cookie = ${SIDEBAR_COOKIE_NAME}=…` line in
-      `ui/sidebar/sidebar-provider.svelte`, with a comment pointing at
-      SHADCN.md §5.2. Persistence is `navRail`.
+- [x] **No cookie** (D6): the `document.cookie` line deleted (+ the two
+      cookie constants); persistence is `navRail` via the shell's
+      `onOpenChange → setCollapsed`. Comment points at SHADCN.md §5.2.
 - [ ] **⌘B guard** (D5): in `ui/sidebar/context.svelte.ts`,
       `handleShortcutKeydown` gains a focus guard:
 
@@ -306,50 +312,75 @@ function isTextSurface(t: EventTarget | null): boolean {
 }
 ```
 
-- [ ] Unit test `ui/sidebar/context.dom.test.ts`: `mod+b` with target inside
-      `.cm-editor` does **not** call `setOpen`; with target on `<body>` it does.
+- [x] Unit test `ui/sidebar/context.dom.test.ts` — **4 tests** via
+      `createRawSnippet` + `fireEvent`: plain target toggles; `.cm-editor`,
+      `input`, and meta-in-editor all ignored (the guard is modifier-agnostic).
 
 ### 2.6 The shell rewrite (0.8 d)
 
-- [ ] `src/routes/(app)/+layout.svelte` (459 → ~300 lines): - `<Sidebar.Provider bind:open={!navRail.collapsed}>` at the root - `<Sidebar.Root variant="inset" collapsible="icon">` with
-      `Header` (brand + `mellon;`), `Content` (three `Group`s: Content /
-      Control Plane / Admin), `Footer` (collapse toggle), and `Inset`
-      wrapping the topbar + `<main>` - nav items become `Sidebar.Menu` / `MenuItem` / `MenuButton` with the
-      `child` snippet rendering `<a>`; active state via `isActive` - **role gating preserved**: the Admin group renders only for
-      `data.principal?.role === 'admin'` (same condition as today) - **delete**: `navItems()` markup, the `{#if navOpen}` backdrop +
-      `role="dialog"` drawer (lines ~356–391), the bespoke collapse toggle
-      and its hover-tip, the `burger` state
-- [ ] `rails.svelte.ts`: add `setCollapsed(open: boolean)` (the current `toggle`
-      is a flip; `Provider` needs absolute values) — keep arrows-bound fields,
-      keep the `mellon.rail.nav` localStorage key so existing sessions don't
-      reset.
-- [ ] `Sidebar.Trigger` replaces the hamburger (below `lg`), opening the
-      block's mobile sheet.
+- [x] `src/routes/(app)/+layout.svelte` — **459 → 189 lines**, plus
+      `(app)/app-sidebar.svelte` (~170): the rail had to become a CHILD
+      component — the sidebar context is only readable BELOW the Provider,
+      and the footer toggle + sheet dismissal need it. The root is
+      `Sidebar.Provider` with `bind:open={railOpen}`; the rail is
+      `Root variant="sidebar" collapsible="icon"` (**D13: NOT `inset`** —
+      that variant's `p-2` tile + expanded-gap math contradicts the
+      full-bleed chrome mass; the box's inset geometry lives in the doctrine
+      line) with `Header` (brand, collapsed `m;`), three `Group`s, `Footer`
+      (the one collapse toggle, owner call 2026-11-16). Nav rows =
+      `Menu`/`MenuItem`/`MenuButton` with the `child` snippet rendering
+      `<a>` + `isActive`; role gating preserved. DELETED: `navItems()`, the `{#if navOpen}` backdrop + drawer
+      (~lines 356–391), the bespoke toggle + hover-tip. The topbar keeps its
+      three-zone grid; the hamburger is `Sidebar.Trigger` (patched: children
+      override for mellon's glyph + `aria-expanded`).
+- [x] `rails.svelte.ts`: `setCollapsed(open)` added — arrow-bound field, same
+      `mellon.rail.nav` key (existing sessions keep their rail).
+- [x] `Sidebar.Trigger` replaces the hamburger below `lg`, opening the
+      block's mobile sheet (IsMobile patched to the lg line, D12).
 
 ### 2.7 Mobile parity (0.3 d)
 
-- [ ] The block's mobile sheet must match today's contract: X / `Esc` /
-      backdrop dismiss, focus returns to the trigger, `env(safe-area-inset-*)`
-      padding preserved, width `w-64 max-w-[80vw]` equivalent.
-- [ ] Reduced-motion: sheet instant (today's `reduced ? 0 : 240`).
+- [x] The block's mobile sheet matches the contract: X (built-in close
+      button) / `Esc` / backdrop dismiss are bits-ui; focus returns to the
+      hamburger on USER close via Root's `onOpenChange` → `onMobileClose` —
+      navigation-close goes through `setOpenMobile` and never steals focus.
+      Safe-area paddings carried on Root's className (`max-lg:`-scoped);
+      width 16rem + `max-w-[80vw]`.
+- [x] Reduced-motion: the sheet is instant via the global 0.01ms rule
+      (layout.css §prefers-reduced-motion) — no per-instance code needed.
 
 ### 2.8 Top bar (0.45 d)
 
-- [ ] `UserMenu.svelte` → `ui/dropdown-menu` (identity, Settings, theme, End
-      session). Keep the ghosted avatar grammar (`bg-brand/15 text-brand`).
-- [ ] Shell hover-tip → `ui/tooltip` (the `Tooltip.Provider` already wraps
-      children inside `Sidebar.Provider`, `delayDuration={0}`).
-- [ ] ⌘K pill, the phone search key, and the theme toggle stay hand-built —
-      they are brand furniture, not generic controls.
+- [x] `UserMenu.svelte` → `ui/dropdown-menu` — identity card, Settings
+      (child-snippet `<a>`: bits-ui Item takes no `href`), ThemeSegmented,
+      destructive sign-out (child-snippet submit button). Ghosted avatar
+      grammar kept. Esc / click-outside / focus-return now the block's job.
+- [x] Shell hover-tips → the block's built-in `Tooltip` (nav rows + the
+      collapse toggle; `Tooltip.Provider delayDuration={0}` wraps everything
+      inside `Sidebar.Provider`).
+- [x] ⌘K pill, the phone search key, and ThemeSegmented stay hand-built —
+      brand furniture, not generic controls.
 
 ### 2.9 Close S2 (0.35 d)
 
-- [ ] Gates green; manual matrix: desktop ⌘B outside/inside editor, collapse
-      persist across reload, mobile drawer, keyboard-only nav walk,
-      light/dark.
-- [ ] **Bundle delta measured** (R8) and recorded here: shell chunk gz
-      before → after.
-- [ ] Screenshots attached; only the intended differences.
+- [x] Gates green, standalone — prettier ✅ eslint ✅ svelte-check 0/0 ✅
+      **172 passed / 6 skipped** ✅ build ✅.
+- [ ] **Manual matrix** — **OUTSTANDING, owner's step** (no browser here):
+      desktop ⌘B outside/inside the editor, collapse persistence across
+      reload, the mobile drawer's three closes + focus return, keyboard-only
+      nav walk, light/dark.
+- [x] **Bundle delta measured (R8)**: immutable js+css **1,891 KiB gz**
+      (S1: 1,825 → **+66 KiB** — the block + sheet + dropdown-menu + tooltip
+      machinery; the 438.3 KiB editor/markdown chunk is byte-identical, the
+      §5.6 chunk boundary held). Raw client 7.1M → 7.4M.
+- [ ] **Screenshots** — owner's step; intended diffs: the three doctrine
+      corners (fcdf07e), block-rendered rail rows (32px icon cells vs 36px),
+      block paddings inside the rail, the sheet's X position (block idiom,
+      top-right ghost) vs the old header-row X.
+
+**S2 state line:** the shell rides the block — rail, sheet, dropdown, guard,
+doctrine alignment all in; **the manual matrix + screenshots are the owner's
+half of close-out.**
 
 ---
 

@@ -303,14 +303,14 @@ Each slice's PR description carries this table with its own rows ticked.
 
 ## 7. Slice ledger
 
-| slice | theme                                                              |   estimate | status                                |
-| :---- | :----------------------------------------------------------------- | ---------: | :------------------------------------ |
-| S1    | Foundation — tokens, `cn`, test env, docs. Zero visual diff        |        2 d | **built** (visual diff pending owner) |
-| S2    | Chrome — the sidebar block replaces the hand-built shell nav       |      3.5 d | planned                               |
-| S3    | Form primitives — Button/Input/Label/Textarea/Checkbox/Switch      |        3 d | planned                               |
-| S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | planned                               |
-| S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | planned                               |
-|       | **total**                                                          | **18.5 d** |                                       |
+| slice | theme                                                              |   estimate | status                                  |
+| :---- | :----------------------------------------------------------------- | ---------: | :-------------------------------------- |
+| S1    | Foundation — tokens, `cn`, test env, docs. Zero visual diff        |        2 d | **built** (visual diff pending owner)   |
+| S2    | Chrome — the sidebar block replaces the hand-built shell nav       |      3.5 d | **built** (manual matrix pending owner) |
+| S3    | Form primitives — Button/Input/Label/Textarea/Checkbox/Switch      |        3 d | planned                                 |
+| S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | planned                                 |
+| S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | planned                                 |
+|       | **total**                                                          | **18.5 d** |                                         |
 
 Sequence is load-bearing: **S1 first** because it installs the test net and the
 tokens that every later slice needs; **S2 second** because it is the largest
@@ -333,19 +333,21 @@ before the content pages are touched.
 
 ## 9. Decision log
 
-| #   | date       | decision           | ruling                                                                                                                                                                                                                                                  |
-| :-- | :--------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D1  | 2026-11-20 | Migration shape    | **A2** — shadcn substrate, mellon preset. Not A1 (default look), not a full rewrite of every page                                                                                                                                                       |
-| D2  | 2026-11-20 | Shell              | **adopt the `sidebar` block** (`variant="inset"`, `collapsible="icon"`) rather than keep the hand-built nav                                                                                                                                             |
-| D3  | 2026-11-20 | Documentation      | **no DESIGN.md edits** while experimental; this file + the plan are the record                                                                                                                                                                          |
-| D4  | 2026-11-20 | Slicing            | **five slices**, each independently releasable, each carrying its own pages                                                                                                                                                                             |
-| D5  | 2026-11-20 | ⌘B                 | **guard** on text surfaces; vim keeps Ctrl+B inside the editor                                                                                                                                                                                          |
-| D6  | 2026-11-20 | Persistence        | keep `navRail` localStorage; the vendored cookie line is removed                                                                                                                                                                                        |
-| D7  | 2026-11-20 | Icon library       | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package                                                                                                                                                |
-| D8  | 2026-11-20 | `cn`               | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                                                                                                                                                               |
-| D9  | 2026-11-20 | Drift vs doctrine  | **doctrine wins.** The content box drops `rounded-2xl` + `shadow-sm`; the radius ceiling is a hard exit gate repo-wide. Six of the ten `rounded-xl` offenders die with their components; `Palette`, `ImagePicker` and the photo canvas are edited in S2 |
-| D10 | 2026-11-20 | Alias declarations | aliases live in `:root` **only** — all eighteen are `var(--core)` and the core flips in the dark block, so duplicating them would only create drift. `palette.test.ts` taught the literal/alias distinction instead of being relaxed                    |
-| D11 | 2026-11-20 | Registry access    | the CLI works (`#lib` resolves from `components.json`, no `svelte.config.js`); the fallback fetcher is **not built**. Test harness is filename-split: `*.test.ts` → node, `*.dom.test.ts` → happy-dom + forced runes                                    |
+| #   | date       | decision           | ruling                                                                                                                                                                                                                                                                                                         |
+| :-- | :--------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | 2026-11-20 | Migration shape    | **A2** — shadcn substrate, mellon preset. Not A1 (default look), not a full rewrite of every page                                                                                                                                                                                                              |
+| D2  | 2026-11-20 | Shell              | **adopt the `sidebar` block** (`variant="inset"`, `collapsible="icon"`) rather than keep the hand-built nav                                                                                                                                                                                                    |
+| D3  | 2026-11-20 | Documentation      | **no DESIGN.md edits** while experimental; this file + the plan are the record                                                                                                                                                                                                                                 |
+| D4  | 2026-11-20 | Slicing            | **five slices**, each independently releasable, each carrying its own pages                                                                                                                                                                                                                                    |
+| D5  | 2026-11-20 | ⌘B                 | **guard** on text surfaces; vim keeps Ctrl+B inside the editor                                                                                                                                                                                                                                                 |
+| D6  | 2026-11-20 | Persistence        | keep `navRail` localStorage; the vendored cookie line is removed                                                                                                                                                                                                                                               |
+| D7  | 2026-11-20 | Icon library       | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package                                                                                                                                                                                                       |
+| D8  | 2026-11-20 | `cn`               | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                                                                                                                                                                                                                      |
+| D9  | 2026-11-20 | Drift vs doctrine  | **doctrine wins.** The content box drops `rounded-2xl` + `shadow-sm`; the radius ceiling is a hard exit gate repo-wide. Six of the ten `rounded-xl` offenders die with their components; `Palette`, `ImagePicker` and the photo canvas are edited in S2                                                        |
+| D10 | 2026-11-20 | Alias declarations | aliases live in `:root` **only** — all eighteen are `var(--core)` and the core flips in the dark block, so duplicating them would only create drift. `palette.test.ts` taught the literal/alias distinction instead of being relaxed                                                                           |
+| D11 | 2026-11-20 | Registry access    | the CLI works (`#lib` resolves from `components.json`, no `svelte.config.js`); the fallback fetcher is **not built**. Test harness is filename-split: `*.test.ts` → node, `*.dom.test.ts` → happy-dom + forced runes                                                                                           |
+| D12 | 2026-11-20 | Breakpoint         | the block's mobile/desktop line moves **768 → 1024 (lg)** — mellon's rail starts at lg (owner call 2026-11-08); below it the hamburger + sheet own nav. `hooks/is-mobile` + `sidebar.svelte`'s `md:` classes patched together; keeping 768 would strand the hamburger at 768–1024                              |
+| D13 | 2026-11-20 | Sidebar variant    | **`variant="sidebar"`, not `inset`** — the inset variant's `p-2` chrome tile + expanded-gap math contradict the full-bleed ONE-chrome-mass shell (§11.1); the box's inset geometry lives entirely in the doctrine line on `Sidebar.Inset`, with the topbar as a sibling above it (no nested `<main>` landmark) |
 
 ## 10. Exit gate
 
