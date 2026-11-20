@@ -465,7 +465,7 @@
 						class="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 						aria-label="Onboard app"
 					>
-						<Plus class="size-3.5" /> app
+						<Plus class="size-3.5" /> App
 					</button>
 				</div>
 				<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
@@ -489,7 +489,7 @@
 						class="rounded-full border border-dashed border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 						aria-label="Add environment"
 					>
-						+ env
+						+ Env
 					</button>
 				</div>
 			</div>
@@ -614,7 +614,7 @@
 				onclick={addRow}
 				class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
-				+ key
+				+ Key
 			</button>
 			<button
 				type="button"
@@ -622,7 +622,7 @@
 				class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				aria-expanded={historyOpen}
 			>
-				<History class="size-3.5" /> history
+				<History class="size-3.5" /> History
 			</button>
 			{#if offerPin !== null}
 				<!-- RE-PIN OFFER (lock follow-through): a restore-seeded save
@@ -658,7 +658,7 @@
 				onclick={() => void save()}
 				class="ml-auto rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
 			>
-				save as v{cas + 1}
+				Save as v{cas + 1}
 			</button>
 		</div>
 

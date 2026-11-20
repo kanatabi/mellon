@@ -266,9 +266,14 @@ easiest one to abandon cleanly.
       another would be an invalid double `<main>` landmark. Class:
 
 ```
-mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border
-bg-background px-4 py-6 sm:px-6 lg:ml-0
+mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border
+bg-background px-4 py-6 shadow-sm sm:px-6 lg:ml-0
 ```
+
+(AMENDED 2026-11-21, D9b: the owner took one look at the 8px corners and
+claimed the old box back — rounded-2xl + shadow-sm; the box is furniture,
+the ceiling governs components. `w-full` dropped: with `mx-3` it overflowed
+the viewport by the right margin, desktop AND mobile.)
 
 - [x] **Doctrine alignment commit** (`fcdf07e`) — the single declared visual
       diff of S2:
@@ -285,6 +290,7 @@ corner.
 - [x] `lib/components/Palette.svelte:444` — `rounded-xl` → `rounded-lg`
 - [x] `lib/components/ImagePicker.svelte:128` — `rounded-xl` → `rounded-lg`
 - [x] `routes/(app)/photos/[id]/+page.svelte:306` (photo canvas) — same
+      (these STAY rounded-lg under D9b — they're components/overlays)
 - [x] **Scroll audit (R4)** — structurally sound (the frame is `h-svh
 overflow-hidden`, the box keeps `min-h-0` + `overflow-y-auto`, sticky
       children unaffected); the live double-scroll check is the owner's.

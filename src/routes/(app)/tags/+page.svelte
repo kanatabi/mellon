@@ -375,7 +375,7 @@
 					? 'Deselect all'
 					: 'Select all'}
 			>
-				<Check class="size-3" />{selection.size === rows.length && rows.length > 0 ? 'none' : 'all'}
+				<Check class="size-3" />{selection.size === rows.length && rows.length > 0 ? 'None' : 'All'}
 			</button>
 			<span>name</span>
 			<span class="text-right">posts</span>

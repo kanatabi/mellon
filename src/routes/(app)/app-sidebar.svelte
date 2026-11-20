@@ -83,7 +83,7 @@
 		>
 			<Sidebar.Group>
 				<Sidebar.GroupLabel
-					class="h-auto text-xs font-medium tracking-widest text-muted-foreground uppercase group-data-[collapsible=icon]:pointer-events-none"
+					class="text-xs font-medium tracking-widest text-muted-foreground uppercase group-data-[collapsible=icon]:pointer-events-none"
 				>
 					{#snippet child({ props })}
 						<!-- Svelte 5: a static class AFTER a spread CLOBBERS the spread's
@@ -183,7 +183,10 @@
 		</a>
 	</Sidebar.Header>
 
-	<Sidebar.Content>
+	<!-- Icon-mode breathing: the faded label nets zero height (h-8 +
+	     -mt-8), so the first icon rides up under the brand watermark —
+	     the old rail kept a 24px gap there. -->
+	<Sidebar.Content class="group-data-[collapsible=icon]:pt-3">
 		{@render navRows()}
 	</Sidebar.Content>
 

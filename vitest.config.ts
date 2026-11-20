@@ -26,6 +26,16 @@ export default defineConfig({
 			},
 			{
 				extends: true,
+				resolve: {
+					alias: {
+						// AppSidebar (and anything else reading SvelteKit state) gets a
+						// stub in component tests — the dom project loads no SvelteKit
+						// plugins by design (SHADCN-PLAN 1.6).
+						'$app/state': '/src/lib/testing/app-state-stub.ts',
+						'$app/env': '/src/lib/testing/app-state-stub.ts',
+						'$app/navigation': '/src/lib/testing/app-state-stub.ts'
+					}
+				},
 				plugins: [
 					// Mirror the app's compilerOptions (vite.config.ts): the project is
 					// forced-runes, and a test that compiles in legacy mode would be

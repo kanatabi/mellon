@@ -220,30 +220,33 @@ old guard while creating exactly the drift the guard exists to prevent.
 
 ### 3.5 Geometry and motion policy
 
-- **Radius ceiling is `rounded-lg`, enforced** (DESIGN §11.3). Vendored
+- **Radius ceiling is `rounded-lg` for COMPONENTS** (DESIGN §11.3). Vendored
   defaults use `rounded-md` (fine) and `rounded-xl` (reduced at restyle time).
-  The tree's existing drift is **fixed, not preserved** (D9): the box's
-  `rounded-2xl`, ten `rounded-xl`/`rounded-t-2xl` instances — six die with the
-  components that own them, three survive and are edited in S2, and one is the
-  box. `rounded-full` is **exempt**: 123 uses (avatars, pills, dots, the ⌘K
-  pill) are a shape, not a corner radius.
+  D9's original sweep gave the tree's ten `rounded-xl`/`rounded-t-2xl`
+  instances three fates: six die with the components that own them, three
+  (`Palette`, `ImagePicker`, the photo canvas) are edited in S2 — and the
+  box was aligned too, until the owner AMENDED it (2026-11-21, D9b): the
+  content box is FURNITURE, not a component, and keeps its designed
+  `rounded-2xl` + `shadow-sm`. `rounded-full` is **exempt**: 123 uses
+  (avatars, pills, dots, the ⌘K pill) are a shape, not a corner radius.
 - **Motion stays 150/200ms** and overlays only. `tw-animate-css` is added so
   `animate-in`-style classes in vendored files resolve; any vendored transition
   slower than 200ms is retuned in review. Measured 2026-11-20: the tree has
   **zero** offenders.
-- **The content box geometry is a restyle target, not a default.** The target
-  is the doctrine line, not the shipped one:
+- **The content box geometry is the OLD SHIPPED LINE, restored by owner
+  amendment (D9b, 2026-11-21)** — D9's original `rounded-lg`-no-shadow ruling
+  applied the component ceiling to furniture, and the owner's eye said no:
 
   ```
-  mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border
-  bg-background px-4 py-6 sm:px-6 lg:ml-0
+  mx-3 mb-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border
+  bg-background px-4 py-6 shadow-sm sm:px-6 lg:ml-0
   ```
 
-  Flush top/left at `lg`, the edge on x/bottom, **no shadow** — the border is
-  the edge; a shadow would make the box an overlay. What ships today is
-  `rounded-2xl … shadow-sm`, which is drift (D9), corrected in S2.
-  `Sidebar.Inset` ships its own `md:peer-data-[variant=inset]:m-2 …rounded-xl…
-shadow-sm` with **no padding** — all three are restyled away.
+  Flush top/left at `lg`, the 16px corners, the soft float back. The line
+  rides `Sidebar.Inset` (the `md:peer-data-[variant=inset]:*` chain is gone)
+  MINUS `w-full` — with `mx-3`, `w-full` overflowed the viewport by the
+  right margin and the box touched the screen edge (desktop AND mobile).
+  The flex-col stretch sizes the box minus the margins.
 
 ## 4. Component policy
 
@@ -295,7 +298,7 @@ Each slice's PR description carries this table with its own rows ticked.
 - [ ] **Mobile pass** (< `lg`): thumb band, sheets, safe-area insets, no horizontal scroll
 - [ ] **Geometry**: one chrome mass, no internal borders, box flush top/left at `lg`, ring on x/bottom
 - [ ] **Motion**: 150/200ms, overlays only, `prefers-reduced-motion` instant
-- [ ] **Radius ceiling (hard gate)**: `grep -rn 'rounded-\(xl\|2xl\|3xl\)\|rounded-t-2xl' src` → **0**. `rounded-full` is exempt
+- [ ] **Radius ceiling (hard gate)**: `grep -rn 'rounded-\(xl\|2xl\|3xl\)\|rounded-t-2xl' src` → **0 outside the content box** (`sidebar-inset.svelte`'s `rounded-2xl` is the owner-amended exception, D9b). `rounded-full` is exempt
 - [ ] **⌘K palette** still opens everywhere and reaches the swapped controls
 - [ ] **Normalization grep** empty (§2.2)
 - [ ] **No new dependency** beyond the slice's declared list
@@ -344,6 +347,7 @@ before the content pages are touched.
 | D7  | 2026-11-20 | Icon library       | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package                                                                                                                                                                                                       |
 | D8  | 2026-11-20 | `cn`               | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                                                                                                                                                                                                                      |
 | D9  | 2026-11-20 | Drift vs doctrine  | **doctrine wins.** The content box drops `rounded-2xl` + `shadow-sm`; the radius ceiling is a hard exit gate repo-wide. Six of the ten `rounded-xl` offenders die with their components; `Palette`, `ImagePicker` and the photo canvas are edited in S2                                                        |
+| D9b | 2026-11-21 | Box = furniture    | **owner amendment:** the content box keeps its designed `rounded-2xl` + `shadow-sm` — the ceiling and the no-shadow rule govern COMPONENTS, not the box. The gate scopes accordingly; `w-full` dropped from the Inset (the `mx-3` right margin overflowed the viewport)                                        |
 | D10 | 2026-11-20 | Alias declarations | aliases live in `:root` **only** — all eighteen are `var(--core)` and the core flips in the dark block, so duplicating them would only create drift. `palette.test.ts` taught the literal/alias distinction instead of being relaxed                                                                           |
 | D11 | 2026-11-20 | Registry access    | the CLI works (`#lib` resolves from `components.json`, no `svelte.config.js`); the fallback fetcher is **not built**. Test harness is filename-split: `*.test.ts` → node, `*.dom.test.ts` → happy-dom + forced runes                                                                                           |
 | D12 | 2026-11-20 | Breakpoint         | the block's mobile/desktop line moves **768 → 1024 (lg)** — mellon's rail starts at lg (owner call 2026-11-08); below it the hamburger + sheet own nav. `hooks/is-mobile` + `sidebar.svelte`'s `md:` classes patched together; keeping 768 would strand the hamburger at 768–1024                              |

@@ -20,7 +20,14 @@
 	bind:this={ref}
 	data-slot="sidebar-inset"
 	class={cn(
-		'relative mx-3 mb-3 flex min-h-0 w-full flex-1 flex-col overflow-y-auto rounded-lg border border-border bg-background px-4 py-6 sm:px-6 lg:ml-0',
+		// The box's own geometry, OWNER-AMENDED 2026-11-21 (D9's exception):
+		// rounded-2xl + shadow-sm — the box is FURNITURE (the designed 16px
+		// corner + the soft float), not a component; the radius ceiling and
+		// the no-shadow rule keep governing components. w-full is REMOVED:
+		// with mx-3 it overflowed the viewport by the right margin and the
+		// box touched the screen edge (desktop AND mobile) — the flex-col
+		// stretch sizes it minus the margins.
+		'relative mx-3 mb-3 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border bg-background px-4 py-6 shadow-sm sm:px-6 lg:ml-0',
 		className
 	)}
 	{...restProps}
