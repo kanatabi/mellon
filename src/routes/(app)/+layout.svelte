@@ -30,7 +30,12 @@
 
 	let paletteOpen = $state(false);
 	let paletteTrigger: HTMLElement | null = null;
-	let burger = $state<HTMLButtonElement | undefined>();
+	// MUST init null, not undefined: Trigger's `ref = $bindable(null)` has a
+	// fallback, and `bind:ref={undefined}` throws `props_invalid_value` at
+	// HYDRATION — the throw lands inside the error-boundary render, and the
+	// client router then falls back to the ROOT boundary: the error page
+	// loses the shell (observed live, S2 round). null satisfies the contract.
+	let burger = $state<HTMLButtonElement | null>(null);
 
 	// Route-progress bar — ported from earendil's shell: a three-phase state
 	// machine (active sweep → guaranteed finishing beat → idle). Preloaded
