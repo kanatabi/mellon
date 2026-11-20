@@ -16,6 +16,23 @@ function firstRow() {
 }
 
 describe('the rail’s carried classes (live S2 reports)', () => {
+	it('data-active is PRESENT only on the active row (presence-variant semantics)', () => {
+		// the bolder-font bug: MenuButton wrote data-active="false", and the
+		// compiled [data-active] presence selector matched EVERY row —
+		// font-medium + foreground on all of them, killing the muted inactive
+		// color AND the hover's text lift. The attribute must be OMITTED when
+		// inactive so the variants apply to the active row alone.
+		const { container } = render(Fixture);
+		const rows = [...container.querySelectorAll('a')].filter(
+			(a) => a.dataset.slot === 'tooltip-trigger'
+		);
+		expect(rows.length).toBeGreaterThan(1);
+		const active = rows.find((r) => r.getAttribute('aria-current') === 'page');
+		const inactive = rows.find((r) => r.getAttribute('aria-current') !== 'page');
+		expect(active?.hasAttribute('data-active')).toBe(true);
+		expect(inactive?.hasAttribute('data-active')).toBe(false);
+	});
+
 	it('nav rows keep the old design’s hover wash + text', () => {
 		const cls = firstRow().className;
 		// the OLD row contract, still true after the port:

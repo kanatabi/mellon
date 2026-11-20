@@ -60,7 +60,13 @@
 		'data-slot': 'sidebar-menu-button',
 		'data-sidebar': 'menu-button',
 		'data-size': size,
-		'data-active': isActive,
+		// OMITTED when inactive — on purpose. Tailwind's `data-active:` variants
+		// compile to attribute-PRESENCE selectors ([data-active]), so a
+		// data-active="false" attribute still matches them: every row rendered
+		// font-medium + foreground (the "bolder font, no hover lift" report,
+		// S2 round). With the attribute absent when false, the variants apply
+		// only to the truly-active row.
+		'data-active': isActive ? 'true' : undefined,
 		...restProps
 	});
 </script>
