@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { House, PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
+	import { ChevronDown, House, PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+	import * as Collapsible from '#lib/components/ui/collapsible/index.js';
 
 	interface NavItem {
 		href: string;
@@ -55,53 +56,91 @@
 	// utility names (the literal-scan lesson, again), and color-mix darkens
 	// correctly with the theme.
 	const wash = (hue: string) => `background: color-mix(in oklab, ${hue} 14%, transparent)`;
+
+	// Per-section collapse (owner ask — the doc's collapsible-group pattern):
+	// keyed by group label, all expanded by default, NOT persisted — a fresh
+	// visit always opens with every destination visible, so wayfinding is
+	// never lost to a saved click. (Persistence, if wanted, rides the rails
+	// pattern — one localStorage key, same doctrine as navRail.)
+	let sections = $state<Record<string, boolean>>({});
 </script>
 
 {#snippet navRows()}
 	{#each groups as group (group.label)}
-		<Sidebar.Group>
-			<Sidebar.GroupLabel
-				class="h-auto text-xs font-medium tracking-widest text-muted-foreground uppercase"
-			>
-				{group.label}
-			</Sidebar.GroupLabel>
-			<Sidebar.GroupContent>
-				<Sidebar.Menu class="gap-1">
-					{#each group.items as item (item.href)}
-						{@const current = activeHref === item.href}
-						<Sidebar.MenuItem>
-							<!-- The anchor IS the menu button (child snippet): it receives
-							     the block's data-active + the tooltip trigger. The built-in
-							     tooltip replaces the hand-rolled group/tip hover-span — the
-							     collapsed rail is never nameless, on hover AND focus. -->
-							<Sidebar.MenuButton
-								isActive={current}
-								tooltipContent={item.label}
-								class="gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent/60 hover:text-foreground data-active:bg-transparent data-active:text-foreground {current
-									? 'font-medium text-foreground'
-									: 'text-muted-foreground'}"
-							>
-								{#snippet child({ props })}
-									<a
-										{...props}
-										href={item.href}
-										aria-label={item.label}
-										aria-current={current ? 'page' : undefined}
-										style={current ? wash(item.hue) : undefined}
+		{@const sectionId = `nav-section-${group.label.toLowerCase().replace(/\s+/g, '-')}`}
+		<!-- Collapsible sections (owner ask — the doc's collapsible-group
+		     pattern, verbatim shape): the Collapsible wraps the group, the
+		     label IS the CollapsibleTrigger (a real button — keyboard-first
+		     holds), and the chevron rotates off the collapsible's data-state.
+		     In icon-collapse mode the block fades the label out; the trigger
+		     then drops out of the tab order and AT instead of staying
+		     invisible-but-focusable. -->
+		<Collapsible.Root
+			class="group/collapsible"
+			open={!sections[group.label]}
+			onOpenChange={(v) => (sections[group.label] = !v)}
+		>
+			<Sidebar.Group>
+				<Sidebar.GroupLabel
+					class="h-auto text-xs font-medium tracking-widest text-muted-foreground uppercase group-data-[collapsible=icon]:pointer-events-none"
+				>
+					{#snippet child({ props })}
+						<Collapsible.Trigger
+							{...props}
+							type="button"
+							tabindex={sidebar.state === 'collapsed' ? -1 : undefined}
+							aria-hidden={sidebar.state === 'collapsed'}
+							aria-controls={sectionId}
+							class="flex w-full cursor-pointer items-center justify-between gap-2 py-1 select-none hover:text-foreground"
+						>
+							{group.label}
+							<ChevronDown
+								class="size-3.5 shrink-0 transition-transform duration-150 group-data-[state=closed]/collapsible:-rotate-90"
+								aria-hidden="true"
+							/>
+						</Collapsible.Trigger>
+					{/snippet}
+				</Sidebar.GroupLabel>
+				<Collapsible.Content>
+					<Sidebar.GroupContent id={sectionId}>
+						<Sidebar.Menu class="gap-1">
+							{#each group.items as item (item.href)}
+								{@const current = activeHref === item.href}
+								<Sidebar.MenuItem>
+									<!-- The anchor IS the menu button (child snippet): it receives
+								     the block's data-active + the tooltip trigger. The built-in
+								     tooltip replaces the hand-rolled group/tip hover-span — the
+								     collapsed rail is never nameless, on hover AND focus. -->
+									<Sidebar.MenuButton
+										isActive={current}
+										tooltipContent={item.label}
+										class="gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent/60 hover:text-foreground data-active:bg-transparent data-active:text-foreground {current
+											? 'font-medium text-foreground'
+											: 'text-muted-foreground'}"
 									>
-										<item.icon
-											class="size-4 shrink-0"
-											style={`color: ${item.hue}; opacity: ${current ? 1 : 0.72}`}
-										/>
-										<span>{item.label}</span>
-									</a>
-								{/snippet}
-							</Sidebar.MenuButton>
-						</Sidebar.MenuItem>
-					{/each}
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		</Sidebar.Group>
+										{#snippet child({ props })}
+											<a
+												{...props}
+												href={item.href}
+												aria-label={item.label}
+												aria-current={current ? 'page' : undefined}
+												style={current ? wash(item.hue) : undefined}
+											>
+												<item.icon
+													class="size-4 shrink-0"
+													style={`color: ${item.hue}; opacity: ${current ? 1 : 0.72}`}
+												/>
+												<span>{item.label}</span>
+											</a>
+										{/snippet}
+									</Sidebar.MenuButton>
+								</Sidebar.MenuItem>
+							{/each}
+						</Sidebar.Menu>
+					</Sidebar.GroupContent>
+				</Collapsible.Content>
+			</Sidebar.Group>
+		</Collapsible.Root>
 	{/each}
 {/snippet}
 

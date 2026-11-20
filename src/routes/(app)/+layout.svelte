@@ -177,8 +177,8 @@
 	let railOpen = $derived(!navRail.collapsed);
 </script>
 
-// today's frame: one chrome mass, h-svh, NO page scroll — the content // box below is the only
-scroll container
+<!-- today's frame: one chrome mass, h-svh, NO page scroll — the content
+		box below is the only scroll container -->
 <Sidebar.Provider
 	bind:open={railOpen}
 	onOpenChange={(open) => navRail.setCollapsed(!open)}
