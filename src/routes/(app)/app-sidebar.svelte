@@ -3,6 +3,7 @@
 	import { ChevronDown, House, PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as Collapsible from '#lib/components/ui/collapsible/index.js';
+	import { cn } from '#lib/utils.js';
 
 	interface NavItem {
 		href: string;
@@ -85,13 +86,20 @@
 					class="h-auto text-xs font-medium tracking-widest text-muted-foreground uppercase group-data-[collapsible=icon]:pointer-events-none"
 				>
 					{#snippet child({ props })}
+						<!-- Svelte 5: a static class AFTER a spread CLOBBERS the spread's
+						     class (proven in the dom harness — the labels lost
+						     text-xs/tracking/uppercase AND the icon-mode fade). Compose
+						     explicitly. -->
 						<Collapsible.Trigger
 							{...props}
 							type="button"
 							tabindex={sidebar.state === 'collapsed' ? -1 : undefined}
 							aria-hidden={sidebar.state === 'collapsed'}
 							aria-controls={sectionId}
-							class="flex w-full cursor-pointer items-center justify-between gap-2 py-1 select-none hover:text-foreground"
+							class={cn(
+								props.class as string | undefined,
+								'flex w-full cursor-pointer items-center justify-between gap-2 py-1 select-none hover:text-foreground'
+							)}
 						>
 							{group.label}
 							<ChevronDown
@@ -101,7 +109,9 @@
 						</Collapsible.Trigger>
 					{/snippet}
 				</Sidebar.GroupLabel>
-				<Collapsible.Content>
+				<Collapsible.Content
+					class="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden"
+				>
 					<Sidebar.GroupContent id={sectionId}>
 						<Sidebar.Menu class="gap-1">
 							{#each group.items as item (item.href)}

@@ -8,6 +8,7 @@
 	import { LogOut, Settings } from 'lucide-svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import ThemeSegmented from '#lib/components/ThemeSegmented.svelte';
+	import { cn } from '#lib/utils.js';
 
 	interface Props {
 		principal: { username: string; role: 'admin' | 'editor' };
@@ -52,7 +53,11 @@
 			class="gap-3 rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus:bg-accent/60 focus:text-foreground"
 		>
 			{#snippet child({ props })}
-				<a {...props} href="/settings" class="flex w-full items-center gap-3">
+				<a
+					{...props}
+					href="/settings"
+					class={cn(props.class as string | undefined, 'flex w-full items-center gap-3')}
+				>
 					<Settings class="size-4 shrink-0" />
 					Settings
 				</a>
@@ -74,7 +79,11 @@
 				class="gap-3 rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-danger/10 hover:text-danger focus:bg-danger/10 focus:text-danger data-[variant=destructive]:text-muted-foreground"
 			>
 				{#snippet child({ props })}
-					<button {...props} type="submit" class="flex w-full items-center gap-3">
+					<button
+						{...props}
+						type="submit"
+						class={cn(props.class as string | undefined, 'flex w-full items-center gap-3')}
+					>
 						<LogOut class="size-4 shrink-0" />
 						Sign out
 					</button>
