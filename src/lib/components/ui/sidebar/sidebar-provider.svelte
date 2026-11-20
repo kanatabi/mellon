@@ -1,14 +1,9 @@
 <script lang="ts">
-	import * as Tooltip from "#lib/components/ui/tooltip/index.js";
-	import { cn, type WithElementRef } from "#lib/utils.js";
-	import {
-		SIDEBAR_COOKIE_MAX_AGE,
-		SIDEBAR_COOKIE_NAME,
-		SIDEBAR_WIDTH,
-		SIDEBAR_WIDTH_ICON,
-	} from "./constants.js";
-	import { setSidebar } from "./context.svelte.js";
-	import type { HTMLAttributes } from "svelte/elements";
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { cn, type WithElementRef } from '#lib/utils.js';
+	import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from './constants.js';
+	import { setSidebar } from './context.svelte.js';
+	import type { HTMLAttributes } from 'svelte/elements';
 
 	let {
 		ref = $bindable(null),
@@ -28,10 +23,11 @@
 		setOpen: (value: boolean) => {
 			open = value;
 			onOpenChange(value);
-
-			// This sets the cookie to keep the sidebar state.
-			document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
-		},
+			// D6 (SHADCN.md §5.2): the block's `document.cookie` line is removed —
+			// rails persist in localStorage via the shell's `onOpenChange`
+			// (`navRail.setCollapsed`), never request state. Nothing server-side
+			// reads the rail.
+		}
 	});
 </script>
 
@@ -42,7 +38,7 @@
 		data-slot="sidebar-wrapper"
 		style="--sidebar-width: {SIDEBAR_WIDTH}; --sidebar-width-icon: {SIDEBAR_WIDTH_ICON}; {style}"
 		class={cn(
-			"group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
+			'group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar',
 			className
 		)}
 		bind:this={ref}

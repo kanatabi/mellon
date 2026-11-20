@@ -1,6 +1,6 @@
-import { getContext, setContext } from "svelte";
-import { IsMobile } from "#lib/hooks/is-mobile.svelte.js";
-import { SIDEBAR_KEYBOARD_SHORTCUT } from "./constants.js";
+import { getContext, setContext } from 'svelte';
+import { IsMobile } from '#lib/hooks/is-mobile.svelte.js';
+import { SIDEBAR_KEYBOARD_SHORTCUT } from './constants.js';
 
 type Getter<T> = () => T;
 
@@ -24,9 +24,9 @@ class SidebarState {
 	readonly props: SidebarStateProps;
 	open = $derived.by(() => this.props.open());
 	openMobile = $state(false);
-	setOpen: SidebarStateProps["setOpen"];
+	setOpen: SidebarStateProps['setOpen'];
 	#isMobile: IsMobile;
-	state = $derived.by(() => (this.open ? "expanded" : "collapsed"));
+	state = $derived.by(() => (this.open ? 'expanded' : 'collapsed'));
 
 	constructor(props: SidebarStateProps) {
 		this.setOpen = props.setOpen;
@@ -42,7 +42,11 @@ class SidebarState {
 
 	// Event handler to apply to the `<svelte:window>`
 	handleShortcutKeydown = (e: KeyboardEvent) => {
-		if (e.key === SIDEBAR_KEYBOARD_SHORTCUT && (e.metaKey || e.ctrlKey)) {
+		if (
+			e.key === SIDEBAR_KEYBOARD_SHORTCUT &&
+			(e.metaKey || e.ctrlKey) &&
+			!isTextSurface(e.target)
+		) {
 			e.preventDefault();
 			this.toggle();
 		}
@@ -57,7 +61,18 @@ class SidebarState {
 	};
 }
 
-const SYMBOL_KEY = "scn-sidebar";
+const SYMBOL_KEY = 'scn-sidebar';
+
+// SHADCN.md §5.1 (D5, owner ruling 2026-11-20) — under `@replit/codemirror-vim`,
+// Ctrl+B is page-up in normal mode, and mod+b in a text field is bold/select.
+// A keystroke in a text surface belongs to that surface. Focus decides, not
+// the modifier.
+function isTextSurface(t: EventTarget | null): boolean {
+	if (!(t instanceof HTMLElement)) return false;
+	return !!t.closest(
+		'.cm-editor, input, textarea, select, [contenteditable="true"], [role="textbox"]'
+	);
+}
 
 /**
  * Instantiates a new `SidebarState` instance and sets it in the context.
