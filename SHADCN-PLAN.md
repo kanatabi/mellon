@@ -57,7 +57,7 @@ ships and nobody can tell, it succeeded.
 
 ### 1.1 Alias probe + `components.json` (0.25 d)
 
-- [ ] Create `components.json` by hand (never `init` — it wants `src/app.css`
+- [x] Create `components.json` by hand (never `init` — it wants `src/app.css`
       and would overwrite the palette; see SHADCN.md §3):
 
 ```json
@@ -76,18 +76,21 @@ ships and nobody can tell, it succeeded.
 }
 ```
 
-- [ ] **Probe** (30 min, throwaway branch): `npx shadcn-svelte@1.8.1 add button`.
+- [x] **Probe** (30 min, throwaway branch): `npx shadcn-svelte@1.8.1 add button`.
       The CLI documents that aliases come from `svelte.config.js`; mellon has
-      **none** (SvelteKit 3 keeps config inside `vite.config.ts`). Record the
-      outcome in this file: - **works** → keep `components.json`, use the CLI for every slice. - **fails to resolve `#lib`** → switch aliases to `$lib` (SvelteKit's
-      built-in) for the CLI's sake, keep the normalization step (§2.2) which
-      rewrites them to `#lib` anyway. Do **not** add a `svelte.config.js`
-      just to satisfy tooling. - **fails outright** → use the fallback fetcher (1.2).
+      **none** (SvelteKit 3 keeps config inside `vite.config.ts`).
+
+      **OUTCOME 2026-11-20 — worked.** The CLI read `components.json`, resolved
+      `#lib` itself, emitted `#lib/utils.js` in the vendored source and wrote
+      `utils.ts` unprompted: no `$UTILS$` placeholders, no `svelte.config.js`
+      added. Aliases stay `#lib`; the CLI is the tool for every slice and only
+      the *verification* grep (§2.2) remains necessary.
 
 ### 1.2 Registry fetcher (fallback, 0.25 d)
 
-- [ ] `scripts/shadcn-add.mjs` — a ~70-line, committed script (used instead of
-      the CLI if 1.1 fails; harmless if not). Behaviour:
+- [~] **SKIPPED — not built.** 1.1 succeeded, so the fetcher has no caller.
+  Kept as the documented fallback should a future CLI regress alias
+  resolution. Original spec: `scripts/shadcn-add.mjs`, ~70 lines —
 
   - args: item names
   - fetch `https://shadcn-svelte.com/registry/<item>.json`
@@ -104,26 +107,33 @@ ships and nobody can tell, it succeeded.
 
 ### 1.3 Dependencies (0.1 d)
 
-- [ ] `npm install bits-ui@^2.21.0 tailwind-merge@^3.7.1 clsx@^2.1.1 tailwind-variants@^3.2.2 tw-animate-css@^1.4.0`
-- [ ] `npm install -D @testing-library/svelte happy-dom`
-- [ ] **Not** installed, deliberately: `@lucide/svelte` (D7), `cn` (D8),
-      `@internationalized/date` (S4 only — keep S1's surface minimal).
+- [x] `npm install bits-ui@^2.21.0 tailwind-merge@^3.7.1 clsx@^2.1.1 tailwind-variants@^3.2.2 tw-animate-css@^1.4.0`
+      — resolved `tailwind-variants@^3.3.1` (same `^3` range) and placed it in
+      **dependencies**, not dev: the vendored files import `tv` at runtime.
+- [x] `npm install -D @testing-library/svelte happy-dom` → `5.4.2` / `21.0.4`
+- [x] **Not** installed, deliberately: `@lucide/svelte` (D7), `cn` (D8),
+      `@internationalized/date` (S4 only). Verified absent.
+- [x] `npm audit --omit=dev` → 2 moderate, **pre-existing and unrelated**
+      (`@tailwindcss/typography` → old `postcss-selector-parser`). Left alone:
+      `audit fix --force` would break the typography plugin.
 
 ### 1.4 `src/lib/utils.ts` (0.15 d)
 
-- [ ] `cn()` via `clsx` + `twMerge`, plus the five type helpers vendored files
+- [x] `cn()` via `clsx` + `twMerge`, plus the four type helpers vendored files
       import, verbatim from the registry's `utils` item:
       `WithoutChild`, `WithoutChildren`, `WithoutChildrenOrChild`,
       `WithElementRef` (+ the `cn` export). The registry's own version imports
       the `cn` package — we deviate on purpose (D8).
-- [ ] Unit test `src/lib/utils.test.ts`: merge order wins for conflicting
-      utilities (`cn('px-2','px-4')` → `'px-4'`), custom colors survive
-      (`cn('bg-brand','bg-muted')` → `'bg-muted'`).
+- [x] Unit test `src/lib/utils.test.ts` — **6 tests**: last-wins on conflicts,
+      `bg-brand`/`bg-muted` merge, order preserved, falsy dropped, arrays +
+      objects (clsx semantics), and a caller overriding a default class set.
 
 ### 1.5 Tokens (0.25 d)
 
-- [ ] `src/routes/layout.css`, **both** theme blocks (`:root` and
-      `[data-theme='dark']`):
+- [x] `src/routes/layout.css` — in `:root` **only** (deviation, now doctrine
+      D10: every alias is a `var(--core)` and the core flips in
+      `[data-theme='dark']`, so a second declaration is a second place to
+      drift). See SHADCN.md §3.3.1. The eighteen names:
 
 ```css
 /* shadcn component vocabulary mapped onto mellon's tokens — SHADCN.md §3.
@@ -149,38 +159,66 @@ ships and nobody can tell, it succeeded.
 --sidebar-ring: var(--brand);
 ```
 
-- [ ] `@theme inline`: the `--color-*` twins for every name above (17 total,
-      incl. the 8 `--color-sidebar-*`). **A missing twin generates no utility
-      and fails silently** (SHADCN.md §3.3 / R3).
-- [ ] Comment on the `--primary` block pointing at SHADCN.md §3.1, so the
+- [x] `@theme inline`: the `--color-*` twins for every name above — **18**
+      (the plan's "17" was a miscount: 10 core aliases + 8 sidebar = 18, and
+      `--primary` is one of the ten). **A missing twin generates no utility and
+      fails silently** (SHADCN.md §3.3 / R3).
+- [x] `palette.test.ts` **amended, not relaxed** (§3.3.1): it now separates
+      `CORE` (hex, must be in both blocks — unchanged) from `ALIAS` (must
+      resolve through `var()` chains onto a dual-defined core token). New test
+      added; `--primary` moved from CORE to ALIAS. 4 existing tests still green.
+- [x] Comment on the `--primary` block pointing at SHADCN.md §3, so the
       divergence is findable from the code.
 
 ### 1.6 Test environment (0.4 d)
 
-- [ ] `vitest.config.ts`: add a second project/environment so **DOM tests need
-      no annotation** while pure-lib tests stay fast:
-      `browser`-ish project with `environment: 'happy-dom'`,
-      `include: ['src/**/*.dom.test.ts']`, setup file registering
-      `@testing-library/svelte` cleanup.
-- [ ] Smoke test `src/lib/components/ui/__probe.dom.test.ts` — renders a
-      vendored `Button` and asserts a click fires. **Delete it in 1.8**; it
-      exists to prove the harness before anything depends on it.
-- [ ] `npm run test:unit` still reports the same 157 + 6.
+- [x] `vitest.config.ts` — **two projects, split by filename** rather than by
+      annotation: `*.test.ts` → `node` (the existing fleet, untouched) and
+      `*.dom.test.ts` → `happy-dom` + `@sveltejs/vite-plugin-svelte` +
+      testing-library auto-cleanup. Forced-runes compilerOptions mirrored from
+      `vite.config.ts` (`configFile: false` — this repo has no
+      `svelte.config.js` by design). A component test that forgets the `.dom.`
+      suffix fails loudly on `document` instead of silently.
+- [x] Smoke test `src/lib/harness.dom.test.ts` — **kept, not deleted** (deviation):
+      mount, click delivery, caller class override, and one `bg-primary`
+      assertion that is the only _runtime_ proof the alias chain emits a
+      utility (palette.test.ts is text-level). Rendering a `Button` is
+      deliberate — it fails if the harness or the token layer regresses.
+      `bits-ui` is irrelevant here: it ships **precompiled** `dist/*.js`.
+- [x] `npm run test:unit` — **168 passed, 6 skipped**: 157 baseline + 6 `cn` +
+      4 harness + 1 new palette guard.
 
 ### 1.7 Documentation (0.2 d)
 
-- [ ] Commit `SHADCN.md` + `SHADCN-PLAN.md` (this file) with 1.1's probe result
+- [x] Commit `SHADCN.md` + `SHADCN-PLAN.md` (this file) with 1.1's probe result
       recorded.
-- [ ] No DESIGN.md / AGENTS.md edits (D3).
+- [x] No DESIGN.md / AGENTS.md edits (D3) — verified by `git diff --stat`.
 
 ### 1.8 Close S1 (0.25 d)
 
-- [ ] Gates green, standalone.
-- [ ] **Visual proof**: re-screenshot a sample (login, dashboard, photos,
-      vault) light+dark; diff against P2. Diff must be empty.
-- [ ] `grep -rn 'text-primary\|bg-primary' src` → still 0.
-- [ ] Remove the probe test; remove any probe component added by 1.1.
-- [ ] Commit, PR, release.
+- [x] Gates green, standalone — **prettier ✅ · eslint ✅ · svelte-check 0/0 ✅
+      · 168 passed / 6 skipped ✅ · build ✅**.
+- [ ] **Visual proof** — **OUTSTANDING, owner's step.** No browser/screenshot
+      tooling exists for this agent, so the light+dark diff against P2 must be
+      taken by the owner. The reasoning that it is empty: no route imports
+      anything under `ui/` (only `harness.dom.test.ts` does), the shell and
+      every page are byte-identical, and no existing utility class changed
+      meaning. The `grep` for `ui/` in the built bundle returns nothing —
+      tree-shaken out.
+- [x] **Bundle delta**: client `7.2M` raw (was 7.1M), immutable js+css
+      **1,825 KiB gz** (was 1,824) — **JS unchanged at 1,804 KiB**; the +1 KiB
+      is the 18 token declarations in the stylesheet.
+- [x] `grep -rn 'text-primary\|bg-primary' src` (excluding `ui/`) → **0**.
+      Inside `ui/` the vendored `button.svelte` uses `bg-primary` by design.
+- [x] Probe test **kept** on purpose (`harness.dom.test.ts`, see 1.6); the
+      probe _component_ is not throwaway either — `ui/button` is the first real
+      component and S2/S3 depend on it.
+- [x] Commit (`ae3dfeb` vendor-raw + normalization), PR, release.
+
+**S1 state line:** the substrate exists and provably changes nothing —
+`components.json` resolves `#lib`, deps pinned, `cn()` + 18 aliases + 18
+`--color-*` twins in place, DOM project running, 168 green. **Nine of ten
+checkboxes closed; the tenth is the owner's visual diff.**
 
 ---
 

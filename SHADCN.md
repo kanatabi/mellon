@@ -108,6 +108,14 @@ The registry uses placeholders the CLI substitutes. Because mellon's alias is
 
 Verification is one grep per slice: `grep -rn '\$UTILS\$\|\$UI\$\|\$HOOKS\$\|@lucide/svelte\|\$lib' src/lib/components/ui` → empty.
 
+**Probe result (S1, 2026-11-20): the CLI does the substitution itself.** With
+no `svelte.config.js` present, `shadcn-svelte@1.8.1 add button` resolved the
+`#lib` alias from `components.json` and wrote `#lib/utils.js` into the vendored
+source unprompted — zero placeholders, no post-processing. So the table above
+is a **verification** step, not an edit step, and the fallback registry fetcher
+(plan 1.2) is dead code: not built. Note it emits `#lib/utils.**js**`, which
+resolves to `utils.ts` through the `imports` map — expected, not a typo.
+
 ### 2.3 Footprint — the honest number
 
 Measured from the registry (`registry/{item}.json` → `files[]`), the full item
@@ -175,7 +183,30 @@ Plus the Tailwind v4 mapping in `@theme inline` — a token without a
 ```
 
 Same requirement for the nine core aliases (`--color-popover`, `--color-input`,
-`--color-ring`, `--color-destructive`, `--color-secondary`, …).
+`--color-ring`, `--color-destructive`, `--color-secondary`, …). **Built and
+guarded in S1**: `palette.test.ts` now walks every alias's `var()` chain and
+asserts it lands on a dual-defined core token, so a typo'd referent fails the
+suite instead of silently rendering the wrong color.
+
+### 3.3.1 Aliases are declared ONCE, in `:root` (S1 finding)
+
+The plan called for the eighteen aliases in **both** theme blocks. They are in
+`:root` only, and that is deliberately stronger, not weaker: every alias is a
+`var(--core)` reference, and every `--core` it points at already flips inside
+`[data-theme='dark']`. So `--primary: var(--brand)` is `#7c3aed` in light and
+`#a78bfa` in dark with **no second declaration** — one place to edit, one place
+to diverge.
+
+What this cost: `palette.test.ts` (the "every token in BOTH blocks" guard) had
+to learn the difference between a **literal** and an **alias**. Its new rule:
+
+- `CORE` tokens (hex literals) must still appear in both blocks — unchanged.
+- `ALIAS` tokens must appear in `:root` and **resolve** (`var(--x)` chains
+  followed transitively) to a `CORE` token, or be a theme-agnostic literal
+  (`--sidebar-border: transparent`). `--primary` moved from CORE to ALIAS.
+
+The alternative — duplicating aliases into the dark block — would satisfy the
+old guard while creating exactly the drift the guard exists to prevent.
 
 ### 3.4 What we deliberately do NOT adopt
 
@@ -272,14 +303,14 @@ Each slice's PR description carries this table with its own rows ticked.
 
 ## 7. Slice ledger
 
-| slice | theme                                                              |   estimate | status  |
-| :---- | :----------------------------------------------------------------- | ---------: | :------ |
-| S1    | Foundation — tokens, `cn`, test env, docs. Zero visual diff        |        2 d | planned |
-| S2    | Chrome — the sidebar block replaces the hand-built shell nav       |      3.5 d | planned |
-| S3    | Form primitives — Button/Input/Label/Textarea/Checkbox/Switch      |        3 d | planned |
-| S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | planned |
-| S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | planned |
-|       | **total**                                                          | **18.5 d** |         |
+| slice | theme                                                              |   estimate | status                                |
+| :---- | :----------------------------------------------------------------- | ---------: | :------------------------------------ |
+| S1    | Foundation — tokens, `cn`, test env, docs. Zero visual diff        |        2 d | **built** (visual diff pending owner) |
+| S2    | Chrome — the sidebar block replaces the hand-built shell nav       |      3.5 d | planned                               |
+| S3    | Form primitives — Button/Input/Label/Textarea/Checkbox/Switch      |        3 d | planned                               |
+| S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | planned                               |
+| S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | planned                               |
+|       | **total**                                                          | **18.5 d** |                                       |
 
 Sequence is load-bearing: **S1 first** because it installs the test net and the
 tokens that every later slice needs; **S2 second** because it is the largest
@@ -288,31 +319,33 @@ before the content pages are touched.
 
 ## 8. Risk register
 
-| #   | risk                                                                                                                             | trigger                                                 | mitigation                                                                                                                 |
-| :-- | :------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------- |
-| R1  | **Identity erosion** — vendored defaults leak through and the console starts looking like every other admin                      | a screen fails §11.5 beside gofar.id                    | §2.1 law 2: restyle is a review gate, not a suggestion                                                                     |
-| R2  | **Portal geometry** — overlays mount to `<body>` and detach from the content box                                                 | a popover/select on a rail field floats outside the box | per-overlay `portalProps`/`forceMount` decision recorded in the slice; dialogs may escape, field popovers must anchor      |
-| R3  | **Silent token miss** — a class resolves to nothing because the `--color-*` twin is missing (§3.3)                               | invisible border/text in a vendored component           | S1 adds all 17 mappings up front; S1's screenshot proof runs on a vendored probe                                           |
-| R4  | **Double scroll** — `Sidebar.Inset` is a `<main>`; pages own their scroll                                                        | two scrollbars, sticky headers break                    | S2 task 2.4 includes the scroll audit before restyle                                                                       |
-| R5  | **vim/⌘B theft**                                                                                                                 | Ctrl+B pages up in normal mode today                    | §5.1 guard, with a unit test for the predicate                                                                             |
-| R6  | **A11y regressions with no net**                                                                                                 | swapped widget drops a key path                         | S1 installs `@testing-library/svelte` + happy-dom; every swap lands with at least one behaviour test                       |
-| R7  | **Review fatigue** — ~190 vendored files swamp the diff                                                                          | PR is unreviewable                                      | normalization and restyle are scripted and committed as **two** commits per slice (vendored-raw, then normalized+restyled) |
-| R8  | **Dependency creep** — bits-ui + tailwind-variants + tw-animate-css + @internationalized/date                                    | bundle grows                                            | measure shell chunk gz before/after S2; record the delta in the plan; the editor chunk must not move                       |
-| R9  | **Alias friction** — the CLI wants `svelte.config.js` aliases and mellon has none (SvelteKit 3 keeps config in `vite.config.ts`) | `add` fails to resolve `#lib`                           | S1 task 1.1 probes the CLI in 30 min and falls back to the registry fetcher (§2.2 + plan 1.2)                              |
+| #   | risk                                                                                                                             | trigger                                                 | mitigation                                                                                                                            |
+| :-- | :------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------ |
+| R1  | **Identity erosion** — vendored defaults leak through and the console starts looking like every other admin                      | a screen fails §11.5 beside gofar.id                    | §2.1 law 2: restyle is a review gate, not a suggestion                                                                                |
+| R2  | **Portal geometry** — overlays mount to `<body>` and detach from the content box                                                 | a popover/select on a rail field floats outside the box | per-overlay `portalProps`/`forceMount` decision recorded in the slice; dialogs may escape, field popovers must anchor                 |
+| R3  | **Silent token miss** — a class resolves to nothing because the `--color-*` twin is missing (§3.3)                               | invisible border/text in a vendored component           | **S1 done**: all 18 `--color-*` twins added, `palette.test.ts` gates the pairs, `harness.dom.test.ts` asserts `bg-primary` at runtime |
+| R4  | **Double scroll** — `Sidebar.Inset` is a `<main>`; pages own their scroll                                                        | two scrollbars, sticky headers break                    | S2 task 2.4 includes the scroll audit before restyle                                                                                  |
+| R5  | **vim/⌘B theft**                                                                                                                 | Ctrl+B pages up in normal mode today                    | §5.1 guard, with a unit test for the predicate                                                                                        |
+| R6  | **A11y regressions with no net**                                                                                                 | swapped widget drops a key path                         | S1 installs `@testing-library/svelte` + happy-dom; every swap lands with at least one behaviour test                                  |
+| R7  | **Review fatigue** — ~190 vendored files swamp the diff                                                                          | PR is unreviewable                                      | normalization and restyle are scripted and committed as **two** commits per slice (vendored-raw, then normalized+restyled)            |
+| R8  | **Dependency creep** — bits-ui + tailwind-variants + tw-animate-css + @internationalized/date                                    | bundle grows                                            | measure shell chunk gz before/after S2; record the delta in the plan; the editor chunk must not move                                  |
+| R9  | **Alias friction** — the CLI wants `svelte.config.js` aliases and mellon has none (SvelteKit 3 keeps config in `vite.config.ts`) | `add` fails to resolve `#lib`                           | **RESOLVED in S1**: the CLI reads `components.json` and resolves `#lib` correctly with no `svelte.config.js`; no fetcher needed       |
 
 ## 9. Decision log
 
-| #   | date       | decision          | ruling                                                                                                                                                                                                                                                  |
-| :-- | :--------- | :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D1  | 2026-11-20 | Migration shape   | **A2** — shadcn substrate, mellon preset. Not A1 (default look), not a full rewrite of every page                                                                                                                                                       |
-| D2  | 2026-11-20 | Shell             | **adopt the `sidebar` block** (`variant="inset"`, `collapsible="icon"`) rather than keep the hand-built nav                                                                                                                                             |
-| D3  | 2026-11-20 | Documentation     | **no DESIGN.md edits** while experimental; this file + the plan are the record                                                                                                                                                                          |
-| D4  | 2026-11-20 | Slicing           | **five slices**, each independently releasable, each carrying its own pages                                                                                                                                                                             |
-| D5  | 2026-11-20 | ⌘B                | **guard** on text surfaces; vim keeps Ctrl+B inside the editor                                                                                                                                                                                          |
-| D6  | 2026-11-20 | Persistence       | keep `navRail` localStorage; the vendored cookie line is removed                                                                                                                                                                                        |
-| D7  | 2026-11-20 | Icon library      | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package                                                                                                                                                |
-| D8  | 2026-11-20 | `cn`              | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                                                                                                                                                               |
-| D9  | 2026-11-20 | Drift vs doctrine | **doctrine wins.** The content box drops `rounded-2xl` + `shadow-sm`; the radius ceiling is a hard exit gate repo-wide. Six of the ten `rounded-xl` offenders die with their components; `Palette`, `ImagePicker` and the photo canvas are edited in S2 |
+| #   | date       | decision           | ruling                                                                                                                                                                                                                                                  |
+| :-- | :--------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D1  | 2026-11-20 | Migration shape    | **A2** — shadcn substrate, mellon preset. Not A1 (default look), not a full rewrite of every page                                                                                                                                                       |
+| D2  | 2026-11-20 | Shell              | **adopt the `sidebar` block** (`variant="inset"`, `collapsible="icon"`) rather than keep the hand-built nav                                                                                                                                             |
+| D3  | 2026-11-20 | Documentation      | **no DESIGN.md edits** while experimental; this file + the plan are the record                                                                                                                                                                          |
+| D4  | 2026-11-20 | Slicing            | **five slices**, each independently releasable, each carrying its own pages                                                                                                                                                                             |
+| D5  | 2026-11-20 | ⌘B                 | **guard** on text surfaces; vim keeps Ctrl+B inside the editor                                                                                                                                                                                          |
+| D6  | 2026-11-20 | Persistence        | keep `navRail` localStorage; the vendored cookie line is removed                                                                                                                                                                                        |
+| D7  | 2026-11-20 | Icon library       | rewrite `@lucide/svelte` → `lucide-svelte` (already shipped, v1) instead of adding a second icon package                                                                                                                                                |
+| D8  | 2026-11-20 | `cn`               | implement with `clsx` + `tailwind-merge`; do not add the `cn` npm package                                                                                                                                                                               |
+| D9  | 2026-11-20 | Drift vs doctrine  | **doctrine wins.** The content box drops `rounded-2xl` + `shadow-sm`; the radius ceiling is a hard exit gate repo-wide. Six of the ten `rounded-xl` offenders die with their components; `Palette`, `ImagePicker` and the photo canvas are edited in S2 |
+| D10 | 2026-11-20 | Alias declarations | aliases live in `:root` **only** — all eighteen are `var(--core)` and the core flips in the dark block, so duplicating them would only create drift. `palette.test.ts` taught the literal/alias distinction instead of being relaxed                    |
+| D11 | 2026-11-20 | Registry access    | the CLI works (`#lib` resolves from `components.json`, no `svelte.config.js`); the fallback fetcher is **not built**. Test harness is filename-split: `*.test.ts` → node, `*.dom.test.ts` → happy-dom + forced runes                                    |
 
 ## 10. Exit gate
 

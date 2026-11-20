@@ -16,7 +16,12 @@
 	--foreground: #171521;
 	/* cards sit lighter than the page — the cheap elevation trick */
 	--card: #ffffff;
-	--primary: #1c1a29;
+	/* shadcn vocabulary (SHADCN.md §3): --primary is the ACTION FILL, not ink.
+	   Measured 2026-11-20: this name had zero consumers in markup — ink is
+	   spoken as --foreground (181 sites). The aliases below are declared ONCE
+	   here and resolve per-theme, because every one is a var() reference:
+	   --background flips, so --primary-foreground flips with it. */
+	--primary: var(--brand);
 	--muted: #edeaf6;
 	--muted-foreground: #6f6a80;
 	--accent: #ece8f4;
@@ -39,6 +44,28 @@
 	--danger: #b91c1c;
 	--diff-add: #15803d;
 	--diff-del: #b91c1c;
+
+	/* ── shadcn aliases (SHADCN.md §3.2/§3.3) — theme-agnostic by construction:
+	   each points at a token that already flips in [data-theme='dark']. ── */
+	--primary-foreground: var(--background);
+	--secondary: var(--muted);
+	--secondary-foreground: var(--foreground);
+	--popover: var(--card);
+	--popover-foreground: var(--foreground);
+	--input: var(--border);
+	--ring: var(--brand);
+	--destructive: var(--danger);
+	--destructive-foreground: var(--background);
+	/* the sidebar block's eight — §11.1: ONE chrome mass, so its border is
+	   transparent, not a hairline. */
+	--sidebar: var(--chrome);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-primary: var(--brand);
+	--sidebar-primary-foreground: var(--background);
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--foreground);
+	--sidebar-border: transparent;
+	--sidebar-ring: var(--brand);
 }
 
 [data-theme='dark'] {
@@ -46,7 +73,8 @@
 	--foreground: #eae8f2;
 	/* one step above the page — depth without shadows (§11.3 holds) */
 	--card: #171522;
-	--primary: #eae8f2;
+	/* no --primary here: it is var(--brand) from :root, and --brand has
+	   already flipped above (SHADCN.md §3.1). */
 	--muted: #262336;
 	--muted-foreground: #9d97b3;
 	--accent: #221f31;
@@ -92,6 +120,25 @@
 	--color-danger: var(--danger);
 	--color-diff-add: var(--diff-add);
 	--color-diff-del: var(--diff-del);
+	/* shadcn utility twins (SHADCN.md §3.3) — a token without a --color-* pair
+	   generates NO utility, and the failure is silent (R3). */
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
