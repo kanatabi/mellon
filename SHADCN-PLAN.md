@@ -10,10 +10,14 @@ is committed with the slice, so the ledger is the audit trail.
 
 ## How to work this plan
 
-- **One slice = one branch = one release.** Branch `feat/shadcn-s<n>-<theme>`
-  off `main`; PR reviewed; released through the anvil ladder. Never stack two
-  slices on one branch — the whole point of five is that any slice can be
-  reverted alone.
+- **One slice = one branch, merged into the INTEGRATION branch.**
+  **Amended 2026-11-20 (owner call):** slices no longer release individually.
+  `feat/shadcn-integration` forks from `main` and is where ALL phases combine —
+  each slice branch (`feat/shadcn-s<n>-<theme>`) forks from it and merges back
+  into it; `main` receives **one merge** when the experiment is accepted, or
+  the integration branch is deleted and nothing on main ever knew. Per-slice
+  revert is preserved by the slice branches' merge commits, not by releases.
+  The anvil ladder runs ONCE, at the end.
 - **Two commits per slice minimum**: `vendor: add <items> (raw)` then
   `feat(ui): <slice> — <what it replaces>`. The raw commit makes the restyle
   reviewable as a diff-of-a-diff; squashing them hides the work.
