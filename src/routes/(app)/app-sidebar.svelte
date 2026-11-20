@@ -110,7 +110,7 @@
 					{/snippet}
 				</Sidebar.GroupLabel>
 				<Collapsible.Content
-					class="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden"
+					class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
 				>
 					<Sidebar.GroupContent id={sectionId}>
 						<Sidebar.Menu class="gap-1">
@@ -124,7 +124,7 @@
 									<Sidebar.MenuButton
 										isActive={current}
 										tooltipContent={item.label}
-										class="gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent/60 hover:text-foreground data-active:bg-transparent data-active:text-foreground {current
+										class="gap-3 rounded-md px-3 py-2 text-sm transition-[width,height,padding,background-color,color] group-data-[collapsible=icon]:mx-auto hover:bg-accent/60 hover:text-foreground data-active:bg-transparent data-active:text-foreground {current
 											? 'font-medium text-foreground'
 											: 'text-muted-foreground'}"
 									>
@@ -197,7 +197,7 @@
 				<Sidebar.MenuButton
 					onclick={() => sidebar.toggle()}
 					tooltipContent="Expand sidebar"
-					class="gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground data-active:bg-transparent data-active:text-foreground"
+					class="gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-[width,height,padding,background-color,color] group-data-[collapsible=icon]:mx-auto hover:bg-accent/60 hover:text-foreground data-active:bg-transparent data-active:text-foreground"
 				>
 					{#if sidebar.open}
 						<PanelLeftClose class="size-4 shrink-0" />

@@ -1,4 +1,13 @@
 @import 'tailwindcss';
+/* The vendored blocks' animation vocabulary (data-open:animate-in, the
+   sheet's slide, the dropdown's zoom, collapsible-down/up). Installed in S1
+   but NOT loaded until the S2 round (the owner caught it: no section
+   -collapse animation) — without it every animate-* class in ui/ resolves
+   to nothing. It MUST ride the tailwind pipeline (its @theme/@utility
+   directives are browser-invisible otherwise), and it must be a VENDORED
+   COPY: the package's exports block every resolver this build uses. See
+   src/lib/styles/tw-animate.css for the provenance header. */
+@import '../lib/styles/tw-animate.css';
 @plugin '@tailwindcss/typography';
 @import '@fontsource-variable/inter';
 @import '@fontsource/jetbrains-mono';
