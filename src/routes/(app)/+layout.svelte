@@ -181,7 +181,9 @@
 		box below is the only scroll container -->
 <Sidebar.Provider
 	bind:open={railOpen}
-	onOpenChange={(open) => navRail.setCollapsed(!open)}
+	// 1:1 — onOpenChange hands us the OPEN value and setOpen stores its
+	// inverse. A second negation here inverts the toggle (the two-click bug).
+	onOpenChange={(open) => navRail.setOpen(open)}
 	class="h-svh overflow-hidden bg-chrome"
 >
 	<div class="route-progress" data-phase={barState} aria-hidden="true"></div>

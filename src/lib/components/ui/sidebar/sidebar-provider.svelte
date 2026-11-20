@@ -25,7 +25,7 @@
 			onOpenChange(value);
 			// D6 (SHADCN.md §5.2): the block's `document.cookie` line is removed —
 			// rails persist in localStorage via the shell's `onOpenChange`
-			// (`navRail.setCollapsed`), never request state. Nothing server-side
+			// (`navRail.setOpen`), never request state. Nothing server-side
 			// reads the rail.
 		}
 	});
