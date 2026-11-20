@@ -17,6 +17,9 @@
 		side?: 'left' | 'right';
 		variant?: 'sidebar' | 'floating' | 'inset';
 		collapsible?: 'offcanvas' | 'icon' | 'none';
+		/** A2: forwarded to the mobile `Sheet.Root` — mellon returns focus to
+		 *  the hamburger when the USER closes the sheet (X / Esc / backdrop). */
+		onOpenChange?: (open: boolean) => void;
 	} = $props();
 
 	const sidebar = useSidebar();
