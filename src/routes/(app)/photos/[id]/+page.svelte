@@ -303,7 +303,7 @@
 		<!-- Preview canvas: permanently dark so a white photo still reads —
 		     a lightbox backdrop, not a theme surface (layout.css). -->
 		<div
-			class="photo-canvas flex min-h-[45vh] flex-1 items-center justify-center overflow-hidden rounded-xl border border-border p-4"
+			class="photo-canvas flex min-h-[45vh] flex-1 items-center justify-center overflow-hidden rounded-lg border border-border p-4"
 		>
 			<img
 				src={data.photo.src}
