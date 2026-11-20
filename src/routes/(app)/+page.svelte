@@ -133,7 +133,7 @@
 			href="/posts/new"
 			class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
 		>
-			<Plus class="size-4" /> new post
+			<Plus class="size-4" /> New Post
 		</a>
 	</div>
 

@@ -36,15 +36,24 @@
 </svelte:head>
 
 <section class="flex flex-col gap-6">
-	<div class="flex flex-col gap-1">
-		<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
-			<Users class="size-5 text-muted-foreground" aria-hidden="true" />
-			Users
-		</h1>
-		<p class="font-mono text-xs text-muted-foreground">
-			roles are per-request facts (lumen reads the row every call) — a reset, a demotion, a
-			completed password change all bite on the NEXT request
-		</p>
+	<div class="flex items-end justify-between gap-4">
+		<div class="flex flex-col gap-1">
+			<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
+				<Users class="size-5 text-muted-foreground" aria-hidden="true" />
+				Users
+			</h1>
+			<p class="font-mono text-xs text-muted-foreground">
+				roles are per-request facts (lumen reads the row every call) — a reset, a demotion, a
+				completed password change all bite on the NEXT request
+			</p>
+		</div>
+		<!-- the door sits above the table, in the header row (owner call) -->
+		<Dialog.Trigger
+			class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+		>
+			<UserPlus class="size-4" aria-hidden="true" />
+			Create New User
+		</Dialog.Trigger>
 	</div>
 
 	{#if reveal?.tempPassword}
@@ -66,69 +75,12 @@
 		<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
 	{/if}
 
-	<div class="overflow-x-auto rounded-lg border border-border bg-card">
-		<table class="w-full border-collapse font-mono text-xs">
-			<thead>
-				<tr
-					class="border-b border-border text-left text-[10px] tracking-widest text-muted-foreground uppercase"
-				>
-					<th class="px-4 py-2 font-medium">username</th>
-					<th class="px-4 py-2 font-medium">role</th>
-					<th class="px-4 py-2 font-medium">state</th>
-					<th class="px-4 py-2 font-medium">since</th>
-					<th class="px-4 py-2 text-right font-medium">reset</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each data.users as u (u.username)}
-					<tr class="border-b border-border/50 last:border-0">
-						<td class="px-4 py-2 text-foreground">{u.username}</td>
-						<td class="px-4 py-2">{u.role}</td>
-						<td class="px-4 py-2">
-							{#if u.mustChange}
-								<span class="text-accent-amber" title="temp password — guided change on next login"
-									>Temp</span
-								>
-							{:else}
-								<span class="text-muted-foreground">Set</span>
-							{/if}
-						</td>
-						<td class="px-4 py-2 text-muted-foreground">{u.createdAt}</td>
-						<td class="px-4 py-2 text-right">
-							<form
-								method="POST"
-								action="?/reset"
-								use:enhance={() => {
-									return ({ update }) => update();
-								}}
-							>
-								<input type="hidden" name="username" value={u.username} />
-								<button
-									type="submit"
-									class="rounded-full border border-border px-3 py-1 transition-colors hover:border-accent-amber/60 hover:text-accent-amber"
-								>
-									Issue new temp
-								</button>
-							</form>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-
 	<!-- The creation dialog (owner ask 2026-11-21): the page keeps a
 	     `Create New User` door above the table. The dialog closes on SUCCESS
 	     so the one-time temp-password reveal below is what the user reads
 	     next; a failed submit stays open with the error inline. bits-ui
 	     autofocuses the first field (the username) — keyboard-first holds. -->
 	<Dialog.Root bind:open={createOpen}>
-		<Dialog.Trigger
-			class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
-		>
-			<UserPlus class="size-4" aria-hidden="true" />
-			Create New User
-		</Dialog.Trigger>
 		<Dialog.Content class="sm:max-w-md">
 			<Dialog.Header>
 				<Dialog.Title>Create a user</Dialog.Title>
@@ -195,6 +147,57 @@
 			</form>
 		</Dialog.Content>
 	</Dialog.Root>
+
+	<div class="overflow-x-auto rounded-lg border border-border bg-card">
+		<table class="w-full border-collapse font-mono text-xs">
+			<thead>
+				<tr
+					class="border-b border-border text-left text-[10px] tracking-widest text-muted-foreground uppercase"
+				>
+					<th class="px-4 py-2 font-medium">username</th>
+					<th class="px-4 py-2 font-medium">role</th>
+					<th class="px-4 py-2 font-medium">state</th>
+					<th class="px-4 py-2 font-medium">since</th>
+					<th class="px-4 py-2 text-right font-medium">reset</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each data.users as u (u.username)}
+					<tr class="border-b border-border/50 last:border-0">
+						<td class="px-4 py-2 text-foreground">{u.username}</td>
+						<td class="px-4 py-2">{u.role}</td>
+						<td class="px-4 py-2">
+							{#if u.mustChange}
+								<span class="text-accent-amber" title="temp password — guided change on next login"
+									>Temp</span
+								>
+							{:else}
+								<span class="text-muted-foreground">Set</span>
+							{/if}
+						</td>
+						<td class="px-4 py-2 text-muted-foreground">{u.createdAt}</td>
+						<td class="px-4 py-2 text-right">
+							<form
+								method="POST"
+								action="?/reset"
+								use:enhance={() => {
+									return ({ update }) => update();
+								}}
+							>
+								<input type="hidden" name="username" value={u.username} />
+								<button
+									type="submit"
+									class="rounded-full border border-border px-3 py-1 transition-colors hover:border-accent-amber/60 hover:text-accent-amber"
+								>
+									Issue new temp
+								</button>
+							</form>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 
 	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
 		creating or resetting issues a SERVER-GENERATED temporary password (syllable form, ~50 bits): it

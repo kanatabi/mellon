@@ -407,7 +407,7 @@
 							? 'bg-brand/15 text-foreground'
 							: 'text-muted-foreground hover:text-foreground'}"
 					>
-						<LayoutGrid class="size-3.5" /> tiles
+						<LayoutGrid class="size-3.5" /> Tiles
 					</button>
 					<button
 						type="button"
@@ -418,7 +418,7 @@
 							? 'bg-brand/15 text-foreground'
 							: 'text-muted-foreground hover:text-foreground'}"
 					>
-						<Table class="size-3.5" /> table
+						<Table class="size-3.5" /> Table
 					</button>
 				</div>
 				<button
@@ -426,7 +426,7 @@
 					onclick={() => (pickerOpen = true)}
 					class="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-brand hover:text-foreground active:scale-[0.98]"
 				>
-					<Plus class="size-4" /> upload
+					<Plus class="size-4" /> Upload Photos
 				</button>
 			</div>
 		</div>
