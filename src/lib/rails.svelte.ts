@@ -24,6 +24,14 @@ class Rail {
 		if (browser) localStorage.setItem(`mellon.rail.${this.key}`, this.collapsed ? '1' : '0');
 	};
 
+	// Absolute setter for the sidebar block's Provider (S2): `setOpen` hands us
+	// the OPEN value; the flip in `toggle` can't express "set to X". Same
+	// persistence, same key — an existing session's rail state survives.
+	setCollapsed = (open: boolean) => {
+		this.collapsed = !open;
+		if (browser) localStorage.setItem(`mellon.rail.${this.key}`, this.collapsed ? '1' : '0');
+	};
+
 	constructor(private key: string) {}
 }
 

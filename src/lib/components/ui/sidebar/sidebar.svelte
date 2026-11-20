@@ -1,0 +1,112 @@
+<script lang="ts">
+	import * as Sheet from '#lib/components/ui/sheet/index.js';
+	import { cn, type WithElementRef } from '#lib/utils.js';
+	import { SIDEBAR_WIDTH_MOBILE } from './constants.js';
+	import { useSidebar } from './context.svelte.js';
+	import type { HTMLAttributes } from 'svelte/elements';
+
+	let {
+		ref = $bindable(null),
+		side = 'left',
+		variant = 'sidebar',
+		collapsible = 'offcanvas',
+		class: className,
+		children,
+		...restProps
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
+		side?: 'left' | 'right';
+		variant?: 'sidebar' | 'floating' | 'inset';
+		collapsible?: 'offcanvas' | 'icon' | 'none';
+		/** A2: forwarded to the mobile `Sheet.Root` — mellon returns focus to
+		 *  the hamburger when the USER closes the sheet (X / Esc / backdrop). */
+		onOpenChange?: (open: boolean) => void;
+	} = $props();
+
+	const sidebar = useSidebar();
+</script>
+
+{#if collapsible === 'none'}
+	<div
+		class={cn(
+			'flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground',
+			className
+		)}
+		bind:this={ref}
+		{...restProps}
+	>
+		{@render children?.()}
+	</div>
+{:else if sidebar.isMobile}
+	<Sheet.Root bind:open={() => sidebar.openMobile, (v) => sidebar.setOpenMobile(v)} {...restProps}>
+		<Sheet.Content
+			bind:ref
+			data-sidebar="sidebar"
+			data-slot="sidebar"
+			data-mobile="true"
+			class={cn(
+				'w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden',
+				className
+			)}
+			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
+			{side}
+		>
+			<Sheet.Header class="sr-only">
+				<Sheet.Title>Sidebar</Sheet.Title>
+				<Sheet.Description>Displays the mobile sidebar.</Sheet.Description>
+			</Sheet.Header>
+			<div class="flex h-full w-full flex-col">
+				{@render children?.()}
+			</div>
+		</Sheet.Content>
+	</Sheet.Root>
+{:else}
+	<!-- A2: `lg:block`/`lg:flex`, not the block's `md:*` — mellon's rail starts
+	     at lg (owner call 2026-11-08); below lg the hamburger + sheet own nav.
+	     IsMobile (hooks/is-mobile) is patched to the same 1024 line. -->
+	<div
+		bind:this={ref}
+		class="group peer hidden text-sidebar-foreground lg:block"
+		data-state={sidebar.state}
+		data-collapsible={sidebar.state === 'collapsed' ? collapsible : ''}
+		data-variant={variant}
+		data-side={side}
+		data-slot="sidebar"
+	>
+		<!-- This is what handles the sidebar gap on desktop -->
+		<div
+			data-slot="sidebar-gap"
+			class={cn(
+				'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
+				'group-data-[collapsible=offcanvas]:w-0',
+				'group-data-[side=right]:rotate-180',
+				variant === 'floating' || variant === 'inset'
+					? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_(--spacing(4)))]'
+					: 'group-data-[collapsible=icon]:w-(--sidebar-width-icon)'
+			)}
+		></div>
+		<div
+			data-slot="sidebar-container"
+			data-side={side}
+			class={cn(
+				'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:start-0 data-[side=left]:group-data-[collapsible=offcanvas]:start-[calc(var(--sidebar-width)_*_-1)] data-[side=right]:end-0 data-[side=right]:group-data-[collapsible=offcanvas]:end-[calc(var(--sidebar-width)_*_-1)] lg:flex',
+				// Adjust the padding for floating and inset variants.
+				variant === 'floating' || variant === 'inset'
+					? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_(--spacing(4))_+_2px)]'
+					: // A2 (§11.1): the `sidebar` variant drops the block's
+						// `group-data-[side=left]:border-e` / right `border-s` —
+						// ONE chrome mass, no internal edge, full-bleed.
+						'group-data-[collapsible=icon]:w-(--sidebar-width-icon)',
+				className
+			)}
+			{...restProps}
+		>
+			<div
+				data-sidebar="sidebar"
+				data-slot="sidebar-inner"
+				class="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
+			>
+				{@render children?.()}
+			</div>
+		</div>
+	</div>
+{/if}
