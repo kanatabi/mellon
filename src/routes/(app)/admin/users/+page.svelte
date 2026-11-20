@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { UserPlus, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import Select from '#lib/components/Select.svelte';
 	import type { ActionData, PageData } from './$types';
 
@@ -15,6 +16,12 @@
 	// action's formData.get('role') reads the same field as the native
 	// select it replaced (the wire is untouched)
 	let newRole = $state('editor');
+
+	// The creation form lives in a dialog (owner ask 2026-11-21): the page
+	// keeps a `Create New User` door above the table. The dialog closes
+	// itself on SUCCESS so the one-time temp-password reveal (page-level,
+	// below) is what the user reads next; a failed submit keeps it open.
+	let createOpen = $state(false);
 
 	// the one-time truth: temps exist in THIS render only — navigating away
 	// (or any next action) drops them, exactly like lumen's response does.
@@ -110,52 +117,84 @@
 		</table>
 	</div>
 
-	<form
-		method="POST"
-		action="?/create"
-		class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card px-4 py-3"
-		use:enhance={() => {
-			return ({ update }) => update();
-		}}
-	>
-		<label class="flex flex-col gap-1.5">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>username</span
-			>
-			<input
-				type="text"
-				name="username"
-				required
-				pattern={'^[a-z0-9][a-z0-9._-]{1,31}$'}
-				title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
-				class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-			/>
-		</label>
-		<label class="flex flex-col gap-1.5">
-			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-				>role</span
-			>
-			<Select
-				items={[
-					{ value: 'editor', label: 'editor' },
-					{ value: 'admin', label: 'admin' }
-				]}
-				value={newRole}
-				onchange={(role) => (newRole = role)}
-				ariaLabel="Role"
-				name="role"
-				size="md"
-				popWidth={160}
-			/>
-		</label>
-		<button
-			type="submit"
+	<!-- The creation dialog (owner ask 2026-11-21): the page keeps a
+	     `Create New User` door above the table. The dialog closes on SUCCESS
+	     so the one-time temp-password reveal below is what the user reads
+	     next; a failed submit stays open with the error inline. bits-ui
+	     autofocuses the first field (the username) — keyboard-first holds. -->
+	<Dialog.Root bind:open={createOpen}>
+		<Dialog.Trigger
 			class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
 		>
 			<UserPlus class="size-4" aria-hidden="true" />
-			Create
-		</button>
-	</form>
+			Create New User
+		</Dialog.Trigger>
+		<Dialog.Content class="sm:max-w-md">
+			<Dialog.Header>
+				<Dialog.Title>Create a user</Dialog.Title>
+				<Dialog.Description class="font-mono text-xs text-muted-foreground">
+					lumen mints a server-generated temporary password, shown once on this page after the
+					dialog closes.
+				</Dialog.Description>
+			</Dialog.Header>
+			<form
+				method="POST"
+				action="?/create"
+				class="flex flex-col gap-4"
+				use:enhance={() => {
+					// close on SUCCESS only — a failed submit keeps the dialog open
+					// with the error inline; the one-time reveal lives on the page
+					return async ({ update, result }) => {
+						await update();
+						if (result.type === 'success') createOpen = false;
+					};
+				}}
+			>
+				<label class="flex flex-col gap-1.5">
+					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+						>username</span
+					>
+					<input
+						type="text"
+						name="username"
+						required
+						pattern={'^[a-z0-9][a-z0-9._-]{1,31}$'}
+						title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
+						class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
+					/>
+				</label>
+				<label class="flex flex-col gap-1.5">
+					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
+						>role</span
+					>
+					<Select
+						items={[
+							{ value: 'editor', label: 'editor' },
+							{ value: 'admin', label: 'admin' }
+						]}
+						value={newRole}
+						onchange={(role) => (newRole = role)}
+						ariaLabel="Role"
+						name="role"
+						size="md"
+						popWidth={160}
+					/>
+				</label>
+				{#if form?.error}
+					<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
+				{/if}
+				<Dialog.Footer>
+					<button
+						type="submit"
+						class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+					>
+						<UserPlus class="size-4" aria-hidden="true" />
+						Create
+					</button>
+				</Dialog.Footer>
+			</form>
+		</Dialog.Content>
+	</Dialog.Root>
 
 	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
 		creating or resetting issues a SERVER-GENERATED temporary password (syllable form, ~50 bits): it

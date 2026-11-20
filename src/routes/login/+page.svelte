@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { LoaderCircle } from 'lucide-svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import type { ActionData } from './$types';
@@ -9,6 +10,12 @@
 	}
 
 	let { form }: Props = $props();
+
+	// The gate's progress indicator (owner ask 2026-11-21): the submit round
+	// trip (lumen mints the session) previously showed NOTHING. The spinner
+	// rides the enhance lifecycle; the button disables so a second Enter
+	// can't double-mint.
+	let pending = $state(false);
 </script>
 
 <svelte:head>
@@ -32,7 +39,11 @@
 		method="POST"
 		class="relative flex w-full max-w-sm flex-col gap-4"
 		use:enhance={() => {
-			return ({ update }) => update();
+			pending = true;
+			return async ({ update }) => {
+				pending = false;
+				await update();
+			};
 		}}
 	>
 		<label class="flex flex-col gap-1.5">
@@ -64,9 +75,16 @@
 		{/if}
 		<button
 			type="submit"
-			class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+			disabled={pending}
+			class="flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-70"
 		>
-			Enter
+			{#if pending}
+				<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+				<span>Entering…</span>
+				<span class="sr-only" role="status">Signing in — the session is being minted</span>
+			{:else}
+				Enter
+			{/if}
 		</button>
 		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
 			sessions are minted by lumen — the portal only carries the cookie

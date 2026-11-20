@@ -287,7 +287,7 @@
 						? 'bg-brand/10 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
-					{c === 'raw' ? 'raw json' : 'parsed'}
+					{c === 'raw' ? 'Raw JSON' : 'Parsed'}
 				</button>
 			{/each}
 		</div>
@@ -317,7 +317,7 @@
 				: 'border-border text-muted-foreground hover:text-foreground'}"
 		>
 			{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-			{revealAll ? 'hide values' : 'show values'}
+			{revealAll ? 'Hide values' : 'Show values'}
 		</button>
 		{#if presentation === 'table'}
 			<label class="ml-auto flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
