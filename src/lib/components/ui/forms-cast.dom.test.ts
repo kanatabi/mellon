@@ -23,7 +23,7 @@ describe('the button cast', () => {
 		expect(b.className).not.toContain('h-8');
 	});
 
-	it('quiet is the mono outlined chip — riding the default size', () => {
+	it('quiet is the mono PICKER chip — a real surface (D14)', () => {
 		const { getByRole } = render(Button, {
 			props: { variant: 'quiet', children: undefined as never }
 		});
@@ -31,6 +31,12 @@ describe('the button cast', () => {
 		expect(b.className).toContain('font-mono');
 		expect(b.className).toContain('text-xs');
 		expect(b.className).toContain('text-muted-foreground');
+		// the owner's "I don't like this kind of button": the chip carries the
+		// select-trigger's anatomy — a card surface + the border — so a
+		// secondary action reads as a control, not as bare text
+		expect(b.className).toContain('bg-card');
+		expect(b.className).toContain('border-border');
+		expect(b.className).not.toContain('bg-transparent');
 		// the ordering pin: the variant's pill padding wins over the default
 		// size's h-8/px-2.5 (tv definition order: size before variant)
 		expect(b.className).toContain('px-3');

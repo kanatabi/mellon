@@ -585,7 +585,12 @@
 					<X class="size-3.5" /> delete
 				</Button>
 				<div class="flex gap-2">
-					<Button type="button" variant="quiet" class="border-transparent" onclick={closeDialog}>
+					<Button
+						type="button"
+						variant="quiet"
+						class="border-transparent bg-transparent px-3 py-1.5"
+						onclick={closeDialog}
+					>
 						Close
 					</Button>
 					<Button

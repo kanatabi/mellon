@@ -29,7 +29,12 @@
 				primary:
 					'h-auto rounded-full bg-brand px-4 py-2 text-white transition-all hover:brightness-110 active:translate-y-0 disabled:opacity-70',
 				quiet:
-					'h-auto rounded-full border-border bg-transparent px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground',
+					// D14 (2026-11-21, owner: "I don't like this kind of button"): the
+					// transparent text-chip read as bare text on any surface. The
+					// quiet chip gains the PICKER SURFACE — bg-card + the border,
+					// the select-trigger's anatomy — so a secondary action reads
+					// as a control everywhere it sits.
+					'h-auto rounded-full border-border bg-card px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground',
 				danger:
 					'h-auto rounded-full border-danger/40 px-3 py-1.5 font-mono text-xs text-danger transition-colors hover:bg-danger/10',
 				soft: 'h-auto rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground',

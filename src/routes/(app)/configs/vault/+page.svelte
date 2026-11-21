@@ -848,7 +848,7 @@
 				<Button
 					type="button"
 					variant="quiet"
-					class="border-transparent px-3 py-1.5"
+					class="border-transparent bg-transparent px-3 py-1.5"
 					onclick={() => (onboardOpen = false)}
 				>
 					Cancel
@@ -906,7 +906,7 @@
 				<Button
 					type="button"
 					variant="quiet"
-					class="border-transparent px-3 py-1.5"
+					class="border-transparent bg-transparent px-3 py-1.5"
 					onclick={() => (addEnvOpen = false)}
 				>
 					Cancel
