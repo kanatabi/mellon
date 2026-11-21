@@ -32,6 +32,28 @@ describe('the house confirm', () => {
 		expect(onConfirm).toHaveBeenCalledTimes(1);
 	});
 
+	it('the verbs are UNIFORM — same height anatomy (the D16 report)', async () => {
+		const { getByRole } = render(Confirm, {
+			props: {
+				heading: 'h',
+				confirmLabel: 'Leave',
+				onConfirm: () => {},
+				onClose: () => {}
+			}
+		});
+		// the Cancel rides the registry's buttonVariants (default size h-8);
+		// the verb rides primary (h-auto py-2) — they MUST carry the same
+		// height anatomy or the footer renders a big verb beside a shrunk
+		// cancel (the owner's screenshot)
+		const cancel = getByRole('button', { name: 'Cancel' });
+		const verb = getByRole('button', { name: 'Leave' });
+		for (const cls of ['h-auto', 'py-2', 'text-sm', 'rounded-full']) {
+			expect(cancel.className, 'Cancel lacks ' + cls).toContain(cls);
+			expect(verb.className, 'the verb lacks ' + cls).toContain(cls);
+		}
+		expect(verb.className).not.toContain('h-8');
+	});
+
 	it('the destructive verb fills with danger, not the violet', async () => {
 		const { getByRole } = render(Confirm, {
 			props: {

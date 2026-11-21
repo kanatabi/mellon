@@ -65,7 +65,7 @@
 		{/if}
 		<div class="mt-5 flex items-center justify-end gap-2">
 			<AlertDialog.Cancel
-				class="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+				class="h-auto rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 				onclick={(e) => {
 					if (busy) e.preventDefault();
 				}}
