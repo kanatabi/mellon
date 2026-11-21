@@ -81,6 +81,7 @@ export const emojiSource: CompletionSource = (ctx: CompletionContext): Completio
 	// the validFor was REMOVED (the pending-stuck candidate — the status
 	// never reached 'active'); the plain result = re-queried per keystroke
 	// (cheap: static options, the in-memory filter)
+	console.log('EMOJI: returning', EMOJI_OPTIONS.length, '| aborted:', ctx.aborted);
 	return {
 		from: before.from,
 		options: EMOJI_OPTIONS
@@ -349,5 +350,6 @@ export const keywordSource: CompletionSource = (
 	if (opts.length === 0) return null;
 	const word = ctx.matchBefore(/[a-zA-Z_][\w.-]*$/);
 	if (!word) return null;
+	console.log('KEYWORD: returning', opts.length, '| aborted:', ctx.aborted);
 	return { from: word.from, options: opts, validFor: /^[a-zA-Z_][\w.-]*$/ };
 };

@@ -217,6 +217,16 @@
 						'| tooltips:',
 						u.view.dom.querySelectorAll('.cm-tooltip').length
 					);
+					if (completionStatus(u.state) === 'pending') {
+						setTimeout(() => {
+							console.log(
+								'CM: LATER(150ms) | completionStatus:',
+								completionStatus(view!.state),
+								'| tooltips:',
+								view!.dom.querySelectorAll('.cm-tooltip').length
+							);
+						}, 150);
+					}
 				}),
 				// the COMPLETION = FIRST (before basicSetup): the config facet's
 				// merge order was the suspect — the override takes the front
@@ -265,6 +275,35 @@
 			]
 		});
 		view = new EditorView({ state, parent: host });
+		// TEMP-DEBUG: the dispatch-spec anatomy — the echo's full-doc replace
+		// vs the typing's 1-char insert, and every effects dispatch
+		const origDispatch = view.dispatch.bind(view);
+		(view as unknown as { dispatch: (...s: unknown[]) => void }).dispatch = (
+			...specs: unknown[]
+		) => {
+			for (const spec of specs) {
+				const sp = spec as {
+					changes?: unknown;
+					selection?: unknown;
+					effects?: unknown[];
+					userEvent?: string;
+					annotations?: unknown[];
+				};
+				console.log(
+					'DISPATCH | userEvent:',
+					sp.userEvent,
+					'| hasChanges:',
+					!!sp.changes,
+					'| hasSelection:',
+					!!sp.selection,
+					'| effects:',
+					(sp.effects ?? []).length,
+					'| annotations:',
+					(sp.annotations ?? []).length
+				);
+			}
+			return origDispatch(...specs);
+		};
 		readStats(view.state);
 		// the word count's initial value (the debounced listener only fires on
 		// changes — a pre-loaded doc counts ONCE here, full copy is fine once)
