@@ -56,6 +56,15 @@ function insideCode(ctx: CompletionContext): boolean {
 }
 
 export const emojiSource: CompletionSource = (ctx: CompletionContext): CompletionResult | null => {
+	// TEMP-DEBUG (the emoji menu's non-appearance — removed after the kill)
+	console.log(
+		'EMOJI: source called | pos:',
+		ctx.pos,
+		'| inCode:',
+		insideCode(ctx),
+		'| options:',
+		EMOJI_OPTIONS.length
+	);
 	if (insideCode(ctx)) return null;
 	// THE VIM PARITY: in NORMAL mode `:` is the Ex-command trigger — vim owns
 	// it, the menu never fires there. Only INSERT-mode typing (where `:` is a
@@ -64,6 +73,10 @@ export const emojiSource: CompletionSource = (ctx: CompletionContext): Completio
 	const cmVim = getCM(ctx.view) as unknown as { state?: { vim?: { mode?: string } } } | null;
 	if (cmVim?.state?.vim && cmVim.state.vim.mode !== 'insert') return null;
 	const before = ctx.matchBefore(/:[a-z0-9_+-]*$/);
+	console.log(
+		'EMOJI: matchBefore:',
+		JSON.stringify(before && ctx.state.sliceDoc(before.from, before.to))
+	);
 	if (!before) return null;
 	return {
 		from: before.from,

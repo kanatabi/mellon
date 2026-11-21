@@ -14,7 +14,7 @@
 	import { getCM, vim as vimKeymap } from '@replit/codemirror-vim';
 	import { markCues } from '#lib/cm-cues.ts';
 	import { regexCues } from '#lib/regex-cues.ts';
-	import { autocompletion, startCompletion } from '@codemirror/autocomplete';
+	import { autocompletion, completionStatus, startCompletion } from '@codemirror/autocomplete';
 	import { emojiSource, keywordSource } from '#lib/completions.ts';
 	import { languages } from '@codemirror/language-data';
 
@@ -202,6 +202,18 @@
 		const state = EditorState.create({
 			doc: value,
 			extensions: [
+				// TEMP-DEBUG: is the completion extension armed at all?
+				EditorView.updateListener.of((u) => {
+					if (u.userEvent?.startsWith('input.type')) {
+						// the completion system's OWN status + the DOM's tooltip count
+						console.log(
+							'CM: typing txn | completionStatus:',
+							completionStatus(u.state),
+							'| tooltips in DOM:',
+							u.view.dom.querySelectorAll('.cm-tooltip').length
+						);
+					}
+				}),
 				basicSetup,
 				markdown({ base: markdownLanguage, codeLanguages: languages }),
 				wrapCompartment.of(wrap ? [EditorView.lineWrapping] : []),
