@@ -410,7 +410,7 @@ copy-paste. The look does not change.
 - [x] `ui/button/button.svelte` — variant map to the cast, mapped from the
       tree's REAL grammar (48-button evidence sweep, not the plan's guess):
       `primary` (NEW: the violet **pill** — `rounded-full bg-brand text-white
-  hover:brightness-110`; the plan's "sizes sm/md rectangles" misread the
+hover:brightness-110`; the plan's "sizes sm/md rectangles" misread the
       tree), `quiet` (the mono outlined chip), `danger` (the destructive pill —
       border-danger/40 + hover wash), `soft` (the pages' text-only ghost square:
       `p-1 hover:text-foreground`, NO bg wash — the plan's "ghost
