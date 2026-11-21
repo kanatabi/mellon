@@ -78,10 +78,12 @@ export const emojiSource: CompletionSource = (ctx: CompletionContext): Completio
 		JSON.stringify(before && ctx.state.sliceDoc(before.from, before.to))
 	);
 	if (!before) return null;
+	// the validFor was REMOVED (the pending-stuck candidate — the status
+	// never reached 'active'); the plain result = re-queried per keystroke
+	// (cheap: static options, the in-memory filter)
 	return {
 		from: before.from,
-		options: EMOJI_OPTIONS,
-		validFor: /^:[a-z0-9_+-]*:?$/
+		options: EMOJI_OPTIONS
 	};
 };
 
