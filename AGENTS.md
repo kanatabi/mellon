@@ -84,6 +84,9 @@ still feeds both planes (single-binary dev shape); unset everywhere falls back t
 
 Branch-per-milestone off `main`, PR-reviewed — never commit directly to `main`.
 Conventional Commits; club related changes into one commit, no micro-commits.
+**Merging to `main` = SQUASH (owner ruling 2026-11-21): one conventional
+commit per round (`git merge --squash <branch>` + one commit); never
+fast-forward a branch merge, never rebase.**
 `PLAN.md` is the owner's local-only journal: gitignored, never committed, never
 recreated in Git.
 
