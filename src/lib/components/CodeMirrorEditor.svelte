@@ -4,7 +4,7 @@
 	import { basicSetup } from 'codemirror';
 	import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 	import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-	import { Compartment, EditorState, Transaction, type TransactionSpec } from '@codemirror/state';
+	import { Compartment, EditorState } from '@codemirror/state';
 	import { EditorView } from '@codemirror/view';
 	import { tags } from '@lezer/highlight';
 	// Community-maintained vim keymap (the npm reality: no @codemirror/vim
@@ -14,7 +14,7 @@
 	import { getCM, vim as vimKeymap } from '@replit/codemirror-vim';
 	import { markCues } from '#lib/cm-cues.ts';
 	import { regexCues } from '#lib/regex-cues.ts';
-	import { autocompletion, completionStatus, startCompletion } from '@codemirror/autocomplete';
+	import { autocompletion, startCompletion } from '@codemirror/autocomplete';
 	import { emojiSource, keywordSource } from '#lib/completions.ts';
 	import { languages } from '@codemirror/language-data';
 
@@ -202,32 +202,6 @@
 		const state = EditorState.create({
 			doc: value,
 			extensions: [
-				// TEMP-DEBUG: is the completion extension armed at all?
-				EditorView.updateListener.of((u) => {
-					// TEMP-DEBUG: the REAL per-transaction userEvents —
-					// ViewUpdate.userEvent is a PHANTOM (the field does not
-					// exist; every read = undefined). The transactions carry it.
-					console.log(
-						'CM: txn | userEvents:',
-						JSON.stringify(u.transactions.map((t) => t.annotation(Transaction.userEvent))),
-						'| docChanged:',
-						u.docChanged,
-						'| completionStatus:',
-						completionStatus(u.state),
-						'| tooltips:',
-						u.view.dom.querySelectorAll('.cm-tooltip').length
-					);
-					if (completionStatus(u.state) === 'pending') {
-						setTimeout(() => {
-							console.log(
-								'CM: LATER(150ms) | completionStatus:',
-								completionStatus(view!.state),
-								'| tooltips:',
-								view!.dom.querySelectorAll('.cm-tooltip').length
-							);
-						}, 150);
-					}
-				}),
 				// the COMPLETION = FIRST (before basicSetup): the config facet's
 				// merge order was the suspect — the override takes the front
 				autocompletion({ override: [emojiSource, keywordSource] }),
@@ -275,29 +249,6 @@
 			]
 		});
 		view = new EditorView({ state, parent: host });
-		// TEMP-DEBUG: the dispatch-spec anatomy — the echo's full-doc replace
-		// vs the typing's 1-char insert, and every effects dispatch
-		const origDispatch = view.dispatch.bind(view);
-		(view as unknown as { dispatch: (...s: TransactionSpec[]) => void }).dispatch = (
-			...specs: TransactionSpec[]
-		) => {
-			for (const spec of specs) {
-				// the spec's OWN KEYS name its shape (a ChangeSet/array/Transaction
-				// arg logs as its constructor)
-				const sp = spec as Record<string, unknown>;
-				console.log(
-					'DISPATCH | keys:',
-					Object.keys(sp).join(','),
-					'| ctor:',
-					(sp.constructor as { name?: string })?.name,
-					'| userEvent:',
-					sp.userEvent,
-					'| effects:',
-					(sp.effects as unknown[] | undefined)?.length
-				);
-			}
-			return origDispatch(...specs); // typed as TransactionSpec[]
-		};
 		readStats(view.state);
 		// the word count's initial value (the debounced listener only fires on
 		// changes — a pre-loaded doc counts ONCE here, full copy is fine once)

@@ -27,11 +27,14 @@ import emojiData from 'markdown-it-emoji/lib/data/full.mjs';
 
 // the emoji options: precomputed once (static data — 1,903 entries)
 const EMOJI_OPTIONS: Completion[] = Object.entries(emojiData).map(([name, char]) => ({
-	// the LABEL = the glyph + the name (the readable row); the APPLY = the raw
-	// shortcode (Route B: the source keeps the artifact's portable form — the
-	// preview renders it to the unicode live)
-	label: `${char} :${name}:`,
-	apply: `:${name}:`,
+	// the LABEL = the raw shortcode — the FILTER TEXT (CM's single-char
+	// query rule: ':' only matches options whose label STARTS with ':' —
+	// the glyph-first label killed the menu, walked) and the APPLY text
+	// (Route B: the source keeps the artifact's portable form — the
+	// preview renders it to the unicode live). The displayLabel = the
+	// rendered ROW (the glyph + the readable mono shortcode).
+	label: `:${name}:`,
+	displayLabel: `${char} :${name}:`,
 	type: 'text',
 	boost: name.length <= 5 ? 5 : 0 // the short/common names float up
 }));
@@ -56,15 +59,6 @@ function insideCode(ctx: CompletionContext): boolean {
 }
 
 export const emojiSource: CompletionSource = (ctx: CompletionContext): CompletionResult | null => {
-	// TEMP-DEBUG (the emoji menu's non-appearance — removed after the kill)
-	console.log(
-		'EMOJI: source called | pos:',
-		ctx.pos,
-		'| inCode:',
-		insideCode(ctx),
-		'| options:',
-		EMOJI_OPTIONS.length
-	);
 	if (insideCode(ctx)) return null;
 	// THE VIM PARITY: in NORMAL mode `:` is the Ex-command trigger — vim owns
 	// it, the menu never fires there. Only INSERT-mode typing (where `:` is a
@@ -73,18 +67,7 @@ export const emojiSource: CompletionSource = (ctx: CompletionContext): Completio
 	const cmVim = getCM(ctx.view) as unknown as { state?: { vim?: { mode?: string } } } | null;
 	if (cmVim?.state?.vim && cmVim.state.vim.mode !== 'insert') return null;
 	const before = ctx.matchBefore(/:[a-z0-9_+-]*$/);
-	console.log(
-		'EMOJI: matchBefore:',
-		JSON.stringify(before && ctx.state.sliceDoc(before.from, before.to))
-	);
 	if (!before) return null;
-	// the validFor was REMOVED (the pending-stuck candidate — the status
-	// never reached 'active'); the plain result = re-queried per keystroke
-	// (cheap: static options, the in-memory filter)
-	console.log('EMOJI: returning', EMOJI_OPTIONS.length, '| aborted:', ctx.aborted);
-	// the MICROTASK probe: does the context abort between the return and
-	// the resolution (the then-handler's check)?
-	Promise.resolve().then(() => console.log('EMOJI: post-return | aborted:', ctx.aborted));
 	return {
 		from: before.from,
 		options: EMOJI_OPTIONS
@@ -353,6 +336,5 @@ export const keywordSource: CompletionSource = (
 	if (opts.length === 0) return null;
 	const word = ctx.matchBefore(/[a-zA-Z_][\w.-]*$/);
 	if (!word) return null;
-	console.log('KEYWORD: returning', opts.length, '| aborted:', ctx.aborted);
 	return { from: word.from, options: opts, validFor: /^[a-zA-Z_][\w.-]*$/ };
 };
