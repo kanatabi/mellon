@@ -207,16 +207,14 @@
 					// TEMP-DEBUG: unconditional — the userEvent's ACTUAL value is
 					// the datum (the filtered version printed nothing on the
 					// owner's real keystrokes)
-					if (u.docChanged) {
-						console.log(
-							'CM: txn | userEvent:',
-							JSON.stringify(u.userEvent),
-							'| completionStatus:',
-							completionStatus(u.state),
-							'| tooltips:',
-							u.view.dom.querySelectorAll('.cm-tooltip').length
-						);
-					}
+					console.log(
+						'CM: txn | userEvent:',
+						JSON.stringify(u.userEvent),
+						'| completionStatus:',
+						completionStatus(u.state),
+						'| tooltips:',
+						u.view.dom.querySelectorAll('.cm-tooltip').length
+					);
 				}),
 				basicSetup,
 				markdown({ base: markdownLanguage, codeLanguages: languages }),
