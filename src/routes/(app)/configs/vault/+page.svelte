@@ -70,8 +70,8 @@
 	let addEnvOpen = $state(false);
 	let addEnvName = $state('');
 	// version inspector: a live version payload the user chose to VIEW (read-only)
-	// or RESTORE (overlay onto the current key set → dirty → save). Separate from
-	// historyDiff (which is a shape diff, not the secret bytes).
+	// or RESTORE (the form becomes that version exactly → dirty → save). Separate
+	// from historyDiff (which is a shape diff, not the secret bytes).
 	let viewing = $state<{ version: number; data: Record<string, string> } | null>(null);
 	let searchEl: HTMLInputElement | null = $state(null);
 	// REVEAL ALL: a display switch only — the values already live in this
@@ -328,23 +328,50 @@
 		historyDiff = null;
 	}
 
-	// RESTORE (D2): overlay a past version's VALUES onto the CURRENT key set —
-	// keys the shape no longer has do NOT resurrect; the result is a dirty edit
-	// the user saves, so the mirror fan-out + CAS apply exactly as any write.
-	// The save this seeds gets the re-pin offer (lock follow-through).
+	// RESTORE (owner ruling 2026-11-21, supersedes the D2 overlay): the form
+	// becomes the target version EXACTLY — keys and values, replacing the
+	// draft. The overlay could never recover keys the mirror's fan-out had
+	// dropped (the exact scenario that killed them: a v2 sharing NO keys
+	// with the current shape overlaid nothing, banner notwithstanding).
+	// The save still rides CAS + the mirror fan-out exactly as any write —
+	// shape the form before saving when the uniform set needs more than the
+	// version carries; the banner's +/− names make that visible. A dirty
+	// draft asks first (a misclick must not melt unsaved work). The save
+	// this seeds gets the re-pin offer (lock follow-through).
+	function shapeNames(past: Record<string, string>): string {
+		const added = Object.keys(past).filter((k) => !(k in rows));
+		const removed = order.filter((k) => !(k in past));
+		const parts = [
+			added.length ? `+${added.join(', +')}` : '',
+			removed.length ? `-${removed.join(', -')}` : ''
+		].filter(Boolean);
+		return parts.join(' ');
+	}
 	async function restoreVersion(version: number) {
 		const past = await client.readSecret(data.app, data.env, version);
 		if (!past) return;
-		for (const k of order) if (k in past.data) rows[k] = past.data[k];
+		if (dirty) {
+			// the fetched payload rides the ask — one round-trip, no re-fetch on confirm
+			restoreAsk = { version, data: past.data };
+			return;
+		}
+		applyRestore(version, past.data);
+	}
+	function applyRestore(version: number, pastData: Record<string, string>) {
+		const delta = shapeNames(pastData); // computed BEFORE the replacement
+		rows = { ...pastData };
+		order = Object.keys(pastData).sort();
+		revealed = {};
 		dirty = true;
 		viewing = null;
 		restoredSeed = version;
 		offerPin = null;
 		message = {
 			kind: 'ok',
-			text: `values from v${version} overlaid on the current keys — save to promote`
+			text: `form replaced with v${version}${delta ? ` (${delta})` : ''} — save to promote`
 		};
 	}
+	let restoreAsk = $state<{ version: number; data: Record<string, string> } | null>(null);
 
 	async function togglePin(version: number) {
 		await run(async () => {
@@ -857,6 +884,21 @@
 	</section>
 {/if}
 
+{#if restoreAsk}
+	<!-- The dirty-draft guard: a restore REPLACES the form — unsaved work needs a witness. -->
+	<Confirm
+		heading={`Replace the current edit with v${restoreAsk.version}?`}
+		description="the unsaved draft in the form is discarded — the version's keys and values replace it exactly"
+		confirmLabel="Replace"
+		destructive={false}
+		onConfirm={() => {
+			const ask = restoreAsk;
+			restoreAsk = null;
+			if (ask) applyRestore(ask.version, ask.data);
+		}}
+		onClose={() => (restoreAsk = null)}
+	/>
+{/if}
 {#if onboardOpen}
 	<div
 		class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
