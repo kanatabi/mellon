@@ -204,12 +204,16 @@
 			extensions: [
 				// TEMP-DEBUG: is the completion extension armed at all?
 				EditorView.updateListener.of((u) => {
-					if (u.userEvent?.startsWith('input.type')) {
-						// the completion system's OWN status + the DOM's tooltip count
+					// TEMP-DEBUG: unconditional — the userEvent's ACTUAL value is
+					// the datum (the filtered version printed nothing on the
+					// owner's real keystrokes)
+					if (u.docChanged) {
 						console.log(
-							'CM: typing txn | completionStatus:',
+							'CM: txn | userEvent:',
+							JSON.stringify(u.userEvent),
+							'| completionStatus:',
 							completionStatus(u.state),
-							'| tooltips in DOM:',
+							'| tooltips:',
 							u.view.dom.querySelectorAll('.cm-tooltip').length
 						);
 					}
