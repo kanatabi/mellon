@@ -10,7 +10,8 @@
 		PanelRightClose,
 		PanelRightOpen,
 		Printer,
-		WrapText
+		WrapText,
+		ArrowLeftRight
 	} from 'lucide-svelte';
 	import { onMount, tick } from 'svelte';
 	import { fade } from 'svelte/transition';
@@ -62,6 +63,7 @@
 	} from '#lib/api/types.ts';
 	import { slugify } from '#lib/slug.ts';
 	import { bumpRecent } from '#lib/recent.ts';
+	import { buildLineMap, lineForOffset, offsetForLine, type LineMap } from '#lib/preview-sync.ts';
 
 	interface Props {
 		/** Absent ⇒ create mode: the first save POSTs, then the URL adopts the slug. */
@@ -224,6 +226,55 @@ flowchart LR
 		}
 	});
 
+	// ── Synced scrolling (owner round 2026-11-21): the editor's viewport and
+	// the preview track each other through SOURCE-LINE anchors (the pipeline's
+	// data-source-lines), never percentages — fences/diagrams break ratio
+	// mapping. Two-way with a suppression latch; direction follows the pane
+	// being scrolled. A taste, persisted (`mellon.syncscroll`), toggled in
+	// the meta bar — meaningful only when both panes are VISIBLE (the lg+
+	// split; below it the panes are tabs). The map is plain (non-reactive) —
+	// rebuilt after each preview swap; handlers read it fresh. ──
+	let syncScroll = $state(true);
+	let lineMap: LineMap | null = null;
+	let syncing: 'editor' | 'preview' | null = null;
+	let settleTimer: ReturnType<typeof setTimeout>;
+	let rafPending = false;
+
+	function setSyncScroll(next: boolean) {
+		syncScroll = next;
+		localStorage.setItem('mellon.syncscroll', next ? '1' : '0');
+	}
+	function settle() {
+		clearTimeout(settleTimer);
+		settleTimer = setTimeout(() => (syncing = null), 150);
+	}
+	function rebuildLineMap() {
+		if (!previewEl || !html) {
+			lineMap = null;
+			return;
+		}
+		lineMap = buildLineMap(previewEl);
+	}
+	function syncFromEditor() {
+		if (!syncScroll || !previewLive || !lineMap || !editorApi || syncing === 'preview') return;
+		syncing = 'editor';
+		if (rafPending) return;
+		rafPending = true;
+		requestAnimationFrame(() => {
+			rafPending = false;
+			if (lineMap && editorApi && previewEl) {
+				previewEl.scrollTop = offsetForLine(lineMap, editorApi.topLine());
+			}
+		});
+		settle();
+	}
+	function syncFromPreview() {
+		if (!syncScroll || !previewLive || !lineMap || !editorApi || syncing === 'editor') return;
+		syncing = 'preview';
+		if (previewEl) editorApi.scrollToLine(lineForOffset(lineMap, previewEl.scrollTop));
+		settle();
+	}
+
 	// ── Mobile pane tabs (owner call 2026-11-08): below lg, editor and preview
 	// swap as tabs instead of stacking — a long post must never force a scroll
 	// to read the render. Both panes stay MOUNTED (instant switch, selection
@@ -245,6 +296,11 @@ flowchart LR
 		const stored = localStorage.getItem('mellon.tab.editor');
 		if (stored === 'preview') editorTab = 'preview'; // adopt AFTER hydration
 		if (localStorage.getItem('mellon.wrap') === '0') wrapped = false;
+		// synced scroll: the taste + the preview-side listener (the editor
+		// side attaches through onReady's scroll handle; both nodes die with
+		// the component)
+		if (localStorage.getItem('mellon.syncscroll') === '0') syncScroll = false;
+		previewEl?.addEventListener('scroll', syncFromPreview);
 	});
 
 	// Line wrap: a plain toggle in the meta bar (all viewports), state owned
@@ -278,7 +334,14 @@ flowchart LR
 	});
 	let coverReady = $derived(coverDecoded != null && coverDecoded === draft.thumbnail);
 	let pickerMode = $state<'thumbnail' | 'insert' | 'upload' | 'upload-cover' | null>(null);
-	let editorApi: { insertAtCursor: (text: string) => void } | undefined;
+	let editorApi:
+		| {
+				insertAtCursor: (text: string) => void;
+				topLine: () => number;
+				scrollToLine: (line: number) => void;
+				getScrollDom: () => HTMLElement | null;
+		  }
+		| undefined;
 	// Preview stays live while visible on desktop OR on mobile (the hidden tab
 	// keeps rendering ahead of the switch — that's what makes it instant).
 	const previewLive = $derived(showPreview || editorTab === 'preview');
@@ -313,6 +376,9 @@ flowchart LR
 					html = '<p class="font-mono text-xs text-danger">preview failed</p>';
 			} finally {
 				if (seq === previewSeq) previewPending = false;
+				// the map rebuilds AFTER the DOM swap settles (Svelte patches the
+				// preview subtree post-effect) — one querySelectorAll per swap
+				void tick().then(rebuildLineMap);
 			}
 		}, 120);
 		return () => clearTimeout(previewTimer);
@@ -356,6 +422,13 @@ flowchart LR
 	let leaveTo = $state('');
 	let leaveOpen = $state(false);
 	beforeNavigate((e) => {
+		// FLUSH-BEFORE-NAVIGATE (owner ruling): EVERY navigation first writes
+		// the live draft to the store — the diff page's contract is HEAD vs
+		// what you were ACTUALLY editing, never the last autosave. The flush
+		// also resets the scheduler's window (a flushed buffer does not fire
+		// again until new edits); cancelling the leave keeps buffer = draft —
+		// the invariant, not a side effect.
+		scheduler.flush();
 		if (dirty && !guardOff) {
 			e.cancel();
 			const t = e.to?.url;
@@ -894,6 +967,7 @@ flowchart LR
 						{/if}
 					</span>
 				{/if}
+				{@render syncToggle('hidden @min-[48rem]/editor:flex')}
 				{@render wrapToggle('hidden @min-[48rem]/editor:flex')}
 				{@render imageTrigger('hidden @min-[48rem]/editor:flex')}
 				<button
@@ -1001,7 +1075,11 @@ flowchart LR
 					onchange={touch}
 					{vim}
 					wrap={wrapped}
-					onReady={(api) => (editorApi = api)}
+					onReady={(api) => {
+						editorApi = api;
+						// the editor-side scroll door (the preview side listens in onMount)
+						api.getScrollDom()?.addEventListener('scroll', syncFromEditor);
+					}}
 					class="h-full"
 				/>
 			</div>
@@ -1194,6 +1272,25 @@ flowchart LR
 				Image
 			</button>
 		{/if}
+	{/snippet}
+
+	{#snippet syncToggle(cls: string)}
+		<!-- SYNCED SCROLL (owner round 2026-11-21): a taste, persisted; the
+		     vault's reveal-button anatomy (aria-pressed + amber active).
+		     Hidden below the split (the panes are tabs there — nothing to
+		     sync); the source-line anchors make the mapping honest. -->
+		<button
+			type="button"
+			onclick={() => setSyncScroll(!syncScroll)}
+			aria-pressed={syncScroll}
+			title="synced scrolling — the preview follows the editor and back"
+			class="{cls} items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-xs transition-colors {syncScroll
+				? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+				: 'border-border text-muted-foreground hover:text-foreground'}"
+		>
+			<ArrowLeftRight class="size-3.5" />
+			Sync
+		</button>
 	{/snippet}
 
 	{#snippet wrapToggle(cls: string, iconOnly = false)}
