@@ -517,7 +517,7 @@ bits-ui. This is the slice with the highest defect-avoidance value.
       through the items prop; popWidth floors ride `min-w-[340px]`),
       `configs/vault` (the fill picker → trigger `w-full`).
 - [x] Delete `Select.svelte` (230 lines). **The doctrine held**: `grep '<select'
-  src` → prose only.
+src` → prose only.
 - [x] Behaviour test: the users-page dom test drives the block's select
       (pointer-pair commit). **THE CALENDARS SMUGGLED 4 NATIVE `<select>`S:**
       the registry's month/year pickers hid one under the styled span — the
