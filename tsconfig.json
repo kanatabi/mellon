@@ -2,7 +2,16 @@
 	"extends": "$app/tsconfig",
 	"compilerOptions": {
 		"strict": true,
-		"types": ["$app/types", "node"]
+		"types": ["$app/types", "node"],
+		"paths": {
+			"markdown-it-footnote": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-attrs": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-deflist": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-mark": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-sub": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-sup": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-emoji": ["./src/lib/preview/markdown-it-plugins.d.ts"]
+		}
 	},
 	"include": ["src", "vite.config.ts"]
 }
