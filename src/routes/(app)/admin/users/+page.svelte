@@ -2,7 +2,7 @@
 	import { UserPlus, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import Select from '#lib/components/Select.svelte';
+	import * as Select from '#lib/components/ui/select/index.js';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -117,18 +117,19 @@
 					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
 						>role</span
 					>
-					<Select
-						items={[
-							{ value: 'editor', label: 'editor' },
-							{ value: 'admin', label: 'admin' }
-						]}
-						value={newRole}
-						onchange={(role) => (newRole = role)}
-						ariaLabel="Role"
-						name="role"
-						size="md"
-						popWidth={160}
-					/>
+					<!-- the wire contract: the action reads formData.get('role') — the
+					     hidden input carries the value the hand-rolled Select's name
+					     prop used to carry -->
+					<input type="hidden" name="role" value={newRole} />
+					<Select.Root type="single" bind:value={newRole}>
+						<Select.Trigger class="w-36" aria-label="Role">
+							<Select.Value />
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="editor">editor</Select.Item>
+							<Select.Item value="admin">admin</Select.Item>
+						</Select.Content>
+					</Select.Root>
 				</label>
 				{#if form?.error}
 					<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
