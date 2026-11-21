@@ -328,7 +328,7 @@
 		data.activeCollections.length + (data.from ? 1 : 0) + (data.to ? 1 : 0)
 	);
 	let filtersSheet = $state(false);
-	let filtersTrigger = $state<HTMLElement | undefined>();
+	let filtersTrigger = $state<HTMLElement | null>(null);
 	let pickerOpen = $state(false);
 	// Palette "Import image" arrives as ?upload=1 — open the picker once per
 	// arrival flag, never in a loop that re-opens it after the user closes.

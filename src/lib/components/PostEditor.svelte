@@ -159,7 +159,7 @@ flowchart LR
 	// pane-controls row — NOT a floating FAB, which occluded the status bar
 	// (owner screenshot 2026-11-08). Triggers occupy layout, never hover it.
 	let railSheet = $state(false);
-	let railSheetTrigger = $state<HTMLElement | undefined>();
+	let railSheetTrigger = $state<HTMLElement | null>(null);
 
 	// Media picker: ONE dialog for cover + body embeds (owner call), opened
 	// from the editor bands or the rail media section. `insert` mode writes

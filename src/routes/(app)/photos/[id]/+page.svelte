@@ -284,7 +284,7 @@
 
 	/* ── Rail (lg+ curtain) vs sheet (<lg) — one snippet serves both ──────── */
 	let detailsSheet = $state(false);
-	let sheetTrigger = $state<HTMLElement | undefined>();
+	let sheetTrigger = $state<HTMLElement | null>(null);
 	const fmtDate = (iso: string) =>
 		new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', year: 'numeric' }).format(
 			new Date(iso)
