@@ -80,7 +80,9 @@ function buildDecorations(view: EditorView): DecorationSet {
 		Blockquote: 'cm-line-quote',
 		FencedCode: 'cm-line-code',
 		CodeBlock: 'cm-line-code',
-		Table: 'cm-line-table'
+		Table: 'cm-line-table',
+		BulletList: 'cm-line-list',
+		OrderedList: 'cm-line-list'
 	};
 	// INLINE-BLOCK cues (owner ruling): the whole span wears the family tint
 	// (a background block, not a font color) — the marks keep their colored
@@ -91,7 +93,11 @@ function buildDecorations(view: EditorView): DecorationSet {
 		Strikethrough: 'cm-block-strike',
 		InlineCode: 'cm-block-code',
 		Link: 'cm-block-link',
-		Image: 'cm-block-link'
+		Image: 'cm-block-link',
+		// the EXTENDED dialect's inline nodes (the parser ships them natively)
+		Subscript: 'cm-block-code',
+		Superscript: 'cm-block-code',
+		Emoji: 'cm-block-code'
 	};
 	for (const { from, to } of view.visibleRanges) {
 		tree.iterate({

@@ -13,6 +13,10 @@
 	// factory otherwise — a collision eslint caught as "read-only" nonsense.
 	import { getCM, vim as vimKeymap } from '@replit/codemirror-vim';
 	import { markCues } from '#lib/cm-cues.ts';
+	import { regexCues } from '#lib/regex-cues.ts';
+	import { autocompletion } from '@codemirror/autocomplete';
+	import { emojiSource, keywordSource } from '#lib/completions.ts';
+	import { languages } from '@codemirror/language-data';
 
 	interface Props {
 		value: string;
@@ -195,11 +199,13 @@
 			doc: value,
 			extensions: [
 				basicSetup,
-				markdown({ base: markdownLanguage }),
+				markdown({ base: markdownLanguage, codeLanguages: languages }),
 				wrapCompartment.of(wrap ? [EditorView.lineWrapping] : []),
 				theme,
 				syntaxHighlighting(tokens),
 				markCues, // the mark-cue layer (§11): per-component chrome, content undecorated
+				regexCues, // the cue layer for what the grammar can't see (==, footnotes, deflists, {#id})
+				autocompletion({ override: [emojiSource, keywordSource] }), // the brain: :emoji: + the fence keywords
 				vimCompartment.of(vimOn ? [vimKeymap()] : []),
 				EditorView.domEventHandlers({
 					// belt for transitions that resolve outside a transaction: sample

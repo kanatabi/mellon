@@ -226,6 +226,18 @@
 .cm-editor .cm-line-table {
 	background: color-mix(in oklab, var(--cue-list) 8%, transparent);
 }
+.cm-editor .cm-line-list {
+	background: color-mix(in oklab, var(--cue-list) 5%, transparent);
+}
+/* the ==highlight== cue: the amber block (the "marked" semantics) — the
+   REGEX layer's flagship (the parser doesn't see ==) */
+.cm-editor .cm-block-highlight {
+	background: color-mix(in oklab, var(--cue-quote) 20%, transparent);
+}
+/* the footnote ref/def cue: the indigo block (the link family) */
+.cm-editor .cm-block-footnote {
+	background: color-mix(in oklab, var(--cue-link) 12%, transparent);
+}
 /* INLINE-BLOCK cues: the whole span wears the family tint (a background
    block); the marks keep their colored glyphs on top of it */
 .cm-editor .cm-block-bold {
@@ -245,6 +257,18 @@
 }
 .cm-editor .cm-line-table {
 	background: color-mix(in oklab, var(--cue-list) 8%, transparent);
+}
+.cm-editor .cm-line-list {
+	background: color-mix(in oklab, var(--cue-list) 5%, transparent);
+}
+/* the ==highlight== cue: the amber block (the "marked" semantics) — the
+   REGEX layer's flagship (the parser doesn't see ==) */
+.cm-editor .cm-block-highlight {
+	background: color-mix(in oklab, var(--cue-quote) 20%, transparent);
+}
+/* the footnote ref/def cue: the indigo block (the link family) */
+.cm-editor .cm-block-footnote {
+	background: color-mix(in oklab, var(--cue-link) 12%, transparent);
 }
 
 @layer base {
