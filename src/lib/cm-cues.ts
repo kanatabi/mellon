@@ -73,7 +73,8 @@ function buildDecorations(view: EditorView): DecorationSet {
 	const blockCues: Record<string, string> = {
 		Blockquote: 'cm-line-quote',
 		FencedCode: 'cm-line-code',
-		CodeBlock: 'cm-line-code'
+		CodeBlock: 'cm-line-code',
+		Table: 'cm-line-table'
 	};
 	for (const { from, to } of view.visibleRanges) {
 		tree.iterate({

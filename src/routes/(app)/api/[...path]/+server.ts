@@ -42,8 +42,13 @@ async function route(ctx: Ctx) {
 		// here let one broken chunk kill the ENTIRE relay (live incident
 		// 2026-11-11). Blast radius now cannot exceed this one endpoint.
 		const { md } = (await body()) as { md: string };
-		const { renderMarkdown } = await import('#lib/preview/render.ts');
-		return json(await renderMarkdown(String(md ?? '')));
+		try {
+			const { renderMarkdown } = await import('#lib/preview/render.ts');
+			return json(await renderMarkdown(String(md ?? '')));
+		} catch (e) {
+			console.error('PREVIEW STACK:', e);
+			throw e;
+		}
 	}
 
 	// --- posts ---

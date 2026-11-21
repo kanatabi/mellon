@@ -3,7 +3,21 @@ import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+	// DEV-ONLY SSR EXTERNAL (the vite-8 walk, 2026-11-21): vite 8's dev
+	// module-runner INLINES CJS-only deps as ESM — markdown-it-task-lists'
+	// `module.exports` explodes as "module is not defined" and the whole
+	// /api/preview dies in dev (the BUILT app bundles it fine — staging
+	// unaffected). In dev, node's own loader handles the CJS package.
+	// NOTE: vite 8 MOVED the knob — the top-level `ssr.external` is ignored
+	// here; the environments-scoped `resolve.external` is the live one.
+	environments: {
+		ssr: {
+			resolve: {
+				external: command === 'serve' ? ['markdown-it-task-lists'] : []
+			}
+		}
+	},
 	// The markdown-it stack (preview render path) must BUNDLE into build/, not
 	// externalize to node_modules: the adapter-node runtime stage is a self-
 	// contained image with NO node_modules — vite's default SSR externalization
@@ -71,4 +85,4 @@ export default defineConfig({
 			})
 		})
 	]
-});
+}));
