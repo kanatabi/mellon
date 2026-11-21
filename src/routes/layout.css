@@ -150,6 +150,78 @@
 	--color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ── MARK CUES (owner round 2026-11-21): the editor's markdown punctuation
+   is CHROME — it never publishes — so it carries a per-component color: the
+   at-a-glance map from source to preview. The CONTENT is never decorated
+   (not WYSIWYG by construction). These tokens are the theming seam: a
+   future shadcn theme re-points --cue-* per theme; nothing in the plugin
+   hardcodes a color. Values: estate hues where semantics align, new cue
+   hues where the family needed its own — all verified on light AND dark. ── */
+:root {
+	--cue-heading: var(--brand);
+	--cue-quote: var(--accent-amber);
+	--cue-code: var(--diff-add);
+	--cue-strike: var(--diff-del);
+	--cue-bold: #be185d;
+	--cue-italic: #0e7490;
+	--cue-list: #2563eb;
+	--cue-table: #c2410c;
+	--cue-link: #4f46e5;
+}
+[data-theme='dark'] {
+	--cue-quote: #fbbf24;
+	--cue-code: #4ade80;
+	--cue-strike: #f87171;
+	--cue-bold: #f472b6;
+	--cue-italic: #22d3ee;
+	--cue-list: #60a5fa;
+	--cue-table: #fb923c;
+	--cue-link: #818cf8;
+}
+
+.cm-cue-heading {
+	color: var(--cue-heading);
+	font-weight: 700;
+}
+.cm-cue-quote {
+	color: var(--cue-quote);
+}
+.cm-cue-code {
+	color: var(--cue-code);
+}
+.cm-cue-bold {
+	color: var(--cue-bold);
+	font-weight: 700;
+}
+.cm-cue-italic {
+	color: var(--cue-italic);
+	font-style: italic;
+}
+.cm-cue-strike {
+	color: var(--cue-strike);
+	text-decoration: line-through;
+}
+.cm-cue-list {
+	color: var(--cue-list);
+	font-weight: 700;
+}
+.cm-cue-table {
+	color: var(--cue-table);
+	font-weight: 700;
+}
+.cm-cue-link {
+	color: var(--cue-link);
+}
+/* block-level cues: the quote's border mirrors the preview's blockquote;
+   the fence's faint fill mirrors the preview's code block */
+.cm-line-quote {
+	border-left: 2px solid var(--cue-quote);
+	background: color-mix(in oklab, var(--cue-quote) 7%, transparent);
+}
+.cm-line-code {
+	background: color-mix(in oklab, var(--cue-code) 7%, transparent);
+}
+
 @layer base {
 	html {
 		font-family: var(--font-sans);

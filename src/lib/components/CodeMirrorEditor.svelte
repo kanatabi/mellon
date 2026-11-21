@@ -12,6 +12,7 @@
 	// Aliased: the `vim` prop (user preference) would shadow the extension
 	// factory otherwise — a collision eslint caught as "read-only" nonsense.
 	import { getCM, vim as vimKeymap } from '@replit/codemirror-vim';
+	import { markCues } from '#lib/cm-cues.ts';
 
 	interface Props {
 		value: string;
@@ -188,6 +189,7 @@
 				wrapCompartment.of(wrap ? [EditorView.lineWrapping] : []),
 				theme,
 				syntaxHighlighting(tokens),
+				markCues, // the mark-cue layer (§11): per-component chrome, content undecorated
 				vimCompartment.of(vimOn ? [vimKeymap()] : []),
 				EditorView.domEventHandlers({
 					// belt for transitions that resolve outside a transaction: sample
