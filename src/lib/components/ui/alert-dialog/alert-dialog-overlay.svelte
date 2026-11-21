@@ -13,7 +13,9 @@
 	bind:ref
 	data-slot="alert-dialog-overlay"
 	class={cn(
-		'fixed inset-0 z-50 bg-black/10 duration-100 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 supports-backdrop-filter:backdrop-blur-xs',
+		// A2: the house frost — the dialog overlay's own line (bg-background/70
+		// + blur), not the registry's black/10 wash
+		'fixed inset-0 isolate z-50 bg-background/70 backdrop-blur-sm duration-100 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
 		className
 	)}
 	{...restProps}
