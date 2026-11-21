@@ -282,24 +282,18 @@
 			...specs: TransactionSpec[]
 		) => {
 			for (const spec of specs) {
-				const sp = spec as TransactionSpec & {
-					changes?: unknown;
-					selection?: unknown;
-					effects?: unknown[];
-					userEvent?: string;
-					annotations?: unknown[];
-				};
+				// the spec's OWN KEYS name its shape (a ChangeSet/array/Transaction
+				// arg logs as its constructor)
+				const sp = spec as Record<string, unknown>;
 				console.log(
-					'DISPATCH | userEvent:',
+					'DISPATCH | keys:',
+					Object.keys(sp).join(','),
+					'| ctor:',
+					(sp.constructor as { name?: string })?.name,
+					'| userEvent:',
 					sp.userEvent,
-					'| hasChanges:',
-					!!sp.changes,
-					'| hasSelection:',
-					!!sp.selection,
 					'| effects:',
-					(sp.effects ?? []).length,
-					'| annotations:',
-					(sp.annotations ?? []).length
+					(sp.effects as unknown[] | undefined)?.length
 				);
 			}
 			return origDispatch(...specs); // typed as TransactionSpec[]

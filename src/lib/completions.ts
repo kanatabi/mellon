@@ -82,6 +82,9 @@ export const emojiSource: CompletionSource = (ctx: CompletionContext): Completio
 	// never reached 'active'); the plain result = re-queried per keystroke
 	// (cheap: static options, the in-memory filter)
 	console.log('EMOJI: returning', EMOJI_OPTIONS.length, '| aborted:', ctx.aborted);
+	// the MICROTASK probe: does the context abort between the return and
+	// the resolution (the then-handler's check)?
+	Promise.resolve().then(() => console.log('EMOJI: post-return | aborted:', ctx.aborted));
 	return {
 		from: before.from,
 		options: EMOJI_OPTIONS
