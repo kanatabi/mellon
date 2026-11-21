@@ -16,18 +16,22 @@
  * silent outside them.
  */
 import { syntaxTree } from '@codemirror/language';
+import { getCM } from '@replit/codemirror-vim';
 import type {
 	Completion,
 	CompletionContext,
 	CompletionResult,
 	CompletionSource
 } from '@codemirror/autocomplete';
-import { full as emojiData } from 'markdown-it-emoji';
+import emojiData from 'markdown-it-emoji/lib/data/full.mjs';
 
 // the emoji options: precomputed once (static data — 1,903 entries)
 const EMOJI_OPTIONS: Completion[] = Object.entries(emojiData).map(([name, char]) => ({
-	label: `:${name}:`,
-	detail: char,
+	// the LABEL = the glyph + the name (the readable row); the APPLY = the raw
+	// shortcode (Route B: the source keeps the artifact's portable form — the
+	// preview renders it to the unicode live)
+	label: `${char} :${name}:`,
+	apply: `:${name}:`,
 	type: 'text',
 	boost: name.length <= 5 ? 5 : 0 // the short/common names float up
 }));
@@ -53,6 +57,12 @@ function insideCode(ctx: CompletionContext): boolean {
 
 export const emojiSource: CompletionSource = (ctx: CompletionContext): CompletionResult | null => {
 	if (insideCode(ctx)) return null;
+	// THE VIM PARITY: in NORMAL mode `:` is the Ex-command trigger — vim owns
+	// it, the menu never fires there. Only INSERT-mode typing (where `:` is a
+	// literal character) arms the emoji source.
+	if (!ctx.view) return null;
+	const cmVim = getCM(ctx.view) as unknown as { state?: { vim?: { mode?: string } } } | null;
+	if (cmVim?.state?.vim && cmVim.state.vim.mode !== 'insert') return null;
 	const before = ctx.matchBefore(/:[a-z0-9_+-]*$/);
 	if (!before) return null;
 	return {

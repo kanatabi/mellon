@@ -30,3 +30,7 @@ declare module 'markdown-it-sup' {
 declare module 'markdown-it-emoji' {
 	export const full: (md: MarkdownIt) => void;
 }
+declare module 'markdown-it-emoji/lib/data/full.mjs' {
+	const map: Record<string, string>;
+	export default map;
+}

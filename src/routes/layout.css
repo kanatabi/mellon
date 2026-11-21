@@ -234,6 +234,45 @@
 .cm-editor .cm-block-highlight {
 	background: color-mix(in oklab, var(--cue-quote) 20%, transparent);
 }
+/* THE COMPLETION POPUP (the Slack-style emoji menu): CM's tooltip
+   lifecycle wearing the shadcn Command's look — the card, the rows, the
+   brand-tinted selection; the vars = the theme seam (the dark = free) */
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 10px 30px rgb(0 0 0 / 25%);
+	overflow: hidden;
+	padding: 4px;
+	font-family: var(--font-mono);
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul {
+	font-family: inherit;
+	font-size: 12px;
+	max-height: 16rem;
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+	color: var(--foreground);
+	padding: 5px 10px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: color-mix(in oklab, var(--brand) 18%, transparent);
+	color: var(--foreground);
+}
+/* the shortcode part of the row: muted-ish but READABLE on the dark; the
+   emoji glyph keeps its natural size (the row's first-class citizen) */
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete .cm-completionLabel {
+	color: var(--foreground);
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete .cm-completionDetail {
+	color: var(--muted-foreground);
+	font-style: normal;
+	font-size: 14px;
+}
 /* the footnote ref/def cue: the indigo block (the link family) */
 .cm-editor .cm-block-footnote {
 	background: color-mix(in oklab, var(--cue-link) 12%, transparent);
@@ -265,6 +304,45 @@
    REGEX layer's flagship (the parser doesn't see ==) */
 .cm-editor .cm-block-highlight {
 	background: color-mix(in oklab, var(--cue-quote) 20%, transparent);
+}
+/* THE COMPLETION POPUP (the Slack-style emoji menu): CM's tooltip
+   lifecycle wearing the shadcn Command's look — the card, the rows, the
+   brand-tinted selection; the vars = the theme seam (the dark = free) */
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 10px 30px rgb(0 0 0 / 25%);
+	overflow: hidden;
+	padding: 4px;
+	font-family: var(--font-mono);
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul {
+	font-family: inherit;
+	font-size: 12px;
+	max-height: 16rem;
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+	color: var(--foreground);
+	padding: 5px 10px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: color-mix(in oklab, var(--brand) 18%, transparent);
+	color: var(--foreground);
+}
+/* the shortcode part of the row: muted-ish but READABLE on the dark; the
+   emoji glyph keeps its natural size (the row's first-class citizen) */
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete .cm-completionLabel {
+	color: var(--foreground);
+}
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete .cm-completionDetail {
+	color: var(--muted-foreground);
+	font-style: normal;
+	font-size: 14px;
 }
 /* the footnote ref/def cue: the indigo block (the link family) */
 .cm-editor .cm-block-footnote {

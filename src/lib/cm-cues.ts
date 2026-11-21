@@ -95,15 +95,19 @@ function buildDecorations(view: EditorView): DecorationSet {
 		Link: 'cm-block-link',
 		Image: 'cm-block-link',
 		// the EXTENDED dialect's inline nodes (the parser ships them natively)
-		Subscript: 'cm-block-code',
-		Superscript: 'cm-block-code',
 		Emoji: 'cm-block-code'
 	};
+	// the sub/sup's BLOCK = mark-to-mark (`~2~` in H~2~O, `^2^` in X^2^) —
+	// the lezer node spans the WHOLE expression (H and O ride along); the
+	// marks' first-from → last-to = the special chars + their content, and
+	// NOTHING else (the owner's expectation, walked)
+	const subSupMarks: Array<{ from: number; to: number }> = [];
 	for (const { from, to } of view.visibleRanges) {
 		tree.iterate({
 			from,
 			to,
 			enter(node) {
+				if (node.name === 'Subscript' || node.name === 'Superscript') return; // the leave pass owns the block
 				const inlineCls = inlineBlocks[node.name];
 				if (inlineCls) ranges.push(mark(inlineCls).range(node.from, node.to));
 				const cls = cueFor(node.name, node.node.parent?.name);
@@ -115,6 +119,18 @@ function buildDecorations(view: EditorView): DecorationSet {
 				}
 				const blockCls = blockCues[node.name];
 				if (blockCls) lineCues(node.name, blockCls)(node);
+			},
+			leave(node) {
+				if (node.name === 'SubscriptMark' || node.name === 'SuperscriptMark') {
+					subSupMarks.push({ from: node.from, to: node.to });
+				}
+				if (node.name === 'Subscript' || node.name === 'Superscript') {
+					const first = subSupMarks.shift();
+					const last = subSupMarks.pop() ?? first;
+					if (first && last) {
+						ranges.push(mark('cm-block-code').range(first.from, last.to));
+					}
+				}
 			}
 		});
 	}

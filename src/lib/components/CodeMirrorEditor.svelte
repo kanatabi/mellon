@@ -14,7 +14,7 @@
 	import { getCM, vim as vimKeymap } from '@replit/codemirror-vim';
 	import { markCues } from '#lib/cm-cues.ts';
 	import { regexCues } from '#lib/regex-cues.ts';
-	import { autocompletion } from '@codemirror/autocomplete';
+	import { autocompletion, startCompletion } from '@codemirror/autocomplete';
 	import { emojiSource, keywordSource } from '#lib/completions.ts';
 	import { languages } from '@codemirror/language-data';
 
@@ -34,6 +34,10 @@
 		 *  getScrollDom). */
 		onReady?: (api: {
 			insertAtCursor: (text: string) => void;
+			/** The typing-flavored dispatch — arms the completion sources. */
+			type: (text: string) => void;
+			/** The completion's explicit start (the tooltip's test seam). */
+			openCompletions: () => void;
 			/** The top-VISIBLE source line (1-based) — the editor fold. */
 			topLine: () => number;
 			/** Scroll the editor so this 1-based line is at the pane's top. */
@@ -274,6 +278,24 @@
 			},
 			getScrollDom() {
 				return view?.scrollDOM ?? null;
+			},
+			// the completion's explicit START (the tooltip without the focus
+			// dance — happy-dom's selection events re-enter CM's update)
+			openCompletions() {
+				if (!view) return;
+				startCompletion(view);
+			},
+			// the programmatic TYPING door: a dispatch flavored as user input —
+			// what arms CodeMirror's completion sources (the emoji menu's test
+			// seam; also the parent's future macro path)
+			type(text: string) {
+				if (!view) return;
+				const head = view.state.selection.main.head;
+				view.dispatch({
+					changes: { from: head, insert: text },
+					selection: { anchor: head + text.length },
+					userEvent: 'input.type'
+				});
 			}
 		});
 	});

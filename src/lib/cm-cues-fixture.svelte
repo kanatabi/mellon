@@ -5,6 +5,8 @@
 <script lang="ts">
 	import CodeMirrorEditor from './components/CodeMirrorEditor.svelte';
 
+	let api: { type: (text: string) => void; openCompletions: () => void } | undefined;
+
 	let value_ = $state(`# Title
 
 > a quoted line
@@ -16,6 +18,8 @@ func main() {}
 
 - an item
 
+H~2~O and X^2^ and :tent:
+
 This has **bold text**, *italic text*, ~~struck text~~, \`inline code\`, and a [link](https://example.com).
 
 | col a | col b |
@@ -24,8 +28,24 @@ This has **bold text**, *italic text*, ~~struck text~~, \`inline code\`, and a [
 `);
 </script>
 
+<button
+	aria-label="type emoji trigger"
+	onclick={() => {
+		api?.type(':tent');
+		api?.openCompletions();
+	}}
+>
+	type :tent
+</button>
+
 <button aria-label="prepend quote block" onclick={() => (value_ = `> inserted quote\n\n` + value_)}>
 	prepend
 </button>
 
-<CodeMirrorEditor bind:value={value_} onchange={() => {}} vim={false} wrap={true} />
+<CodeMirrorEditor
+	bind:value={value_}
+	onchange={() => {}}
+	onReady={(a) => (api = a)}
+	vim={false}
+	wrap={true}
+/>
