@@ -110,23 +110,44 @@ function markdownEngine(): Promise<MarkdownItInstance> {
 			// Attrs render through (the source-line anchor; the box donates its
 			// offset once hydrated — preview-sync's sibling rule).
 			const shikiFence = md.renderer.rules.fence!;
+			// THE FENCE CACHE (the long-doc preview's perf round, 2026-11-22):
+			// Shiki's highlight = a PURE function of (lang, content) — the
+			// dual-theme output bakes CSS vars, so it's theme-independent.
+			// Live typing edits ONE fence; every other fence hits the cache
+			// and skips the tokenization — the render cost decouples from
+			// the document's total code volume. (The mermaid SVG cache's
+			// twin, bc3e014.)
+			const fenceCache = new Map<string, string>();
+			const FENCE_CACHE_CAP = 500;
 			md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
 				if (tokens[idx].info.trim().split(/\s+/)[0] === 'mermaid') {
 					const token = tokens[idx];
 					const attrs = (token.attrs ?? []).map(([k, v]) => ` ${k}="${v}"`).join('');
 					return `<pre class="mermaid-src"${attrs}><code>${escapeHtml(token.content)}</code></pre>\n`;
 				}
-				// the Shiki renderer builds its own <pre> and DROPS token attrs —
-				// re-inject the source-line anchor (synced scroll needs fences)
-				const out = shikiFence(tokens, idx, opts, env, self);
 				const token = tokens[idx];
+				const lang = token.info.trim().split(/\s+/)[0] || 'text';
+				const key = `${lang}\u0000${token.content}`;
+				let raw = fenceCache.get(key);
+				if (raw === undefined) {
+					raw = shikiFence(tokens, idx, opts, env, self);
+					if (fenceCache.size >= FENCE_CACHE_CAP) {
+						// the insertion-ordered eviction: drop the oldest entry
+						const oldest = fenceCache.keys().next();
+						if (oldest.done !== true) fenceCache.delete(oldest.value);
+					}
+					fenceCache.set(key, raw);
+				}
+				// the Shiki renderer builds its own <pre> and DROPS token attrs —
+				// re-inject the source-line anchor (synced scroll needs fences);
+				// PER RENDER even on a cache hit (the position shifts as you type)
 				if (token.map && token.level === 0) {
-					return out.replace(
+					return raw.replace(
 						'<pre',
 						`<pre data-source-lines="${token.map[0] + 1}-${token.map[1]}"`
 					);
 				}
-				return out;
+				return raw;
 			};
 			return md;
 		});

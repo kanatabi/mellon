@@ -271,7 +271,16 @@ flowchart LR
 	function syncFromPreview() {
 		if (!syncScroll || !previewLive || !lineMap || !editorApi || syncing === 'editor') return;
 		syncing = 'preview';
-		if (previewEl) editorApi.scrollToLine(lineForOffset(lineMap, previewEl.scrollTop));
+		// the frame coalescing (the editor direction's twin): the preview's
+		// scroll events coalesce to ONE editor assignment per frame
+		if (rafPending) return;
+		rafPending = true;
+		requestAnimationFrame(() => {
+			rafPending = false;
+			if (lineMap && editorApi && previewEl) {
+				editorApi.scrollToLine(lineForOffset(lineMap, previewEl.scrollTop));
+			}
+		});
 		settle();
 	}
 

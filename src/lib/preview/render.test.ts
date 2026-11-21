@@ -32,3 +32,31 @@ describe('preview renderMarkdown — source-line anchors', () => {
 		expect(html).toMatch(/<pre class="mermaid-src"[^>]*data-source-lines="1-4"/);
 	});
 });
+
+// THE FENCE CACHE (the long-doc preview's perf round): Shiki's highlight =
+// a pure function of (lang, content) — the same fence renders once, the
+// anchor re-injection stays per-render (the position shifts as you type).
+describe('preview renderMarkdown — the fence cache', () => {
+	it('the SAME fence at two positions: identical highlight, position-fresh anchors', async () => {
+		const doc = '```go\nx()\n```\n\nmiddle para\n\n```go\nx()\n```\n';
+		const { html } = await renderMarkdown(doc);
+		const fences = [...html.matchAll(/<pre[^>]*data-source-lines="([^"]+)"[^>]*>/g)].map(
+			(m) => m[1]
+		);
+		// both fences carry THEIR OWN source range (the cache never leaks one
+		// position's anchor into the other's)
+		expect(fences).toEqual(['1-3', '7-9']);
+		// the highlighted bodies are byte-identical (the cache hit)
+		const bodies = [
+			...html.matchAll(/<pre[^>]*data-source-lines="[^"]+"[^>]*>([\s\S]*?)<\/pre>/g)
+		].map((m) => m[1]);
+		expect(bodies[0]).toBe(bodies[1]);
+	});
+	it('the same content in a DIFFERENT language = a different entry (no cross-lang leakage)', async () => {
+		const { html } = await renderMarkdown('```go\nvalue\n```\n\n```python\nvalue\n```\n');
+		// the langs' token classes differ inside the highlighted output
+		expect(html).not.toBe('');
+		const bodies = [...html.matchAll(/<pre[^>]*>([\s\S]*?)<\/pre>/g)].map((m) => m[1]);
+		expect(bodies[0]).not.toBe(bodies[1]);
+	});
+});

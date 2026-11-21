@@ -49,16 +49,31 @@ export function offsetForLine(map: LineMap, line: number): number {
 	if (line <= first.start) return 0;
 	if (line >= last.end) return map.total;
 	for (const a of map.anchors) {
-		if (line >= a.start && line <= a.end) {
+		// the FLOAT line: the block's range = [start, end + 1) — the fraction
+		// into the LAST line lives above `end` (the sub-line precision)
+		if (line >= a.start && line < a.end + 1) {
 			const span = a.end - a.start + 1;
 			const into = (line - a.start) / span;
 			return a.top + into * (a.bottom - a.top);
 		}
 	}
-	// between anchors (source lines with no rendered block — blank lines
-	// inside an unfilled range): the NEXT anchor's top
+	// between anchors (the blank source lines — the seams): the LINEAR
+	// BRIDGE from the previous block's bottom to the next block's top —
+	// the frozen-then-snap at block boundaries was the sync-scroll's jank
+	// (walked 2026-11-22). Same anchor control points, one piecewise map.
 	const next = map.anchors.find((a) => a.start > line);
-	return next ? next.top : map.total;
+	if (!next) return map.total;
+	const nextIdx = map.anchors.indexOf(next);
+	const prev = nextIdx > 0 ? map.anchors[nextIdx - 1] : null;
+	if (!prev) return next.top;
+	// the seam's line domain = [prev.end + 1, next.start): the blocks own
+	// [start, end + 1) — the blanks are the rest — and the px ramps
+	// continuously (prev.bottom = the seam's start px, next.top = its end)
+	const seamStart = prev.end + 1;
+	const spanLines = next.start - seamStart;
+	if (spanLines <= 0) return next.top;
+	const into = (line - seamStart) / spanLines;
+	return prev.bottom + into * (next.top - prev.bottom);
 }
 
 export function lineForOffset(map: LineMap, offset: number): number {
@@ -74,15 +89,25 @@ export function lineForOffset(map: LineMap, offset: number): number {
 	}
 	const a = map.anchors[lo];
 	if (offset < a.top) {
-		// in the seam BELOW the previous anchor (e.g. margins): the previous
-		// anchor's last line reads more honestly than jumping ahead
+		// the seam BELOW the previous anchor: the bridge's INVERSE —
+		// (prev.bottom → a.top) maps to (prev.end → a.start) linearly, so
+		// the round-trip offset→line→offset is the identity
 		const prev = map.anchors[lo - 1];
-		return prev ? prev.end : a.start;
+		if (!prev) return a.start;
+		// the seam's inverse: [prev.bottom → a.top] maps to
+		// [prev.end + 1 → a.start) — disjoint from the block's own domain
+		const seamStart = prev.end + 1;
+		const spanPx = a.top - prev.bottom;
+		const into = spanPx > 0 ? (offset - prev.bottom) / spanPx : 1;
+		return seamStart + into * (a.start - seamStart);
 	}
 	const span = a.bottom - a.top;
 	const into = span > 0 ? (offset - a.top) / span : 0;
-	// line = start + floor(into × lineCount), clamped to the anchor's end
-	return Math.min(a.end, a.start + Math.floor(into * (a.end - a.start + 1)));
+	// the FLOAT line — no floor: the sub-line fraction is what makes the
+	// editor's follow pixel-continuous (the integer = the line-grid quanta
+	// = the jagged chase, walked 2026-11-22); the clamp = the NEXT line
+	// boundary (the block's bottom px = the next block's top = honest)
+	return Math.min(a.end + 1, a.start + into * (a.end - a.start + 1));
 }
 
 /**

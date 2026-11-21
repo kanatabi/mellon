@@ -266,17 +266,27 @@
 				view.focus();
 			},
 			// the scroll-sync's two doors (preview-sync): the top-visible source
-			// line (editor fold → line) and the line → document-top scroll
+			// line + its PIXEL FRACTION (the smooth sync's float feed — the
+			// integer line = the preview's line-grid quanta = the jagged
+			// chase, walked 2026-11-22) and the line → document-top scroll
 			topLine() {
 				if (!view) return 1;
 				const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop);
-				return view.state.doc.lineAt(block.from).number;
+				const line = view.state.doc.lineAt(block.from).number;
+				const frac = block.height > 0 ? (view.scrollDOM.scrollTop - block.top) / block.height : 0;
+				return line + Math.min(1, Math.max(0, frac));
 			},
 			scrollToLine(line: number) {
 				if (!view) return;
 				const doc = view.state.doc;
-				const l = doc.line(Math.min(Math.max(1, line), doc.lines));
-				view.scrollDOM.scrollTop = view.lineBlockAt(l.from).top;
+				// the FRACTIONAL line: the integer part = the line's block, the
+				// fraction = the px within it (the soft-wrapped line's height
+				// included — pixel-continuous, no line-height jumps)
+				const clamped = Math.min(Math.max(1, line), doc.lines);
+				const l = doc.line(Math.floor(clamped));
+				const block = view.lineBlockAt(l.from);
+				const frac = clamped - Math.floor(clamped);
+				view.scrollDOM.scrollTop = block.top + frac * block.height;
 			},
 			getScrollDom() {
 				return view?.scrollDOM ?? null;
