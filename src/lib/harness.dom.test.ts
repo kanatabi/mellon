@@ -18,14 +18,15 @@ describe('DOM harness', () => {
 	});
 
 	it('the action fill resolves at runtime (R3: a token without a --color-* twin is silent)', () => {
-		// The default variant is the ACTION FILL by doctrine (SHADCN.md §3.1:
-		// --primary is the verb). S3's cast renamed the default to `primary`
-		// with the pill grammar — bg-brand — which is the same fill through the
-		// alias chain (--primary: var(--brand)). Still the one runtime proof
-		// that the alias chain produces a utility at all — the @theme check in
-		// palette.test.ts is text-level and cannot see Tailwind's output.
+		// The `default` variant is bg-primary BY DOCTRINE (SHADCN.md §3.1:
+		// --primary is the action fill). S3's cast adds the pill `primary`
+		// variant (bg-brand — the same fill through the alias chain) as an
+		// OPT-IN, not the default: the vendored overlays keep the registry
+		// look. Still the one runtime proof that the alias chain produces a
+		// utility at all — the @theme check in palette.test.ts is text-level
+		// and cannot see Tailwind's output.
 		render(Button, {});
-		expect(screen.getByRole('button').className).toContain('bg-brand');
+		expect(screen.getByRole('button').className).toContain('bg-primary');
 	});
 
 	it('lets a caller override the default classes', () => {

@@ -63,7 +63,7 @@
 		{#if form?.message}
 			<p class="font-mono text-xs text-danger" role="alert">{form.message}</p>
 		{/if}
-		<Button type="submit" disabled={pending}>
+		<Button type="submit" variant="primary" disabled={pending}>
 			{#if pending}
 				<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
 				<span>Entering…</span>

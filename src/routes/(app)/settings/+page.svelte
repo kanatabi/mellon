@@ -86,7 +86,7 @@
 			/>
 		</label>
 		<div class="flex items-center gap-3">
-			<Button type="submit" class="w-fit active:scale-[0.98]">Save</Button>
+			<Button type="submit" variant="primary" class="w-fit active:scale-[0.98]">Save</Button>
 			{#if saved}
 				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 180 }}>
 					Saved
@@ -145,7 +145,9 @@
 				{form.pw.loginAgain ? 'Password updated — sign in again to continue.' : 'Password updated.'}
 			</p>
 		{/if}
-		<Button type="submit" class="w-fit active:scale-[0.98]">Update password</Button>
+		<Button type="submit" variant="primary" class="w-fit active:scale-[0.98]"
+			>Update password</Button
+		>
 	</form>
 
 	{#if page.data.principal?.role === 'admin'}

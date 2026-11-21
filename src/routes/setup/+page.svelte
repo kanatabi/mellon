@@ -87,7 +87,7 @@
 		{#if form?.message}
 			<p class="font-mono text-xs text-danger" role="alert">{form.message}</p>
 		{/if}
-		<Button type="submit">
+		<Button type="submit" variant="primary">
 			{registering ? 'claim the estate' : 'set my password'}
 		</Button>
 		<p class="text-center font-mono text-[10px] text-muted-foreground/70">

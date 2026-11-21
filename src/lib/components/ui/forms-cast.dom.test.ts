@@ -11,15 +11,19 @@ import Textarea from '#lib/components/ui/textarea/textarea.svelte';
 
 describe('the button cast', () => {
 	it('primary is the violet pill — the one verb', () => {
-		const { getByRole } = render(Button, { props: { children: undefined as never } });
+		const { getByRole } = render(Button, {
+			props: { variant: 'primary', children: undefined as never }
+		});
 		const b = getByRole('button');
 		expect(b.className).toContain('rounded-full');
 		expect(b.className).toContain('bg-brand');
 		expect(b.className).not.toContain('rounded-lg');
-		expect(b.className).not.toContain('h-8'); // pills are padding-sized
+		// pills are padding-sized — and the VARIANT must beat the default
+		// size's h-8 (tv emits size before variant: the ordering regression)
+		expect(b.className).not.toContain('h-8');
 	});
 
-	it('quiet is the mono outlined chip', () => {
+	it('quiet is the mono outlined chip — riding the default size', () => {
 		const { getByRole } = render(Button, {
 			props: { variant: 'quiet', children: undefined as never }
 		});
@@ -27,6 +31,12 @@ describe('the button cast', () => {
 		expect(b.className).toContain('font-mono');
 		expect(b.className).toContain('text-xs');
 		expect(b.className).toContain('text-muted-foreground');
+		// the ordering pin: the variant's pill padding wins over the default
+		// size's h-8/px-2.5 (tv definition order: size before variant)
+		expect(b.className).toContain('px-3');
+		expect(b.className).toContain('py-1.5');
+		expect(b.className).not.toContain('h-8');
+		expect(b.className).not.toContain('px-2.5');
 	});
 
 	it('ghost stays the registry look — the overlays did not move', () => {
@@ -57,6 +67,13 @@ describe('the house field lines', () => {
 		expect(ta.className).toContain('resize-y');
 		expect(ta.className).toContain('bg-transparent');
 		expect(ta.className).toContain('focus-visible:border-brand');
+	});
+
+	it('the registry default is untouched (overlays)', () => {
+		const { getByRole } = render(Button, { props: { children: undefined as never } });
+		const b = getByRole('button');
+		expect(b.className).toContain('bg-primary'); // the §3.1 action fill
+		expect(b.className).toContain('h-8');
 	});
 
 	it('label mono is the metadata anatomy', () => {
