@@ -187,11 +187,20 @@
 	</button>
 
 	{#if open}
+		<!-- Shield the portaled popup from the host layers' document-level
+		     dismiss/focus machinery (bits-ui IGNORES stopped events —
+		     `if (event.cancelBubble)` / `if (event.defaultPrevented)`):
+		     a pointerdown on an option must not read as interact-outside
+		     (it closed the whole dialog before the pick could land), and
+		     focus riding into body must not trip the dialog's guard. -->
 		<ul
 			role="listbox"
 			aria-label={ariaLabel}
 			bind:this={list}
 			use:portal
+			onpointerdown={(e) => e.stopPropagation()}
+			onfocusin={(e) => e.stopPropagation()}
+			onfocusout={(e) => e.stopPropagation()}
 			onkeydown={onListKey}
 			style={pop}
 			transition:fly={{ y: -4, duration: reduced ? 0 : 120 }}
