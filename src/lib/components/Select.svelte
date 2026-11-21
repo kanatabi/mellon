@@ -76,10 +76,25 @@
 				: `position:fixed; top:${r.bottom + 6}px; left:${left}px; width:${w}px;`;
 	}
 
+	// The popup PORTALS to document.body (S2 round, the users dialog): inline
+	// fixed positioning dies inside dialogs twice over — a transformed
+	// ancestor becomes the containing block for fixed descendants, and the
+	// dialog's own entrance re-layout orphans the once-measured coordinates.
+	// In body, the viewport coordinates are ALWAYS the truth. The outside
+	// -click + focus logic below account for the popup living outside `root`.
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return { destroy: () => node.remove() };
+	}
+
 	function openPop() {
 		if (open) return;
 		open = true;
 		positionPop();
+		// the dialog beneath us may still be settling (entrance animation,
+		// h-fit resolution) — re-measure on the next ticks, not just once
+		tick().then(positionPop);
+		requestAnimationFrame(() => positionPop());
 		// focus lands on the SELECTED row (native-select instinct), first row
 		// as fallback
 		tick().then(() => {
@@ -128,7 +143,11 @@
 			if (e.key === 'Escape') close();
 		};
 		const onPointer = (e: PointerEvent) => {
-			if (root && e.target instanceof Node && !root.contains(e.target)) close(false);
+			// the listbox is PORTALED to body — outside `root` — so the outside
+			// -click must not count it (or picking an option would close on
+			// pointerdown before the option's click fires)
+			if (root && e.target instanceof Node && !root.contains(e.target) && !list?.contains(e.target))
+				close(false);
 		};
 		const reposition = () => positionPop();
 		window.addEventListener('keydown', onKey);
@@ -172,6 +191,7 @@
 			role="listbox"
 			aria-label={ariaLabel}
 			bind:this={list}
+			use:portal
 			onkeydown={onListKey}
 			style={pop}
 			transition:fly={{ y: -4, duration: reduced ? 0 : 120 }}
