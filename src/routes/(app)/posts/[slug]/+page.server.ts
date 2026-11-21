@@ -1,7 +1,5 @@
 import { createApi } from '#lib/api/index.ts';
 import { SESSION_COOKIE, requireAuthed } from '#lib/session.ts';
-import { error } from '@sveltejs/kit';
-import { RECENT_COOKIE, cookieTrust, type RecentEntry } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies, url, setHeaders }) => {
@@ -9,36 +7,20 @@ export const load: PageServerLoad = async ({ params, cookies, url, setHeaders })
 	// layout's redirect runs in parallel and cannot stop these fetches)
 	requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
-	let post;
-	try {
-		post = await api.getPost(params.slug);
-	} catch (e) {
-		error(
-			e instanceof Error && 'status' in e ? Number((e as { status?: number }).status ?? 500) : 500,
-			'post not found'
-		);
-	}
-	const [tags, photos] = await Promise.all([api.listTags(), api.listPhotos()]);
-
-	// open-recent, cookie-backed (max 8, newest first) — feeds the palette.
+	// STREAMED (owner ruling 2026-11-21): the three reads ride to the client
+	// UNRESOLVED — SvelteKit streams the settlement, so the click renders
+	// the editor's skeleton IMMEDIATELY. Awaiting here stuck the user on the
+	// posts list behind the progress bar (three serial-parallel fetches gated
+	// the whole route). A rejection streams into the page's {#catch} — the
+	// not-found surface. The recent-cookie write moved to PostEditor (a
+	// streamed shell cannot set cookies after the headers are sent).
 	setHeaders({ 'cache-control': 'no-store' });
-	let recent: RecentEntry[];
-	try {
-		recent = JSON.parse(cookies.get(RECENT_COOKIE) ?? '[]');
-	} catch {
-		recent = [];
-	}
-	recent = [
-		{ slug: post.slug, title: post.title, at: Date.now() },
-		...recent.filter((r) => r.slug !== post.slug)
-	].slice(0, 8);
-	cookies.set(RECENT_COOKIE, JSON.stringify(recent), {
-		path: '/',
-		httpOnly: false, // read by the palette's client commands — non-secret
-		sameSite: 'strict',
-		...cookieTrust(url),
-		maxAge: 60 * 60 * 24 * 30
-	});
-
-	return { post, tags, photos: photos.items };
+	return {
+		slug: params.slug,
+		detail: Promise.all([
+			api.getPost(params.slug),
+			api.listTags(),
+			api.listPhotos().then((p) => p.items)
+		])
+	};
 };

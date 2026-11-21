@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { slide } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import { FileDiff, List, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
@@ -155,7 +155,7 @@
 	{:else}
 		{#if conflict}
 			<div
-				transition:slide={{ duration: 180 }}
+				transition:fade={{ duration: 150 }}
 				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-accent bg-accent/40 px-4 py-2.5 text-sm"
 				role="alert"
 			>
@@ -167,10 +167,11 @@
 				<Button
 					type="button"
 					variant="quiet"
+					class="h-auto gap-1.5 rounded-full px-4 py-2 font-sans text-sm"
 					onclick={() => void invalidateAll()}
 					aria-label="Reload head"
 				>
-					<RotateCcw class="size-3" /> Reload head
+					<RotateCcw class="size-3.5" /> Reload head
 				</Button>
 			</div>
 		{/if}
@@ -241,19 +242,20 @@
 				{/if}
 			</p>
 			<div class="flex items-center gap-2">
-				<!-- The presentation toggles — the vault compare's button pattern
-				     (aria-pressed + amber active), never checkboxes. -->
+				<!-- UNIFORM BAR (owner feedback): one size across the group;
+				     order = the toggle, then the DESTRUCTIVE verb (red at rest —
+				     danger reads before you click), Save (primary) last. -->
 				{#if tab === 'markdown'}
 					<Button
 						type="button"
 						variant="quiet"
 						aria-pressed={changedOnly}
-						class="gap-1.5 {changedOnly
+						class="h-auto gap-1.5 rounded-full px-4 py-2 font-sans text-sm {changedOnly
 							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 							: ''}"
 						onclick={() => (changedOnly = !changedOnly)}
 					>
-						{#if changedOnly}<List class="size-3" />{:else}<FileDiff class="size-3" />{/if}
+						{#if changedOnly}<List class="size-3.5" />{:else}<FileDiff class="size-3.5" />{/if}
 						{changedOnly ? 'Show all lines' : 'Changed only'}
 					</Button>
 				{:else}
@@ -261,7 +263,7 @@
 						type="button"
 						variant="quiet"
 						aria-pressed={hideUnchanged}
-						class="gap-1.5 {hideUnchanged
+						class="h-auto gap-1.5 rounded-full px-4 py-2 font-sans text-sm {hideUnchanged
 							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 							: ''}"
 						onclick={() => (hideUnchanged = !hideUnchanged)}
@@ -271,20 +273,20 @@
 				{/if}
 				<Button
 					type="button"
+					variant="danger"
+					class="h-auto rounded-full px-4 py-2 font-sans text-sm"
+					disabled={saving}
+					onclick={() => void discard()}
+				>
+					Discard my changes
+				</Button>
+				<Button
+					type="button"
 					variant="primary"
 					disabled={saving}
 					onclick={() => void saveFrom(conflict)}
 				>
 					{conflict ? 'Save anyway (overwrites head)' : 'Save'}
-				</Button>
-				<Button
-					type="button"
-					variant="quiet"
-					disabled={saving}
-					onclick={() => void discard()}
-					class="hover:text-danger"
-				>
-					Discard my changes
 				</Button>
 			</div>
 		</div>

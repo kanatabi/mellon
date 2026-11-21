@@ -72,6 +72,7 @@
 	let sub = $state('');
 	let pos = $state({ line: 1, col: 1 });
 	let words = $state(0);
+	let wordsTimer: ReturnType<typeof setTimeout> | undefined;
 
 	function readVimMode() {
 		if (!view || !vimOn) {
@@ -95,8 +96,6 @@
 		const head = state.selection.main.head;
 		const line = state.doc.lineAt(head);
 		pos = { line: line.number, col: head - line.from + 1 };
-		const text = state.doc.toString().trim();
-		words = text ? text.split(/\s+/).length : 0;
 	}
 
 	// Token-driven theme: every color reads a CSS var, so the data-theme flip
@@ -198,14 +197,29 @@
 						onchange(emitted);
 					}
 					if (u.docChanged || u.selectionSet) readStats(u.state);
-					// mode changes ride their own transactions; the read is a few
-					// property lookups — sample every update unconditionally
+					// the word count is DEBOUNCED (300ms trailing): counting materializes
+					// the whole doc (toString + trim + split — three full-document
+					// copies) — per keystroke that was the editor's own jank tax; the
+					// number reads fine on a 300ms lag. Ln/Col stays per-transaction
+					// (two property lookups). Mode changes ride their own transactions;
+					// the read is a few property lookups — sample every update.
+					if (u.docChanged) {
+						clearTimeout(wordsTimer);
+						wordsTimer = setTimeout(() => {
+							const text = u.state.doc.toString().trim();
+							words = text ? text.split(/\s+/).length : 0;
+						}, 300);
+					}
 					readVimMode();
 				})
 			]
 		});
 		view = new EditorView({ state, parent: host });
 		readStats(view.state);
+		// the word count's initial value (the debounced listener only fires on
+		// changes — a pre-loaded doc counts ONCE here, full copy is fine once)
+		const text = view.state.doc.toString().trim();
+		words = text ? text.split(/\s+/).length : 0;
 		readVimMode();
 		onReady?.({
 			insertAtCursor(text) {
@@ -245,7 +259,10 @@
 		}
 	});
 
-	onDestroy(() => view?.destroy());
+	onDestroy(() => {
+		view?.destroy();
+		clearTimeout(wordsTimer);
+	});
 </script>
 
 <div class="flex h-full min-h-0 flex-col {cls}">
