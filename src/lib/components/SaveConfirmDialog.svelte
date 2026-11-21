@@ -49,16 +49,30 @@
 		<AlertDialog.Title class="font-brand text-xl leading-snug font-semibold tracking-tight">
 			{heading}
 		</AlertDialog.Title>
-		<AlertDialog.Description class="mt-2 text-sm leading-relaxed text-muted-foreground">
+		<!-- the changed list: ONE ATTRIBUTE PER LINE (owner feedback — the comma
+		     string read as noise); Description goes sr-only (a <ul> may not
+		     live inside the dialog's <p> description). -->
+		<AlertDialog.Description class="sr-only">
+			The attributes changed since the last save are listed below.
+		</AlertDialog.Description>
+		<div class="mt-3 text-sm leading-relaxed text-muted-foreground">
 			{#if changed.length > 0}
-				Changed: <span class="font-mono text-foreground">{changed.join(', ')}</span>
+				<p>Changed:</p>
+				<ul class="mt-1.5 space-y-1">
+					{#each changed as attr (attr)}
+						<li class="font-mono text-foreground"><span class="text-brand">+</span> {attr}</li>
+					{/each}
+				</ul>
 			{:else}
-				no changes detected
+				<p>no changes detected</p>
 			{/if}
 			{#if !canDiff}
-				Nothing is saved yet — there is no head to diff against.
+				<p class="mt-2">Nothing is saved yet — there is no head to diff against.</p>
 			{/if}
-		</AlertDialog.Description>
+		</div>
+		<!-- UNIFORM BUTTON ROW (owner feedback): same height/padding/type across
+		     all three — they differ only in fill (outlined / quiet-surface /
+		     violet). -->
 		<div class="mt-5 flex flex-wrap items-center justify-end gap-2">
 			<AlertDialog.Cancel
 				class="h-auto rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -72,6 +86,7 @@
 				<Button
 					type="button"
 					variant="quiet"
+					class="h-auto rounded-full px-4 py-2 font-sans text-sm"
 					disabled={busy}
 					onclick={() => {
 						if (busy) return;

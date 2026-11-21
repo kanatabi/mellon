@@ -13,7 +13,7 @@
 		WrapText
 	} from 'lucide-svelte';
 	import { onMount, tick } from 'svelte';
-	import { fade, slide } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import SectionCard from '#lib/components/SectionCard.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { postSections } from '#lib/sections.svelte.ts';
@@ -31,6 +31,7 @@
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import Combobox from '#lib/components/Combobox.svelte';
 	import Confirm from '#lib/components/Confirm.svelte';
+	import Skeleton from '#lib/components/ui/skeleton/skeleton.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import ImagePicker from '#lib/components/ImagePicker.svelte';
@@ -60,6 +61,7 @@
 		TagCount
 	} from '#lib/api/types.ts';
 	import { slugify } from '#lib/slug.ts';
+	import { bumpRecent } from '#lib/recent.ts';
 
 	interface Props {
 		/** Absent ⇒ create mode: the first save POSTs, then the URL adopts the slug. */
@@ -147,14 +149,22 @@ flowchart LR
 		onWrite: (edit) => (lastLocalSave = edit.at)
 	});
 	// Every draft mutation (re)arms the idle timer while dirty; going clean
-	// (save/publish succeeded) cancels any pending write.
+	// (save/publish succeeded) cancels any pending write. Dependency reads
+	// WITHOUT $state.snapshot — the snapshot deep-cloned the WHOLE draft on
+	// every keystroke purely for tracking; the fire-time current() clones
+	// lazily, which is the only place the copy is needed.
 	$effect(() => {
-		const snap = $state.snapshot(draft);
+		void draft.title;
+		void draft.subtitle;
+		void draft.preview;
+		void draft.date;
+		void draft.tags;
+		void draft.content;
+		void draft.thumbnail;
 		if (!dirty) {
 			scheduler.stop();
 			return;
 		}
-		void snap; // whole-document dependency
 		scheduler.schedule();
 	});
 	// Crash/close flush: localStorage writes are synchronous, so a pagehide
@@ -229,6 +239,9 @@ flowchart LR
 		if (refocus) (t === 'write' ? writeTabBtn : previewTabBtn)?.focus();
 	}
 	onMount(() => {
+		// open-recent: the cookie write moved here from the page load (a
+		// streamed shell cannot set cookies) — same one-behind semantics
+		if (!isNew) bumpRecent(draft.slug, draft.title);
 		const stored = localStorage.getItem('mellon.tab.editor');
 		if (stored === 'preview') editorTab = 'preview'; // adopt AFTER hydration
 		if (localStorage.getItem('mellon.wrap') === '0') wrapped = false;
@@ -273,17 +286,33 @@ flowchart LR
 	// Debounced near-real-time preview (server endpoint = the vendored pipeline).
 	// 120ms: reads as "while typing" but batches a burst of keystrokes into one
 	// render round-trip — the pipeline runs Shiki, not a regex.
+	// PREVIEW SKELETON (owner ruling 2026-11-21): `previewPending` covers the
+	// FIRST render (the blank canvas read as broken); during live typing the
+	// STALE render stays visible until the new one lands — never a skeleton
+	// over content. Declarative + cleared in `finally` (the fetch always
+	// settles) — NOT the removed 2026-11-08 fence-level JS shimmer, which
+	// depended on the very async chain that produced the end state and stuck.
+	// The seq guard: only the LATEST request may paint (a slow stale response
+	// must never overwrite a fresh one).
 	let previewTimer: ReturnType<typeof setTimeout>;
+	let previewSeq = 0;
+	let previewPending = $state(false);
 	let previewEl: HTMLDivElement | undefined = $state();
 	$effect(() => {
 		const md = draft.content;
 		if (!previewLive) return;
 		clearTimeout(previewTimer);
 		previewTimer = setTimeout(async () => {
+			const seq = ++previewSeq;
+			previewPending = true;
 			try {
-				html = (await preview(md)).html;
+				const next = (await preview(md)).html;
+				if (seq === previewSeq) html = next;
 			} catch {
-				html = '<p class="font-mono text-xs text-danger">preview failed</p>';
+				if (seq === previewSeq)
+					html = '<p class="font-mono text-xs text-danger">preview failed</p>';
+			} finally {
+				if (seq === previewSeq) previewPending = false;
 			}
 		}, 120);
 		return () => clearTimeout(previewTimer);
@@ -884,7 +913,7 @@ flowchart LR
 		{#if message}
 			<div class="flex flex-wrap items-center gap-2">
 				<p
-					transition:slide={{ duration: 180 }}
+					transition:fade={{ duration: 150 }}
 					class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
 						? 'bg-brand/10 text-brand'
 						: message.kind === 'conflict'
@@ -912,7 +941,7 @@ flowchart LR
 			<!-- Autosave restore: the buffer survived a crash/close that the idle
 			     timer (or an earlier tab) did not outlive. -->
 			<div
-				transition:slide={{ duration: 180 }}
+				transition:fade={{ duration: 150 }}
 				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-accent bg-accent/40 px-4 py-2.5 text-sm"
 				role="status"
 			>
@@ -994,8 +1023,24 @@ flowchart LR
 						: 'opacity-0'}"
 					aria-label="Rendered preview"
 				>
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -- server-rendered, DOMPurify-sanitized in the pipeline -->
-					<div class="prose max-w-none">{@html html}</div>
+					{#if previewPending && !html}
+						<!-- FIRST render only: an article-shaped skeleton (the vendored
+						     cast's Skeleton). Live edits never see this — the stale
+						     render stays until the new one lands. -->
+						<div class="prose max-w-none" aria-hidden="true">
+							<Skeleton class="mb-6 h-8 w-1/3" />
+							<Skeleton class="mb-3 h-3.5 w-full" />
+							<Skeleton class="mb-3 h-3.5 w-11/12" />
+							<Skeleton class="mb-3 h-3.5 w-4/5" />
+							<Skeleton class="mb-6 h-16 w-full rounded-md" />
+							<Skeleton class="mb-3 h-3.5 w-full" />
+							<Skeleton class="mb-3 h-3.5 w-5/6" />
+							<Skeleton class="h-3.5 w-2/3" />
+						</div>
+					{:else}
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -- server-rendered, DOMPurify-sanitized in the pipeline -->
+						<div class="prose max-w-none">{@html html}</div>
+					{/if}
 				</div>
 			</div>
 		</div>
