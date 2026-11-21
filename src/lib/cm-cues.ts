@@ -15,7 +15,7 @@
  * never a full-document scan.
  */
 import { syntaxTree } from '@codemirror/language';
-import { RangeSetBuilder } from '@codemirror/state';
+import { RangeSet, type Range } from '@codemirror/state';
 import {
 	Decoration,
 	EditorView,
@@ -55,7 +55,7 @@ export function cueFor(name: string, parent?: string): string | null {
 }
 
 function buildDecorations(view: EditorView): DecorationSet {
-	const ranges: Array<{ from: number; to: number; deco: Decoration }> = [];
+	const ranges: Array<Range<Decoration>> = [];
 	const tree = syntaxTree(view.state);
 	const doc = view.state.doc;
 	// block-cue helper: one LINE decoration per line of a multi-line block
@@ -67,7 +67,7 @@ function buildDecorations(view: EditorView): DecorationSet {
 			lastLine.from === node.to && node.to > node.from ? lastLine.number - 1 : lastLine.number;
 		for (let l = first; l <= last; l++) {
 			const lineFrom = doc.line(l).from;
-			ranges.push({ from: lineFrom, to: lineFrom, deco: line(cls) });
+			ranges.push(line(cls).range(lineFrom, lineFrom));
 		}
 	};
 	const blockCues: Record<string, string> = {
@@ -81,26 +81,22 @@ function buildDecorations(view: EditorView): DecorationSet {
 			to,
 			enter(node) {
 				const cls = cueFor(node.name, node.node.parent?.name);
-				if (cls) ranges.push({ from: node.from, to: node.to, deco: mark(cls) });
+				if (cls) ranges.push(mark(cls).range(node.from, node.to));
 				// an image's `!` is its first char — the one glyph that says
 				// "embed, not link" at a glance
 				if (node.name === 'Image') {
-					ranges.push({
-						from: node.from,
-						to: node.from + 1,
-						deco: mark('cm-cue-link cm-cue-bold')
-					});
+					ranges.push(mark('cm-cue-link cm-cue-bold').range(node.from, node.from + 1));
 				}
 				const blockCls = blockCues[node.name];
 				if (blockCls) lineCues(node.name, blockCls)(node);
 			}
 		});
 	}
-	// RangeSet wants sorted order (from asc; equal from = wider first)
-	ranges.sort((a, b) => a.from - b.from || b.to - a.to);
-	const builder = new RangeSetBuilder<Decoration>();
-	for (const r of ranges) builder.add(r.from, r.to, r.deco);
-	return builder.finish();
+	// the ORDERING CONTRACT is CM's own: RangeSet.of(sort=true) sorts by
+	// (from, value.startSide) — marks vs line-points at the same position
+	// resolved by the library, never by a hand-rolled comparator (which
+	// could throw the builder and silently kill the whole plugin)
+	return RangeSet.of(ranges, true);
 }
 
 export const markCues = ViewPlugin.fromClass(
