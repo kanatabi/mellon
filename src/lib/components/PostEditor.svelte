@@ -30,6 +30,7 @@
 	} from 'lucide-svelte';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import Combobox from '#lib/components/Combobox.svelte';
+	import Confirm from '#lib/components/Confirm.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import ImagePicker from '#lib/components/ImagePicker.svelte';
@@ -232,9 +233,25 @@ flowchart LR
 		window.addEventListener('beforeunload', block);
 		return () => window.removeEventListener('beforeunload', block);
 	});
-	beforeNavigate(({ cancel }) => {
-		if (dirty && !confirm('Discard unsaved changes?')) cancel();
+	// D15: the native confirm → the house confirm (the unthemeable OS dialog
+	// is the same leak class as the native <select> ban). Cancel the
+	// navigation, ask in the estate's voice, re-navigate past the latch.
+	let guardOff = $state(false);
+	let leaveTo = $state('');
+	let leaveOpen = $state(false);
+	beforeNavigate((e) => {
+		if (dirty && !guardOff) {
+			e.cancel();
+			const t = e.to?.url;
+			leaveTo = t ? t.pathname + t.search : '';
+			leaveOpen = true;
+		}
 	});
+	function leave() {
+		guardOff = true;
+		leaveOpen = false;
+		void goto(leaveTo);
+	}
 
 	async function save(): Promise<boolean> {
 		saving = true;
@@ -1283,6 +1300,15 @@ flowchart LR
 		{@render railBody(false)}
 	</RailDrawer>
 
+	{#if leaveOpen}
+		<Confirm
+			heading="Discard unsaved changes?"
+			description="the draft's edits in progress are not saved anywhere — leaving now drops them"
+			confirmLabel="Discard"
+			onConfirm={leave}
+			onClose={() => (leaveOpen = false)}
+		/>
+	{/if}
 	{#if confirmDelete}
 		<DeleteDialog
 			heading={`Delete “${draft.title || 'Untitled'}”?`}

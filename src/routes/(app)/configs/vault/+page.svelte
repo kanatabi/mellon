@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll, beforeNavigate } from '$app/navigation';
 	import * as Select from '#lib/components/ui/select/index.js';
+	import Confirm from '#lib/components/Confirm.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import {
@@ -220,16 +221,47 @@
 		order = [...order, k];
 		dirty = true;
 	}
+	// D15: the native confirm() is browser-owned UI — unthemeable, custom
+	// copy ignored. The × opens the HOUSE confirm; the copy is page-authored
+	// (not relayed wire copy), so the question/consequence split is honest.
+	let dropTarget = $state<string | null>(null);
 	function removeRow(k: string) {
-		if (
-			!confirm(
-				`Drop ${k} from this secret? (the key-set mirror removes it from EVERY env — history keeps it recoverable)`
-			)
-		)
-			return;
+		dropTarget = k;
+	}
+	function confirmDrop() {
+		if (!dropTarget) return;
+		const k = dropTarget;
+		dropTarget = null;
 		delete rows[k];
 		order = order.filter((x) => x !== k);
 		dirty = true;
+	}
+
+	// The unsaved-changes guard the vault never had (the user's report:
+	// leaving with edits vanished them silently — and the drop-key confirm
+	//surfaced in its place). Same shape as the other guarded pages; the
+	// reload/close block stays native (the browser owns that chrome).
+	let guardOff = $state(false);
+	let leaveTo = $state('');
+	let leaveOpen = $state(false);
+	beforeNavigate((e) => {
+		if (dirty && !guardOff) {
+			e.cancel();
+			const t = e.to?.url;
+			leaveTo = t ? t.pathname + t.search : '';
+			leaveOpen = true;
+		}
+	});
+	$effect(() => {
+		if (!dirty) return;
+		const block = (e: BeforeUnloadEvent) => e.preventDefault();
+		window.addEventListener('beforeunload', block);
+		return () => window.removeEventListener('beforeunload', block);
+	});
+	function leave() {
+		guardOff = true;
+		leaveOpen = false;
+		void goto(leaveTo);
 	}
 
 	// ONE error path for all control ops: RELAYED server stories arrive
@@ -671,6 +703,25 @@
 				Save as v{cas + 1}
 			</Button>
 		</div>
+
+		{#if dropTarget}
+			<Confirm
+				heading={`Drop ${dropTarget} from this secret?`}
+				description="the key-set mirror removes it from EVERY env — history keeps it recoverable"
+				confirmLabel="Drop key"
+				onConfirm={confirmDrop}
+				onClose={() => (dropTarget = null)}
+			/>
+		{/if}
+		{#if leaveOpen}
+			<Confirm
+				heading="Leave with unsaved changes?"
+				description="the secret has edits that are not saved anywhere — leaving now drops them (history only knows saved versions)"
+				confirmLabel="Leave"
+				onConfirm={leave}
+				onClose={() => (leaveOpen = false)}
+			/>
+		{/if}
 
 		{#if historyOpen}
 			<aside

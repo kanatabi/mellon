@@ -5,6 +5,7 @@
 	import { fade } from 'svelte/transition';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { focusOnMount } from '#lib/actions.ts';
+	import Confirm from '#lib/components/Confirm.svelte';
 	import { editField, stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -157,9 +158,12 @@
 		});
 	}
 
+	// D15: the native confirm() → the house confirm (the unthemeable OS
+	// dialog is the same leak class as the native <select> ban)
+	let deleteOpen = $state(false);
+
 	async function deleteFromDialog() {
 		if (!current) return;
-		if (!confirm(`Delete "${current.name}" from the vocabulary?`)) return;
 		busy = true;
 		try {
 			await client.deleteTag(current.name);
@@ -579,7 +583,7 @@
 					type="button"
 					variant="danger"
 					class="gap-1.5 disabled:opacity-40"
-					onclick={deleteFromDialog}
+					onclick={() => (deleteOpen = true)}
 					disabled={busy}
 				>
 					<X class="size-3.5" /> delete
@@ -603,6 +607,18 @@
 						Save
 					</Button>
 				</div>
+
+				{#if deleteOpen}
+					<Confirm
+						heading={`Delete "${current.name}" from the vocabulary?`}
+						confirmLabel="Delete tag"
+						onConfirm={() => {
+							deleteOpen = false;
+							void deleteFromDialog();
+						}}
+						onClose={() => (deleteOpen = false)}
+					/>
+				{/if}
 			</div>
 		</div>
 	</div>

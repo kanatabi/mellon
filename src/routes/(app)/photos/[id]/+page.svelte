@@ -11,6 +11,7 @@
 		Trash2
 	} from 'lucide-svelte';
 	import { beforeNavigate, goto, invalidate } from '$app/navigation';
+	import Confirm from '#lib/components/Confirm.svelte';
 	import { fade } from 'svelte/transition';
 	import Combobox from '#lib/components/Combobox.svelte';
 	import Textarea from '#lib/components/ui/textarea/textarea.svelte';
@@ -80,9 +81,23 @@
 		window.addEventListener('beforeunload', block);
 		return () => window.removeEventListener('beforeunload', block);
 	});
-	beforeNavigate(({ cancel }) => {
-		if (dirty && !guardOff && !confirm('Discard unsaved metadata changes?')) cancel();
+	// D15: the native confirm → the house confirm — cancel the navigation,
+	// ask in the estate's voice, re-navigate past the latch on Leave.
+	let leaveTo = $state('');
+	let leaveOpen = $state(false);
+	beforeNavigate((e) => {
+		if (dirty && !guardOff) {
+			e.cancel();
+			const t = e.to?.url;
+			leaveTo = t ? t.pathname + t.search : '';
+			leaveOpen = true;
+		}
 	});
+	function leave() {
+		guardOff = true;
+		leaveOpen = false;
+		void goto(leaveTo);
+	}
 
 	async function save() {
 		if (!dirty || saving) return;
@@ -552,6 +567,15 @@
 	</div>
 {/snippet}
 
+{#if leaveOpen}
+	<Confirm
+		heading="Discard unsaved metadata changes?"
+		description="the alt text and collection edits in progress are not saved anywhere — leaving now drops them"
+		confirmLabel="Discard"
+		onConfirm={leave}
+		onClose={() => (leaveOpen = false)}
+	/>
+{/if}
 {#if confirmDelete}
 	<DeleteDialog
 		heading="Delete this image?"
