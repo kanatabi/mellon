@@ -216,14 +216,16 @@
 						u.view.dom.querySelectorAll('.cm-tooltip').length
 					);
 				}),
+				// the COMPLETION = FIRST (before basicSetup): the config facet's
+				// merge order was the suspect — the override takes the front
+				autocompletion({ override: [emojiSource, keywordSource] }),
 				basicSetup,
 				markdown({ base: markdownLanguage, codeLanguages: languages }),
 				wrapCompartment.of(wrap ? [EditorView.lineWrapping] : []),
 				theme,
 				syntaxHighlighting(tokens),
 				markCues, // the mark-cue layer (§11): per-component chrome, content undecorated
-				regexCues, // the cue layer for what the grammar can't see (==, footnotes, deflists, {#id})
-				autocompletion({ override: [emojiSource, keywordSource] }), // the brain: :emoji: + the fence keywords
+				regexCues // the cue layer for what the grammar can't see (==, footnotes, deflists, {#id})
 				vimCompartment.of(vimOn ? [vimKeymap()] : []),
 				EditorView.domEventHandlers({
 					// belt for transitions that resolve outside a transaction: sample
