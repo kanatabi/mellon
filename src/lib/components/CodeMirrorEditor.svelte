@@ -161,7 +161,15 @@
 		// fence language + link label: metadata, legible, quiet
 		{ tag: tags.labelName, color: 'var(--muted-foreground)' },
 		// marks: [] () ` > # - * — punctuation, not content
-		{ tag: tags.processingInstruction, color: 'var(--muted-foreground)' },
+		// THE MARKS' WAR SETTLED (owner bug walk 2026-11-21): the grammar routes
+		// EVERY markdown mark (HeaderMark/QuoteMark/CodeMark/ListMark/
+		// LinkMark/EmphasisMark/TableDelimiter) through ONE tag — this entry.
+		// Its span is the INNERMOST over each glyph, so its own color would
+		// beat any inherited cue (the user's live DOM proved it: the cue span
+		// wraps the highlight span) — `inherit` makes it transparent: the
+		// mark's color resolves THROUGH to the cm-cue-* decoration wrapping
+		// it. One line; the per-node cues live on the decorations.
+		{ tag: tags.processingInstruction, color: 'inherit' },
 		// inline code: prose parity (--tw-prose-code: foreground)
 		{ tag: tags.monospace, color: 'var(--foreground)' },
 		{ tag: tags.string, color: 'var(--muted-foreground)' },
