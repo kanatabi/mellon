@@ -99,6 +99,9 @@ export function createEditScheduler(opts: {
 	seconds: number;
 	current: () => PendingEdit | null;
 	store: PostEditStore;
+	/** Fires after every landed buffer write — the editor's autosave
+	 *  indicator stamps this (the edit's `at` IS the write time). */
+	onWrite?: (edit: PendingEdit) => void;
 }): EditScheduler {
 	const idleMs = Math.max(1, opts.seconds) * 1000;
 	let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -111,7 +114,10 @@ export function createEditScheduler(opts: {
 		idleTimer = staleTimer = undefined;
 		firstAt = null;
 		const edit = opts.current();
-		if (edit) void opts.store.write(edit);
+		if (edit) {
+			void opts.store.write(edit);
+			opts.onWrite?.(edit);
+		}
 	}
 
 	return {

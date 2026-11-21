@@ -11,7 +11,7 @@
 			preview: '',
 			date: '2026-11-21',
 			tags: [],
-			content: 'body',
+			content: 'l0\nl1\nl2\nl3\nl4\nl5\nl6\nl7\nl8\nl9',
 			thumbnail: null,
 			status: 'draft',
 			readTime: 1,

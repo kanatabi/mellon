@@ -21,7 +21,7 @@
 	import { client, errorText } from '#lib/api/client.ts';
 	import { diffLines, type DiffOp } from '#lib/diff.ts';
 	import { rankByFuzzy } from '#lib/fuzzy.ts';
-	import { displayValue, orderEnvs } from '#lib/secrets-diff.ts';
+	import { displayValue, orderEnvs, DIFF_BLOCK } from '#lib/secrets-diff.ts';
 	import { editField, stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -867,9 +867,9 @@
 						{#each historyDiff as op, i (i + ':' + op.kind + ':' + op.text)}
 							<span
 								class={op.kind === 'add'
-									? 'text-diff-add'
+									? `${DIFF_BLOCK.add} text-diff-add`
 									: op.kind === 'del'
-										? 'text-diff-del'
+										? `${DIFF_BLOCK.del} text-diff-del`
 										: 'text-muted-foreground'}
 								>{op.kind === 'add' ? '+ ' : op.kind === 'del' ? '- ' : '  '}{op.text}</span
 							>

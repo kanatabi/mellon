@@ -64,6 +64,16 @@ export function diffSecrets(
  *  keeps its surface. */
 export { alignDiff, type SplitRow } from './diff.ts';
 
+/** The diff-highlight vocabulary: changed lines/cells carry a solid BLOCK
+ *  background (row/cell level, not font-only tints — owner ruling
+ *  2026-11-21), one language across the post diff, the compare page and the
+ *  vault drawer. Pair with the `text-diff-*` tint at the call site. */
+export const DIFF_BLOCK = {
+	del: 'bg-diff-del/15',
+	add: 'bg-diff-add/15',
+	same: ''
+} as const;
+
 /** The config-shaped view: one row per key, its story on one line. */
 export type TableRow = {
 	key: string;

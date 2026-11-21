@@ -10,6 +10,7 @@
 		alignDiff,
 		diffSecrets,
 		displayValue,
+		DIFF_BLOCK,
 		orderEnvs,
 		tableDiff,
 		type CompareContent
@@ -71,9 +72,13 @@
 	);
 	const pinned = $derived(data.meta?.pinnedVersion ?? null);
 	// one class source for every scrolling text mode (split rows + inline
-	// ops) — table is cells, not lines, so wrap doesn't apply there
-	const lineCls = (tone: string) =>
-		`${wrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'} ${tone}`;
+	// ops) — table is cells, not lines, so wrap doesn't apply there.
+	// `kind` adds the BLOCK highlight (a solid row background — the shared
+	// DIFF_BLOCK language, not a font-only tint).
+	const lineCls = (tone: string, kind?: 'add' | 'del' | 'same' | null) =>
+		`${wrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'} ${tone} ${
+			kind && kind !== 'same' ? DIFF_BLOCK[kind] : ''
+		}`;
 
 	const fmt = new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric' });
 	const stamp = (iso: string) => {
@@ -397,13 +402,19 @@
 						>
 							<td class="px-4 py-2 whitespace-nowrap">{row.key}</td>
 							<td
-								class="max-w-40 truncate px-4 py-2"
+								class="max-w-40 truncate px-4 py-2 {row.status === 'removed' ||
+								row.status === 'changed'
+									? `${DIFF_BLOCK.del} text-diff-del`
+									: ''}"
 								title={row.from === null ? '' : displayValue(row.from, revealAll)}
 							>
 								{row.from === null ? '—' : displayValue(row.from, revealAll)}
 							</td>
 							<td
-								class="max-w-40 truncate px-4 py-2"
+								class="max-w-40 truncate px-4 py-2 {row.status === 'added' ||
+								row.status === 'changed'
+									? `${DIFF_BLOCK.add} text-diff-add`
+									: ''}"
 								title={row.to === null ? '' : displayValue(row.to, revealAll)}
 							>
 								{row.to === null ? '—' : displayValue(row.to, revealAll)}
@@ -430,7 +441,10 @@
 				<div class="px-3 py-2 font-mono text-[11px] leading-relaxed">
 					{#each splitRows as r, i (i)}
 						<div
-							class={lineCls(r.left?.kind === 'del' ? 'text-diff-del' : 'text-muted-foreground/80')}
+							class={lineCls(
+								r.left?.kind === 'del' ? 'text-diff-del' : 'text-muted-foreground/80',
+								r.left?.kind
+							)}
 						>
 							{r.left?.text ?? '\u00A0'}
 						</div>
@@ -447,7 +461,8 @@
 					{#each splitRows as r, i (i)}
 						<div
 							class={lineCls(
-								r.right?.kind === 'add' ? 'text-diff-add' : 'text-muted-foreground/80'
+								r.right?.kind === 'add' ? 'text-diff-add' : 'text-muted-foreground/80',
+								r.right?.kind
 							)}
 						>
 							{r.right?.text ?? '\u00A0'}
@@ -466,7 +481,8 @@
 								? 'text-diff-add'
 								: op.kind === 'del'
 									? 'text-diff-del'
-									: 'text-muted-foreground'
+									: 'text-muted-foreground',
+							op.kind
 						)}
 					>
 						{op.kind === 'add' ? '+' : op.kind === 'del' ? '-' : '\u00A0'}
