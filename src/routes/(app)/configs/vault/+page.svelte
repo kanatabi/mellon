@@ -57,8 +57,8 @@
 	// static attr is eaten as a Svelte template interpolation (the parser
 	// turned it into the comma-expression {(1, 31)} and split my title attr
 	// across lines — caught by check; Prettier then formalized the damage).
-	const APP_PATTERN = '^[a-z][a-z0-9-]{1,31}$';
-	const ENV_PATTERN = '^[a-z][a-z0-9-]{0,31}$';
+	const APP_PATTERN = '^[a-z][a-z0-9\-]{1,31}$';
+	const ENV_PATTERN = '^[a-z][a-z0-9\-]{0,31}$';
 	// onboarding + add-env dialogs; the input carries the slug, the busy flag
 	// gates double-submit while the relay round-trips.
 	let onboardOpen = $state(false);

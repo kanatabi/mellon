@@ -108,7 +108,7 @@
 						type="text"
 						name="username"
 						required
-						pattern={'^[a-z0-9][a-z0-9._-]{1,31}$'}
+						pattern={'^[a-z0-9][a-z0-9.\-_]{1,31}$'}
 						title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
 						class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
 					/>
