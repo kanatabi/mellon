@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import Select from '#lib/components/Select.svelte';
+	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import {
@@ -450,17 +450,24 @@
 				<div class="flex flex-wrap items-center gap-2 md:justify-end">
 					<label class="flex min-w-0 grow items-center gap-1.5 md:grow-0">
 						<span class="sr-only">App namespace</span>
-						<Select
+						<Select.Root
+							type="single"
 							items={apps.map((a) => ({ value: a.app, label: a.app }))}
 							value={data.app}
-							onchange={(app) => {
+							onValueChange={(app) => {
 								const first = apps.find((a) => a.app === app)?.envs[0] ?? 'dev';
 								selectPath(app, first);
 							}}
-							ariaLabel="App namespace"
-							fill
-							popWidth={220}
-						/>
+						>
+							<Select.Trigger aria-label="App namespace" class="w-full">
+								<Select.Value />
+							</Select.Trigger>
+							<Select.Content class="min-w-[220px]">
+								{#each apps as a (a.app)}
+									<Select.Item value={a.app} label={a.app} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
 					</label>
 					<Button
 						type="button"

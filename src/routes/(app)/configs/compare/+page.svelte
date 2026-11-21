@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { ArrowLeftRight, Eye, EyeOff, GitCompareArrows, WrapText } from 'lucide-svelte';
-	import Select from '#lib/components/Select.svelte';
+	import * as Select from '#lib/components/ui/select/index.js';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
@@ -190,55 +190,95 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">App namespace</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={apps.map((a) => ({ value: a.app, label: a.app }))}
 				value={data.app}
-				onchange={(app) =>
+				onValueChange={(app) =>
 					go({
 						app,
 						env: undefined,
 						from: undefined,
 						to: undefined
 					})}
-				ariaLabel="App namespace"
-			/>
+			>
+				<Select.Trigger aria-label="App namespace">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content>
+					{#each apps as a (a.app)}
+						<Select.Item value={a.app} label={a.app} />
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">Environment</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={envs.map((env) => ({ value: env, label: env }))}
 				value={String(data.env)}
-				onchange={(env) => go({ env, from: undefined, to: undefined })}
-				ariaLabel="Environment"
-			/>
+				onValueChange={(env) => go({ env, from: undefined, to: undefined })}
+			>
+				<Select.Trigger aria-label="Environment">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content>
+					{#each envs as env (env)}
+						<Select.Item value={env} label={env} />
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<span class="font-mono text-xs text-muted-foreground/60">from</span>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">From version</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={versionsDesc.map((v) => ({
 					value: String(v.version),
 					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
 				}))}
 				value={String(data.fromV)}
-				onchange={(from) => go({ from: Number(from) })}
-				ariaLabel="From version"
-				popWidth={340}
-			/>
+				onValueChange={(from) => go({ from: Number(from) })}
+			>
+				<Select.Trigger aria-label="From version">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content class="min-w-[340px]">
+					{#each versionsDesc as v (v.version)}
+						<Select.Item
+							value={String(v.version)}
+							label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
+						/>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<span class="font-mono text-xs text-muted-foreground/60">to</span>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">To version</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={versionsDesc.map((v) => ({
 					value: String(v.version),
 					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
 				}))}
 				value={String(data.toV)}
-				onchange={(to) => go({ to: Number(to) })}
-				ariaLabel="To version"
-				popWidth={340}
-			/>
+				onValueChange={(to) => go({ to: Number(to) })}
+			>
+				<Select.Trigger aria-label="To version">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content class="min-w-[340px]">
+					{#each versionsDesc as v (v.version)}
+						<Select.Item
+							value={String(v.version)}
+							label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
+						/>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<Button
 			type="button"

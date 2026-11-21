@@ -1,47 +1,41 @@
 <script lang="ts">
 	import { Calendar as CalendarPrimitive } from 'bits-ui';
-	import ChevronDownIcon from 'lucide-svelte/icons/chevron-down';
 	import { cn, type WithoutChildrenOrChild } from '#lib/utils.js';
+	import * as Select from '#lib/components/ui/select/index.js';
 
+	// SHADCN-PLAN 4.1: native <select> removed — same as the month picker;
+	// the primitive provides the year range's items, the block's Select is
+	// the themed interaction layer. `value` is the year number.
 	let {
 		ref = $bindable(null),
 		class: className,
 		value,
+		onValueChange,
 		...restProps
-	}: WithoutChildrenOrChild<CalendarPrimitive.YearSelectProps> = $props();
+	}: WithoutChildrenOrChild<CalendarPrimitive.YearSelectProps> & {
+		onValueChange?: (year: number) => void;
+	} = $props();
 </script>
 
-<span
-	class={cn(
-		'relative flex rounded-md border border-input shadow-xs has-focus:border-ring has-focus:ring-[3px] has-focus:ring-ring/50',
-		className
-	)}
->
-	<CalendarPrimitive.YearSelect
-		bind:ref
-		class="absolute inset-0 opacity-0 dark:bg-popover dark:text-popover-foreground"
-		{...restProps}
-	>
-		{#snippet child({ props, yearItems, selectedYearItem })}
-			<select {...props} {value}>
-				{#each yearItems as yearItem (yearItem.value)}
-					<option
-						value={yearItem.value}
-						selected={value !== undefined
-							? yearItem.value === value
-							: yearItem.value === selectedYearItem?.value}
-					>
-						{yearItem.label}
-					</option>
-				{/each}
-			</select>
-			<span
-				class="flex h-(--cell-size) items-center gap-1 rounded-md ps-2 pe-1 text-sm font-medium select-none [&>svg]:size-3.5 [&>svg]:text-muted-foreground"
-				aria-hidden="true"
+<CalendarPrimitive.YearSelect bind:ref {...restProps}>
+	{#snippet child({ yearItems, selectedYearItem })}
+		<Select.Root
+			type="single"
+			items={yearItems.map((y) => ({ value: String(y.value), label: y.label }))}
+			value={String(value ?? selectedYearItem?.value ?? '')}
+			onValueChange={(y) => onValueChange?.(Number(y))}
+		>
+			<Select.Trigger
+				aria-label="Year"
+				class={cn('h-(--cell-size) gap-1 px-2 text-sm font-medium', className)}
 			>
-				{yearItems.find((item) => item.value === value)?.label || selectedYearItem?.label || value}
-				<ChevronDownIcon class={cn('size-4', className)} />
-			</span>
-		{/snippet}
-	</CalendarPrimitive.YearSelect>
-</span>
+				<Select.Value />
+			</Select.Trigger>
+			<Select.Content class="min-w-[6.5rem]">
+				{#each yearItems as y (y.value)}
+					<Select.Item value={String(y.value)} label={y.label} />
+				{/each}
+			</Select.Content>
+		</Select.Root>
+	{/snippet}
+</CalendarPrimitive.YearSelect>
