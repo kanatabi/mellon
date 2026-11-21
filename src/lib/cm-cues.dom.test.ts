@@ -43,6 +43,16 @@ describe('the mark-cue layer renders', () => {
 			expect(container.querySelector('.cm-cue-list')).toBeTruthy();
 		});
 	});
+
+	it('table delimiters carry the table cue (pipes + the alignment row)', async () => {
+		const { container } = render(Fixture);
+		await vi.waitFor(() => {
+			expect(container.querySelector('.cm-cue-table')).toBeTruthy();
+		});
+		// every pipe in the table (3 rows × 3 pipes + the alignment colons' row)
+		const tableCues = container.querySelectorAll('.cm-cue-table');
+		expect(tableCues.length).toBeGreaterThanOrEqual(6);
+	});
 });
 
 describe('the mark-cue layer follows edits LIVE', () => {

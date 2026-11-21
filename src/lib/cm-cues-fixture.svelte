@@ -15,6 +15,10 @@ func main() {}
 \`\`\`
 
 - an item
+
+| col a | col b |
+| --- | :---: |
+| one | two |
 `);
 </script>
 

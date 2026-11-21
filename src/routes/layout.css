@@ -180,37 +180,37 @@
 }
 
 .cm-editor .cm-cue-heading {
-	color: var(--cue-heading);
+	color: var(--cue-heading) !important;
 	font-weight: 700;
 }
 .cm-editor .cm-cue-quote {
-	color: var(--cue-quote);
+	color: var(--cue-quote) !important;
 }
 .cm-editor .cm-cue-code {
-	color: var(--cue-code);
+	color: var(--cue-code) !important;
 }
 .cm-editor .cm-cue-bold {
-	color: var(--cue-bold);
+	color: var(--cue-bold) !important;
 	font-weight: 700;
 }
 .cm-editor .cm-cue-italic {
-	color: var(--cue-italic);
+	color: var(--cue-italic) !important;
 	font-style: italic;
 }
 .cm-editor .cm-cue-strike {
-	color: var(--cue-strike);
+	color: var(--cue-strike) !important;
 	text-decoration: line-through;
 }
 .cm-editor .cm-cue-list {
-	color: var(--cue-list);
+	color: var(--cue-list) !important;
 	font-weight: 700;
 }
 .cm-editor .cm-cue-table {
-	color: var(--cue-table);
+	color: var(--cue-table) !important;
 	font-weight: 700;
 }
 .cm-editor .cm-cue-link {
-	color: var(--cue-link);
+	color: var(--cue-link) !important;
 }
 /* block-level cues: the quote's border mirrors the preview's blockquote;
    the fence's faint fill mirrors the preview's code block */

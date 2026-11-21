@@ -165,8 +165,10 @@
 		// inline code: prose parity (--tw-prose-code: foreground)
 		{ tag: tags.monospace, color: 'var(--foreground)' },
 		{ tag: tags.string, color: 'var(--muted-foreground)' },
-		// no underline: the default underlines headings, which the output never does
-		{ tag: tags.heading, color: 'var(--foreground)', fontWeight: '700' },
+		// no underline: the default underlines headings, which the output never does.
+		// The heading's color = the CUE token (the whole-block ruling): the entire
+		// heading line reads violet — mark and text — matching the preview's look.
+		{ tag: tags.heading, color: 'var(--cue-heading)', fontWeight: '700' },
 		{ tag: tags.emphasis, fontStyle: 'italic' },
 		{ tag: tags.strong, fontWeight: '700' },
 		{ tag: tags.strikethrough, textDecoration: 'line-through' },
