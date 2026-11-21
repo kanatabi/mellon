@@ -17,6 +17,8 @@
 	import { fade } from 'svelte/transition';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import StatusPill from '#lib/components/StatusPill.svelte';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import DateRange from '#lib/components/DateRange.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import { postsRail } from '#lib/rails.svelte.ts';
@@ -313,25 +315,26 @@
 				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
 				aria-hidden="true"
 			/>
-			<input
+			<Input
 				type="text"
 				bind:value={qInput}
 				oninput={searchSoon}
 				autocomplete="off"
 				aria-label="Search posts"
 				placeholder="search posts — title, body, tags"
-				class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand/40"
+				class="w-full py-2 pr-9 pl-9 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
 			/>
 			{#if qInput}
-				<button
+				<Button
 					type="button"
+					variant="soft"
+					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
 					onclick={clearSearch}
 					aria-label="Clear search"
 					title="Clear search"
-					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X class="size-3.5" />
-				</button>
+				</Button>
 			{/if}
 		</div>
 
@@ -367,17 +370,18 @@
 					</a>
 				{/if}
 			</div>
-			<button
+			<Button
 				type="button"
-				bind:this={filtersTrigger}
+				variant="soft"
+				class="relative h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
+					? 'border-brand bg-brand/10 text-foreground'
+					: 'border-border text-muted-foreground hover:text-foreground'}"
+				bind:ref={filtersTrigger}
 				onclick={() => (filtersSheet = true)}
 				aria-haspopup="dialog"
 				aria-expanded={filtersSheet}
 				aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
 				title="Filters"
-				class="relative flex h-9 w-11 shrink-0 items-center justify-center rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
-					? 'border-brand bg-brand/10 text-foreground'
-					: 'border-border text-muted-foreground hover:text-foreground'}"
 			>
 				<SlidersHorizontal class="size-4" />
 				{#if sheetCount}
@@ -386,7 +390,7 @@
 						>{sheetCount}</span
 					>
 				{/if}
-			</button>
+			</Button>
 		</div>
 
 		<!-- The engine answers in its own voice: count of the FULL match set,
@@ -556,14 +560,14 @@
 					ondblclick={deskSections.reset}
 				>
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">filters</p>
-					<button
+					<Button
 						type="button"
+						variant="soft"
 						onclick={postsRail.toggle}
 						aria-label="Collapse filters"
-						class="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<PanelRightClose class="size-4" />
-					</button>
+					</Button>
 				</div>
 				{@render filtersBody(true)}
 			</aside>
