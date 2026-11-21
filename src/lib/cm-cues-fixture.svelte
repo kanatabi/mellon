@@ -16,6 +16,8 @@ func main() {}
 
 - an item
 
+This has **bold text**, *italic text*, ~~struck text~~, \`inline code\`, and a [link](https://example.com).
+
 | col a | col b |
 | --- | :---: |
 | one | two |

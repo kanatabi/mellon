@@ -76,11 +76,24 @@ function buildDecorations(view: EditorView): DecorationSet {
 		CodeBlock: 'cm-line-code',
 		Table: 'cm-line-table'
 	};
+	// INLINE-BLOCK cues (owner ruling): the whole span wears the family tint
+	// (a background block, not a font color) — the marks keep their colored
+	// glyphs on top; the text keeps its own weight/style.
+	const inlineBlocks: Record<string, string> = {
+		StrongEmphasis: 'cm-block-bold',
+		Emphasis: 'cm-block-italic',
+		Strikethrough: 'cm-block-strike',
+		InlineCode: 'cm-block-code',
+		Link: 'cm-block-link',
+		Image: 'cm-block-link'
+	};
 	for (const { from, to } of view.visibleRanges) {
 		tree.iterate({
 			from,
 			to,
 			enter(node) {
+				const inlineCls = inlineBlocks[node.name];
+				if (inlineCls) ranges.push(mark(inlineCls).range(node.from, node.to));
 				const cls = cueFor(node.name, node.node.parent?.name);
 				if (cls) ranges.push(mark(cls).range(node.from, node.to));
 				// an image's `!` is its first char — the one glyph that says

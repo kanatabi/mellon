@@ -226,6 +226,26 @@
 .cm-editor .cm-line-table {
 	background: color-mix(in oklab, var(--cue-list) 8%, transparent);
 }
+/* INLINE-BLOCK cues: the whole span wears the family tint (a background
+   block); the marks keep their colored glyphs on top of it */
+.cm-editor .cm-block-bold {
+	background: color-mix(in oklab, var(--cue-bold) 14%, transparent);
+}
+.cm-editor .cm-block-italic {
+	background: color-mix(in oklab, var(--cue-italic) 14%, transparent);
+}
+.cm-editor .cm-block-strike {
+	background: color-mix(in oklab, var(--cue-strike) 14%, transparent);
+}
+.cm-editor .cm-block-code {
+	background: color-mix(in oklab, var(--cue-code) 14%, transparent);
+}
+.cm-editor .cm-block-link {
+	background: color-mix(in oklab, var(--cue-link) 12%, transparent);
+}
+.cm-editor .cm-line-table {
+	background: color-mix(in oklab, var(--cue-list) 8%, transparent);
+}
 
 @layer base {
 	html {

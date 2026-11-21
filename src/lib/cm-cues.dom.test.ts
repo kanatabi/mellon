@@ -44,6 +44,25 @@ describe('the mark-cue layer renders', () => {
 		});
 	});
 
+	it('the INLINE spans carry the whole-span block tint (bold/italic/strike/code/link)', async () => {
+		const { container } = render(Fixture);
+		await vi.waitFor(() => {
+			for (const cls of [
+				'cm-block-bold',
+				'cm-block-italic',
+				'cm-block-strike',
+				'cm-block-code',
+				'cm-block-link'
+			]) {
+				expect(container.querySelector(`.${cls}`)).toBeTruthy();
+			}
+		});
+		// the BLOCK covers the WHOLE span: the bold's bg span contains the text
+		// AND the marks (the owner ruling: the entire extent is the cue)
+		const bold = container.querySelector('.cm-block-bold');
+		expect(bold?.textContent).toBe('**bold text**');
+	});
+
 	it('table delimiters carry the table cue (pipes + the alignment row)', async () => {
 		const { container } = render(Fixture);
 		await vi.waitFor(() => {
