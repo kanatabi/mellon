@@ -311,7 +311,7 @@ Each slice's PR description carries this table with its own rows ticked.
 | S1    | Foundation — tokens, `cn`, test env, docs. Zero visual diff        |        2 d | **built** (visual diff pending owner)   |
 | S2    | Chrome — the sidebar block replaces the hand-built shell nav       |      3.5 d | **built** (manual matrix pending owner) |
 | S3    | Form primitives — Button/Input/Label/Textarea/Checkbox/Switch      |        3 d | **built** (screenshots pending owner)   |
-| S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | planned                                 |
+| S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | **built** (keyboard walk pending owner) |
 | S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | planned                                 |
 |       | **total**                                                          | **18.5 d** |                                         |
 
