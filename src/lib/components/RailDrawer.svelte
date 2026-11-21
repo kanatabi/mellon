@@ -12,15 +12,20 @@
 		 *  layout, they don't hover over it. */
 		open?: boolean;
 		/** Focus return target — accepted for the contract; the block's focus
-		 *  scope returns focus to the opener natively on close. */
-		trigger?: HTMLElement;
+		 *  scope returns focus to the opener natively on close. MUST be bound
+		 *  to a `| null` state, never `| undefined`: this is a FALLBACK-
+		 *  bearing bindable, and `bind:trigger={undefined}` throws
+		 *  `props_invalid_value` at hydration (the v4.0.0 production 500 —
+		 *  the same rule as Trigger's `ref = $bindable(null)`, which the
+		 *  shell's burger comment (+layout.svelte) already documents). */
+		trigger?: HTMLElement | null;
 		children: Snippet;
 	}
 
 	let {
 		label,
 		open = $bindable(false),
-		trigger = $bindable<HTMLElement>(),
+		trigger = $bindable<HTMLElement | null>(null),
 		children
 	}: Props = $props();
 

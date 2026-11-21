@@ -285,7 +285,7 @@
 	// floating FAB (owner call 2026-11-08). The count badges tags + the
 	// date window, the things this row's chips don't already show.
 	let filtersSheet = $state(false);
-	let filtersTrigger = $state<HTMLElement | undefined>();
+	let filtersTrigger = $state<HTMLElement | null>(null);
 	const sheetCount = $derived(data.tag.length + (data.from ? 1 : 0) + (data.to ? 1 : 0));
 
 	$effect(() => deskSections.init());
