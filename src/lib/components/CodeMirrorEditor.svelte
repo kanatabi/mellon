@@ -4,7 +4,7 @@
 	import { basicSetup } from 'codemirror';
 	import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 	import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-	import { Compartment, EditorState } from '@codemirror/state';
+	import { Compartment, EditorState, Transaction, type TransactionSpec } from '@codemirror/state';
 	import { EditorView } from '@codemirror/view';
 	import { tags } from '@lezer/highlight';
 	// Community-maintained vim keymap (the npm reality: no @codemirror/vim
@@ -209,7 +209,7 @@
 					// exist; every read = undefined). The transactions carry it.
 					console.log(
 						'CM: txn | userEvents:',
-						JSON.stringify(u.transactions.map((t) => t.userEvent)),
+						JSON.stringify(u.transactions.map((t) => t.annotation(Transaction.userEvent))),
 						'| docChanged:',
 						u.docChanged,
 						'| completionStatus:',
@@ -278,11 +278,11 @@
 		// TEMP-DEBUG: the dispatch-spec anatomy — the echo's full-doc replace
 		// vs the typing's 1-char insert, and every effects dispatch
 		const origDispatch = view.dispatch.bind(view);
-		(view as unknown as { dispatch: (...s: unknown[]) => void }).dispatch = (
-			...specs: unknown[]
+		(view as unknown as { dispatch: (...s: TransactionSpec[]) => void }).dispatch = (
+			...specs: TransactionSpec[]
 		) => {
 			for (const spec of specs) {
-				const sp = spec as {
+				const sp = spec as TransactionSpec & {
 					changes?: unknown;
 					selection?: unknown;
 					effects?: unknown[];
@@ -302,7 +302,7 @@
 					(sp.annotations ?? []).length
 				);
 			}
-			return origDispatch(...specs);
+			return origDispatch(...specs); // typed as TransactionSpec[]
 		};
 		readStats(view.state);
 		// the word count's initial value (the debounced listener only fires on
