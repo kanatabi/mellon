@@ -20,8 +20,10 @@ function usernameFields(markup: string): Field[] {
 	const fields: Field[] = [];
 	const stack: string[] = [];
 	const flip = (g: string) => (g.startsWith('!') ? g.slice(1) : '!' + g);
-	// tokens: conditionals and input tags — both scanned in document order
-	const token = /\{#if\s+([^}]+)\}|\{:else(?::if\s+([^}]+))?\}|(\{\/if\})|(<input\b[^>]*>)/gs;
+	// tokens: conditionals and input tags — both scanned in document order.
+	// <Input (the S3 component) counts too: it spreads name/type onto the
+	// real <input> at runtime, and the guard reads the SOURCE.
+	const token = /\{#if\s+([^}]+)\}|\{:else(?::if\s+([^}]+))?\}|(\{\/if\})|(<[Ii]nput\b[^>]*>)/gs;
 	let m: RegExpExecArray | null;
 	while ((m = token.exec(markup))) {
 		if (m[1] !== undefined)

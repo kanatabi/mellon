@@ -1,7 +1,13 @@
 <script lang="ts">
-	import { SvelteDate } from 'svelte/reactivity';
-	import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-svelte';
-	import { fly } from 'svelte/transition';
+	import { CalendarDays, ChevronRight } from 'lucide-svelte';
+	import {
+		getLocalTimeZone,
+		parseDate,
+		today as intlToday,
+		type DateValue
+	} from '@internationalized/date';
+	import * as Popover from '#lib/components/ui/popover/index.js';
+	import RangeCalendar from '#lib/components/ui/range-calendar/range-calendar.svelte';
 	import Pill from '#lib/components/Pill.svelte';
 
 	interface Props {
@@ -13,19 +19,31 @@
 
 	let { from, to, onchange }: Props = $props();
 
-	// Vendored from earendil's rail/DateRange (owner call 2026-11-08): one-click
-	// presets + a Monday-first two-pick calendar. Non-modal popover, Esc and
-	// outside-click close, focus returns to the trigger.
+	// SHADCN-PLAN 4.5: the hand-built two-pick grid died — the block's
+	// range calendar owns the grid, the two-click flow, and keyboard roving.
+	// The CONTRACT is unchanged (ISO window in, (from, to) out), presets and
+	// the summary trigger stay house furniture. The grid only draws; the
+	// shorthand parsing stays in date-expr.ts (the plan's boundary).
 	let open = $state(false);
-	let pop = $state('');
-	let root = $state<HTMLDivElement | undefined>();
-	let trigger = $state<HTMLButtonElement | undefined>();
-	let cursor = $state<Date | null>(null);
+	let range: { start: DateValue | undefined; end: DateValue | undefined } | undefined =
+		$state(undefined);
 
-	const iso = (d: Date) =>
-		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+	function safe(iso: string): DateValue | undefined {
+		try {
+			return parseDate(iso);
+		} catch {
+			return undefined; // a bad wire string = the placeholder state, no crash
+		}
+	}
 
-	const today = () => iso(new SvelteDate());
+	// re-seed from the wire: complete windows sync the grid, "no window"
+	// clears it; a HALF window is the echo of an in-progress pick (the URL
+	// navigated mid-selection) — the grid keeps its state, like the old
+	// component's seed-once cursor did.
+	$effect(() => {
+		if (from && to) range = { start: safe(from), end: safe(to) };
+		else if (!from && !to) range = undefined;
+	});
 
 	// Compact for the rail: ISO window, year printed once when unambiguous.
 	const summary = $derived(
@@ -40,11 +58,11 @@
 					: 'any date'
 	);
 
+	const tz = getLocalTimeZone();
 	function presetDays(days: number) {
-		const end = new SvelteDate();
-		const start = new SvelteDate();
-		start.setDate(end.getDate() - days + 1);
-		return { from: iso(start), to: iso(end) };
+		const end = intlToday(tz);
+		const start = end.subtract({ days: days - 1 }); // the inclusive window
+		return { from: start.toString(), to: end.toString() };
 	}
 
 	const presets = [7, 30, 90];
@@ -55,76 +73,24 @@
 
 	function setPreset(days: number) {
 		const p = presetDays(days);
+		range = { start: safe(p.from), end: safe(p.to) };
 		onchange(p.from, p.to);
 	}
 
-	function toggleOpen() {
-		open = !open;
-		if (open) {
-			const r = trigger?.getBoundingClientRect();
-			if (r) {
-				// Fixed-anchor popover: the rails clip their content (curtain
-				// overflow), so the panel positions by trigger rect instead —
-				// it stays a DOM child (outside-click containment holds).
-				pop = `position:fixed; top:${r.bottom + 8}px; right:${Math.max(12, window.innerWidth - r.right)}px;`;
-			}
-			if (!cursor) {
-				const seed = to ?? from ?? today();
-				const [y, m] = seed.split('-').map(Number);
-				cursor = new SvelteDate(y, m - 1, 1);
-			}
-		}
-		if (!open) trigger?.focus();
+	function clearAll() {
+		range = undefined;
+		onchange(undefined, undefined);
 	}
 
-	// Pick flow: first click sets the start, second sets the end (a click before
-	// the start swaps it). Presets and "all" sit alongside the calendar.
-	function pick(dayIso: string) {
-		if (!from || to) onchange(dayIso, undefined);
-		else if (dayIso < from) onchange(dayIso, from);
-		else onchange(from, dayIso);
+	function commit(next: { start: DateValue | undefined; end: DateValue | undefined } | undefined) {
+		range = next;
+		// the two-click flow emits the half window mid-selection (the old
+		// pick() did the same: first click = from-only, unbounded other side)
+		onchange(next?.start?.toString(), next?.end?.toString());
 	}
-
-	const monthTitle = $derived(
-		cursor?.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) ?? ''
-	);
-
-	const cells = $derived.by(() => {
-		if (!cursor) return [];
-		const y = cursor.getFullYear();
-		const m = cursor.getMonth();
-		const lead = (new SvelteDate(y, m, 1).getDay() + 6) % 7; // Monday-first grid
-		const count = new SvelteDate(y, m + 1, 0).getDate();
-		const out: (string | null)[] = Array.from({ length: lead }, () => null);
-		for (let d = 1; d <= count; d++) {
-			out.push(`${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-		}
-		return out;
-	});
-
-	function shiftMonth(delta: number) {
-		if (!cursor) return;
-		cursor = new SvelteDate(cursor.getFullYear(), cursor.getMonth() + delta, 1);
-	}
-
-	$effect(() => {
-		if (!open) return;
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') toggleOpen();
-		};
-		const onDown = (e: PointerEvent) => {
-			if (root && !root.contains(e.target as Node)) toggleOpen();
-		};
-		window.addEventListener('keydown', onKey);
-		window.addEventListener('pointerdown', onDown);
-		return () => {
-			window.removeEventListener('keydown', onKey);
-			window.removeEventListener('pointerdown', onDown);
-		};
-	});
 </script>
 
-<div class="relative flex flex-col gap-2" bind:this={root}>
+<div class="flex flex-col gap-1.5">
 	<div class="flex flex-wrap gap-1.5">
 		{#each presets as days (days)}
 			<Pill
@@ -135,106 +101,38 @@
 				{days}d
 			</Pill>
 		{/each}
-		<Pill
-			active={!from && !to}
-			onclick={() => onchange(undefined, undefined)}
-			class="!px-2.5 !py-0.5 !text-[11px]"
-		>
-			All
-		</Pill>
+		<Pill active={!from && !to} onclick={clearAll} class="!px-2.5 !py-0.5 !text-[11px]">All</Pill>
 	</div>
 
-	<button
-		type="button"
-		onclick={toggleOpen}
-		aria-expanded={open}
-		aria-haspopup="dialog"
-		aria-label="Choose a date range"
-		class="flex items-center gap-2.5 rounded-full border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent/40"
-		bind:this={trigger}
-	>
-		<CalendarDays class="size-4 shrink-0 text-muted-foreground" />
-		<span
-			class="min-w-0 grow truncate text-left font-mono text-xs {from || to
-				? 'text-foreground'
-				: 'text-muted-foreground'}">{summary}</span
-		>
-		<ChevronRight
-			class="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 {open
-				? 'rotate-90'
-				: ''}"
-		/>
-	</button>
-
-	{#if open && cursor}
-		<div
-			role="dialog"
+	<Popover.Root bind:open>
+		<Popover.Trigger
 			aria-label="Choose a date range"
-			transition:fly={{ y: 6, duration: 160 }}
-			style={pop}
-			class="z-30 mt-2 w-64 rounded-xl border border-border bg-card p-4 shadow-lg"
+			class="group flex w-full items-center gap-2.5 rounded-full border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent/40"
 		>
-			<div class="mb-2 flex items-center justify-between">
-				<button
-					type="button"
-					onclick={() => shiftMonth(-1)}
-					aria-label="Previous month"
-					class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-				>
-					<ChevronLeft class="size-4" />
-				</button>
-				<p class="font-brand text-lg leading-none font-semibold tracking-tight">{monthTitle}</p>
-				<button
-					type="button"
-					onclick={() => shiftMonth(1)}
-					aria-label="Next month"
-					class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-				>
-					<ChevronRight class="size-4" />
-				</button>
-			</div>
-			<div class="grid grid-cols-7 gap-1">
-				{#each ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as wd, i (i)}
-					<span
-						class="flex h-6 items-center justify-center font-mono text-[10px] text-muted-foreground/60"
-						>{wd}</span
-					>
-				{/each}
-				{#each cells as day, i (i)}
-					{#if day === null}
-						<span></span>
-					{:else}
-						{@const [y, m, d] = day.split('-').map(Number)}
-						{@const endpoint = day === from || day === to}
-						{@const inRange = from && to && day > from && day < to}
-						<button
-							type="button"
-							onclick={() => pick(day)}
-							aria-pressed={endpoint}
-							aria-label={new SvelteDate(y, m - 1, d).toLocaleDateString('en-US', {
-								weekday: 'short',
-								month: 'short',
-								day: 'numeric',
-								year: 'numeric'
-							})}
-							class="flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs tabular-nums transition-colors {endpoint
-								? 'bg-brand font-semibold text-white'
-								: inRange
-									? 'bg-brand/15 text-foreground'
-									: day === today()
-										? 'border border-border text-foreground'
-										: 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
-						>
-							{d}
-						</button>
-					{/if}
-				{/each}
-			</div>
-			<p
-				class="mt-3 border-t border-border pt-2 text-center font-mono text-[11px] text-muted-foreground"
+			<CalendarDays class="size-4 shrink-0 text-muted-foreground" />
+			<span
+				class="min-w-0 grow truncate text-left font-mono text-xs {from || to
+					? 'text-foreground'
+					: 'text-muted-foreground'}"
 			>
-				{from && !to ? 'pick the end date' : from ? `${from} → ${to ?? '…'}` : 'any date'}
-			</p>
-		</div>
-	{/if}
+				{summary}
+			</span>
+			<ChevronRight
+				class="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90"
+			/>
+		</Popover.Trigger>
+
+		<Popover.Content
+			align="end"
+			sideOffset={8}
+			class="w-64 rounded-lg border border-border bg-card shadow-xl"
+		>
+			<RangeCalendar
+				bind:value={range as never}
+				onValueChange={commit}
+				locale="en-GB"
+				class="bg-transparent p-0"
+			/>
+		</Popover.Content>
+	</Popover.Root>
 </div>

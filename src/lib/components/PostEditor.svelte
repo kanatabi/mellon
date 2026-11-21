@@ -30,6 +30,7 @@
 	} from 'lucide-svelte';
 	import CodeMirrorEditor from '#lib/components/CodeMirrorEditor.svelte';
 	import Combobox from '#lib/components/Combobox.svelte';
+	import Confirm from '#lib/components/Confirm.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import ImagePicker from '#lib/components/ImagePicker.svelte';
@@ -232,9 +233,25 @@ flowchart LR
 		window.addEventListener('beforeunload', block);
 		return () => window.removeEventListener('beforeunload', block);
 	});
-	beforeNavigate(({ cancel }) => {
-		if (dirty && !confirm('Discard unsaved changes?')) cancel();
+	// D15: the native confirm → the house confirm (the unthemeable OS dialog
+	// is the same leak class as the native <select> ban). Cancel the
+	// navigation, ask in the estate's voice, re-navigate past the latch.
+	let guardOff = $state(false);
+	let leaveTo = $state('');
+	let leaveOpen = $state(false);
+	beforeNavigate((e) => {
+		if (dirty && !guardOff) {
+			e.cancel();
+			const t = e.to?.url;
+			leaveTo = t ? t.pathname + t.search : '';
+			leaveOpen = true;
+		}
 	});
+	function leave() {
+		guardOff = true;
+		leaveOpen = false;
+		void goto(leaveTo);
+	}
 
 	async function save(): Promise<boolean> {
 		saving = true;
@@ -447,10 +464,11 @@ flowchart LR
 		const cmds: Command[] = [
 			{
 				id: 'editor.save',
-				// "Save draft" in BOTH modes (owner confusion fix): pressing it
-				// persists — create-vs-update mechanics are plumbing, not a
-				// different verb the user has to remember.
-				title: 'Save draft',
+				// "Save Post" once published, "Save draft" before (owner call
+				// 2026-11-21 — supersedes the both-modes ruling): the label names
+				// WHAT the save does to the reader, and a published post's save
+				// is not a draft's.
+				title: status === 'published' ? 'Save Post' : 'Save draft',
 				group: 'actions',
 				shortcut: '⌘↵',
 				run: () => void save()
@@ -984,7 +1002,7 @@ flowchart LR
 				onclick={() => void save()}
 				class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
 			>
-				save draft<span class="ml-1.5 text-muted-foreground">⏎</span>
+				{status === 'published' ? 'Save Post' : 'Save draft'}
 			</button>
 			{#if status === 'published'}
 				<button
@@ -1230,7 +1248,7 @@ flowchart LR
 					onclick={exportPdf}
 					class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
 				>
-					<Printer class="size-3.5" />save as PDF
+					<Printer class="size-3.5" />Save as PDF
 				</button>
 				<button
 					type="button"
@@ -1282,6 +1300,15 @@ flowchart LR
 		{@render railBody(false)}
 	</RailDrawer>
 
+	{#if leaveOpen}
+		<Confirm
+			heading="Discard unsaved changes?"
+			description="the draft's edits in progress are not saved anywhere — leaving now drops them"
+			confirmLabel="Discard"
+			onConfirm={leave}
+			onClose={() => (leaveOpen = false)}
+		/>
+	{/if}
 	{#if confirmDelete}
 		<DeleteDialog
 			heading={`Delete “${draft.title || 'Untitled'}”?`}

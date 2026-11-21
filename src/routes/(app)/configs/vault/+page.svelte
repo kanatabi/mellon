@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
-	import Select from '#lib/components/Select.svelte';
+	import { goto, invalidateAll, beforeNavigate } from '$app/navigation';
+	import * as Select from '#lib/components/ui/select/index.js';
+	import Confirm from '#lib/components/Confirm.svelte';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import {
 		ArrowLeftRight,
 		Eye,
@@ -57,8 +60,8 @@
 	// static attr is eaten as a Svelte template interpolation (the parser
 	// turned it into the comma-expression {(1, 31)} and split my title attr
 	// across lines — caught by check; Prettier then formalized the damage).
-	const APP_PATTERN = '^[a-z][a-z0-9-]{1,31}$';
-	const ENV_PATTERN = '^[a-z][a-z0-9-]{0,31}$';
+	const APP_PATTERN = '^[a-z][a-z0-9\\-]{1,31}$';
+	const ENV_PATTERN = '^[a-z][a-z0-9\\-]{0,31}$';
 	// onboarding + add-env dialogs; the input carries the slug, the busy flag
 	// gates double-submit while the relay round-trips.
 	let onboardOpen = $state(false);
@@ -70,7 +73,7 @@
 	// or RESTORE (overlay onto the current key set → dirty → save). Separate from
 	// historyDiff (which is a shape diff, not the secret bytes).
 	let viewing = $state<{ version: number; data: Record<string, string> } | null>(null);
-	let searchEl: HTMLInputElement | undefined = $state();
+	let searchEl: HTMLInputElement | null = $state(null);
 	// REVEAL ALL: a display switch only — the values already live in this
 	// page's memory; nothing new crosses the network. Never persisted:
 	// a refresh returning to masked is the safe direction of failure.
@@ -218,16 +221,47 @@
 		order = [...order, k];
 		dirty = true;
 	}
+	// D15: the native confirm() is browser-owned UI — unthemeable, custom
+	// copy ignored. The × opens the HOUSE confirm; the copy is page-authored
+	// (not relayed wire copy), so the question/consequence split is honest.
+	let dropTarget = $state<string | null>(null);
 	function removeRow(k: string) {
-		if (
-			!confirm(
-				`Drop ${k} from this secret? (the key-set mirror removes it from EVERY env — history keeps it recoverable)`
-			)
-		)
-			return;
+		dropTarget = k;
+	}
+	function confirmDrop() {
+		if (!dropTarget) return;
+		const k = dropTarget;
+		dropTarget = null;
 		delete rows[k];
 		order = order.filter((x) => x !== k);
 		dirty = true;
+	}
+
+	// The unsaved-changes guard the vault never had (the user's report:
+	// leaving with edits vanished them silently — and the drop-key confirm
+	//surfaced in its place). Same shape as the other guarded pages; the
+	// reload/close block stays native (the browser owns that chrome).
+	let guardOff = $state(false);
+	let leaveTo = $state('');
+	let leaveOpen = $state(false);
+	beforeNavigate((e) => {
+		if (dirty && !guardOff) {
+			e.cancel();
+			const t = e.to?.url;
+			leaveTo = t ? t.pathname + t.search : '';
+			leaveOpen = true;
+		}
+	});
+	$effect(() => {
+		if (!dirty) return;
+		const block = (e: BeforeUnloadEvent) => e.preventDefault();
+		window.addEventListener('beforeunload', block);
+		return () => window.removeEventListener('beforeunload', block);
+	});
+	function leave() {
+		guardOff = true;
+		leaveOpen = false;
+		void goto(leaveTo);
 	}
 
 	// ONE error path for all control ops: RELAYED server stories arrive
@@ -408,13 +442,14 @@
 		<p class="relative font-mono text-xs text-muted-foreground">
 			the policy grants no paths — nothing to show
 		</p>
-		<button
+		<Button
 			type="button"
+			variant="quiet"
+			class="relative mt-2 gap-2"
 			onclick={() => (onboardOpen = true)}
-			class="relative mt-2 flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<Plus class="size-3.5" /> onboard an app
-		</button>
+		</Button>
 	</div>
 {:else}
 	<section class="flex flex-col gap-6">
@@ -447,26 +482,34 @@
 				<div class="flex flex-wrap items-center gap-2 md:justify-end">
 					<label class="flex min-w-0 grow items-center gap-1.5 md:grow-0">
 						<span class="sr-only">App namespace</span>
-						<Select
+						<Select.Root
+							type="single"
 							items={apps.map((a) => ({ value: a.app, label: a.app }))}
 							value={data.app}
-							onchange={(app) => {
+							onValueChange={(app) => {
 								const first = apps.find((a) => a.app === app)?.envs[0] ?? 'dev';
 								selectPath(app, first);
 							}}
-							ariaLabel="App namespace"
-							fill
-							popWidth={220}
-						/>
+						>
+							<Select.Trigger aria-label="App namespace" class="w-full">
+								<Select.Value />
+							</Select.Trigger>
+							<Select.Content class="min-w-[220px]">
+								{#each apps as a (a.app)}
+									<Select.Item value={a.app} label={a.app} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
 					</label>
-					<button
+					<Button
 						type="button"
+						variant="quiet"
+						class="gap-1 px-2.5 py-1"
 						onclick={() => (onboardOpen = true)}
-						class="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 						aria-label="Onboard app"
 					>
-						<Plus class="size-3.5" /> app
-					</button>
+						<Plus class="size-3.5" /> App
+					</Button>
 				</div>
 				<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
 					{#each currentEnvs as env (env)}
@@ -483,14 +526,15 @@
 							{env}
 						</button>
 					{/each}
-					<button
+					<Button
 						type="button"
+						variant="quiet"
+						class="border-dashed px-2.5 py-1"
 						onclick={() => (addEnvOpen = true)}
-						class="rounded-full border border-dashed border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 						aria-label="Add environment"
 					>
-						+ env
-					</button>
+						+ Env
+					</Button>
 				</div>
 			</div>
 		</div>
@@ -513,37 +557,39 @@
 					class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
 					aria-hidden="true"
 				/>
-				<input
+				<Input
 					type="search"
-					bind:this={searchEl}
+					bind:ref={searchEl}
 					bind:value={query}
 					placeholder="filter keys and values…"
 					aria-label="Search keys and values"
-					class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+					class="w-full py-2 pr-9 pl-9 text-xs focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
 				/>
 				{#if query}
-					<button
+					<Button
 						type="button"
+						variant="soft"
+						class="absolute right-2.5"
 						onclick={() => (query = '')}
 						aria-label="Clear search"
-						class="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground"
 					>
 						<X class="size-3.5" />
-					</button>
+					</Button>
 				{/if}
 			</div>
-			<button
+			<Button
 				type="button"
+				variant="quiet"
+				class="shrink-0 gap-1.5 rounded-lg py-2 {revealAll
+					? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+					: 'hover:text-foreground'}"
 				onclick={() => (revealAll = !revealAll)}
 				aria-pressed={revealAll}
 				aria-label={revealAll ? 'Hide all values' : 'Show all values'}
-				class="flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 font-mono text-xs transition-colors {revealAll
-					? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
-					: 'border-border text-muted-foreground hover:text-foreground'}"
 			>
 				{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
 				{revealAll ? 'hide all' : 'show all'}
-			</button>
+			</Button>
 		</div>
 
 		<!-- Config-file anatomy: mono table, masked values, reveal-on-press. -->
@@ -574,11 +620,10 @@
 						aria-label={`value of ${k}`}
 						oninput={(e) => setVal(k, String(e.currentTarget.value))}
 					/>
-					<button
+					<Button
 						type="button"
-						class="p-1 transition-colors {revealed[k]
-							? 'text-accent-amber'
-							: 'text-muted-foreground hover:text-foreground'}"
+						variant="soft"
+						class="transition-colors {revealed[k] ? 'text-accent-amber' : ''}"
 						aria-label={revealed[k] ? 'Hide value' : 'Reveal value'}
 						onpointerdown={() => toggleReveal(k, true)}
 						onpointerup={() => toggleReveal(k, false)}
@@ -591,15 +636,16 @@
 						{:else}
 							<Eye class="size-3.5" />
 						{/if}
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
-						class="p-1 font-mono text-xs text-danger transition-colors hover:bg-danger/10"
+						variant="soft"
+						class="font-mono text-xs text-danger hover:bg-danger/10 hover:text-danger"
 						onclick={() => removeRow(k)}
 						aria-label={`Remove ${k}`}
 					>
 						×
-					</button>
+					</Button>
 				</div>
 			{:else}
 				<p class="px-4 py-6 text-center font-mono text-xs text-muted-foreground">
@@ -609,21 +655,16 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<button
+			<Button type="button" variant="quiet" onclick={addRow}>+ Key</Button>
+			<Button
 				type="button"
-				onclick={addRow}
-				class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
-			>
-				+ key
-			</button>
-			<button
-				type="button"
+				variant="quiet"
+				class="gap-2"
 				onclick={() => void openHistory()}
-				class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				aria-expanded={historyOpen}
 			>
-				<History class="size-3.5" /> history
-			</button>
+				<History class="size-3.5" /> History
+			</Button>
 			{#if offerPin !== null}
 				<!-- RE-PIN OFFER (lock follow-through): a restore-seeded save
 				     just promoted v{offerPin}; pinning it is the release
@@ -652,15 +693,35 @@
 					</button>
 				</span>
 			{/if}
-			<button
+			<Button
 				type="button"
+				variant="primary"
+				class="ml-auto py-1.5 disabled:opacity-40"
 				disabled={!dirty}
 				onclick={() => void save()}
-				class="ml-auto rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
 			>
-				save as v{cas + 1}
-			</button>
+				Save as v{cas + 1}
+			</Button>
 		</div>
+
+		{#if dropTarget}
+			<Confirm
+				heading={`Drop ${dropTarget} from this secret?`}
+				description="the key-set mirror removes it from EVERY env — history keeps it recoverable"
+				confirmLabel="Drop key"
+				onConfirm={confirmDrop}
+				onClose={() => (dropTarget = null)}
+			/>
+		{/if}
+		{#if leaveOpen}
+			<Confirm
+				heading="Leave with unsaved changes?"
+				description="the secret has edits that are not saved anywhere — leaving now drops them (history only knows saved versions)"
+				confirmLabel="Leave"
+				onConfirm={leave}
+				onClose={() => (leaveOpen = false)}
+			/>
+		{/if}
 
 		{#if historyOpen}
 			<aside
@@ -672,13 +733,14 @@
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
 						Versions
 					</p>
-					<button
+					<Button
 						type="button"
+						variant="soft"
+						class="p-0 font-mono text-xs"
 						onclick={() => (historyOpen = false)}
-						class="font-mono text-xs text-muted-foreground hover:text-foreground"
 					>
 						Close
-					</button>
+					</Button>
 				</div>
 				<div class="flex flex-col gap-1">
 					{#each historyVersions as v (v)}
@@ -760,13 +822,14 @@
 								</div>
 							{/each}
 						</div>
-						<button
+						<Button
 							type="button"
+							variant="quiet"
+							class="mt-3 px-2.5 py-1 text-[11px]"
 							onclick={() => viewing && void restoreVersion(viewing.version)}
-							class="mt-3 rounded-full border border-border px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
 						>
 							Restore these values
-						</button>
+						</Button>
 					</div>
 				{/if}
 
@@ -833,20 +896,22 @@
 				/>
 			</label>
 			<div class="mt-2 flex justify-end gap-2">
-				<button
+				<Button
 					type="button"
+					variant="quiet"
+					class="border-transparent bg-transparent px-3 py-1.5"
 					onclick={() => (onboardOpen = false)}
-					class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
 					Cancel
-				</button>
-				<button
+				</Button>
+				<Button
 					type="submit"
+					variant="primary"
+					class="px-4 py-1.5"
 					disabled={onboardBusy || !onboardName.trim()}
-					class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
 				>
 					{onboardBusy ? 'seeding…' : 'onboard'}
-				</button>
+				</Button>
 			</div>
 		</form>
 	</div>
@@ -889,20 +954,17 @@
 				/>
 			</label>
 			<div class="mt-2 flex justify-end gap-2">
-				<button
+				<Button
 					type="button"
+					variant="quiet"
+					class="border-transparent bg-transparent px-3 py-1.5"
 					onclick={() => (addEnvOpen = false)}
-					class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
 					Cancel
-				</button>
-				<button
-					type="submit"
-					disabled={!addEnvName.trim()}
-					class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
-				>
+				</Button>
+				<Button type="submit" variant="primary" class="px-4 py-1.5" disabled={!addEnvName.trim()}>
 					Add env
-				</button>
+				</Button>
 			</div>
 		</form>
 	</div>

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { TriangleAlert } from 'lucide-svelte';
-	import { fade, scale } from 'svelte/transition';
-	import { focusOnMount } from '#lib/actions.ts';
+	import { fade } from 'svelte/transition';
+	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
+	import Button from '#lib/components/ui/button/button.svelte';
+	import { ApiError } from '#lib/api/client.ts';
 
 	interface Props {
 		/** Full question, e.g. `Delete "my title"?` — the caller owns the noun. */
@@ -31,20 +33,22 @@
 		onClose
 	}: Props = $props();
 
-	// GitHub's pattern, applied to posts (owner call 2026-11-08): destructive
-	// actions need MORE than a click — the name retyped is the confirmation.
+	// SHADCN-PLAN 5.2: the hand-rolled overlay (manual Esc/backdrop wiring,
+	// scale transition, manual aria) rewritten over ui/alert-dialog — the
+	// block owns the modal semantics, focus scope, and dismissal (Esc and
+	// backdrop both route through onOpenChange(false) → onClose; disabled
+	// while busy — a half-run delete must not be abandoned by a stray key).
+	// The mounts render the component ALREADY-OPEN ({#if confirmDelete}), so
+	// open starts true. The TYPE-TO-CONFIRM stays ours: it IS the component's
+	// point (GitHub's pattern, owner call 2026-11-08 — destructive actions
+	// need more than a click). The destructive grammar holds: --danger, never
+	// the violet; no autofocus on the verb — the block's focus scope lands on
+	// the typed field first, and that IS the arm.
+	let open = $state(true);
 	let typed = $state('');
 	let busy = $state(false);
 	let failed = $state('');
 	const ready = $derived(typed === confirmText && !busy);
-
-	$effect(() => {
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && !busy) onClose();
-		};
-		window.addEventListener('keydown', onKey);
-		return () => window.removeEventListener('keydown', onKey);
-	});
 
 	async function submit() {
 		if (!ready) return;
@@ -52,28 +56,21 @@
 		failed = '';
 		try {
 			await onConfirm();
+			onClose();
 		} catch (e) {
+			failed = e instanceof ApiError ? e.message : 'could not delete';
 			busy = false;
-			failed = e instanceof Error ? e.message : 'delete failed';
 		}
 	}
 </script>
 
-<div
-	transition:fade={{ duration: 120 }}
-	class="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
-	role="presentation"
-	onclick={(e) => {
-		if (e.target === e.currentTarget && !busy) onClose();
+<AlertDialog.Root
+	bind:open
+	onOpenChange={(o) => {
+		if (!o && !busy) onClose();
 	}}
 >
-	<div
-		transition:scale={{ duration: 150, start: 0.97 }}
-		class="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="delete-title"
-	>
+	<AlertDialog.Content class="max-w-md rounded-lg border-0 bg-card p-5 shadow-2xl sm:max-w-md">
 		<form
 			onsubmit={(e) => {
 				e.preventDefault();
@@ -82,11 +79,13 @@
 		>
 			<div class="mb-3 flex items-start gap-3">
 				<TriangleAlert class="mt-0.5 size-5 shrink-0 text-danger" />
-				<h2 id="delete-title" class="font-brand text-xl leading-snug font-semibold tracking-tight">
+				<AlertDialog.Title class="font-brand text-xl leading-snug font-semibold tracking-tight">
 					{heading}
-				</h2>
+				</AlertDialog.Title>
 			</div>
-			<p class="text-sm leading-relaxed text-muted-foreground">{description}</p>
+			<AlertDialog.Description class="text-sm leading-relaxed text-muted-foreground">
+				{description}
+			</AlertDialog.Description>
 			{#if references?.length}
 				<div class="mt-3">
 					<p class="mb-1.5 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
@@ -121,29 +120,35 @@
 					placeholder={confirmText}
 					bind:value={typed}
 					disabled={busy}
-					use:focusOnMount
 				/>
 			</label>
 			{#if failed}
-				<p class="mt-3 font-mono text-xs text-danger" role="alert">{failed}</p>
+				<p
+					class="mt-3 font-mono text-xs text-danger"
+					role="alert"
+					transition:fade={{ duration: 120 }}
+				>
+					{failed}
+				</p>
 			{/if}
 			<div class="mt-5 flex items-center justify-end gap-2">
-				<button
-					type="button"
-					onclick={onClose}
-					disabled={busy}
-					class="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+				<AlertDialog.Cancel
+					class="h-auto rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					onclick={(e) => {
+						if (busy) e.preventDefault();
+					}}
 				>
 					Cancel
-				</button>
-				<button
+				</AlertDialog.Cancel>
+				<Button
 					type="submit"
+					variant="primary"
+					class="bg-danger disabled:opacity-40"
 					disabled={!ready}
-					class="rounded-full bg-danger px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 				>
 					{busy ? 'Deleting…' : submitText}
-				</button>
+				</Button>
 			</div>
 		</form>
-	</div>
-</div>
+	</AlertDialog.Content>
+</AlertDialog.Root>

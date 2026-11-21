@@ -125,7 +125,7 @@
 >
 	<div
 		transition:scale={{ duration: 150, start: 0.97 }}
-		class="flex max-h-[85svh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+		class="flex max-h-[85svh] w-full max-w-2xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-2xl"
 		role="dialog"
 		aria-modal="true"
 		aria-label={title}

@@ -24,6 +24,17 @@ class Rail {
 		if (browser) localStorage.setItem(`mellon.rail.${this.key}`, this.collapsed ? '1' : '0');
 	};
 
+	// Absolute setter for the sidebar block's Provider (S2): `onOpenChange`
+	// hands us the OPEN value; the flip in `toggle` can't express "set to X".
+	// THE NAME IS THE CONTRACT: the parameter is the OPEN value, this stores
+	// its inverse. The layout wires it 1:1 (`navRail.setOpen(open)`) — wrap
+	// it in another negation and the toggle inverts (the two-click bug, S2).
+	// Same persistence, same key — an existing session's rail state survives.
+	setOpen = (open: boolean) => {
+		this.collapsed = !open;
+		if (browser) localStorage.setItem(`mellon.rail.${this.key}`, this.collapsed ? '1' : '0');
+	};
+
 	constructor(private key: string) {}
 }
 

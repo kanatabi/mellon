@@ -2,6 +2,8 @@
 	import { enhance } from '$app/forms';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -60,63 +62,34 @@
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 					>current (temporary) password</span
 				>
-				<input
-					type="password"
-					name="current"
-					required
-					autocomplete="current-password"
-					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-				/>
+				<Input type="password" name="current" required autocomplete="current-password" />
 			</label>
 		{:else}
 			<label class="flex flex-col gap-1.5">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 					>username</span
 				>
-				<input
-					type="text"
-					name="username"
-					required
-					autocomplete="username"
-					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-				/>
+				<Input type="text" name="username" required autocomplete="username" />
 			</label>
 		{/if}
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 				>{registering ? 'password' : 'new password'}</span
 			>
-			<input
-				type="password"
-				name="password"
-				required
-				minlength={10}
-				autocomplete="new-password"
-				class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-			/>
+			<Input type="password" name="password" required minlength={10} autocomplete="new-password" />
 		</label>
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 				>confirm</span
 			>
-			<input
-				type="password"
-				name="confirm"
-				required
-				minlength={10}
-				autocomplete="new-password"
-				class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-			/>
+			<Input type="password" name="confirm" required minlength={10} autocomplete="new-password" />
 		</label>
 		{#if form?.message}
 			<p class="font-mono text-xs text-danger" role="alert">{form.message}</p>
 		{/if}
-		<button
-			type="submit"
-			class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
-		>
+		<Button type="submit" variant="primary">
 			{registering ? 'claim the estate' : 'set my password'}
-		</button>
+		</Button>
 		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
 			lumen decides every rule this form can break — the portal just renders it
 		</p>

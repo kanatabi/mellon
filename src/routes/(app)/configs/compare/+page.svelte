@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { ArrowLeftRight, Eye, EyeOff, GitCompareArrows, WrapText } from 'lucide-svelte';
-	import Select from '#lib/components/Select.svelte';
+	import * as Select from '#lib/components/ui/select/index.js';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import { stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -189,64 +190,105 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">App namespace</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={apps.map((a) => ({ value: a.app, label: a.app }))}
 				value={data.app}
-				onchange={(app) =>
+				onValueChange={(app) =>
 					go({
 						app,
 						env: undefined,
 						from: undefined,
 						to: undefined
 					})}
-				ariaLabel="App namespace"
-			/>
+			>
+				<Select.Trigger aria-label="App namespace">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content>
+					{#each apps as a (a.app)}
+						<Select.Item value={a.app} label={a.app} />
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">Environment</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={envs.map((env) => ({ value: env, label: env }))}
 				value={String(data.env)}
-				onchange={(env) => go({ env, from: undefined, to: undefined })}
-				ariaLabel="Environment"
-			/>
+				onValueChange={(env) => go({ env, from: undefined, to: undefined })}
+			>
+				<Select.Trigger aria-label="Environment">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content>
+					{#each envs as env (env)}
+						<Select.Item value={env} label={env} />
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<span class="font-mono text-xs text-muted-foreground/60">from</span>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">From version</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={versionsDesc.map((v) => ({
 					value: String(v.version),
 					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
 				}))}
 				value={String(data.fromV)}
-				onchange={(from) => go({ from: Number(from) })}
-				ariaLabel="From version"
-				popWidth={340}
-			/>
+				onValueChange={(from) => go({ from: Number(from) })}
+			>
+				<Select.Trigger aria-label="From version">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content class="min-w-[340px]">
+					{#each versionsDesc as v (v.version)}
+						<Select.Item
+							value={String(v.version)}
+							label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
+						/>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
 		<span class="font-mono text-xs text-muted-foreground/60">to</span>
 		<label class="flex items-center gap-1.5">
 			<span class="sr-only">To version</span>
-			<Select
+			<Select.Root
+				type="single"
 				items={versionsDesc.map((v) => ({
 					value: String(v.version),
 					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
 				}))}
 				value={String(data.toV)}
-				onchange={(to) => go({ to: Number(to) })}
-				ariaLabel="To version"
-				popWidth={340}
-			/>
+				onValueChange={(to) => go({ to: Number(to) })}
+			>
+				<Select.Trigger aria-label="To version">
+					<Select.Value />
+				</Select.Trigger>
+				<Select.Content class="min-w-[340px]">
+					{#each versionsDesc as v (v.version)}
+						<Select.Item
+							value={String(v.version)}
+							label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
+						/>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		</label>
-		<button
+		<Button
 			type="button"
 			onclick={swap}
 			aria-label="Swap versions"
-			class="rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+			variant="soft"
+			class="border-border p-1.5"
 		>
 			<ArrowLeftRight class="size-3.5" />
-		</button>
+		</Button>
 	</div>
 
 	<!-- presentation + content + reveal -->
@@ -287,11 +329,11 @@
 						? 'bg-brand/10 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
-					{c === 'raw' ? 'raw json' : 'parsed'}
+					{c === 'raw' ? 'Raw JSON' : 'Parsed'}
 				</button>
 			{/each}
 		</div>
-		<button
+		<Button
 			type="button"
 			onclick={() => (wrap = !wrap)}
 			aria-pressed={wrap}
@@ -300,25 +342,25 @@
 				? 'Table cells wrap on their own — wrap applies to split/inline'
 				: 'Wrap long diff lines instead of scrolling'}
 			disabled={presentation === 'table'}
-			class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors disabled:opacity-40 {wrap
-				? 'text-foreground'
-				: 'text-muted-foreground hover:text-foreground'}"
+			variant="quiet"
+			class="gap-1.5 disabled:opacity-40 {wrap ? 'text-foreground' : 'hover:text-foreground'}"
 		>
 			<WrapText class="size-3.5" />
-			Wrap
-		</button>
-		<button
+			Wrap</Button
+		>
+		<Button
 			type="button"
 			onclick={() => (revealAll = !revealAll)}
 			aria-pressed={revealAll}
 			aria-label={revealAll ? 'Hide all values' : 'Show all values'}
-			class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-xs transition-colors {revealAll
+			variant="quiet"
+			class="gap-1.5 {revealAll
 				? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
-				: 'border-border text-muted-foreground hover:text-foreground'}"
+				: 'hover:text-foreground'}"
 		>
 			{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-			{revealAll ? 'hide values' : 'show values'}
-		</button>
+			{revealAll ? 'Hide values' : 'Show values'}</Button
+		>
 		{#if presentation === 'table'}
 			<label class="ml-auto flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
 				<input type="checkbox" bind:checked={hideSame} class="accent-[var(--brand)]" />

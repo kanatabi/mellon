@@ -42,3 +42,20 @@ CAS 409s, multipart upload, secrets relay, instant revocation),
 check/lint/test/build.
 
 Branch-per-milestone, PR-reviewed — never commit directly to `main`.
+
+## Lock-file hygiene
+
+The lock is a CI artifact: CI and the runtime image run **Node 22 → npm 10**, while a
+local Node 26 machine ships npm 11 — and the two disagree on OPTIONAL PEERS (npm 10
+resolves them into the tree as nested copies, npm 11 leaves them out). A lock regenerated
+on npm 11 fails `npm ci` on Node 22. Regenerate lock changes with the CI's npm and verify
+BEFORE pushing:
+
+```
+npx -y npm@10.9.2 install --package-lock-only
+npx -y npm@10.9.2 ci --dry-run   # must exit 0 — this is the CI's resolution
+```
+
+And never read a gate's exit code through a pipe (`eslint … | tail; echo $?` reports
+**tail's** status — four lint errors read as green). Run gates bare, or under
+`set -o pipefail`.

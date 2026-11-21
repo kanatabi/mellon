@@ -5,11 +5,14 @@
 	import { fade } from 'svelte/transition';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { focusOnMount } from '#lib/actions.ts';
+	import Confirm from '#lib/components/Confirm.svelte';
 	import { editField, stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
 	import { ApiError, client } from '#lib/api/client.ts';
 	import type { TagCount } from '#lib/api/types.ts';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import type { PageData } from './$types';
 
 	interface Props {
@@ -155,9 +158,12 @@
 		});
 	}
 
+	// D15: the native confirm() → the house confirm (the unthemeable OS
+	// dialog is the same leak class as the native <select> ban)
+	let deleteOpen = $state(false);
+
 	async function deleteFromDialog() {
 		if (!current) return;
-		if (!confirm(`Delete "${current.name}" from the vocabulary?`)) return;
 		busy = true;
 		try {
 			await client.deleteTag(current.name);
@@ -266,19 +272,20 @@
 				void create();
 			}}
 		>
-			<input
+			<Input
 				bind:value={createName}
 				aria-label="New tag name"
 				placeholder="new-tag-name"
-				class="w-full rounded-full border border-border bg-transparent px-3 py-1.5 font-mono text-xs outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand/40 md:w-48"
+				class="w-full rounded-full bg-transparent px-3 py-1.5 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40 md:w-48"
 			/>
-			<button
+			<Button
 				type="submit"
+				variant="primary"
+				class="shrink-0 gap-1.5 px-3 py-1.5 font-mono text-xs disabled:opacity-40"
 				disabled={!createName.trim()}
-				class="flex shrink-0 items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 font-mono text-xs font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
 			>
 				<Plus class="size-3.5" /> create
-			</button>
+			</Button>
 		</form>
 	</div>
 
@@ -289,26 +296,27 @@
 			class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
 			aria-hidden="true"
 		/>
-		<input
+		<Input
 			type="search"
 			bind:value={query}
 			oninput={onSearchInput}
 			placeholder="search tags — whole vocabulary"
 			aria-label="Search tags"
-			class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+			class="w-full py-2 pr-9 pl-9 text-xs focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
 		/>
 		{#if query}
-			<button
+			<Button
 				type="button"
+				variant="soft"
+				class="absolute right-2.5"
 				onclick={() => {
 					query = '';
 					go({ q: '', page: 1 });
 				}}
 				aria-label="Clear tag search"
-				class="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground"
 			>
 				<X class="size-3.5" />
-			</button>
+			</Button>
 		{/if}
 	</div>
 
@@ -338,28 +346,31 @@
 			aria-label="Bulk tag curation"
 		>
 			<span class="font-mono text-xs text-brand">{selection.size} selected</span>
-			<button
+			<Button
 				type="button"
+				variant="quiet"
+				class="gap-1.5 py-1"
 				onclick={() => void bulkFeature(true)}
-				class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Check class="size-3" /> feature all
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
+				variant="quiet"
+				class="gap-1.5 py-1"
 				onclick={() => void bulkFeature(false)}
-				class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Minus class="size-3" /> unfeature all
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
+				variant="soft"
+				class="ml-auto rounded-full p-1.5"
 				onclick={() => selection.clear()}
 				aria-label="Clear selection"
-				class="ml-auto rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<X class="size-3.5" />
-			</button>
+			</Button>
 		</div>
 	{/if}
 
@@ -367,16 +378,17 @@
 		<div
 			class="grid grid-cols-[2.25rem_minmax(0,1fr)_5rem_7.5rem] items-center gap-3 border-b border-border px-4 py-2 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
 		>
-			<button
+			<Button
 				type="button"
+				variant="soft"
+				class="p-0 text-left tracking-widest"
 				onclick={selectAll}
-				class="flex items-center gap-1.5 text-left tracking-widest transition-colors hover:text-foreground"
 				aria-label={selection.size === rows.length && rows.length > 0
 					? 'Deselect all'
 					: 'Select all'}
 			>
-				<Check class="size-3" />{selection.size === rows.length && rows.length > 0 ? 'none' : 'all'}
-			</button>
+				<Check class="size-3" />{selection.size === rows.length && rows.length > 0 ? 'None' : 'All'}
+			</Button>
 			<span>name</span>
 			<span class="text-right">posts</span>
 			<span>featured</span>
@@ -404,15 +416,16 @@
 				>
 					<Check class="size-3" />
 				</button>
-				<button
+				<Button
 					type="button"
+					variant="soft"
+					class="min-w-0 gap-1.5 p-0 text-left font-mono text-xs text-foreground underline-offset-2 hover:text-foreground hover:underline"
 					onclick={() => openDialog(tag)}
-					class="flex min-w-0 items-center gap-1.5 truncate text-left font-mono text-xs text-foreground underline-offset-2 hover:underline"
 					aria-label={`Open settings for ${tag.name}`}
 				>
 					<Hash class="size-3 shrink-0 text-muted-foreground/50" aria-hidden="true" />
 					<span class="truncate">{tag.name}</span>
-				</button>
+				</Button>
 				<span
 					class="text-right font-mono text-xs {tag.posts
 						? 'text-foreground'
@@ -420,8 +433,12 @@
 				>
 					{tag.posts}
 				</span>
-				<button
+				<Button
 					type="button"
+					variant="quiet"
+					class="w-fit gap-1.5 px-2.5 py-1 text-[11px] {tag.featured
+						? 'border-brand bg-brand/10 text-brand'
+						: ''}"
 					onclick={() =>
 						void run(async () => {
 							await client.updateTag(tag.name, { featured: !tag.featured });
@@ -429,13 +446,10 @@
 						})}
 					aria-pressed={tag.featured}
 					aria-label={tag.featured ? `Unfeature ${tag.name}` : `Feature ${tag.name}`}
-					class="flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {tag.featured
-						? 'border-brand bg-brand/10 text-brand'
-						: 'border-border text-muted-foreground hover:text-foreground'}"
 				>
 					{#if tag.featured}<Check class="size-3" />{:else}<Minus class="size-3" />{/if}
 					{tag.featured ? 'in widget' : 'hidden'}
-				</button>
+				</Button>
 			</div>
 		{:else}
 			<p class="px-4 py-8 text-center font-mono text-xs text-muted-foreground">
@@ -565,31 +579,46 @@
 			{/if}
 
 			<div class="mt-1 flex items-center justify-between gap-2">
-				<button
+				<Button
 					type="button"
-					onclick={deleteFromDialog}
+					variant="danger"
+					class="gap-1.5 disabled:opacity-40"
+					onclick={() => (deleteOpen = true)}
 					disabled={busy}
-					class="flex items-center gap-1.5 rounded-full border border-danger/40 px-3 py-1.5 font-mono text-xs text-danger transition-colors hover:bg-danger/10 disabled:opacity-40"
 				>
 					<X class="size-3.5" /> delete
-				</button>
+				</Button>
 				<div class="flex gap-2">
-					<button
+					<Button
 						type="button"
+						variant="quiet"
+						class="border-transparent bg-transparent px-3 py-1.5"
 						onclick={closeDialog}
-						class="rounded-full px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 					>
 						Close
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="primary"
+						class="px-4 py-1.5 disabled:opacity-40"
 						disabled={busy || !draftName.trim()}
 						onclick={() => void saveDialog()}
-						class="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-40"
 					>
 						Save
-					</button>
+					</Button>
 				</div>
+
+				{#if deleteOpen}
+					<Confirm
+						heading={`Delete "${current.name}" from the vocabulary?`}
+						confirmLabel="Delete tag"
+						onConfirm={() => {
+							deleteOpen = false;
+							void deleteFromDialog();
+						}}
+						onClose={() => (deleteOpen = false)}
+					/>
+				{/if}
 			</div>
 		</div>
 	</div>
