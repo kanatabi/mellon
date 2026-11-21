@@ -26,21 +26,15 @@ import type {
 import emojiData from 'markdown-it-emoji/lib/data/full.mjs';
 
 // the emoji options: precomputed once (static data — 1,903 entries)
-// the CAP: 1,903 options in one result = the filter/sort flood (the
-// pending-never-active suspect) — the top 100 by name-frequency shape;
-// the CM renders 100 max anyway
-const CAP = 100;
-const EMOJI_OPTIONS: Completion[] = Object.entries(emojiData)
-	.map(([name, char]) => ({
-		// the LABEL = the glyph + the name (the readable row); the APPLY = the raw
-		// shortcode (Route B: the source keeps the artifact's portable form — the
-		// preview renders it to the unicode live)
-		label: `${char} :${name}:`,
-		apply: `:${name}:`,
-		type: 'text',
-		boost: name.length <= 5 ? 5 : 0 // the short/common names float up
-	}))
-	.slice(0, CAP);
+const EMOJI_OPTIONS: Completion[] = Object.entries(emojiData).map(([name, char]) => ({
+	// the LABEL = the glyph + the name (the readable row); the APPLY = the raw
+	// shortcode (Route B: the source keeps the artifact's portable form — the
+	// preview renders it to the unicode live)
+	label: `${char} :${name}:`,
+	apply: `:${name}:`,
+	type: 'text',
+	boost: name.length <= 5 ? 5 : 0 // the short/common names float up
+}));
 
 /** The emoji source: silent inside code regions (the tree-exclusion invariant). */
 function insideCode(ctx: CompletionContext): boolean {

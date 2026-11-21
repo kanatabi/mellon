@@ -204,12 +204,14 @@
 			extensions: [
 				// TEMP-DEBUG: is the completion extension armed at all?
 				EditorView.updateListener.of((u) => {
-					// TEMP-DEBUG: unconditional — the userEvent's ACTUAL value is
-					// the datum (the filtered version printed nothing on the
-					// owner's real keystrokes)
+					// TEMP-DEBUG: the REAL per-transaction userEvents —
+					// ViewUpdate.userEvent is a PHANTOM (the field does not
+					// exist; every read = undefined). The transactions carry it.
 					console.log(
-						'CM: txn | userEvent:',
-						JSON.stringify(u.userEvent),
+						'CM: txn | userEvents:',
+						JSON.stringify(u.transactions.map((t) => t.userEvent)),
+						'| docChanged:',
+						u.docChanged,
 						'| completionStatus:',
 						completionStatus(u.state),
 						'| tooltips:',
