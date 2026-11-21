@@ -188,6 +188,12 @@
 	--tw-prose-code: var(--foreground);
 	--tw-prose-pre-code: var(--foreground);
 	--tw-prose-pre-bg: transparent;
+	/* Long unbroken tokens (URLs, pasted junk) must wrap inside the preview
+	   column instead of running past it. Mirrors earendil's `.prose` guard —
+	   keep the two in parity. Inherited by every prose descendant (p, li, td,
+	   blockquote, headings). `break-word`, not `anywhere`: it must not change
+	   intrinsic/min-content sizing of grids and tables. */
+	overflow-wrap: break-word;
 	font-size: 0.9375rem;
 }
 .preview .prose code::before,
