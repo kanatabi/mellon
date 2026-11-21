@@ -36,51 +36,49 @@
 </svelte:head>
 
 <section class="flex flex-col gap-6">
-	<div class="flex items-end justify-between gap-4">
-		<div class="flex flex-col gap-1">
-			<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
-				<Users class="size-5 text-muted-foreground" aria-hidden="true" />
-				Users
-			</h1>
-			<p class="font-mono text-xs text-muted-foreground">
-				roles are per-request facts (lumen reads the row every call) — a reset, a demotion, a
-				completed password change all bite on the NEXT request
-			</p>
-		</div>
-		<!-- the door sits above the table, in the header row (owner call) -->
-		<Dialog.Trigger
-			class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
-		>
-			<UserPlus class="size-4" aria-hidden="true" />
-			Create New User
-		</Dialog.Trigger>
-	</div>
-
-	{#if reveal?.tempPassword}
-		<div
-			class="flex flex-col gap-1 rounded-lg border border-accent-amber/60 bg-accent-amber/10 px-4 py-3"
-			role="status"
-		>
-			<span class="font-mono text-xs text-accent-amber"
-				>{reveal.username} — temporary password, shown exactly once:</span
-			>
-			<code class="font-mono text-sm font-semibold select-all">{reveal.tempPassword}</code>
-			<span class="font-mono text-[10px] text-muted-foreground"
-				>hand it over out-of-band. It is not stored anywhere readable — not by lumen (argon2id
-				only), not by this page (leaving loses it).</span
-			>
-		</div>
-	{/if}
-	{#if form?.error}
-		<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
-	{/if}
-
-	<!-- The creation dialog (owner ask 2026-11-21): the page keeps a
-	     `Create New User` door above the table. The dialog closes on SUCCESS
-	     so the one-time temp-password reveal below is what the user reads
-	     next; a failed submit stays open with the error inline. bits-ui
-	     autofocuses the first field (the username) — keyboard-first holds. -->
 	<Dialog.Root bind:open={createOpen}>
+		<div class="flex items-end justify-between gap-4">
+			<div class="flex flex-col gap-1">
+				<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
+					<Users class="size-5 text-muted-foreground" aria-hidden="true" />
+					Users
+				</h1>
+				<p class="font-mono text-xs text-muted-foreground">
+					roles are per-request facts (lumen reads the row every call) — a reset, a demotion, a
+					completed password change all bite on the NEXT request
+				</p>
+			</div>
+			<!-- the door sits above the table, in the header row (owner call) -->
+			<Dialog.Trigger
+				class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+			>
+				<UserPlus class="size-4" aria-hidden="true" />
+				Create New User
+			</Dialog.Trigger>
+		</div>
+
+		{#if reveal?.tempPassword}
+			<div
+				class="flex flex-col gap-1 rounded-lg border border-accent-amber/60 bg-accent-amber/10 px-4 py-3"
+				role="status"
+			>
+				<span class="font-mono text-xs text-accent-amber"
+					>{reveal.username} — temporary password, shown exactly once:</span
+				>
+				<code class="font-mono text-sm font-semibold select-all">{reveal.tempPassword}</code>
+				<span class="font-mono text-[10px] text-muted-foreground"
+					>hand it over out-of-band. It is not stored anywhere readable — not by lumen (argon2id
+					only), not by this page (leaving loses it).</span
+				>
+			</div>
+		{/if}
+		{#if form?.error}
+			<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
+		{/if}
+
+		<!-- Closes on SUCCESS: the one-time temp-password reveal below is what
+		     the user reads next; a failed submit keeps the dialog open with the
+		     error inline. bits-ui autofocuses the username field. -->
 		<Dialog.Content class="sm:max-w-md">
 			<Dialog.Header>
 				<Dialog.Title>Create a user</Dialog.Title>
