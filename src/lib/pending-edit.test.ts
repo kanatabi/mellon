@@ -144,7 +144,7 @@ describe('createEditScheduler', () => {
 		}
 	});
 
-	it('flush() writes immediately on pagehide; stop() cancels without writing', async () => {
+	it('flush() writes immediately on pagehide, resets the window; stop() cancels', async () => {
 		vi.useFakeTimers();
 		try {
 			const h = harness(60);
@@ -153,10 +153,13 @@ describe('createEditScheduler', () => {
 			expect(h.wrote).toHaveLength(1);
 			// the indicator stamp rides the landed write
 			expect(h.onWriteAt).toBe(h.wrote[0].at);
-			h.scheduler.schedule();
-			h.scheduler.stop();
+			// THE WINDOW RESET: after a flush, no stale timer may write again —
+			// the next edit re-arms a fresh window
 			await vi.advanceTimersByTimeAsync(600_000);
 			expect(h.wrote).toHaveLength(1);
+			h.scheduler.schedule();
+			await vi.advanceTimersByTimeAsync(60_000);
+			expect(h.wrote).toHaveLength(2);
 		} finally {
 			vi.useRealTimers();
 		}

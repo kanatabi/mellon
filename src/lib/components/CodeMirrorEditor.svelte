@@ -24,8 +24,18 @@
 		wrap: boolean;
 		/** Imperfect but honest handle: the parent's picker inserts markdown
 		 *  at the live cursor; the transaction flows back through the normal
-		 *  docChanged listener, so `value`/dirty/preview update for free. */
-		onReady?: (api: { insertAtCursor: (text: string) => void }) => void;
+		 *  docChanged listener, so `value`/dirty/preview update for free.
+		 *  The scroll-sync's doors ride here too (topLine/scrollToLine/
+		 *  getScrollDom). */
+		onReady?: (api: {
+			insertAtCursor: (text: string) => void;
+			/** The top-VISIBLE source line (1-based) — the editor fold. */
+			topLine: () => number;
+			/** Scroll the editor so this 1-based line is at the pane's top. */
+			scrollToLine: (line: number) => void;
+			/** The scrollable element (the listener attach point). */
+			getScrollDom: () => HTMLElement | null;
+		}) => void;
 		class?: string;
 	}
 
@@ -230,6 +240,22 @@
 					selection: { anchor: head + text.length }
 				});
 				view.focus();
+			},
+			// the scroll-sync's two doors (preview-sync): the top-visible source
+			// line (editor fold → line) and the line → document-top scroll
+			topLine() {
+				if (!view) return 1;
+				const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop);
+				return view.state.doc.lineAt(block.from).number;
+			},
+			scrollToLine(line: number) {
+				if (!view) return;
+				const doc = view.state.doc;
+				const l = doc.line(Math.min(Math.max(1, line), doc.lines));
+				view.scrollDOM.scrollTop = view.lineBlockAt(l.from).top;
+			},
+			getScrollDom() {
+				return view?.scrollDOM ?? null;
 			}
 		});
 	});
