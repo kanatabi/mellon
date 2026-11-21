@@ -49,6 +49,12 @@ export function cueFor(name: string, parent?: string): string | null {
 			return null;
 		case 'StrikethroughMark':
 			return 'cm-cue-strike';
+		// the EXTENDED DIALECT's inline marks (the editor's parser ships the
+		// GFM-plus extensions natively) — the green family: inline formatting
+		case 'SubscriptMark':
+		case 'SuperscriptMark':
+		case 'Emoji':
+			return 'cm-cue-code';
 		default:
 			return null; // content stays undecorated — the whole point
 	}

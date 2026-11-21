@@ -24,6 +24,12 @@ describe('cueFor — the node→cue map', () => {
 		expect(cueFor('StrikethroughMark')).toBe('cm-cue-strike');
 	});
 
+	it("the EXTENDED dialect's inline marks ride the green family", () => {
+		expect(cueFor('SubscriptMark')).toBe('cm-cue-code');
+		expect(cueFor('SuperscriptMark')).toBe('cm-cue-code');
+		expect(cueFor('Emoji')).toBe('cm-cue-code');
+	});
+
 	it('CONTENT nodes map to null — the not-WYSIWYG guarantee', () => {
 		for (const content of [
 			'Paragraph',

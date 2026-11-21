@@ -9,7 +9,19 @@
 import MarkdownIt, { type MarkdownIt as MarkdownItInstance, type Token } from 'markdown-it';
 import anchor from 'markdown-it-anchor';
 import container from 'markdown-it-container';
-import taskLists from 'markdown-it-task-lists';
+import { taskListsPlugin } from './task-lists.ts';
+// THE EXTENDED DIALECT (owner round 2026-11-21 — the markdownguide
+// basic+extended coverage): footnotes, custom heading ids, definition
+// lists, ==highlight==, sub/sup, emoji shortcodes. Same plugins in
+// earendil's pipeline (the parity rule — what the editor previews is
+// what the blog publishes).
+import footnote from 'markdown-it-footnote';
+import attrs from 'markdown-it-attrs';
+import deflist from 'markdown-it-deflist';
+import mark from 'markdown-it-mark';
+import sub from 'markdown-it-sub';
+import sup from 'markdown-it-sup';
+import { full as emoji } from 'markdown-it-emoji';
 import markdownItShiki from '@shikijs/markdown-it';
 import type { BuiltinLanguage } from 'shiki';
 import DOMPurify from 'isomorphic-dompurify';
@@ -39,11 +51,20 @@ const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
 const escapeHtml = (s: string) =>
 	s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 md.use(anchor, { level: [2, 3] });
-md.use(taskLists);
+md.use(taskListsPlugin);
 md.use(container, 'grid', {
 	render: (tokens, idx) =>
 		tokens[idx].nesting === 1 ? '<div class="article-grid columns-2 md:columns-3">\n' : '</div>\n'
 });
+// THE EXTENDED DIALECT: attrs LAST among the id-touching plugins (anchor
+// slugs first; {#custom-id} overrides) — the rest are order-insensitive.
+md.use(footnote);
+md.use(deflist);
+md.use(mark);
+md.use(sub);
+md.use(sup);
+md.use(emoji);
+md.use(attrs);
 
 // Tables ride a horizontal-scroll wrapper (`.preview .prose .table-wrap` in
 // layout.css) — parity with earendil's render.ts: a wide table's min-content
