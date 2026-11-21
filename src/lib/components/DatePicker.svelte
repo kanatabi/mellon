@@ -1,7 +1,14 @@
 <script lang="ts">
-	import { SvelteDate } from 'svelte/reactivity';
-	import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-svelte';
-	import { fade, fly } from 'svelte/transition';
+	import { CalendarDays, ChevronRight } from 'lucide-svelte';
+	import {
+		getLocalTimeZone,
+		parseDate,
+		today as intlToday,
+		type DateValue
+	} from '@internationalized/date';
+	import * as Popover from '#lib/components/ui/popover/index.js';
+	import Calendar from '#lib/components/ui/calendar/calendar.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 
 	interface Props {
 		value: string;
@@ -10,182 +17,77 @@
 
 	let { value, onchange }: Props = $props();
 
+	// SHADCN-PLAN 4.4: the hand-built grid (SvelteDate cursor, manual
+	// Monday-first lead, manual flip/Esc/outside-click) died — the block's
+	// calendar owns the grid, keyboard roving, and placement. The CONTRACT is
+	// unchanged (ISO yyyy-mm-dd in, ISO out), so PostEditor's mount did not
+	// change. locale=en-GB keeps the Monday-first week the old grid drew.
 	let open = $state(false);
-	let pop = $state('');
-	let root = $state<HTMLDivElement | undefined>();
-	let trigger = $state<HTMLButtonElement | undefined>();
-	let cursor = $state<Date | null>(null);
+	let selected: DateValue | undefined = $state();
 
-	// Vendored from earendil's rail/DateRange calendar (owner call 2026-11-08:
-	// "the stock native picker is not ours") — single-pick shape. Monday-first
-	// grid, brand-filled endpoints, non-modal: Esc/outside-click close.
-	const iso = (d: Date) =>
-		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-	const today = () => iso(new SvelteDate());
-
-	function toggleOpen() {
-		open = !open;
-		if (open) {
-			const r = trigger?.getBoundingClientRect();
-			if (r) {
-				// Fixed anchor: the editor rail clips overflow (curtain), so the
-				// panel positions off the trigger rect — DOM child nonetheless.
-				// viewport-fit flip (see Combobox): a calendar opening off the
-				// bottom of a tall rail is the same owner-reported bug
-				const right = `right:${Math.max(12, window.innerWidth - r.right)}px`;
-				const need = 340; // the full calendar grid, worst case
-				const below = window.innerHeight - r.bottom;
-				pop =
-					below < need && r.top > below
-						? `position:fixed; bottom:${window.innerHeight - r.top + 8}px; ${right}`
-						: `position:fixed; top:${r.bottom + 8}px; ${right}`;
-			}
-			if (!cursor) {
-				const [y, m] = (value || today()).split('-').map(Number);
-				cursor = new SvelteDate(y, m - 1, 1);
-			}
-		}
-		if (!open) trigger?.focus();
-	}
-
-	function pick(dayIso: string) {
-		onchange(dayIso);
-		toggleOpen();
-	}
-
-	const monthTitle = $derived(
-		cursor?.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) ?? ''
-	);
-
-	const cells = $derived.by(() => {
-		if (!cursor) return [];
-		const y = cursor.getFullYear();
-		const m = cursor.getMonth();
-		const lead = (new SvelteDate(y, m, 1).getDay() + 6) % 7; // Monday-first
-		const count = new SvelteDate(y, m + 1, 0).getDate();
-		const out: (string | null)[] = Array.from({ length: lead }, () => null);
-		for (let d = 1; d <= count; d++) {
-			out.push(`${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-		}
-		return out;
-	});
-
-	function shiftMonth(delta: number) {
-		if (!cursor) return;
-		cursor = new SvelteDate(cursor.getFullYear(), cursor.getMonth() + delta, 1);
-	}
-
+	// the wire value re-parses on change (lumen-validated ISO; a bad string
+	// just means the placeholder state — no crash)
 	$effect(() => {
-		if (!open) return;
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') toggleOpen();
-		};
-		const onDown = (e: PointerEvent) => {
-			if (root && !root.contains(e.target as Node)) toggleOpen();
-		};
-		window.addEventListener('keydown', onKey);
-		window.addEventListener('pointerdown', onDown);
-		return () => {
-			window.removeEventListener('keydown', onKey);
-			window.removeEventListener('pointerdown', onDown);
-		};
+		try {
+			selected = value ? parseDate(value) : undefined;
+		} catch {
+			selected = undefined;
+		}
 	});
+
+	function commit(d: DateValue | undefined) {
+		if (!d) return;
+		onchange(d.toString()); // CalendarDate.toString() = 'yyyy-MM-dd'
+		open = false;
+	}
+
+	function pickToday() {
+		commit(intlToday(getLocalTimeZone()));
+	}
 </script>
 
-<div class="relative" bind:this={root}>
-	<button
-		type="button"
-		onclick={toggleOpen}
-		aria-expanded={open}
-		aria-haspopup="dialog"
-		aria-label="Choose publish date"
-		class="flex w-full items-center gap-2.5 rounded-full border border-transparent px-3 py-1.5 text-sm transition-colors hover:border-border focus-visible:border-brand"
-		bind:this={trigger}
-	>
-		<CalendarDays class="size-4 shrink-0 text-muted-foreground" />
-		<span
-			class="min-w-0 grow truncate text-left font-mono text-xs {value
-				? 'text-foreground'
-				: 'text-muted-foreground'}">{value || 'pick a date'}</span
+<div class="relative">
+	<Popover.Root bind:open>
+		<Popover.Trigger
+			aria-label="Choose publish date"
+			class="group flex w-full items-center gap-2.5 rounded-full border border-transparent px-3 py-1.5 text-sm transition-colors hover:border-border focus-visible:border-brand"
 		>
-		<ChevronRight
-			class="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 {open
-				? 'rotate-90'
-				: ''}"
-		/>
-	</button>
+			<CalendarDays class="size-4 shrink-0 text-muted-foreground" />
+			<span
+				class="min-w-0 grow truncate text-left font-mono text-xs {value
+					? 'text-foreground'
+					: 'text-muted-foreground'}"
+			>
+				{value || 'pick a date'}
+			</span>
+			<ChevronRight
+				class="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90"
+			/>
+		</Popover.Trigger>
 
-	{#if open && cursor}
-		<div
-			role="dialog"
-			aria-label="Choose a date"
-			transition:fly={{ y: 6, duration: 160 }}
-			style={pop}
-			class="z-30 mt-2 w-64 rounded-xl border border-border bg-card p-4 shadow-lg"
+		<Popover.Content
+			align="end"
+			sideOffset={8}
+			class="w-64 rounded-lg border border-border bg-card shadow-xl"
 		>
-			<div class="mb-2 flex items-center justify-between">
-				<button
+			<Calendar
+				type="single"
+				bind:value={selected as never}
+				onValueChange={(d) => commit(d as DateValue)}
+				locale="en-GB"
+				captionLayout="label"
+				class="bg-transparent p-0"
+			/>
+			<div class="mt-2 border-t border-border pt-2">
+				<Button
 					type="button"
-					onclick={() => shiftMonth(-1)}
-					aria-label="Previous month"
-					class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-				>
-					<ChevronLeft class="size-4" />
-				</button>
-				<p class="font-brand text-lg leading-none font-semibold tracking-tight">{monthTitle}</p>
-				<button
-					type="button"
-					onclick={() => shiftMonth(1)}
-					aria-label="Next month"
-					class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-				>
-					<ChevronRight class="size-4" />
-				</button>
-			</div>
-			<div class="grid grid-cols-7 gap-1">
-				{#each ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as wd, i (i)}
-					<span
-						class="flex h-6 items-center justify-center font-mono text-[10px] text-muted-foreground/60"
-						>{wd}</span
-					>
-				{/each}
-				{#each cells as day, i (i)}
-					{#if day === null}
-						<span></span>
-					{:else}
-						{@const [y, m, d] = day.split('-').map(Number)}
-						<button
-							type="button"
-							onclick={() => pick(day)}
-							aria-pressed={day === value}
-							aria-label={new SvelteDate(y, m - 1, d).toLocaleDateString('en-US', {
-								weekday: 'short',
-								month: 'short',
-								day: 'numeric',
-								year: 'numeric'
-							})}
-							class="flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs tabular-nums transition-colors {day ===
-							value
-								? 'bg-brand font-semibold text-white'
-								: day === today()
-									? 'border border-border text-foreground hover:bg-accent'
-									: 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
-						>
-							{d}
-						</button>
-					{/if}
-				{/each}
-			</div>
-			<div class="mt-3 border-t border-border pt-2" transition:fade={{ duration: 120 }}>
-				<button
-					type="button"
-					onclick={() => pick(today())}
-					class="w-full rounded-md py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+					variant="soft"
+					class="w-full justify-center font-mono text-[11px]"
+					onclick={pickToday}
 				>
 					Today
-				</button>
+				</Button>
 			</div>
-		</div>
-	{/if}
+		</Popover.Content>
+	</Popover.Root>
 </div>

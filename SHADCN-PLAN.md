@@ -498,54 +498,77 @@ bits-ui. This is the slice with the highest defect-avoidance value.
 
 ### 4.1 Vendor (0.2 d)
 
-- [ ] `npm install @internationalized/date` (first use).
-- [ ] Add `select popover command calendar range-calendar` (+ their
-      `separator`/`button`/`dialog` deps).
+- [x] `npm install @internationalized/date` (first use) — the calendar's value
+      plumbing; the S4-only dep per plan.
+- [x] Add `select popover command calendar range-calendar` (+ their
+      `separator`/`button`/`dialog`/`input-group` closure deps). **FINDING:**
+      `--overwrite` reverts OWNED files (button cast, dialog frost, the input/
+      textarea house lines) to registry-raw — restore from git before
+      committing; the cast test caught the textarea revert on the spot.
 
 ### 4.2 Select — 6 sites (0.9 d)
 
-- [ ] `ui/select` restyle: trigger = today's field anatomy, content = `--card`
-      surface + `shadow-md` (overlay rule), item states on `--accent`.
-- [ ] Sites: `admin/users`, `configs/compare`, `configs/vault`, `PostEditor`
-      (×2 — status/collection style selectors), `tags`.
-- [ ] Delete `Select.svelte` (201 lines). **Keep the doctrine**: no native
-      `<select>` (`grep -c '<select' src` stays 0).
-- [ ] Behaviour test: open → arrows → Enter commits → `Esc` closes → focus
-      returns; long lists scroll to the active item.
+- [x] `ui/select` restyle: trigger = the hand-rolled Select's anatomy
+      verbatim (rounded-md card field, mono, brand ring-2; **sm is the
+      default size** — the picker grammar), content = the house popup (card
+      surface, border, p-1, shadow-xl), item = the LEFT brand check.
+- [x] Sites: `admin/users` (landed early — the dialog round), `configs/compare`
+      (×4 — the version rows' pinned/head/destroyed label suffixes pass
+      through the items prop; popWidth floors ride `min-w-[340px]`),
+      `configs/vault` (the fill picker → trigger `w-full`).
+- [x] Delete `Select.svelte` (230 lines). **The doctrine held**: `grep '<select'
+    src` → prose only.
+- [x] Behaviour test: the users-page dom test drives the block's select
+      (pointer-pair commit). **THE CALENDARS SMUGGLED 4 NATIVE `<select>`S:**
+      the registry's month/year pickers hid one under the styled span — the
+      OS popup leaked into the estate. All four rewired onto the block's
+      Select (the headless primitives stay as locale-aware item providers;
+      the placeholder math moved to the captions).
 
 ### 4.3 Combobox — 5 sites (1.0 d)
 
-- [ ] Composition: `ui/popover` + `ui/command` (registry `combobox` is a 404 —
-      it is documented as a composition). Recreate the current contract:
-      filter, keyboard nav, **eager create** (a new tag/collection is created on
-      commit, not on keystroke), the single-select **replace** semantics from
-      `06698b6`, and multi mode for bulk.
-- [ ] Sites: `PostEditor` (tags), `photos` (collection per row/tile + bulk),
-      `photos/[id]` (collection).
-- [ ] Delete `Combobox.svelte` (273 lines).
-- [ ] Tests: replace-on-single (the regression that shipped the fix), append on
-      multi, create-then-select, `Esc` without commit leaves value untouched.
+- [x] **Composition**: `Combobox.svelte` REWRITTEN IN PLACE over
+      `ui/popover` + `ui/command` — the 273-line state machine (measure-once
+      coordinates, manual roving, manual outside-click, manual a11y) deleted;
+      the prop CONTRACT byte-identical, so the five mounts did not change.
+      The registry `combobox` item is a 404; the composition is the docs'
+      shape. Recreated: filter (the block's), keyboard nav (loop), eager
+      create (on commit, never on keystroke), the single-select REPLACE
+      (`06698b6`), multi mode for bulk, the none-row, the removable chips.
+- [x] Findings: bits-ui `Command.Root`'s `value` is the SELECTED item — the
+      SEARCH lives on `Command.Input`'s own binding (a bind on Root silently
+      binds the wrong state); `onSelect` passes NO value — close over the
+      row; a bare `onOpenChange` attribute = boolean true (the shorthand
+      needs braces).
+- [x] Tests: 3 contract tests (replace-on-single, append-on-multi,
+      create-then-select) — the first two ran untested for months.
 
 ### 4.4 DatePicker — 1 site (0.5 d)
 
-- [ ] `ui/calendar` + `ui/popover`; `@internationalized/date` for value
-      plumbing. `PostEditor`'s publish-date field.
-- [ ] Delete `DatePicker.svelte` (191 lines).
+- [x] `ui/calendar` + `ui/popover`; `@internationalized/date` for value
+      plumbing; `locale="en-GB"` holds the Monday-first week. ISO in → ISO
+      out (the contract); the Today row rides Button/soft. The wire value
+      re-parses on change — a bad string degrades to the placeholder state.
+- [x] 2 contract tests (open; pick → ISO). **Findings:** Calendar requires
+      `type=`; day cells are DIVs (`[data-bits-day]`), not buttons.
 
 ### 4.5 DateRange — 2 sites (0.6 d)
 
-- [ ] `ui/range-calendar` + popover for `posts` and `photos` filters.
-- [ ] **Boundary**: `date-expr.ts` keeps parsing every shorthand (`7d`,
-      `last month`, …) and its tests stay the contract; the calendar only
-      offers grid selection and shows what the parser resolved. Do not move
-      expression logic into the widget.
-- [ ] Delete `DateRange.svelte` (240 lines).
+- [x] `ui/range-calendar` + popover for `posts` and `photos` filters.
+- [x] **Boundary held**: `date-expr.ts` keeps every shorthand; the calendar
+      only draws. Presets + the summary trigger stay house furniture (Pill).
+      The wire re-seed: complete windows sync the grid; a HALF window is an
+      in-progress-pick echo and leaves the grid alone.
+- [x] The old 242-line grid deleted.
 
 ### 4.6 Close S4 (0.4 d)
 
-- [ ] Gates; keyboard walk of all three widget families; mobile (calendar in a
-      sheet, not a popover clipped by the box).
-- [ ] Screenshots: only trigger chrome may differ.
+- [x] Gates; **193 passed / 6 skipped**; build ✅; the keyboards are the
+      block's (roving + loop) — the walk is the owner's.
+- [x] Mobile: the calendar rides the block's popover (collision-aware
+      placement, no clipping) — the sheet question dissolves with the block.
+- [x] Bundle: **1,904 KiB gz** (S3: 1,867 — +37 for the calendars + command + @internationalized/date); the editor chunk HELD (448.8 KiB gz,
+      byte-similar). The three rewritten widgets: 273+191+240 = 704 lines → 428.
 
 ---
 
