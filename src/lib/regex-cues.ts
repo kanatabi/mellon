@@ -55,7 +55,7 @@ const CUES: RegexCue[] = [
 	{ re: /==[^=\n]+==/g, cls: 'cm-block-highlight' },
 	{ re: /\[\^[^\]\s]+\]/g, cls: 'cm-block-footnote' },
 	{ re: /^\[\^[^\]\s]+\]:/g, cls: 'cm-block-footnote', lineStart: true },
-	{ re: /^\s*:[^\s]/g, cls: 'cm-line-list', lineStart: true }, // the deflist's definition lines
+	{ re: /^\s*:\s*[^\s]/g, cls: 'cm-line-list', lineStart: true }, // the deflist's definition lines (': def' AND ':def' — the plugin's two forms)
 	{ re: /\{#[^}\s]+\}/g, cls: 'cm-cue-heading' }
 ];
 
@@ -70,6 +70,7 @@ function buildRegexDecorations(view: EditorView): DecorationSet {
 		for (let l = lineFrom; l <= lineTo; l++) {
 			const line = text.line(l);
 			for (const cue of CUES) {
+				cue.re.lastIndex = 0; // the g-flag's state must not leak across lines
 				if (cue.lineStart) {
 					const m = cue.re.exec(line.text);
 					if (m && !insideCode(view, line.from + m.index)) {
@@ -78,7 +79,6 @@ function buildRegexDecorations(view: EditorView): DecorationSet {
 						);
 					}
 				} else {
-					cue.re.lastIndex = 0;
 					let m: RegExpExecArray | null;
 					while ((m = cue.re.exec(line.text))) {
 						if (insideCode(view, line.from + m.index)) continue;
