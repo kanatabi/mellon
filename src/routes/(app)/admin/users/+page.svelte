@@ -110,7 +110,7 @@
 						type="text"
 						name="username"
 						required
-						pattern={'^[a-z0-9][a-z0-9.\-_]{1,31}$'}
+						pattern={'^[a-z0-9][a-z0-9.\\-_]{1,31}$'}
 						title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
 					/>
 				</label>

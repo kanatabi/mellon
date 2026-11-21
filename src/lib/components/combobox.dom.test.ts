@@ -39,7 +39,7 @@ describe('the Combobox contract', () => {
 
 	it('multi mode APPENDS and stays open', async () => {
 		const onchange = vi.fn();
-		const { getByRole } = render(Combobox, {
+		render(Combobox, {
 			props: {
 				items: collections,
 				multiple: true,
