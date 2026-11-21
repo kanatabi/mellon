@@ -225,7 +225,7 @@
 				theme,
 				syntaxHighlighting(tokens),
 				markCues, // the mark-cue layer (§11): per-component chrome, content undecorated
-				regexCues // the cue layer for what the grammar can't see (==, footnotes, deflists, {#id})
+				regexCues, // the cue layer for what the grammar can't see (==, footnotes, deflists, {#id})
 				vimCompartment.of(vimOn ? [vimKeymap()] : []),
 				EditorView.domEventHandlers({
 					// belt for transitions that resolve outside a transaction: sample
