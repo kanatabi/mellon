@@ -127,7 +127,8 @@ flowchart LR
 	// server path (the §7 parity doctrine). The port keeps the swap to a
 	// future lumen working-copy a constructor argument, not a rewrite.
 	const editStore = localStoragePostEditStore();
-	// svelte-ignore state_referenced_locally — the knob is static per mount (the page seeds it once)
+	// the knob is static per mount — the page seeds it once;
+	// svelte-ignore state_referenced_locally
 	const scheduler = createEditScheduler({
 		seconds: autosaveSeconds,
 		current: () =>
