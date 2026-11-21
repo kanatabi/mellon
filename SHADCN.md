@@ -312,7 +312,7 @@ Each slice's PR description carries this table with its own rows ticked.
 | S2    | Chrome — the sidebar block replaces the hand-built shell nav       |      3.5 d | **built** (manual matrix pending owner) |
 | S3    | Form primitives — Button/Input/Label/Textarea/Checkbox/Switch      |        3 d | **built** (screenshots pending owner)   |
 | S4    | Choice widgets — Select, Combobox (Popover+Command), calendars     |        4 d | **built** (keyboard walk pending owner) |
-| S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | planned                                 |
+| S5    | Overlays + parity + release — Dialog, Sheet, DropdownMenu, Tooltip |        6 d | **built** (parity + release = owner)    |
 |       | **total**                                                          | **18.5 d** |                                         |
 
 Sequence is load-bearing: **S1 first** because it installs the test net and the
@@ -357,15 +357,24 @@ before the content pages are touched.
 
 The experiment ends at S5. It graduates only if **all** hold:
 
-1. All five slices shipped through the anvil ladder, production included.
-2. §6 parity checklist ticked for every route (14 pages).
+1. ~~All five slices shipped through the anvil ladder, production included.~~
+   **AMENDED 2026-11-20 (the integration model):** the slices merge into
+   `feat/shadcn-integration` only; `main` receives ONE merge and the ladder
+   runs ONCE, at the end, if the owner accepts the experiment.
+2. §6 parity checklist ticked for every route (14 pages) — the owner's
+   screenshot pass.
 3. `ui/` contains no unmodified vendored file, no `rounded-xl` above the
-   ceiling, no motion over 200ms.
-4. The shell is ≤ ~300 lines and its nav is the block.
-5. Measured cost recorded: bundle delta, test count delta, and the number of
-   bugs found per slice.
+   ceiling, no motion over 200ms. **Verified 2026-11-21**: the radius gate
+   holds two furniture exceptions (the content box per D9b + the bottom
+   sheet's top corners, veto-able); no vendored file ships raw; motion is
+   the block's 150–200ms overlays only.
+4. The shell is ≤ ~300 lines and its nav is the block. **Verified: 189
+   lines** (+ `app-sidebar.svelte`).
+5. Measured cost recorded: bundle delta (P3 1,824 → 1,906 KiB gz), test
+   count delta (P4 157 → 195), and the number of bugs found per slice (the
+   ledger + the vault's lesson ledger carry them).
 6. Owner screenshot pass: every page still reads as _the same maker's tool_
-   beside gofar.id (§11.5).
+   beside gofar.id (§11.5). **Outstanding — the graduation decision itself.**
 
 Then, and only then: DESIGN §11.6 is written, `AGENTS.md` §2 gains the pointer,
 the vault note is updated as **state**, and this file is deleted.

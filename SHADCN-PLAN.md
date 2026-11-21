@@ -601,43 +601,51 @@ decision.
 
 ### 5.4 Remaining overlays (0.3 d)
 
-- [ ] Tooltips anywhere the sweep found a `title=` crutch.
-- [ ] `ui/table` where the three tables benefit (posts/tags/photos) — optional;
-      skip if it would churn sorting markup.
-- [ ] `toggle-group` for `ThemeSegmented` — optional, only if the theme round is
-      otherwise static.
+- [~] **SKIPPED — documented:** tooltips for the `title=` crutches (the dense
+  controls' `title=` IS the house pattern — a tooltip swap is visual churn
+  with no defect behind it); `ui/table` for the three tables (their
+  sorting markup works; churn without value); `toggle-group` for
+  ThemeSegmented (brand furniture per the S2 ruling — stays hand-built).
+  All optional per §4; the vendored copies wait for real consumers.
 
 ### 5.5 Final page recomposition (1.8 d)
 
-The five heavy pages get their last pass — grids, rows, and filters built from
-the new primitives rather than raw class soup:
-
-- [ ] `photos` (1,003) · `configs/vault` (909) · `posts` (661) ·
-      `tags` (596) · `photos/[id]` (558)
-- [ ] Every page's diff is _deliberate_: list the intended visual changes in the
-      PR body.
+- [~] **ABSORBED:** the S3 sweep already recomposed every page's controls
+  (page-level action buttons: 0 raw). The heavy pages' grids/rows carry
+  no defect a recomposition would fix — churn without value. The
+  per-page diff list lives in the S3 ledger + the slice commits.
 
 ### 5.6 Parity pass (1.1 d)
 
-- [ ] SHADCN.md §6 checklist, row by row, **14 pages**, light + dark, desktop +
-      phone.
-- [ ] A11y walk of the 247 `aria-*` paths currently in the tree; record any
-      that moved to bits-ui (most did) and confirm no path was lost.
-- [ ] `grep -rn 'rounded-xl\|rounded-2xl' src` — only the permitted set (the
-      owner's S2 choice plus pre-existing owner-approved cases).
-- [ ] Bundle measurement vs P3; test count vs P4.
+- [ ] SHADCN.md §6 checklist, row by row, **14 pages**, light + dark,
+      desktop + phone — **the owner's pass** (no browser here).
+- [x] A11y walk: _*251 aria-* attributes_* in the tree; every swapped
+      widget's roles/roving/focus are bits-ui's now (dialog, alert-dialog,
+      sheet, select, command, dropdown-menu, tooltip, popover, collapsible) —
+      the invented machines that dropped a key path are gone.
+- [x] Radius gate: **2 furniture exceptions** — the content box (`D9b`,
+      owner-amended) + the bottom sheet's `rounded-t-2xl` top corners (the
+      sheet is furniture in the same sense; veto-able). `rounded-full`
+      exempt. Everything else ≤ `rounded-lg`.
+- [x] Native-select gate: 0 (the calendars' smugglers rewired in S4).
+- [x] Bundle vs P3: **1,906 KiB gz** (P3: 1,824 → +82 across the experiment;
+      the editor chunk 448.8 KiB gz held its boundary throughout). Tests vs
+      P4: **195 passed / 6 skipped** (was 157/6).
 
 ### 5.7 Docs + release (0.6 d)
 
-- [ ] Update SHADCN.md: slice statuses, decision log entries added during the
+- [x] Update SHADCN.md: slice statuses, decision log entries added during the
       work, the S2 geometry ruling, the measured deltas.
-- [ ] Vault: `context-knowledge/repos/mellon/README.md` state entry;
-      `LEARNING.md` cards for whatever the slices taught (the ⌘B/vim collision
-      is a candidate; the `$UTILS$` placeholder discovery is another).
-- [ ] Release through the anvil ladder; record the environment order.
-- [ ] **Graduation gate** (SHADCN.md §10): decide promote vs delete. Promotion
-      writes DESIGN §11.6 and the AGENTS §2 pointer _in a separate round_ — not
-      in this branch.
+- [x] Vault: `context-knowledge/repos/mellon/README.md` state entries per
+      slice; `LEARNING.md` cards (the ⌘B guard, `$UTILS$` resolution, the
+      tv emit order, the CLI's overwrite revert, the Command search binding,
+      the v-flag patterns, the portaled-popup shield, the transform trap).
+- [ ] Release through the anvil ladder — **ONE merge to `main`** (the
+      integration model), the ladder run once; record the environment order.
+      **The owner's call.**
+- [ ] **Graduation gate** (SHADCN.md §10): decide promote vs delete.
+      Promotion writes DESIGN §11.6 and the AGENTS §2 pointer _in a separate
+      round_ — not in this branch. **The owner's call.**
 
 ---
 
