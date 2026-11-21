@@ -2,11 +2,20 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
+	import { FileDiff, List, RotateCcw } from 'lucide-svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client, errorText } from '#lib/api/client.ts';
 	import type { PostDetailAdmin } from '#lib/api/types.ts';
 	import { localStoragePostEditStore, type PendingEdit } from '#lib/pending-edit.ts';
-	import { FIELD_LABELS, fieldRows, splitMarkdown, toDraft } from '#lib/post-diff.ts';
+	import {
+		METADATA_FIELD_COUNT,
+		fieldRows,
+		splitMarkdown,
+		splitRegions,
+		toDraft
+	} from '#lib/post-diff.ts';
+	import { DIFF_BLOCK } from '#lib/secrets-diff.ts';
 
 	interface Props {
 		data: { post: PostDetailAdmin };
@@ -25,6 +34,10 @@
 	let saving = $state(false);
 	let errMsg = $state('');
 	let expanded = $state(false);
+	// the two presentation toggles (the vault compare's button pattern:
+	// aria-pressed + amber active state), both OFF by default:
+	let changedOnly = $state(false); // markdown: whole file ⇄ change regions
+	let hideUnchanged = $state(false); // metadata: show all rows ⇄ changed only
 
 	onMount(() => {
 		void (async () => {
@@ -38,7 +51,24 @@
 	const conflict = $derived(pending !== null && pending.baseRev !== data.post.rev);
 	const rows = $derived(pending ? fieldRows(pending.draft, head) : []);
 	const splitRows = $derived(pending ? splitMarkdown(head, pending.draft) : []);
-	const unchangedCount = $derived(FIELD_LABELS.length - rows.length);
+	const regions = $derived(pending ? splitRegions(head, pending.draft, 2) : []);
+	const shownRows = $derived(hideUnchanged ? rows.filter((r) => r.status !== 'same') : rows);
+	const changedCount = $derived(rows.filter((r) => r.status === 'changed').length);
+	const unchangedCount = $derived(METADATA_FIELD_COUNT - changedCount);
+
+	// the status chip vocabulary — the vault compare's own
+	const chip: Record<string, string> = {
+		changed: 'bg-accent-amber/15 text-accent-amber',
+		same: 'text-muted-foreground/60'
+	};
+	// block-highlight line classes — DIFF_BLOCK is the one shared language
+	// (secrets-diff.ts): a solid row/cell background, not a font tint
+	const lineCls = (kind: 'same' | 'add' | 'del' | null | undefined) =>
+		kind === 'del'
+			? `${DIFF_BLOCK.del} text-diff-del`
+			: kind === 'add'
+				? `${DIFF_BLOCK.add} text-diff-add`
+				: 'text-muted-foreground/80';
 
 	async function saveFrom(overwrite: boolean) {
 		if (!pending) return;
@@ -103,7 +133,7 @@
 			href="/posts/{data.post.slug}"
 			class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 		>
-			back to editor
+			Back to editor
 		</a>
 	</div>
 
@@ -119,7 +149,7 @@
 				href="/posts/{data.post.slug}"
 				class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
-				back to editor
+				Back to editor
 			</a>
 		</div>
 	{:else}
@@ -134,13 +164,14 @@
 					<span class="font-mono">(your rev {pending.baseRev} → head rev {data.post.rev})</span>.
 					Saving overwrites head with YOUR buffer.
 				</span>
-				<button
+				<Button
 					type="button"
+					variant="quiet"
 					onclick={() => void invalidateAll()}
-					class="rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+					aria-label="Reload head"
 				>
-					reload head
-				</button>
+					<RotateCcw class="size-3" /> Reload head
+				</Button>
 			</div>
 		{/if}
 		{#if errMsg}
@@ -193,30 +224,68 @@
 		<div class="flex flex-wrap items-center justify-between gap-2">
 			<p class="font-mono text-[11px] text-muted-foreground/70">
 				{#if tab === 'markdown'}
-					<span class="text-diff-del">saved (head)</span> ⇄
-					<span class="text-diff-add">pending</span>
-					— rev {data.post.rev} ⇄ forked from rev {pending.baseRev}
+					{#if changedOnly}
+						{regions.filter((r) => r.kind === 'rows').length} change region{regions.filter(
+							(r) => r.kind === 'rows'
+						).length === 1
+							? ''
+							: 's'} — <span class="text-diff-del">saved (head)</span> ⇄
+						<span class="text-diff-add">pending</span>
+					{:else}
+						<span class="text-diff-del">saved (head)</span> ⇄
+						<span class="text-diff-add">pending</span>
+						— rev {data.post.rev} ⇄ forked from rev {pending.baseRev}
+					{/if}
 				{:else}
-					{rows.length} changed · {unchangedCount} unchanged
+					{changedCount} changed · {unchangedCount} unchanged
 				{/if}
 			</p>
 			<div class="flex items-center gap-2">
-				<button
+				<!-- The presentation toggles — the vault compare's button pattern
+				     (aria-pressed + amber active), never checkboxes. -->
+				{#if tab === 'markdown'}
+					<Button
+						type="button"
+						variant="quiet"
+						aria-pressed={changedOnly}
+						class="gap-1.5 {changedOnly
+							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+							: ''}"
+						onclick={() => (changedOnly = !changedOnly)}
+					>
+						{#if changedOnly}<List class="size-3" />{:else}<FileDiff class="size-3" />{/if}
+						{changedOnly ? 'Show all lines' : 'Changed only'}
+					</Button>
+				{:else}
+					<Button
+						type="button"
+						variant="quiet"
+						aria-pressed={hideUnchanged}
+						class="gap-1.5 {hideUnchanged
+							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+							: ''}"
+						onclick={() => (hideUnchanged = !hideUnchanged)}
+					>
+						{hideUnchanged ? 'Show unchanged' : 'Hide unchanged'}
+					</Button>
+				{/if}
+				<Button
 					type="button"
+					variant="primary"
 					disabled={saving}
 					onclick={() => void saveFrom(conflict)}
-					class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 				>
-					{conflict ? 'save anyway (overwrites head)' : 'save'}
-				</button>
-				<button
+					{conflict ? 'Save anyway (overwrites head)' : 'Save'}
+				</Button>
+				<Button
 					type="button"
+					variant="quiet"
 					disabled={saving}
 					onclick={() => void discard()}
-					class="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-danger disabled:opacity-40"
+					class="hover:text-danger"
 				>
-					discard my changes
-				</button>
+					Discard my changes
+				</Button>
 			</div>
 		</div>
 
@@ -225,43 +294,88 @@
 				id="diff-panel-markdown"
 				role="tabpanel"
 				aria-labelledby="diff-tab-markdown"
-				class="overflow-hidden rounded-lg border border-border bg-card font-mono text-xs"
+				class="min-h-0"
 			>
-				<div class="grid grid-cols-1 gap-px border-b border-border bg-muted/40 md:grid-cols-2">
-					<span class="px-3 py-1.5 text-[10px] tracking-widest text-muted-foreground uppercase"
-						>saved (head)</span
-					>
-					<span
-						class="hidden px-3 py-1.5 text-[10px] tracking-widest text-muted-foreground uppercase md:block"
-						>pending</span
-					>
-				</div>
-				{#each splitRows as row, i (i)}
+				{#if changedOnly}
+					<!-- The collapsed view: change regions (+context) with gap bands. -->
 					<div
-						class="grid grid-cols-1 gap-px border-b border-border/60 last:border-b-0 md:grid-cols-2"
+						class="overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
-						<div
-							class="min-h-[1.5em] min-w-0 px-3 py-1 break-words whitespace-pre-wrap {row.left
-								?.kind === 'del'
-								? 'bg-diff-del/10 text-diff-del'
-								: row.left?.kind === 'add'
-									? 'bg-diff-add/10 text-diff-add'
-									: 'text-muted-foreground'}"
-						>
-							{row.left?.text ?? ''}
+						{#each regions as region, i (i)}
+							{#if region.kind === 'gap'}
+								<div
+									class="border-y border-border/60 bg-muted/30 px-3 py-1 text-center font-mono text-[10px] text-muted-foreground/60"
+								>
+									⋯ {region.count} unchanged line{region.count === 1 ? '' : 's'}
+								</div>
+							{:else}
+								{#each region.rows as row, j (j)}
+									<div class="grid grid-cols-1 gap-px md:grid-cols-2">
+										<div
+											class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap md:border-r md:border-border/40 {lineCls(
+												row.left?.kind
+											)} {row.left?.kind === 'same' ? '' : DIFF_BLOCK[row.left?.kind ?? 'same']}"
+										>
+											{row.left?.text ?? ''}
+										</div>
+										<div
+											class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap {lineCls(
+												row.right?.kind
+											)} {row.right?.kind === 'same' ? '' : DIFF_BLOCK[row.right?.kind ?? 'same']}"
+										>
+											{row.right?.text ?? ''}
+										</div>
+									</div>
+								{/each}
+							{/if}
+						{/each}
+					</div>
+				{:else}
+					<!-- The default view: the WHOLE file, two text panes (no row grid —
+					     free-flowing lines, block-highlighted where they changed). -->
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<div class="min-w-0">
+							<p
+								class="border-b border-border px-1 pb-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+							>
+								saved (head) · rev {data.post.rev}
+							</p>
+							<div
+								class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-[11px] leading-relaxed"
+							>
+								{#each splitRows as row, i (i)}
+									<div
+										class="min-h-[1.4em] min-w-0 break-words whitespace-pre-wrap {lineCls(
+											row.left?.kind
+										)} {row.left?.kind === 'same' ? '' : DIFF_BLOCK[row.left?.kind ?? 'same']}"
+									>
+										{row.left?.text ?? '\u00A0'}
+									</div>
+								{/each}
+							</div>
 						</div>
-						<div
-							class="min-h-[1.5em] min-w-0 px-3 py-1 break-words whitespace-pre-wrap {row.right
-								?.kind === 'add'
-								? 'bg-diff-add/10 text-diff-add'
-								: row.right?.kind === 'del'
-									? 'bg-diff-del/10 text-diff-del'
-									: 'text-muted-foreground'}"
-						>
-							{row.right?.text ?? ''}
+						<div class="min-w-0">
+							<p
+								class="border-b border-border px-1 pb-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+							>
+								pending
+							</p>
+							<div
+								class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-[11px] leading-relaxed"
+							>
+								{#each splitRows as row, i (i)}
+									<div
+										class="min-h-[1.4em] min-w-0 break-words whitespace-pre-wrap {lineCls(
+											row.right?.kind
+										)} {row.right?.kind === 'same' ? '' : DIFF_BLOCK[row.right?.kind ?? 'same']}"
+									>
+										{row.right?.text ?? '\u00A0'}
+									</div>
+								{/each}
+							</div>
 						</div>
 					</div>
-				{/each}
+				{/if}
 			</div>
 		{:else}
 			<div
@@ -270,14 +384,24 @@
 				aria-labelledby="diff-tab-metadata"
 				class="overflow-hidden rounded-lg border border-border bg-card"
 			>
-				{#each rows as row (row.key)}
+				{#each shownRows as row (row.key)}
 					<div
-						class="grid grid-cols-1 gap-2 border-b border-border/60 p-3 last:border-b-0 md:grid-cols-[8rem_1fr_1fr] md:gap-4"
+						class="grid grid-cols-[6rem_1fr_1fr] items-start gap-2 border-b border-border/60 p-3 last:border-b-0 md:grid-cols-[8rem_1fr_1fr_5.5rem] md:gap-4"
 					>
-						<div class="font-mono text-xs text-muted-foreground">{row.label}</div>
+						<div class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+							{row.label}
+							<span
+								class="rounded px-1.5 py-0.5 font-mono text-[9px] {chip[row.status]}"
+								title="field status"
+							>
+								{row.status}
+							</span>
+						</div>
 						<div
-							class="min-w-0 rounded px-1 font-mono text-xs break-words text-diff-del {row.key ===
-								'preview' && !expanded
+							class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
+							'changed'
+								? `${DIFF_BLOCK.del} text-diff-del`
+								: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
 								? 'line-clamp-3'
 								: ''} whitespace-pre-wrap"
 						>
@@ -291,8 +415,10 @@
 							{row.from || '—'}
 						</div>
 						<div
-							class="min-w-0 rounded px-1 font-mono text-xs break-words text-diff-add {row.key ===
-								'preview' && !expanded
+							class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
+							'changed'
+								? `${DIFF_BLOCK.add} text-diff-add`
+								: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
 								? 'line-clamp-3'
 								: ''} whitespace-pre-wrap"
 						>
@@ -305,15 +431,16 @@
 							{/if}
 							{row.to || '—'}
 						</div>
+						<span class="hidden md:block" aria-hidden="true"></span>
 					</div>
 				{/each}
-				{#if rows.some((r) => r.key === 'preview')}
+				{#if rows.some((r) => r.key === 'preview' && r.status === 'changed')}
 					<button
 						type="button"
 						onclick={() => (expanded = !expanded)}
 						class="px-3 py-2 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
 					>
-						{expanded ? 'collapse preview values' : 'expand preview values'}
+						{expanded ? 'Collapse preview values' : 'Expand preview values'}
 					</button>
 				{/if}
 				{#if unchangedCount > 0}

@@ -127,6 +127,9 @@ flowchart LR
 	// server path (the §7 parity doctrine). The port keeps the swap to a
 	// future lumen working-copy a constructor argument, not a rewrite.
 	const editStore = localStoragePostEditStore();
+	// the autosave indicator's stamp: the last LANDED buffer write (not the
+	// last keystroke — the idle window is honestly "unsaved" until it fires)
+	let lastLocalSave = $state<number | null>(null);
 	// the knob is static per mount — the page seeds it once;
 	// svelte-ignore state_referenced_locally
 	const scheduler = createEditScheduler({
@@ -140,7 +143,8 @@ flowchart LR
 						draft: $state.snapshot(draft)
 					}
 				: null,
-		store: editStore
+		store: editStore,
+		onWrite: (edit) => (lastLocalSave = edit.at)
 	});
 	// Every draft mutation (re)arms the idle timer while dirty; going clean
 	// (save/publish succeeded) cancels any pending write.
@@ -844,11 +848,21 @@ flowchart LR
 				{#if dirty}
 					<span
 						transition:fade={{ duration: 140 }}
-						class="flex items-center gap-1.5 font-mono text-[10px] text-brand"
+						class="flex items-center gap-1.5 font-mono text-[10px] {lastLocalSave
+							? 'text-accent-amber'
+							: 'text-brand'}"
 						role="status"
+						title={lastLocalSave
+							? 'autosave lives in THIS BROWSER only (localStorage) — the server never sees it; Save sends your changes to lumen'
+							: undefined}
 					>
-						<span class="size-1.5 rounded-full bg-brand"></span>
-						Unsaved
+						<span class="size-1.5 rounded-full {lastLocalSave ? 'bg-accent-amber' : 'bg-brand'}"
+						></span>
+						{#if lastLocalSave}
+							Autosaved locally · {fmtTime.format(lastLocalSave)}
+						{:else}
+							Unsaved
+						{/if}
 					</span>
 				{/if}
 				{@render wrapToggle('hidden @min-[48rem]/editor:flex')}
@@ -888,7 +902,7 @@ flowchart LR
 						onclick={askDiff}
 						class="rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 					>
-						review diff
+						Review diff
 					</button>
 				{/if}
 			</div>

@@ -50,24 +50,71 @@ export function changedFieldNames(draft: PostDraft, head: PostDraft): string[] {
 	);
 }
 
-export type FieldRow = { key: keyof PostDraft; label: string; from: string; to: string };
+/** The metadata tab's field universe: the rail fields MINUS the body — the
+ *  body's home is the markdown tab (a body row here rendered the whole
+ *  document twice — walked 2026-11-21). The DIALOG keeps the full list
+ *  (FIELD_LABELS — its job is naming what a save touches, body included). */
+const METADATA_FIELDS = FIELD_LABELS.filter(({ key }) => key !== 'content');
 
-/** The metadata tab: one row per CHANGED field — saved value left, pending
- *  value right (the two-pane split earns its keep on documents, not on five
- *  scalars). Unchanged fields are a count, not rows. */
+export type FieldRow = {
+	key: keyof PostDraft;
+	label: string;
+	from: string;
+	to: string;
+	status: 'changed' | 'same';
+};
+
+/** The metadata tab: the vault-compare table shape — one row per rail field
+ *  with a status chip (fixed-shape fields ⇒ only changed/same occur), saved
+ *  value left, pending right. Unchanged fields stay visible (the page's
+ *  Hide-unchanged toggle filters them). */
 export function fieldRows(pending: PostDraft, head: PostDraft): FieldRow[] {
-	return FIELD_LABELS.filter(({ key }) => fieldValue(pending, key) !== fieldValue(head, key)).map(
-		({ key, label }) => ({
-			key,
-			label,
-			from: fieldValue(head, key),
-			to: fieldValue(pending, key)
-		})
-	);
+	return METADATA_FIELDS.map(({ key, label }) => {
+		const from = fieldValue(head, key);
+		const to = fieldValue(pending, key);
+		return { key, label, from, to, status: from === to ? 'same' : 'changed' };
+	});
 }
+
+export const METADATA_FIELD_COUNT = METADATA_FIELDS.length;
 
 /** The markdown tab: aligned two-pane rows over the raw body (left = saved,
  *  right = pending). Full documents pair fine — the LCS is review-aid sized. */
 export function splitMarkdown(base: PostDraft, pending: PostDraft): SplitRow[] {
 	return alignDiff(diffLines(base.content, pending.content));
+}
+
+export type DiffRegion = { kind: 'rows'; rows: SplitRow[] } | { kind: 'gap'; count: number };
+
+/** The "Changed only" view: the aligned rows COLLAPSED to the change regions
+ *  — ±`context` lines around every change, `gap` bands naming what was
+ *  skipped. The full-document split's noise (a 45-line document showing one
+ *  trailing edit) is the failure this exists for; empty adds (a trailing
+ *  newline) ride inside a region block, never as invisible lone rows. */
+export function splitRegions(base: PostDraft, pending: PostDraft, context = 2): DiffRegion[] {
+	const rows = splitMarkdown(base, pending);
+	const kept = new Set<number>();
+	rows.forEach((r, i) => {
+		if (r.left?.kind !== 'same' || r.right?.kind !== 'same') {
+			for (let j = Math.max(0, i - context); j <= Math.min(rows.length - 1, i + context); j++) {
+				kept.add(j);
+			}
+		}
+	});
+	if (kept.size === 0) return rows.length ? [{ kind: 'gap', count: rows.length }] : [];
+
+	const regions: DiffRegion[] = [];
+	let buf: SplitRow[] = [];
+	let prev = -1;
+	for (const i of [...kept].sort((a, b) => a - b)) {
+		if (prev >= 0 && i - prev > 1) {
+			regions.push({ kind: 'rows', rows: buf });
+			regions.push({ kind: 'gap', count: i - prev - 1 });
+			buf = [];
+		}
+		buf.push(rows[i]);
+		prev = i;
+	}
+	if (buf.length) regions.push({ kind: 'rows', rows: buf });
+	return regions;
 }

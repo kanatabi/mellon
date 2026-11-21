@@ -81,6 +81,7 @@ describe('createEditScheduler', () => {
 		const store = localStoragePostEditStore(memoryStorage());
 		const wrote: PendingEdit[] = [];
 		let current: PendingEdit | null = edit();
+		let onWriteAt: number | null = null;
 		const scheduler = createEditScheduler({
 			seconds,
 			current: () => current,
@@ -91,11 +92,15 @@ describe('createEditScheduler', () => {
 					wrote.push(e);
 					return store.write(e);
 				}
-			}
+			},
+			onWrite: (e) => (onWriteAt = e.at)
 		});
 		return {
 			scheduler,
 			wrote,
+			get onWriteAt() {
+				return onWriteAt;
+			},
 			set current_(e: PendingEdit | null) {
 				current = e;
 			}
@@ -146,6 +151,8 @@ describe('createEditScheduler', () => {
 			h.scheduler.schedule();
 			h.scheduler.flush();
 			expect(h.wrote).toHaveLength(1);
+			// the indicator stamp rides the landed write
+			expect(h.onWriteAt).toBe(h.wrote[0].at);
 			h.scheduler.schedule();
 			h.scheduler.stop();
 			await vi.advanceTimersByTimeAsync(600_000);
