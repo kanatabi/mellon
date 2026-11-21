@@ -5,8 +5,30 @@
 // history drawer over a stubbed /api surface. NOTE: value inputs render as
 // type=password while masked — role queries don't see them; label queries do.
 import { render, fireEvent } from '@testing-library/svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fixture from './vault-page-fixture.svelte';
+
+beforeEach(() => {
+	// happy-dom's Web Animations implementation REJECTS `finished` with an
+	// AbortError on cancel() — a Svelte slide/fade still in flight when the
+	// component unmounts (every restore here mounts one: the banner, the
+	// message pill) then surfaces as an UNHANDLED REJECTION and fails the
+	// whole run even though every test passed (walked 2026-11-21: CI red,
+	// 223/223 green). No test asserts animation frames: replace animate()
+	// with a stub whose cancel can never reject — transitions still occupy
+	// their slots in the DOM, teardown has nothing to abort.
+	const noop = () => {};
+	vi.spyOn(Element.prototype, 'animate').mockImplementation(
+		() =>
+			({
+				cancel: noop,
+				finish: noop,
+				addEventListener: noop,
+				removeEventListener: noop,
+				finished: Promise.resolve()
+			}) as unknown as Animation
+	);
+});
 
 const HEAD = {
 	data: { ADMIN_URL: 'http://lumen-admin.lumen.svc.cluster.local', 'Hello World': 'Test' },
@@ -51,6 +73,7 @@ function stubFetch() {
 }
 
 afterEach(() => {
+	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 	localStorage.clear();
 });
