@@ -70,7 +70,7 @@
 		if (!o && !busy) onClose();
 	}}
 >
-	<AlertDialog.Content class="max-w-md rounded-lg border border-border bg-card p-5 shadow-2xl">
+	<AlertDialog.Content class="max-w-md rounded-lg border-0 bg-card p-5 shadow-2xl sm:max-w-md">
 		<form
 			onsubmit={(e) => {
 				e.preventDefault();
