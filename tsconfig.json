@@ -10,7 +10,8 @@
 			"markdown-it-mark": ["./src/lib/preview/markdown-it-plugins.d.ts"],
 			"markdown-it-sub": ["./src/lib/preview/markdown-it-plugins.d.ts"],
 			"markdown-it-sup": ["./src/lib/preview/markdown-it-plugins.d.ts"],
-			"markdown-it-emoji": ["./src/lib/preview/markdown-it-plugins.d.ts"]
+			"markdown-it-emoji": ["./src/lib/preview/markdown-it-plugins.d.ts"],
+			"markdown-it-emoji/lib/data/full.mjs": ["./src/lib/preview/markdown-it-plugins.d.ts"]
 		}
 	},
 	"include": ["src", "vite.config.ts"]
