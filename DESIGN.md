@@ -529,6 +529,23 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   plain commands. Every one writes through the rail's own setter — the palette is the
   keyboard for the same state, never a second copy. The read-only TIMELINE stays out
   by design: there is nothing to change.
+  **Mark cues + synced scroll (owner round 2026-11-21):** the source pane's
+  markdown PUNCTUATION is chrome (it never publishes) and carries a
+  per-component color — headings brand, quotes amber (+ a left border
+  mirroring the preview's blockquote), code green (+ the fence's faint
+  fill), bold rose, italic cyan, strike red, lists blue, tables orange,
+  links/images indigo, escapes deliberately muted (the "not a component"
+  signal). Colors live in the `--cue-*` token layer (light + dark) — the
+  theming seam: a future theme re-points the tokens, the plugin never
+  hardcodes. Viewport-scoped incremental decorations over the lezer tree
+  (node + parent keyed — `**` ≠ `*` by parentage); content undecorated =
+  not WYSIWYG. **Synced scrolling**: the pipelines stamp every top-level
+  block with `data-source-lines` (mellon + earendil parity — inert on the
+  blog); the editor's fold maps to the preview's offset through the
+  anchors (binary search + interpolation inside a block's range; hidden
+  mermaid fences donate their box's geometry) — two-way, rAF-throttled,
+  suppression-latched, the **Sync** toggle in the meta bar (lg+ only,
+  persisted `mellon.syncscroll`, default ON).
   **Autosave + the save-confirm gate (owner round 2026-11-21):** every draft
   mutation feeds a **pending-edit buffer** through the `PostEditStore` port
   (`pending-edit.ts` — localStorage today, a future lumen working-copy by
