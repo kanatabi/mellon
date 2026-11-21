@@ -155,6 +155,10 @@
 		font-family: var(--font-sans);
 		background: var(--background);
 		color: var(--foreground);
+		/* App-wide unbreakable-token guard — mirrors earendil (AGENTS §10 #10
+		   there): dialogs, toasts and list titles wrap long tokens instead of
+		   painting past their box. truncate (nowrap) elements are unaffected. */
+		overflow-wrap: break-word;
 	}
 }
 
@@ -262,6 +266,16 @@
 	margin-bottom: 1rem;
 	border: 1px solid var(--border);
 	border-radius: 8px;
+}
+/* Tables scroll inside their own box (render.ts wraps every table) — parity
+   with earendil's `.prose .table-wrap`: a wide table's min-content beats the
+   preview column and no wrap rule can shrink intrinsic sizing. A fitting
+   table keeps typography's full-width layout. */
+.preview .prose .table-wrap {
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scrollbar-width: thin;
+	scrollbar-color: var(--border) transparent;
 }
 
 /* Route-progress bar — ported from earendil (raw-CSS exception: a fixed

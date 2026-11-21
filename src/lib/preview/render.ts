@@ -45,6 +45,12 @@ md.use(container, 'grid', {
 		tokens[idx].nesting === 1 ? '<div class="article-grid columns-2 md:columns-3">\n' : '</div>\n'
 });
 
+// Tables ride a horizontal-scroll wrapper (`.preview .prose .table-wrap` in
+// layout.css) — parity with earendil's render.ts: a wide table's min-content
+// beats the preview column and no wrap rule can shrink intrinsic sizing.
+md.renderer.rules.table_open = () => '<div class="table-wrap">\n<table>\n';
+md.renderer.rules.table_close = () => '</table>\n</div>\n';
+
 let engine: Promise<MarkdownItInstance> | null = null;
 function markdownEngine(): Promise<MarkdownItInstance> {
 	if (!engine) {
