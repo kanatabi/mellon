@@ -43,14 +43,15 @@ describe('the mark-cue layer renders', () => {
 		});
 	});
 
-	it('the SUB/SUP block spans mark-to-mark ONLY (not the whole H~2~O)', async () => {
+	it('the SUB/SUP block covers the WHOLE expression (H~2~O from H to O)', async () => {
 		const { container } = render(Fixture);
 		await vi.waitFor(() => {
 			const blocks = [...container.querySelectorAll('.cm-block-code')];
-			const sub = blocks.find((b) => b.textContent?.includes('2'));
-			expect(sub?.textContent).toBe('~2~');
-			const sup = blocks.find((b) => b.textContent?.includes('^'));
-			expect(sup?.textContent).toBe('^2^');
+			// the owner ruling: the block = the WHOLE expression — the
+			// chemistry formula's letters included
+			expect(blocks.some((b) => b.textContent === 'H~2~O')).toBe(true);
+			expect(blocks.some((b) => b.textContent === 'X^2^')).toBe(true);
+			expect(blocks.some((b) => b.textContent === '~2~')).toBe(false); // never the bare mark range
 		});
 	});
 

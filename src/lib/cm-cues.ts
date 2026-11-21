@@ -27,6 +27,23 @@ import {
 const mark = (cls: string) => Decoration.mark({ class: cls });
 const line = (cls: string) => Decoration.line({ class: cls });
 
+/** The expression's extent: expand a position range over the adjacent
+ *  word characters (the chemical-formula rule — H~2~O's block = H to O,
+ *  the node's own range covers only `~2~`). PURE — tested. */
+export function expressionExtent(
+	doc: { sliceString: (from: number, to: number) => string; length: number },
+	from: number,
+	to: number
+): { from: number; to: number } {
+	let f = from;
+	let t = to;
+	const isWord = (pos: number) =>
+		pos > 0 && pos < doc.length && /\w/.test(doc.sliceString(pos, pos + 1));
+	while (f > 0 && isWord(f - 1)) f--;
+	while (t < doc.length && isWord(t)) t++;
+	return { from: f, to: t };
+}
+
 /** The node→cue mapping — PURE (the dom tests pin every family here).
  *  `parent` disambiguates the marks a grammar shares: `**` vs `*`. */
 export function cueFor(name: string, parent?: string): string | null {
@@ -97,17 +114,11 @@ function buildDecorations(view: EditorView): DecorationSet {
 		// the EXTENDED dialect's inline nodes (the parser ships them natively)
 		Emoji: 'cm-block-code'
 	};
-	// the sub/sup's BLOCK = mark-to-mark (`~2~` in H~2~O, `^2^` in X^2^) —
-	// the lezer node spans the WHOLE expression (H and O ride along); the
-	// marks' first-from → last-to = the special chars + their content, and
-	// NOTHING else (the owner's expectation, walked)
-	const subSupMarks: Array<{ from: number; to: number }> = [];
 	for (const { from, to } of view.visibleRanges) {
 		tree.iterate({
 			from,
 			to,
 			enter(node) {
-				if (node.name === 'Subscript' || node.name === 'Superscript') return; // the leave pass owns the block
 				const inlineCls = inlineBlocks[node.name];
 				if (inlineCls) ranges.push(mark(inlineCls).range(node.from, node.to));
 				const cls = cueFor(node.name, node.node.parent?.name);
@@ -117,20 +128,16 @@ function buildDecorations(view: EditorView): DecorationSet {
 				if (node.name === 'Image') {
 					ranges.push(mark('cm-cue-link cm-cue-bold').range(node.from, node.from + 1));
 				}
+				// the sub/sup = the WHOLE EXPRESSION (the owner ruling): H~2~O's
+				// block = from H to O — the chemistry formula read. The lezer
+				// node covers only `~2~`; the decoration extends over the
+				// adjacent word characters (the formula's own letters)
+				if (node.name === 'Subscript' || node.name === 'Superscript') {
+					const extent = expressionExtent(view.state.doc, node.from, node.to);
+					ranges.push(mark('cm-block-code').range(extent.from, extent.to));
+				}
 				const blockCls = blockCues[node.name];
 				if (blockCls) lineCues(node.name, blockCls)(node);
-			},
-			leave(node) {
-				if (node.name === 'SubscriptMark' || node.name === 'SuperscriptMark') {
-					subSupMarks.push({ from: node.from, to: node.to });
-				}
-				if (node.name === 'Subscript' || node.name === 'Superscript') {
-					const first = subSupMarks.shift();
-					const last = subSupMarks.pop() ?? first;
-					if (first && last) {
-						ranges.push(mark('cm-block-code').range(first.from, last.to));
-					}
-				}
 			}
 		});
 	}
