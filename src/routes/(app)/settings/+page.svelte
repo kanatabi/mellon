@@ -4,6 +4,8 @@
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
 	import ThemeSegmented from '#lib/components/ThemeSegmented.svelte';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -84,12 +86,7 @@
 			/>
 		</label>
 		<div class="flex items-center gap-3">
-			<button
-				type="submit"
-				class="w-fit rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
-			>
-				Save
-			</button>
+			<Button type="submit" class="w-fit active:scale-[0.98]">Save</Button>
 			{#if saved}
 				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 180 }}>
 					Saved
@@ -126,39 +123,19 @@
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 					>current password</span
 				>
-				<input
-					type="password"
-					name="current"
-					required
-					autocomplete="current-password"
-					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-				/>
+				<Input type="password" name="current" required autocomplete="current-password" />
 			</label>
 			<label class="flex flex-col gap-1.5">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 					>new password</span
 				>
-				<input
-					type="password"
-					name="next"
-					required
-					minlength={10}
-					autocomplete="new-password"
-					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-				/>
+				<Input type="password" name="next" required minlength={10} autocomplete="new-password" />
 			</label>
 			<label class="flex flex-col gap-1.5">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 					>confirm</span
 				>
-				<input
-					type="password"
-					name="confirm"
-					required
-					minlength={10}
-					autocomplete="new-password"
-					class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-				/>
+				<Input type="password" name="confirm" required minlength={10} autocomplete="new-password" />
 			</label>
 		</div>
 		{#if form?.pw && !form.pw.ok}
@@ -168,12 +145,7 @@
 				{form.pw.loginAgain ? 'Password updated — sign in again to continue.' : 'Password updated.'}
 			</p>
 		{/if}
-		<button
-			type="submit"
-			class="w-fit rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
-		>
-			Update password
-		</button>
+		<Button type="submit" class="w-fit active:scale-[0.98]">Update password</Button>
 	</form>
 
 	{#if page.data.principal?.role === 'admin'}

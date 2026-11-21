@@ -3,6 +3,8 @@
 	import { LoaderCircle } from 'lucide-svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData } from './$types';
 
 	interface Props {
@@ -50,34 +52,18 @@
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 				>username</span
 			>
-			<input
-				type="text"
-				name="username"
-				required
-				autocomplete="username"
-				class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-			/>
+			<Input type="text" name="username" required autocomplete="username" />
 		</label>
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 				>password</span
 			>
-			<input
-				type="password"
-				name="password"
-				required
-				autocomplete="current-password"
-				class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
-			/>
+			<Input type="password" name="password" required autocomplete="current-password" />
 		</label>
 		{#if form?.message}
 			<p class="font-mono text-xs text-danger" role="alert">{form.message}</p>
 		{/if}
-		<button
-			type="submit"
-			disabled={pending}
-			class="flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-70"
-		>
+		<Button type="submit" disabled={pending}>
 			{#if pending}
 				<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
 				<span>Entering…</span>
@@ -85,7 +71,7 @@
 			{:else}
 				Enter
 			{/if}
-		</button>
+		</Button>
 		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
 			sessions are minted by lumen — the portal only carries the cookie
 		</p>
