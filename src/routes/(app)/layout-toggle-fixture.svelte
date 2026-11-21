@@ -12,7 +12,8 @@
 		theme: 'light' as const,
 		principal: { username: 'probe', role: 'admin' as const, mustChange: false },
 		recent: [],
-		vim: false
+		vim: false,
+		autosaveSeconds: 60
 	};
 	const params = {};
 </script>

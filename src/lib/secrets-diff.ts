@@ -59,39 +59,10 @@ export function diffSecrets(
 	return diffLines(a, b);
 }
 
-/** Split-pane pairing. LCS output arrives as alternating same / del-run /
- *  add-run (diffLines always flushes dels before adds in a change block);
- *  pair them index-for-index and null-pad the shorter side so both panes
- *  keep the SAME row count — the Gitlab alignment that makes scanning work. */
-export type SplitRow = { left: DiffOp | null; right: DiffOp | null };
-
-export function alignDiff(ops: DiffOp[]): SplitRow[] {
-	const rows: SplitRow[] = [];
-	let i = 0;
-	while (i < ops.length) {
-		if (ops[i].kind === 'same') {
-			const text = ops[i].text;
-			rows.push({
-				left: { kind: 'same', text },
-				right: { kind: 'same', text }
-			});
-			i++;
-			continue;
-		}
-		const dels: string[] = [];
-		const adds: string[] = [];
-		while (i < ops.length && ops[i].kind === 'del') dels.push(ops[i++].text);
-		while (i < ops.length && ops[i].kind === 'add') adds.push(ops[i++].text);
-		const height = Math.max(dels.length, adds.length);
-		for (let k = 0; k < height; k++) {
-			rows.push({
-				left: k < dels.length ? { kind: 'del', text: dels[k] } : null,
-				right: k < adds.length ? { kind: 'add', text: adds[k] } : null
-			});
-		}
-	}
-	return rows;
-}
+/** Split-pane pairing lives in the generic engine (diff.ts) since the post
+ *  diff page shares it — re-exported here so every secrets-compare importer
+ *  keeps its surface. */
+export { alignDiff, type SplitRow } from './diff.ts';
 
 /** The config-shaped view: one row per key, its story on one line. */
 export type TableRow = {
