@@ -1,7 +1,10 @@
 /**
- * Minimal line diff for the secrets version side-sheet (§11.4). LCS over
- * lines — deliberately tiny (no dependency); the diff view is a review aid,
- * not git. Colored via --diff-add/--diff-del additive tokens at the call site.
+ * Minimal line diff — the PURE generic engine (no dependency; the diff view
+ * is a review aid, not git). LCS over lines; colored via --diff-add/--diff-del
+ * additive tokens at the call site. Born for the secrets version side-sheet
+ * (§11.4), generalized when the post editor's diff page needed the same
+ * pairing: SplitRow/alignDiff live HERE because nothing in them is
+ * secret-shaped — they pair any two line sequences.
  */
 export type DiffOp = { kind: 'same' | 'add' | 'del'; text: string };
 
@@ -34,4 +37,39 @@ export function diffLines(before: string, after: string): DiffOp[] {
 	while (i < n) out.push({ kind: 'del', text: a[i++] });
 	while (j < m) out.push({ kind: 'add', text: b[j++] });
 	return out;
+}
+
+/** Split-pane pairing. LCS output arrives as alternating same / del-run /
+ *  add-run (diffLines always flushes dels before adds in a change block);
+ *  pair them index-for-index and null-pad the shorter side so both panes
+ *  keep the SAME row count — the Gitlab alignment that makes scanning work.
+ *  Generic: secrets version-compare and the post diff page both render this. */
+export type SplitRow = { left: DiffOp | null; right: DiffOp | null };
+
+export function alignDiff(ops: DiffOp[]): SplitRow[] {
+	const rows: SplitRow[] = [];
+	let i = 0;
+	while (i < ops.length) {
+		if (ops[i].kind === 'same') {
+			const text = ops[i].text;
+			rows.push({
+				left: { kind: 'same', text },
+				right: { kind: 'same', text }
+			});
+			i++;
+			continue;
+		}
+		const dels: string[] = [];
+		const adds: string[] = [];
+		while (i < ops.length && ops[i].kind === 'del') dels.push(ops[i++].text);
+		while (i < ops.length && ops[i].kind === 'add') adds.push(ops[i++].text);
+		const height = Math.max(dels.length, adds.length);
+		for (let k = 0; k < height; k++) {
+			rows.push({
+				left: k < dels.length ? { kind: 'del', text: dels[k] } : null,
+				right: k < adds.length ? { kind: 'add', text: adds[k] } : null
+			});
+		}
+	}
+	return rows;
 }

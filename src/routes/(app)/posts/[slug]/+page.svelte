@@ -16,5 +16,11 @@
 	the view used to go stale (address bar moved, editor stayed). A different
 	document means a fresh editor; the unsaved-changes guard inside fires
 	first (beforeNavigate confirm). -->
-	<PostEditor post={data.post} tags={data.tags} photos={data.photos} vim={page.data.vim ?? false} />
+	<PostEditor
+		post={data.post}
+		tags={data.tags}
+		photos={data.photos}
+		vim={page.data.vim ?? false}
+		autosaveSeconds={page.data.autosaveSeconds}
+	/>
 {/key}

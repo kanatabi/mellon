@@ -40,6 +40,15 @@
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
+	import {
+		NEW_POST_BUFFER,
+		createEditScheduler,
+		localStoragePostEditStore,
+		sameDraft,
+		type PendingEdit
+	} from '#lib/pending-edit.ts';
+	import { FIELD_LABELS, changedFieldNames } from '#lib/post-diff.ts';
+	import SaveConfirmDialog from '#lib/components/SaveConfirmDialog.svelte';
 	import { setPageCommands, setPhotoTask } from '#lib/page-commands.svelte.ts';
 	import { editField, stateToggle, vocabSubmenu } from '#lib/command-kit.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -58,9 +67,11 @@
 		tags: TagCount[];
 		photos: AdminPhoto[];
 		vim: boolean;
+		/** Autosave staleness bound in seconds (EDITOR_AUTOSAVE_SECONDS via page data). */
+		autosaveSeconds?: number;
 	}
 
-	let { post, tags, photos, vim }: Props = $props();
+	let { post, tags, photos, vim, autosaveSeconds = 60 }: Props = $props();
 
 	const STARTER = `# Untitled
 
@@ -110,6 +121,77 @@ flowchart LR
 	let showPreview = $state(true);
 	let html = $state('');
 	let saving = $state(false);
+
+	// ── Local autosave (the pending-edit port) ──
+	// The buffer never touches the network — explicit save stays the ONLY
+	// server path (the §7 parity doctrine). The port keeps the swap to a
+	// future lumen working-copy a constructor argument, not a rewrite.
+	const editStore = localStoragePostEditStore();
+	// svelte-ignore state_referenced_locally — the knob is static per mount (the page seeds it once)
+	const scheduler = createEditScheduler({
+		seconds: autosaveSeconds,
+		current: () =>
+			dirty
+				? {
+						slug: isNew ? NEW_POST_BUFFER : draft.slug,
+						baseRev: rev,
+						at: Date.now(),
+						draft: $state.snapshot(draft)
+					}
+				: null,
+		store: editStore
+	});
+	// Every draft mutation (re)arms the idle timer while dirty; going clean
+	// (save/publish succeeded) cancels any pending write.
+	$effect(() => {
+		const snap = $state.snapshot(draft);
+		if (!dirty) {
+			scheduler.stop();
+			return;
+		}
+		void snap; // whole-document dependency
+		scheduler.schedule();
+	});
+	// Crash/close flush: localStorage writes are synchronous, so a pagehide
+	// flush catches the tab that closes before the idle timer can fire.
+	$effect(() => {
+		const onHide = () => scheduler.flush();
+		window.addEventListener('pagehide', onHide);
+		return () => window.removeEventListener('pagehide', onHide);
+	});
+	onMount(() => () => scheduler.stop());
+
+	// Restore-on-mount: a buffer that differs from the clean editor is
+	// recovered work — banner it. One that MATCHES (a save raced the unload)
+	// is noise, dropped silently.
+	let restorable = $state<PendingEdit | null>(null);
+	let restorableStale = $state(false);
+	onMount(() => {
+		void (async () => {
+			const slug = isNew ? NEW_POST_BUFFER : (seed?.slug ?? '');
+			const stored = await editStore.read(slug);
+			if (!stored) return;
+			if (!dirty && sameDraft(stored.draft, draft)) {
+				await editStore.clear(slug);
+				return;
+			}
+			restorable = stored;
+			restorableStale = stored.baseRev !== rev;
+		})();
+	});
+	async function restoreBuffer() {
+		if (!restorable) return;
+		draft = { ...restorable.draft, tags: [...restorable.draft.tags] };
+		restorable = null;
+		restorableStale = false;
+		dirty = true; // the buffer IS unsaved work — restore lands dirty
+	}
+	async function discardBuffer() {
+		await editStore.clear(bufferSlug);
+		restorable = null;
+		restorableStale = false;
+	}
+	const bufferSlug = $derived(isNew ? NEW_POST_BUFFER : draft.slug);
 
 	$effect(() => editorRail.init());
 	$effect(() => postSections.init());
@@ -250,7 +332,51 @@ flowchart LR
 	function leave() {
 		guardOff = true;
 		leaveOpen = false;
+		void editStore.clear(bufferSlug); // leaving = dropping the pending work
+		restorable = null;
 		void goto(leaveTo);
+	}
+
+	// ── The save-confirm gate (owner call 2026-11-21): every save/publish
+	// verb with pending changes first asks WHAT changed — names only, values
+	// live on the diff page. Clean saves skip the ceremony (nothing to
+	// review); the palette routes through the same gate (confirmation
+	// theater, §7). Unpublish takes no content — it never asks.
+	let saveAsk = $state<null | 'save' | 'publish'>(null);
+	let changedFields = $state<string[]>([]);
+	function askFields(): string[] {
+		if (isNew || !seed) return FIELD_LABELS.map((f) => f.label); // first save: everything is new
+		return changedFieldNames(draft, seed);
+	}
+	function requestSave() {
+		if (!dirty) {
+			void save();
+			return;
+		}
+		changedFields = askFields();
+		saveAsk = 'save';
+	}
+	function requestPublish() {
+		if (!dirty) {
+			void publish();
+			return;
+		}
+		changedFields = askFields();
+		saveAsk = 'publish';
+	}
+	function confirmAsk() {
+		const intent = saveAsk;
+		saveAsk = null;
+		if (intent === 'publish') void publish();
+		else void save();
+	}
+	function askDiff() {
+		// the diff page holds the authoritative head-vs-pending view; the
+		// buffer rides along, so leaving the editor loses nothing — the guard
+		// stands down for exactly this navigation
+		guardOff = true;
+		saveAsk = null;
+		void goto(`/posts/${draft.slug}/diff`);
 	}
 
 	async function save(): Promise<boolean> {
@@ -260,6 +386,7 @@ flowchart LR
 				if (!draft.slug) draft.slug = slugify(draft.title) || 'untitled';
 				const created = await client.createPost({ ...draft, title: draft.title || 'Untitled' });
 				dirty = false;
+				await editStore.clear(NEW_POST_BUFFER); // saved = clean — the create buffer retires
 				message = { kind: 'ok', text: `created · rev ${created.rev}` };
 				await goto(`/posts/${created.slug}`, {
 					replace: true,
@@ -271,6 +398,9 @@ flowchart LR
 			rev = res.rev;
 			updatedAt = res.updatedAt;
 			dirty = false;
+			await editStore.clear(draft.slug); // saved = clean — the buffer retires
+			restorable = null;
+			restorableStale = false;
 			message = { kind: 'ok', text: `saved · rev ${rev}` };
 			return true;
 		} catch (e) {
@@ -300,6 +430,7 @@ flowchart LR
 				const created = await client.createPost({ ...draft, title: draft.title || 'Untitled' });
 				const res = await client.publishPost(created.slug);
 				dirty = false;
+				await editStore.clear(NEW_POST_BUFFER);
 				message = { kind: 'ok', text: 'created · published' };
 				await goto(`/posts/${res.slug}`, { replace: true, reset: false });
 			} catch (e) {
@@ -350,6 +481,7 @@ flowchart LR
 	async function remove() {
 		await client.deletePost(draft.slug);
 		dirty = false; // deliberate exit — skip the SPA guard
+		await editStore.clear(bufferSlug); // and the pending work is gone with the post
 		await goto('/posts');
 	}
 
@@ -447,11 +579,11 @@ flowchart LR
 	function onKey(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 			e.preventDefault();
-			void save();
+			requestSave();
 		} else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
 			// save must stay reachable with the actions rail collapsed
 			e.preventDefault();
-			void save();
+			requestSave();
 		}
 	}
 
@@ -471,7 +603,7 @@ flowchart LR
 				title: status === 'published' ? 'Save Post' : 'Save draft',
 				group: 'actions',
 				shortcut: '⌘↵',
-				run: () => void save()
+				run: () => requestSave()
 			},
 			status === 'published'
 				? {
@@ -480,7 +612,7 @@ flowchart LR
 						group: 'actions',
 						run: () => void unpublish()
 					}
-				: { id: 'editor.publish', title: 'Publish', group: 'actions', run: () => void publish() }
+				: { id: 'editor.publish', title: 'Publish', group: 'actions', run: () => requestPublish() }
 		];
 		if (!isNew)
 			cmds.push({
@@ -674,6 +806,7 @@ flowchart LR
 		year: 'numeric'
 	});
 	const fmtDay = (iso: string | null) => (iso ? fmtDate.format(new Date(iso)) : '—');
+	const fmtTime = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
 </script>
 
 <svelte:head>
@@ -734,17 +867,68 @@ flowchart LR
 		</div>
 
 		{#if message}
-			<p
+			<div class="flex flex-wrap items-center gap-2">
+				<p
+					transition:slide={{ duration: 180 }}
+					class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
+						? 'bg-brand/10 text-brand'
+						: message.kind === 'conflict'
+							? 'bg-accent text-foreground'
+							: 'text-danger'}"
+					role="status"
+				>
+					{message.text}
+				</p>
+				{#if message.kind === 'conflict'}
+					<!-- The conflict's diff door: head-vs-pending on the diff page,
+					     with save-anyway/discard there — the CAS stays the referee. -->
+					<button
+						type="button"
+						onclick={askDiff}
+						class="rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+					>
+						review diff
+					</button>
+				{/if}
+			</div>
+		{/if}
+
+		{#if restorable}
+			<!-- Autosave restore: the buffer survived a crash/close that the idle
+			     timer (or an earlier tab) did not outlive. -->
+			<div
 				transition:slide={{ duration: 180 }}
-				class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
-					? 'bg-brand/10 text-brand'
-					: message.kind === 'conflict'
-						? 'bg-accent text-foreground'
-						: 'text-danger'}"
+				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-accent bg-accent/40 px-4 py-2.5 text-sm"
 				role="status"
 			>
-				{message.text}
-			</p>
+				<span class="min-w-0 flex-1">
+					Recovered unsaved changes from
+					<span class="font-mono">{fmtTime.format(restorable.at)}</span>{restorableStale
+						? ' — the post was saved elsewhere since'
+						: ''}
+				</span>
+				<button
+					type="button"
+					onclick={askDiff}
+					class="rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				>
+					Review
+				</button>
+				<button
+					type="button"
+					onclick={() => void restoreBuffer()}
+					class="rounded-full border border-brand/40 bg-brand/10 px-3 py-1 font-mono text-xs text-foreground transition-colors hover:border-brand"
+				>
+					Restore
+				</button>
+				<button
+					type="button"
+					onclick={() => void discardBuffer()}
+					class="rounded-full px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-danger"
+				>
+					Discard
+				</button>
+			</div>
 		{/if}
 
 		<!-- Pane area. Narrow editor COLUMN (container 48rem — the rail & nav
@@ -999,7 +1183,7 @@ flowchart LR
 			<button
 				type="button"
 				disabled={saving}
-				onclick={() => void save()}
+				onclick={() => requestSave()}
 				class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
 			>
 				{status === 'published' ? 'Save Post' : 'Save draft'}
@@ -1017,7 +1201,7 @@ flowchart LR
 				<button
 					type="button"
 					disabled={saving}
-					onclick={() => void publish()}
+					onclick={() => requestPublish()}
 					class="w-full rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 				>
 					Publish
@@ -1300,6 +1484,21 @@ flowchart LR
 		{@render railBody(false)}
 	</RailDrawer>
 
+	{#if saveAsk}
+		<SaveConfirmDialog
+			heading={saveAsk === 'publish' ? 'Publish changes?' : 'Save changes?'}
+			changed={changedFields}
+			confirmLabel={saveAsk === 'publish'
+				? 'Publish'
+				: status === 'published'
+					? 'Save Post'
+					: 'Save draft'}
+			canDiff={!isNew}
+			onConfirm={confirmAsk}
+			onCheckDiff={askDiff}
+			onClose={() => (saveAsk = null)}
+		/>
+	{/if}
 	{#if leaveOpen}
 		<Confirm
 			heading="Discard unsaved changes?"
