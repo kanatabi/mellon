@@ -13,6 +13,8 @@
 	import { beforeNavigate, goto, invalidate } from '$app/navigation';
 	import { fade } from 'svelte/transition';
 	import Combobox from '#lib/components/Combobox.svelte';
+	import Textarea from '#lib/components/ui/textarea/textarea.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
@@ -286,18 +288,19 @@
 		<SubCrumb href="/photos" label="photos">
 			<span class="text-foreground select-all">{data.photo.id}</span>
 			<!-- Details key (below lg): the pane lives in a sheet there. -->
-			<button
+			<Button
 				type="button"
-				bind:this={sheetTrigger}
+				variant="soft"
+				class="ml-auto h-9 w-11 shrink-0 rounded-md border border-border bg-card active:scale-[0.98] lg:hidden"
+				bind:ref={sheetTrigger}
 				onclick={() => (detailsSheet = true)}
 				aria-haspopup="dialog"
 				aria-expanded={detailsSheet}
-				class="ml-auto flex h-9 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98] lg:hidden"
 				aria-label="Open details"
 				title="Details"
 			>
 				<Info class="size-4" />
-			</button>
+			</Button>
 		</SubCrumb>
 
 		<!-- Preview canvas: permanently dark so a white photo still reads —
@@ -355,14 +358,14 @@
 					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
 						Metadata
 					</p>
-					<button
+					<Button
 						type="button"
+						variant="soft"
 						onclick={photoRail.toggle}
 						aria-label="Collapse details"
-						class="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<PanelRightClose class="size-4" />
-					</button>
+					</Button>
 				</div>
 				<div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4">
 					{@render paneBody(true)}
@@ -394,11 +397,12 @@
 				{/if}
 				Alt text
 			</span>
-			<textarea
-				rows="2"
-				class="resize-y rounded-md border border-border bg-transparent px-3 py-2 text-sm transition-colors outline-none focus-visible:border-brand"
+			<Textarea
+				rows={2}
+				class="transition-colors"
 				bind:value={draft.alt}
-				placeholder="describe the image for readers and search…"></textarea>
+				placeholder="describe the image for readers and search…"
+			/>
 		</label>
 
 		<div class="flex flex-col gap-1.5">
@@ -480,15 +484,16 @@
 		<div class="flex flex-col gap-1 font-mono text-[10px] leading-relaxed text-muted-foreground">
 			<span>{data.photo.width}×{data.photo.height} · created {fmtDate(data.photo.createdAt)}</span>
 			<span class="flex items-center gap-1.5">
-				<button
+				<Button
 					type="button"
+					variant="soft"
+					class="shrink-0 rounded border-border"
 					onclick={() => void copyLink()}
 					aria-label="Copy link"
 					title="Copy link"
-					class="shrink-0 rounded border border-border p-1 transition-colors hover:text-foreground"
 				>
 					<Link class="size-3" />
-				</button>
+				</Button>
 				<span class="min-w-0 truncate select-all" title={data.photo.src}>{data.photo.src}</span>
 			</span>
 			{#if failed}
@@ -504,14 +509,15 @@
 			: ''}"
 	>
 		<div class="flex items-center gap-3">
-			<button
+			<Button
 				type="button"
+				variant="primary"
+				class="active:scale-[0.98] disabled:opacity-40"
 				onclick={() => void save()}
 				disabled={!dirty || saving}
-				class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
 			>
 				{saving ? 'saving…' : 'Save changes'}
-			</button>
+			</Button>
 			{#if saved}
 				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 180 }}>
 					Saved
@@ -519,20 +525,22 @@
 			{/if}
 		</div>
 		<div class="flex gap-2">
-			<button
+			<Button
 				type="button"
+				variant="quiet"
+				class="gap-1.5 active:scale-[0.98]"
 				onclick={() => void download()}
-				class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 			>
 				<Download class="size-3.5" /> Download image
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
+				variant="quiet"
+				class="gap-1.5 border-danger/40 hover:bg-danger/10 hover:text-danger active:scale-[0.98]"
 				onclick={() => (confirmDelete = true)}
-				class="flex items-center gap-1.5 rounded-full border border-danger/40 px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger active:scale-[0.98]"
 			>
 				<Trash2 class="size-3.5" /> Delete image
-			</button>
+			</Button>
 		</div>
 		<!-- gallery semantics echo (rail only, quiet) -->
 		{#if rail}

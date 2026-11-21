@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { ArrowLeftRight, Eye, EyeOff, GitCompareArrows, WrapText } from 'lucide-svelte';
 	import Select from '#lib/components/Select.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import { stateToggle } from '#lib/command-kit.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import type { Command } from '#lib/commands.ts';
@@ -239,14 +240,15 @@
 				popWidth={340}
 			/>
 		</label>
-		<button
+		<Button
 			type="button"
 			onclick={swap}
 			aria-label="Swap versions"
-			class="rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+			variant="soft"
+			class="border-border p-1.5"
 		>
 			<ArrowLeftRight class="size-3.5" />
-		</button>
+		</Button>
 	</div>
 
 	<!-- presentation + content + reveal -->
@@ -291,7 +293,7 @@
 				</button>
 			{/each}
 		</div>
-		<button
+		<Button
 			type="button"
 			onclick={() => (wrap = !wrap)}
 			aria-pressed={wrap}
@@ -300,25 +302,25 @@
 				? 'Table cells wrap on their own — wrap applies to split/inline'
 				: 'Wrap long diff lines instead of scrolling'}
 			disabled={presentation === 'table'}
-			class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors disabled:opacity-40 {wrap
-				? 'text-foreground'
-				: 'text-muted-foreground hover:text-foreground'}"
+			variant="quiet"
+			class="gap-1.5 disabled:opacity-40 {wrap ? 'text-foreground' : 'hover:text-foreground'}"
 		>
 			<WrapText class="size-3.5" />
-			Wrap
-		</button>
-		<button
+			Wrap</Button
+		>
+		<Button
 			type="button"
 			onclick={() => (revealAll = !revealAll)}
 			aria-pressed={revealAll}
 			aria-label={revealAll ? 'Hide all values' : 'Show all values'}
-			class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-xs transition-colors {revealAll
+			variant="quiet"
+			class="gap-1.5 {revealAll
 				? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
-				: 'border-border text-muted-foreground hover:text-foreground'}"
+				: 'hover:text-foreground'}"
 		>
 			{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-			{revealAll ? 'Hide values' : 'Show values'}
-		</button>
+			{revealAll ? 'Hide values' : 'Show values'}</Button
+		>
 		{#if presentation === 'table'}
 			<label class="ml-auto flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
 				<input type="checkbox" bind:checked={hideSame} class="accent-[var(--brand)]" />

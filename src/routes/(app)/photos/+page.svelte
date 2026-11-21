@@ -25,6 +25,8 @@
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams, SvelteSet } from 'svelte/reactivity';
 	import Combobox from '#lib/components/Combobox.svelte';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import DateRange from '#lib/components/DateRange.svelte';
 	import ImagePicker from '#lib/components/ImagePicker.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
@@ -421,13 +423,14 @@
 						<Table class="size-3.5" /> Table
 					</button>
 				</div>
-				<button
+				<Button
 					type="button"
+					variant="quiet"
+					class="gap-2 px-4 py-2 text-sm hover:border-brand active:scale-[0.98]"
 					onclick={() => (pickerOpen = true)}
-					class="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-brand hover:text-foreground active:scale-[0.98]"
 				>
 					<Plus class="size-4" /> Upload Photos
-				</button>
+				</Button>
 			</div>
 		</div>
 
@@ -440,25 +443,26 @@
 				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
 				aria-hidden="true"
 			/>
-			<input
+			<Input
 				type="text"
 				bind:value={qInput}
 				oninput={searchSoon}
 				autocomplete="off"
 				aria-label="Search photos"
 				placeholder="search photos — alt text, collections"
-				class="w-full rounded-lg border border-border bg-card py-2 pr-9 pl-9 font-mono text-xs outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-brand/40"
+				class="w-full py-2 pr-9 pl-9 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
 			/>
 			{#if qInput}
-				<button
+				<Button
 					type="button"
+					variant="soft"
+					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
 					onclick={clearSearch}
 					aria-label="Clear search"
 					title="Clear search"
-					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X class="size-3.5" />
-				</button>
+				</Button>
 			{/if}
 		</div>
 
@@ -497,26 +501,28 @@
 					<X class="size-3" /> clear
 				</a>
 			{/if}
-			<button
+			<Button
 				type="button"
+				variant="quiet"
+				class="shrink-0 gap-1.5 self-start py-1"
 				onclick={selectAll}
-				class="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Check class="size-3" />
 				{selection.size === rows.length && rows.length > 0 ? 'deselect all' : 'select all'}
-			</button>
+			</Button>
 			<!-- Sheet trigger (phones only): collections + dates + sort live behind it. -->
-			<button
+			<Button
 				type="button"
-				bind:this={filtersTrigger}
+				variant="soft"
+				class="relative ml-auto h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
+					? 'border-brand bg-brand/10 text-foreground'
+					: 'border-border text-muted-foreground hover:text-foreground'}"
+				bind:ref={filtersTrigger}
 				onclick={() => (filtersSheet = true)}
 				aria-haspopup="dialog"
 				aria-expanded={filtersSheet}
 				aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
 				title="Filters"
-				class="relative ml-auto flex h-9 w-11 shrink-0 items-center justify-center rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
-					? 'border-brand bg-brand/10 text-foreground'
-					: 'border-border text-muted-foreground hover:text-foreground'}"
 			>
 				<SlidersHorizontal class="size-4" />
 				{#if sheetCount}
@@ -525,7 +531,7 @@
 						>{sheetCount}</span
 					>
 				{/if}
-			</button>
+			</Button>
 		</div>
 
 		<!-- Bulk bar: appears only with a live selection (owner call — curation is
@@ -549,28 +555,31 @@
 						onchange={(next) => void bulk({ collection: next[0] ?? null })}
 					/>
 				</div>
-				<button
+				<Button
 					type="button"
+					variant="quiet"
+					class="gap-1.5 py-1"
 					onclick={() => void bulk({ gallery: true })}
-					class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<Eye class="size-3" /> in gallery
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					variant="quiet"
+					class="gap-1.5 py-1"
 					onclick={() => void bulk({ gallery: false })}
-					class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<EyeOff class="size-3" /> out
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
+					variant="soft"
+					class="ml-auto rounded-full p-1.5"
 					onclick={() => selection.clear()}
 					aria-label="Clear selection"
-					class="ml-auto rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X class="size-3.5" />
-				</button>
+				</Button>
 			</div>
 		{/if}
 

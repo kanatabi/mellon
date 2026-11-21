@@ -399,48 +399,93 @@ copy-paste. The look does not change.
 
 ### 3.1 Vendored + restyle (1 d)
 
-- [ ] Add `input label textarea checkbox switch separator badge` + `button`.
-- [ ] `ui/button/button.svelte` — variant map to the cast, not to shadcn:
-      `quiet` (outlined, `border-border`, foreground), `primary`
-      (`bg-brand text-background` — the one violet verb), `danger`
-      (`text-danger`, destructive copy only), `ghost` (hover `bg-accent/60`),
-      `icon` (the 36px/40px square languages), `kbd`/`pill` if the sweep shows
-      need. Sizes: `sm`/`md` matching current `px-3 py-2` / `px-4 py-2`.
-- [ ] `ui/label` — add the house `mono` variant (the 18×
+- [x] Add `input label textarea checkbox switch separator badge` + `button`.
+      **SCOPED (2026-11-21, evidence):** vendored `label textarea` ONLY. `input`,
+      `separator`, `button`, `sheet` already arrived with the S2 block; **no
+      `switch` and no `checkbox`** — the tree's toggles are native
+      `accent-[var(--brand)]` checkboxes (settings, compare, photos), and
+      converting them to a boxed-check CHANGES the look, breaking S3's zero-diff
+      goal; **no `badge`** — Pill/StatusPill are the moat (§1.2). The CLI's
+      `@internationalized/date` closure addition removed again (S4's import).
+- [x] `ui/button/button.svelte` — variant map to the cast, mapped from the
+      tree's REAL grammar (48-button evidence sweep, not the plan's guess):
+      `primary` (NEW: the violet **pill** — `rounded-full bg-brand text-white
+  hover:brightness-110`; the plan's "sizes sm/md rectangles" misread the
+      tree), `quiet` (the mono outlined chip), `danger` (the destructive pill —
+      border-danger/40 + hover wash), `soft` (the pages' text-only ghost square:
+      `p-1 hover:text-foreground`, NO bg wash — the plan's "ghost
+      (hover bg-accent/60)" had zero evidence). Registry names (`default`,
+      `ghost`, `outline`, `secondary`, `destructive`, `link`) UNCHANGED for the
+      vendored overlays (dialog X, sheet close, sidebar trigger). Sizes: `sm`/
+      `md` pills' paddings exist as evidence lines; the pill shape rides the
+      VARIANT, not the size.
+      **FINDING (the ordering trap):** tailwind-variants emits variant groups in
+      DEFINITION order — `variant` defined before `size` meant the default
+      size's `h-8 px-2.5` emitted AFTER the cast's `h-auto px-3 py-1.5` and won.
+      Fixed by defining `size` FIRST; pinned by the quiet test. And the destructure
+      defaults are the real defaults (tv's defaultVariants are shadowed by Svelte 5
+      destructuring) — registry defaults restored; the sweep passes variants
+      EXPLICITLY at every call site.
+- [x] `ui/label` — the house `mono` variant (the 12×
       `text-xs font-medium tracking-widest text-muted-foreground uppercase`).
-- [ ] `ui/input` — adopt the repeated class verbatim, with `aria-invalid`
-      styling on `--danger`:
-
-  ```
-  rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm
-  outline-none focus-visible:border-brand
-  ```
-
-- [ ] Focus ring: `--ring` = brand, `focus-visible:` only (never `focus:`).
+      Wrapper labels stay raw `<label>`: the mono caption is a span INSIDE the
+      implicit-association wrapper — a Label there would nest labels (invalid
+      HTML).
+- [x] `ui/input` — the repeated class verbatim (the 10× line: bg-card field,
+      mono, `focus-visible:border-brand`) + `aria-invalid:border-danger`;
+      `w-full` and placeholder color are call-site decisions (the verbatim line
+      carries neither).
+- [x] `ui/textarea` — the photos/[id] line verbatim (the tree's only textarea
+      outside the moat).
+- [x] Focus ring: `--ring` = brand (from S1), `focus-visible:` only — the
+      intended one-diff: pills previously had NO visible focus (outline-none,
+      no styles); the base ring lands on every cast button now.
+- [x] Tests: `forms-cast.dom.test.ts` — 6 tests (the pill anatomy, the quiet
+      chip + the tv-ordering pin, ghost-stays-registry, the house field lines,
+      the mono label). `harness.dom.test.ts` unchanged in intent (default is
+      still the registry's `bg-primary`).
 
 ### 3.2 Sweep, page by page (1.6 d)
 
 Each page: replace raw elements, **no layout changes**, verify with the P2
 screenshot.
 
-- [ ] `login` (75 lines) — inputs, submit, error block
-- [ ] `setup` (138) — wizard fields, validation states
-- [ ] `settings` (200) — appearance/security cards, toggles
-- [ ] `admin/users` (166) — table rows, role selects (select swap is S4;
-      keep the trigger styling aligned), dialogs' buttons
-- [ ] `configs` (147) + `configs/compare` (442) — filter row, diff controls
-- [ ] `configs/vault` (909) — env tabs, key rows, mask/copy keys, CAS save bar
-- [ ] `posts` (661) — filter row, date range trigger (calendar in S4), bulk bar
-- [ ] `tags` (596) — row dialogs, bulk actions
-- [ ] `photos` (1003) — gallery strip, filter row, bulk bar, tile/row controls
-- [ ] Count the residue: `<button` and `<input` should be ~0 outside
-      `PostEditor`/`Palette`/`ImagePicker`, where bespoke grammar is intended.
+- [x] `login` (75 lines) — inputs, submit, error block
+- [x] `setup` (138) — wizard fields, validation states (the ghost-field guard
+      learned to read `<Input`)
+- [x] `settings` (200) — appearance/security cards, native checkbox untouched
+- [x] `admin/users` (166) — dialog fields, Create pill, reset chip (quiet +
+      amber hover + inherited text kept)
+- [x] `configs` (147) — no raw controls (all via hand-rolled Select until S4)
+- [x] `configs/compare` (442) — swap square (soft+border), Wrap + reveal pills;
+      presentation groups deferred to S5 toggle-group
+- [x] `configs/vault` (909) — 12 conversions; the env tabs, inline cell
+      editors, history text chips, pin-offer micro-buttons, and the
+      `use:focusOnMount` dialog fields stay raw (actions can't ride components)
+- [x] `posts` (661) — search, clear-X, filters trigger (bind:ref focus-return),
+      rail collapse; status chips are `<a>` links (navigation, not buttons)
+- [x] `tags` (596) — 15 conversions incl. the danger delete and the stateful
+      featured pill (quiet's inactive branch is the exact anatomy)
+- [x] `photos` (1003) / `photos/[id]` (558) — search, Upload Photos, sheet
+      triggers, bulk bar, the Save/Download/Delete band, the alt-text Textarea
+- [x] Count the residue: **77 `<button>` + 20 `<input>` outside `ui/`** —
+      the moat (PostEditor 20+3+2, Palette, ImagePicker, the S4/S5-doomed
+      widgets), brand furniture (⌘K pill, ThemeSegmented, Pill, SectionCard,
+      UserMenu), the stateful segmented/toggle chips (S5), inline cell editors,
+      hidden carriers, and action-bound fields. **Page-level ACTION buttons: 0.**
 
 ### 3.3 Close S3 (0.4 d)
 
-- [ ] Gates green; keyboard walk of every form; `aria-invalid` + error copy
-      still verbatim (ghost-field).
-- [ ] Screenshots: empty diff except intended focus-ring unification.
+- [x] Gates green, standalone — prettier ✅ eslint ✅ svelte-check 0/0 ✅
+      **190 passed / 6 skipped** ✅ build ✅.
+- [ ] Screenshots: empty diff except intended focus-ring unification — owner's
+      step. The keyboard walk: every cast button now shows the brand ring.
+
+**S3 state line:** the cast exists and the pages ride it — primary/quiet/
+danger/soft + registry compatibility, house input/textarea/label lines,
+bundle **1,867 KiB gz** (S2: 1,891 — the repeated class strings left the
+client chunks); the 448.8 KiB editor chunk held its boundary (~10 KiB drifted
+inside it). The residue ledger above is the honest count.
 
 ---
 

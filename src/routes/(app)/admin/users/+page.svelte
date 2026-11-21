@@ -3,6 +3,8 @@
 	import { enhance } from '$app/forms';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as Select from '#lib/components/ui/select/index.js';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -104,13 +106,12 @@
 					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
 						>username</span
 					>
-					<input
+					<Input
 						type="text"
 						name="username"
 						required
 						pattern={'^[a-z0-9][a-z0-9.\-_]{1,31}$'}
 						title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
-						class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand"
 					/>
 				</label>
 				<label class="flex flex-col gap-1.5">
@@ -135,13 +136,10 @@
 					<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
 				{/if}
 				<Dialog.Footer>
-					<button
-						type="submit"
-						class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
-					>
+					<Button type="submit">
 						<UserPlus class="size-4" aria-hidden="true" />
 						Create
-					</button>
+					</Button>
 				</Dialog.Footer>
 			</form>
 		</Dialog.Content>
@@ -184,12 +182,13 @@
 								}}
 							>
 								<input type="hidden" name="username" value={u.username} />
-								<button
+								<Button
 									type="submit"
-									class="rounded-full border border-border px-3 py-1 transition-colors hover:border-accent-amber/60 hover:text-accent-amber"
+									variant="quiet"
+									class="py-1 text-inherit hover:border-accent-amber/60 hover:text-accent-amber"
 								>
 									Issue new temp
-								</button>
+								</Button>
 							</form>
 						</td>
 					</tr>
