@@ -13,3 +13,12 @@ export const navigating = { to: null, from: null };
 // vim toggle; goto by the palette commands).
 export async function invalidateAll() {}
 export async function goto() {}
+
+// $app/forms — the enhance stub passes the action through untouched (the
+// dialog tests don't submit).
+export function enhance(form: unknown, submit?: unknown) {
+	if (typeof submit === 'function') {
+		return (submit as (o: unknown) => unknown)({ form, cancel: () => {}, controller: null });
+	}
+	return undefined;
+}

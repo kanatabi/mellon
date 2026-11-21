@@ -33,7 +33,8 @@ export default defineConfig({
 						// plugins by design (SHADCN-PLAN 1.6).
 						'$app/state': '/src/lib/testing/app-state-stub.ts',
 						'$app/env': '/src/lib/testing/app-state-stub.ts',
-						'$app/navigation': '/src/lib/testing/app-state-stub.ts'
+						'$app/navigation': '/src/lib/testing/app-state-stub.ts',
+						'$app/forms': '/src/lib/testing/app-state-stub.ts'
 					}
 				},
 				plugins: [
