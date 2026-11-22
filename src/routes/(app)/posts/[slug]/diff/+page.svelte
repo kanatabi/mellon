@@ -307,26 +307,72 @@
 			     explains its own pane. ONE snippet renders both views' pairs;
 			     the chevron rides the FIRST instance only and collapses the
 			     whole comparison (the table is one grid — no per-side split). -->
-				{#snippet paneHeader(title: string, stat: string, statCls: string, withChevron: boolean)}
+				{#snippet diffCells(row: (typeof splitRows)[number], side: 'left' | 'right')}
+					{@const op = side === 'left' ? row.left : row.right}
+					{@const no = side === 'left' ? row.ln.left : row.ln.right}
+					<span
+						class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
+						>{no ?? ''}</span
+					>
+					<span
+						class="text-center select-none {op?.kind === 'del'
+							? 'text-diff-del'
+							: op?.kind === 'add'
+								? 'text-diff-add'
+								: ''}"
+					>
+						{op?.kind === 'del' ? '−' : op?.kind === 'add' ? '+' : ''}
+					</span>
+					<span
+						class="min-w-0 break-words whitespace-pre-wrap {op?.kind === 'same'
+							? ''
+							: DIFF_BLOCK[op?.kind ?? 'same']} {op?.kind === 'del'
+							? 'text-diff-del'
+							: op?.kind === 'add'
+								? 'text-diff-add'
+								: ''}"
+					>
+						{op?.text ?? '\u00A0'}
+					</span>
+				{/snippet}
+
+				{#snippet paneHeader(
+					title: string,
+					stat: string,
+					statCls: string,
+					withChevron: boolean,
+					description = ''
+				)}
 					<div class="flex h-full items-center gap-2 px-3 py-2">
 						{#if withChevron}
 							<button
 								type="button"
-								class="grid size-6 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:text-foreground"
+								class="shrink-0 rounded text-muted-foreground transition-colors hover:text-foreground"
 								aria-expanded={mdOpen}
 								aria-label={mdOpen ? 'Collapse diff' : 'Expand diff'}
 								onclick={() => (mdOpen = !mdOpen)}
 							>
-								<ChevronDown class="size-4 transition-transform {mdOpen ? '' : '-rotate-90'}" />
+								<ChevronDown
+									class="size-3.5 transition-transform duration-200 {mdOpen ? '' : '-rotate-90'}"
+								/>
 							</button>
 						{/if}
-						<!-- The chrome voice: tracked mono, like every other pane label —
-						     the header is an indicator, not a headline (owner call). -->
-						<h2
-							class="min-w-0 truncate font-mono text-[11px] tracking-widest text-muted-foreground uppercase"
+						<!-- the trace's icon chip (the owner's reference): the file-diff
+						     glyph in the rounded-square chip, both cells wear it -->
+						<span
+							class="flex size-5 shrink-0 items-center justify-center rounded border border-border bg-card"
+							aria-hidden="true"
 						>
-							{title}
-						</h2>
+							<FileDiff class="size-3 text-muted-foreground" />
+						</span>
+						<h2 class="min-w-0 truncate font-mono text-[11px] text-foreground">{title}</h2>
+						{#if description}
+							<span
+								class="hidden shrink-0 truncate font-mono text-[10px] text-muted-foreground/70 lg:block"
+							>
+								{description}
+							</span>
+						{/if}
 						<span class="ml-auto shrink-0 font-mono text-[11px] tabular-nums {statCls}">{stat}</span
 						>
 					</div>
@@ -340,19 +386,20 @@
 						class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
 						<div
-							class="grid shrink-0 grid-cols-1 border-b border-border bg-muted/30 md:grid-cols-2"
+							class="grid shrink-0 grid-cols-1 border-b border-border/60 bg-muted md:grid-cols-2"
 						>
 							{@render paneHeader(
-								`HEAD · rev ${data.post.rev}`,
+								`saved (head) · rev ${data.post.rev}`,
 								`−${stats.dels}`,
 								'text-diff-del',
 								true
 							)}
 							{@render paneHeader(
-								`PENDING · forked from rev ${pending.baseRev}`,
+								'pending',
 								`+${stats.adds}`,
 								'text-diff-add',
-								false
+								false,
+								`forked from rev ${pending.baseRev}`
 							)}
 						</div>
 						{#if mdOpen}
@@ -366,24 +413,18 @@
 										</div>
 									{:else}
 										{#each region.rows as row, j (j)}
+											<!-- THE SAME diffCells as the full view — the numbers,
+											     the ± signs, the gutters: the blank context lines
+											     read as file lines, never as voids (one snippet,
+											     the markup cannot drift). -->
 											<div class="grid grid-cols-1 gap-px md:grid-cols-2">
 												<div
-													class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap md:border-r md:border-border/40 {lineCls(
-														row.left?.kind
-													)} {row.left?.kind === 'same'
-														? ''
-														: DIFF_BLOCK[row.left?.kind ?? 'same']}"
+													class="grid grid-cols-[2.75rem_1.25rem_minmax(0,1fr)] md:border-r md:border-border/40"
 												>
-													{row.left?.text ?? ''}
+													{@render diffCells(row, 'left')}
 												</div>
-												<div
-													class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap {lineCls(
-														row.right?.kind
-													)} {row.right?.kind === 'same'
-														? ''
-														: DIFF_BLOCK[row.right?.kind ?? 'same']}"
-												>
-													{row.right?.text ?? ''}
+												<div class="grid grid-cols-[2.75rem_1.25rem_minmax(0,1fr)]">
+													{@render diffCells(row, 'right')}
 												</div>
 											</div>
 										{/each}
@@ -398,34 +439,6 @@
 					     = the Saved/Pending TABS (one pane at a time — the stacked full
 					     documents = the endless duplicated scroll). ONE snippet pair
 					     renders both modes: the markup cannot drift. -->
-					{#snippet diffCells(row: (typeof splitRows)[number], side: 'left' | 'right')}
-						{@const op = side === 'left' ? row.left : row.right}
-						{@const no = side === 'left' ? row.ln.left : row.ln.right}
-						<span class="text-right text-muted-foreground/50 tabular-nums select-none"
-							>{no ?? ''}</span
-						>
-						<span
-							class="text-center select-none {op?.kind === 'del'
-								? 'text-diff-del'
-								: op?.kind === 'add'
-									? 'text-diff-add'
-									: ''}"
-						>
-							{op?.kind === 'del' ? '−' : op?.kind === 'add' ? '+' : ''}
-						</span>
-						<span
-							class="min-w-0 break-words whitespace-pre-wrap {op?.kind === 'same'
-								? ''
-								: DIFF_BLOCK[op?.kind ?? 'same']} {op?.kind === 'del'
-								? 'text-diff-del'
-								: op?.kind === 'add'
-									? 'text-diff-add'
-									: ''}"
-						>
-							{op?.text ?? '\u00A0'}
-						</span>
-					{/snippet}
-
 					<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
 					     the line-number gutters, the ± signs, the tints per side —
 					     the pane headers sit over their panes (the owner's indicator
@@ -439,11 +452,11 @@
 							class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
 						>
 							<div
-								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border bg-muted/30"
+								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border/60 bg-muted"
 							>
 								<div class="col-span-3">
 									{@render paneHeader(
-										`HEAD · rev ${data.post.rev}`,
+										`saved (head) · rev ${data.post.rev}`,
 										`−${stats.dels}`,
 										'text-diff-del',
 										true
@@ -451,10 +464,11 @@
 								</div>
 								<div class="col-span-3">
 									{@render paneHeader(
-										`PENDING · forked from rev ${pending.baseRev}`,
+										'pending',
 										`+${stats.adds}`,
 										'text-diff-add',
-										false
+										false,
+										`forked from rev ${pending.baseRev}`
 									)}
 								</div>
 							</div>
@@ -482,7 +496,7 @@
 						<div class="overflow-hidden rounded-lg border border-border bg-card">
 							<TraceRow title="saved (head) · rev {data.post.rev}" bind:open={headOpen}>
 								{#each splitRows as row, i (i)}
-									<div class="grid grid-cols-[2rem_1rem_1fr] divide-x divide-border/40">
+									<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
 										{@render diffCells(row, 'left')}
 									</div>
 								{/each}
@@ -493,7 +507,7 @@
 								bind:open={pendingOpen}
 							>
 								{#each splitRows as row, i (i)}
-									<div class="grid grid-cols-[2rem_1rem_1fr] divide-x divide-border/40">
+									<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
 										{@render diffCells(row, 'right')}
 									</div>
 								{/each}

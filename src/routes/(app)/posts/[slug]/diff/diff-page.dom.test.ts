@@ -72,9 +72,9 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		// PANE HEADERS (the owner's indicator row: HEAD −dels over the left
 		// pane, PENDING +adds over the right — one chevron, the cells sit
 		// over their panes); the l0 line renders in the both modes' both sides
-		expect(getAllByText('saved (head) · rev 3')).toHaveLength(1); // the trace row
-		expect(getByText('HEAD · rev 3')).toBeTruthy(); // the left pane's header
-		expect(getByText('PENDING · forked from rev 3')).toBeTruthy(); // the right's
+		expect(getAllByText('saved (head) · rev 3')).toHaveLength(2); // the trace row + the desktop header cell
+		expect(getAllByText('pending', { exact: false }).length).toBeGreaterThanOrEqual(2);
+		expect(getByText('forked from rev 3')).toBeTruthy(); // the right cell's note (the mobile's is the longer line)
 		expect(getByText('+3')).toBeTruthy(); // the additions, on the PENDING header
 		expect(getByText('−1')).toBeTruthy(); // the deletions, on the HEAD header
 		expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2);
@@ -91,13 +91,13 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		await fireEvent.click(getByRole('button', { name: 'Changed only' }));
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 		expect(getByRole('button', { name: 'Show all lines' })).toBeTruthy();
-		expect(getByText('HEAD · rev 3')).toBeTruthy();
-		expect(getByText('PENDING · forked from rev 3')).toBeTruthy();
+		expect(getByText('saved (head) · rev 3', { selector: 'h2' })).toBeTruthy();
+		expect(getByText('pending', { selector: 'h2' })).toBeTruthy();
 		// the regions view's chevron collapses ITS body too (the shared
 		// mdOpen — one comparison body across both views)
 		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
 		expect(() => getByText(/1 unchanged line/)).toThrow();
-		expect(getByText('HEAD · rev 3')).toBeTruthy(); // the indicator bar stays
+		expect(getByText('saved (head) · rev 3', { selector: 'h2' })).toBeTruthy(); // the indicator bar stays
 		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 		// the trailing token is a real, visible add — never an invisible strip
