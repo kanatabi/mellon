@@ -72,7 +72,7 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		// branch + the md+'s grid share the snippets; the CSS decides the
 		// visibility) — the head's label exists in both modes; the l0 line
 		// renders in both sides of both modes
-		expect(getAllByText('saved (head) · rev 3')).toHaveLength(2);
+		expect(getAllByText('saved (head) · rev 3')).toHaveLength(3); // the mobile's trace row + the both modes' pane labels
 		expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2);
 		// the toggle collapses: a gap band + the changes highlighted
 		await fireEvent.click(getByRole('button', { name: 'Changed only' }));

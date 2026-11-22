@@ -5,6 +5,7 @@
 	import { fade } from 'svelte/transition';
 	import { FileDiff, List, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
+	import TraceRow from '#lib/components/TraceRow.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client, errorText } from '#lib/api/client.ts';
 	import type { PostDetailAdmin } from '#lib/api/types.ts';
@@ -375,38 +376,29 @@
 						</div>
 					{/snippet}
 
-					<div class="md:hidden">
-						<div
-							class="mb-3 flex w-fit gap-1 rounded-full border border-border bg-card p-1"
-							role="tablist"
-							aria-label="Comparison side"
-						>
-							<button
-								type="button"
-								role="tab"
-								aria-selected={fullTab === 'head'}
-								onclick={() => (fullTab = 'head')}
-								class="rounded-full px-3 py-1 font-mono text-xs transition-colors {fullTab ===
-								'head'
-									? 'bg-brand/15 text-foreground'
-									: 'text-muted-foreground hover:text-foreground'}"
+					<div class="flex flex-col gap-2 overflow-hidden md:hidden">
+						<!-- THE TRACE ROWS (the shadcn Trace's anatomy, ported onto the
+						     kit's Collapsible): both documents EXIST on the phone — the
+						     same semantics as the desktop's split, stacked collapsed.
+						     The pending = open by default (the review's eye); the scroll
+						     = inside the open body (the headers never leave). -->
+						<div class="overflow-hidden rounded-lg border border-border bg-card">
+							<TraceRow
+								title="saved (head) · rev {data.post.rev}"
+								open={fullTab === 'head'}
+								onOpenChange={(v) => (fullTab = v ? 'head' : 'pending')}
 							>
-								saved (head)
-							</button>
-							<button
-								type="button"
-								role="tab"
-								aria-selected={fullTab === 'pending'}
-								onclick={() => (fullTab = 'pending')}
-								class="rounded-full px-3 py-1 font-mono text-xs transition-colors {fullTab ===
-								'pending'
-									? 'bg-brand/15 text-foreground'
-									: 'text-muted-foreground hover:text-foreground'}"
+								{@render headPane()}
+							</TraceRow>
+							<TraceRow
+								title="pending"
+								description="forked from rev {pending.baseRev}"
+								open={fullTab === 'pending'}
+								onOpenChange={(v) => (fullTab = v ? 'pending' : 'head')}
 							>
-								pending
-							</button>
+								{@render pendingPane()}
+							</TraceRow>
 						</div>
-						{#if fullTab === 'head'}{@render headPane()}{:else}{@render pendingPane()}{/if}
 					</div>
 
 					<div class="hidden gap-4 md:grid md:grid-cols-2">
