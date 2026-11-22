@@ -123,7 +123,6 @@ flowchart LR
 	let publishedAt = $state(seed?.publishedAt ?? null);
 	let dirty = $state(false);
 	let slugTouched = $state(false);
-	let message = $state<{ kind: 'ok' | 'err' | 'conflict'; text: string } | null>(null);
 	let showPreview = $state(true);
 	let html = $state('');
 	let saving = $state(false);
@@ -424,7 +423,6 @@ flowchart LR
 
 	function touch() {
 		dirty = true;
-		message = null;
 	}
 
 	// Unsaved-changes guards (M4b): the browser prompt on reload/close, and a
@@ -514,7 +512,7 @@ flowchart LR
 				const created = await client.createPost({ ...draft, title: draft.title || 'Untitled' });
 				dirty = false;
 				await editStore.clear(NEW_POST_BUFFER); // saved = clean — the create buffer retires
-				message = { kind: 'ok', text: `created · rev ${created.rev}` };
+				flash({ kind: 'ok', title: 'Created', description: `revision ${created.rev}` });
 				await goto(`/posts/${created.slug}`, {
 					replace: true,
 					reset: false
@@ -528,16 +526,24 @@ flowchart LR
 			await editStore.clear(draft.slug); // saved = clean — the buffer retires
 			restorable = null;
 			restorableStale = false;
-			message = { kind: 'ok', text: `saved · rev ${rev}` };
+			flash({ kind: 'ok', title: 'Saved', description: `revision ${rev}` });
 			return true;
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 409) {
-				message = {
-					kind: 'conflict',
-					text: 'conflict: someone saved first — reload to take theirs'
-				};
+				flash({
+					kind: 'warn',
+					title: 'Save conflict',
+					description: 'someone saved first — reload to take theirs',
+					sticky: true,
+					action: { label: 'Review diff', run: askDiff }
+				});
 			} else {
-				message = { kind: 'err', text: e instanceof Error ? e.message : 'save failed' };
+				flash({
+					kind: 'danger',
+					title: 'Save failed',
+					description: e instanceof Error ? e.message : 'unknown error',
+					sticky: true
+				});
 			}
 			return false;
 		} finally {
@@ -558,10 +564,15 @@ flowchart LR
 				const res = await client.publishPost(created.slug);
 				dirty = false;
 				await editStore.clear(NEW_POST_BUFFER);
-				message = { kind: 'ok', text: 'created · published' };
+				flash({ kind: 'ok', title: 'Published', description: 'the post is live on the blog' });
 				await goto(`/posts/${res.slug}`, { replace: true, reset: false });
 			} catch (e) {
-				message = { kind: 'err', text: e instanceof Error ? e.message : 'publish failed' };
+				flash({
+					kind: 'danger',
+					title: 'Publish failed',
+					description: e instanceof Error ? e.message : 'unknown error',
+					sticky: true
+				});
 				saving = false;
 			}
 			return;
@@ -572,7 +583,7 @@ flowchart LR
 		rev = res.rev;
 		updatedAt = res.updatedAt;
 		publishedAt = res.publishedAt;
-		message = { kind: 'ok', text: 'published' };
+		flash({ kind: 'ok', title: 'Published', description: 'the post is live on the blog' });
 	}
 
 	async function unpublish() {
@@ -580,7 +591,7 @@ flowchart LR
 		status = res.status;
 		rev = res.rev;
 		updatedAt = res.updatedAt;
-		message = { kind: 'ok', text: 'unpublished — off the shelf' };
+		flash({ kind: 'ok', title: 'Unpublished', description: 'off the shelf — draft again' });
 	}
 
 	// Deletion is intentional (item #5): GitHub's name-retype pattern via a real
@@ -618,7 +629,7 @@ flowchart LR
 	// the export's confirmations ride the PORTAL'S SNACKBAR (the flash
 	// round, 2026-11-22) — the same surface as the photos' saves
 	function flashExport(msg: string) {
-		flash('ok', msg);
+		flash({ kind: 'ok', title: msg });
 	}
 
 	function markdownDoc(): string {
@@ -1001,33 +1012,6 @@ flowchart LR
 				</button>
 			</div>
 		</div>
-
-		{#if message}
-			<div class="flex flex-wrap items-center gap-2">
-				<p
-					transition:fade={{ duration: 150 }}
-					class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
-						? 'bg-brand/10 text-brand'
-						: message.kind === 'conflict'
-							? 'bg-accent text-foreground'
-							: 'text-danger'}"
-					role="status"
-				>
-					{message.text}
-				</p>
-				{#if message.kind === 'conflict'}
-					<!-- The conflict's diff door: head-vs-pending on the diff page,
-					     with save-anyway/discard there — the CAS stays the referee. -->
-					<button
-						type="button"
-						onclick={askDiff}
-						class="rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
-					>
-						Review diff
-					</button>
-				{/if}
-			</div>
-		{/if}
 
 		{#if restorable}
 			<!-- Autosave restore: the buffer survived a crash/close that the idle

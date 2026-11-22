@@ -1,25 +1,43 @@
 /**
  * flash.svelte.ts — the portal's momentary notifications (the snackbar
- * round, 2026-11-22). ONE module, ONE snackbar instance (mounted in the
+ * round v2, 2026-11-22). ONE module, ONE snackbar instance (mounted in the
  * app layout); any page/component fires `flash()` and the snackbar picks
- * it up. The momentary feedback (the export confirmations, the metadata
- * saves, the failures) — NOT the persistent statuses (the autosave pill
- * has its own contract and its own home in the meta bar).
+ * it up. The momentary feedback (the saves, the exports, the failures) —
+ * NOT the persistent statuses (the autosave pill has its own contract and
+ * its own home in the meta bar).
  *
- * The kind = 'ok' | 'danger': the ok = the quiet confirmation; the danger
- * = the destructive/destructive-adjacent failure, styled destructive and
- * announced as role="alert". The auto-dismiss = 3s (a snackbar, not a
- * modal — nothing blocks); a fresh flash replaces the standing one and
- * restarts the timer.
+ * THE KINDS AND THEIR LIFETIMES (the owner's sticky-danger agreement):
+ *   ok    → 5s auto-dismiss — the confirmation reads itself once.
+ *   warn  → 5s auto-dismiss — the attention state, not a failure.
+ *   danger→ STICKY until dismissed — an error that auto-dissolves while
+ *           the reader is in the other pane is a missed failure.
+ * A fresh flash replaces the standing one and restarts the timer.
+ *
+ * `action` = the in-snackbar button for the actionable states (the save
+ * conflict's "Review diff" door). The sticky + the action = the natural
+ * pair: the user must act, the card must wait.
  */
 
-let current = $state<{ kind: 'ok' | 'danger'; text: string } | null>(null);
+export interface Flash {
+	kind: 'ok' | 'warn' | 'danger';
+	title: string;
+	description?: string;
+	sticky?: boolean;
+	action?: { label: string; run: () => void };
+}
+
+let current = $state<Flash | null>(null);
 let timer: ReturnType<typeof setTimeout>;
 
-export function flash(kind: 'ok' | 'danger', text: string, ms = 3000): void {
-	current = { kind, text };
+function schedule(ms: number) {
 	clearTimeout(timer);
 	timer = setTimeout(() => (current = null), ms);
+}
+
+export function flash(f: Flash): void {
+	current = { ...f };
+	if (f.sticky || f.kind === 'danger') return; // sticky: only the dismiss/action retires it
+	schedule(5000);
 }
 
 export function dismissFlash(): void {

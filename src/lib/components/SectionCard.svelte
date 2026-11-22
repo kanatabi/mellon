@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { ChevronDown, GripVertical } from 'lucide-svelte';
+	import SectionHint from './SectionHint.svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
@@ -38,9 +39,11 @@
 		reorderable?: boolean;
 		ontoggle: () => void;
 		onmove?: (dir: -1 | 1) => void;
-		/** The one-line explanation, read where the question is asked: the
-		 *  open panel's top (the in-panel hint beats the '?' tooltip — no
-		 *  second interaction, works on touch). */
+		/** The section-level explanation: a CircleHelp affordance beside the
+		 *  label, the HoverCard on hover (tap = the toggle on touch — no
+		 *  hover on a phone). The FIELD-level hints (the per-attribute
+		 *  micro-copy) stay inline under their labels — a "?" per field in
+		 *  one drawer = noise. */
 		hint?: string;
 		children?: Snippet;
 	} = $props();
@@ -82,6 +85,9 @@
 				<Icon class="size-3.5 text-muted-foreground/70" aria-hidden="true" />
 			{/if}
 			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">{label}</p>
+			{#if hint}
+				<SectionHint text={hint} />
+			{/if}
 			{#if dirty && !open}
 				<span class="size-1.5 rounded-full bg-accent-amber" aria-label="unsaved changes"></span>
 			{/if}
@@ -98,9 +104,6 @@
 
 	{#if open}
 		<div class="flex flex-col gap-2.5" transition:slide={{ duration: 220, easing: cubicOut }}>
-			{#if hint}
-				<p class="text-xs leading-relaxed text-muted-foreground/80">{hint}</p>
-			{/if}
 			{@render children?.()}
 		</div>
 	{/if}

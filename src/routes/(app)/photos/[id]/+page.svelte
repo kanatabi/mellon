@@ -110,7 +110,7 @@
 				gallery: draft.gallery
 			});
 			baseline = { ...draft };
-			flash('ok', 'metadata saved');
+			flash({ kind: 'ok', title: 'Metadata saved' });
 			// server facts (and the collections' counts) refresh underneath the
 			// now-clean form; the draft/baseline survive because re-baselining
 			// is gated on photo IDENTITY above
@@ -118,7 +118,7 @@
 		} catch (e) {
 			// keep the edits — a failed save never silently reverts the form
 			failed = e instanceof Error ? e.message : 'save failed';
-			flash('danger', failed);
+			flash({ kind: 'danger', title: 'Save failed', description: failed, sticky: true });
 		}
 		saving = false;
 	}
