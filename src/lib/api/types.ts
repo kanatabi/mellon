@@ -42,6 +42,18 @@ export interface PostDetailAdmin extends PostDraft {
 	updatedAt: string;
 }
 
+/** The EXIF capture's curated subset (Round B 2026-11-22) — the panel's
+ *  display fields. GPS is deliberately absent: never read, never shipped,
+ *  never stored (the privacy promise, denied at both ends by construction). */
+export interface PhotoExif {
+	takenAt?: string;
+	camera?: string;
+	lens?: string;
+	shutter?: string;
+	iso?: number;
+	aperture?: number;
+}
+
 export interface AdminPhoto {
 	id: string;
 	/** Where the bytes live, as served: mock era = mellon-local `/api/media/<id>`;
@@ -51,6 +63,9 @@ export interface AdminPhoto {
 	alt: string;
 	width: number;
 	height: number;
+	/** The stored EXIF subset (lumen's allowlist verdict); null = pre-capture
+	 *  upload or a format without metadata — the panel's honest empty state. */
+	exif: PhotoExif | null;
 	/** Curation flag: publish to the blog's public Gallery page. Companion
 	 *  images for articles stay false. Uploads default FALSE — surfacing
 	 *  publicly is a deliberate act (owner decision 2026-11-08). */
@@ -283,12 +298,16 @@ export interface AdminApi {
 	/** Upload entry point. `dataUrl` stands in for the bytes during the mock
 	 *  era (journaled); Phase B transports multipart POST /admin/photos and
 	 *  lumen probes dims + strips EXIF server-side — this interface's output
-	 *  (an AdminPhoto whose src is the serving URL) is what survives both. */
+	 *  (an AdminPhoto whose src is the serving URL) is what survives both.
+	 *  `exif` = the client-side capture (Round B 2026-11-22): exifr reads
+	 *  the curated fields BEFORE upload, lumen allowlists what it stores —
+	 *  GPS cannot pass. */
 	addPhoto(p: {
 		name: string;
 		dataUrl: string;
 		width: number;
 		height: number;
+		exif?: PhotoExif | null;
 	}): Promise<AdminPhoto>;
 	/** Curation metadata setter (alt/collection/gallery). No CAS: photos carry
 	 *  no rev, and single-author album metadata is last-write-wins (journaled). */

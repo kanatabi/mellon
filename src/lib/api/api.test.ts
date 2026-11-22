@@ -413,9 +413,25 @@ describe('mock AdminApi contract', () => {
 		// fresh captures start private & uncategorized — curation is deliberate
 		expect(created.gallery).toBe(false);
 		expect(created.collection).toBeNull();
+		expect(created.exif).toBeNull(); // no capture sent — the honest empty state
 		expect(mediaStore.get(created.id)).toBe('data:image/png;base64,aW1hZ2U=');
 		const list = await api.listPhotos();
 		expect(list.items[0].id).toBe(created.id); // newest first, seeds follow
+		// the twin stores the capture verbatim — the ALLOWLIST lives in lumen;
+		// the panel reads the shape identically either way (Round B)
+		const withExif = await api.addPhoto({
+			name: 'ridge.jpg',
+			dataUrl: 'data:image/jpeg;base64,aW1hZ2U=',
+			width: 800,
+			height: 600,
+			exif: { camera: 'X100VI', iso: 640, aperture: 2.8, GPSLatitude: 46.5 } as never
+		});
+		expect(withExif.exif).toEqual({
+			camera: 'X100VI',
+			iso: 640,
+			aperture: 2.8,
+			GPSLatitude: 46.5
+		});
 	});
 
 	it('curation: gallery flag + collection vocabulary, filtered/sorted lists, PATCH merges', async () => {

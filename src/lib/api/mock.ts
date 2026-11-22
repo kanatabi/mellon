@@ -124,6 +124,14 @@ const PHOTOS: AdminPhoto[] = [
 		alt: 'Alpine ridge at dawn, fog in the valley',
 		width: 900,
 		height: 560,
+		exif: {
+			takenAt: '2024-04-01T05:39:00Z',
+			camera: 'Fujifilm X100VI',
+			lens: '23mm f2',
+			shutter: '1/250',
+			iso: 640,
+			aperture: 2.8
+		},
 		gallery: true, // curated: theme + public
 		collection: 'landscapes',
 		createdAt: '2024-04-01T05:41:00Z'
@@ -134,6 +142,7 @@ const PHOTOS: AdminPhoto[] = [
 		alt: 'Night market steam under a single bulb',
 		width: 700,
 		height: 900,
+		exif: null, // pre-capture era: the panel's honest empty state
 		gallery: false, // companion image for an article — not for the Gallery page
 		collection: 'street',
 		createdAt: '2024-04-06T21:03:00Z'
@@ -144,6 +153,7 @@ const PHOTOS: AdminPhoto[] = [
 		alt: 'Fog over the fishing harbour at first light',
 		width: 1200,
 		height: 800,
+		exif: null,
 		gallery: true,
 		collection: null, // in the Gallery, yet uncategorized
 		createdAt: '2024-06-11T04:20:00Z'
@@ -576,6 +586,9 @@ export function createMockApi(): AdminApi {
 		async addPhoto(p) {
 			// deviation (journal 2026-11-08): bytes as a data-URL in the mock;
 			// lumen takes multipart, probes dims + strips EXIF server-side.
+			// The exif field: the twin stores what the client captured — the
+			// ALLOWLIST lives in lumen (the twin is the wire's SHAPE, not its
+			// policy; the panel reads it identically either way).
 			const id = `m${seq++}`;
 			mediaStore.set(id, p.dataUrl);
 			const created: AdminPhoto = {
@@ -584,6 +597,7 @@ export function createMockApi(): AdminApi {
 				alt: p.name.replace(/\.[^.]+$/, ''),
 				width: p.width,
 				height: p.height,
+				exif: p.exif ?? null,
 				// fresh captures start private & uncategorized — curation is deliberate
 				gallery: false,
 				collection: null,

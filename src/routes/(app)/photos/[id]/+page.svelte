@@ -268,8 +268,8 @@
 
 	/* ── Delete: warn loudly, allow anyway. The dialog carries the list of
 	   citing posts; the page already shows it (USED IN), so nothing is hidden
-	   behind the button. ──────────────────────────────────────────────────── */
-	let confirmDelete = $state(false);
+	   behind the button. ──────────────────────────────────────────────────── */ let confirmDelete =
+		$state(false);
 	const nRefs = $derived(data.references.length);
 	const deleteDescription = $derived(
 		nRefs
@@ -281,6 +281,22 @@
 		guardOff = true; // deliberate exit — the dirty guard must not strand the escape
 		await goto('/photos');
 	}
+
+	/* ── The EXIF block's rows: only the fields that survived the upload's
+	   capture + lumen's allowlist, in the photographer's reading order. ──── */
+	const fmtAperture = (n: number) => `f/${Number(n.toFixed(1))}`;
+	const exifRows = $derived.by(() => {
+		const x = data.photo.exif;
+		if (!x) return [];
+		const rows: { k: string; v: string }[] = [];
+		if (x.takenAt) rows.push({ k: 'taken', v: fmtDate(x.takenAt) });
+		if (x.camera) rows.push({ k: 'camera', v: x.camera });
+		if (x.lens) rows.push({ k: 'lens', v: x.lens });
+		if (x.iso) rows.push({ k: 'iso', v: String(x.iso) });
+		if (x.aperture) rows.push({ k: 'aperture', v: fmtAperture(x.aperture) });
+		if (x.shutter) rows.push({ k: 'shutter', v: x.shutter });
+		return rows;
+	});
 
 	/* ── Rail (lg+ curtain) vs sheet (<lg) — one snippet serves both ──────── */
 	let detailsSheet = $state(false);
@@ -506,6 +522,30 @@
 			<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
 				the links update automatically when the image changes
 			</p>
+		</div>
+
+		<!-- THE EXIF BLOCK (Round B, owner sketch): the capture's curated
+		     subset + the resolution echoed; null = the honest empty state
+		     (pre-capture uploads). lumen stored ONLY the allowlist — what
+		     renders here is what survived it, GPS never existed. -->
+		<div class="border-t border-border/70 pt-4">
+			<p class="mb-2 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+				exif · {data.photo.width}×{data.photo.height}
+			</p>
+			{#if exifRows.length}
+				<dl class="flex flex-col gap-1.5 font-mono text-[11px]">
+					{#each exifRows as row (row.k)}
+						<div class="flex items-baseline justify-between gap-3">
+							<dt class="shrink-0 text-muted-foreground/70">{row.k}</dt>
+							<dd class="min-w-0 truncate text-foreground/90">{row.v}</dd>
+						</div>
+					{/each}
+				</dl>
+			{:else}
+				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+					no EXIF — uploaded before capture
+				</p>
+			{/if}
 		</div>
 
 		<div class="flex flex-col gap-1 font-mono text-[10px] leading-relaxed text-muted-foreground">

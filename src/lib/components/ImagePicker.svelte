@@ -4,6 +4,7 @@
 	import { focusOnMount } from '#lib/actions.ts';
 	import { ApiError, client } from '#lib/api/client.ts';
 	import type { AdminPhoto } from '#lib/api/types.ts';
+	import { captureExif } from '#lib/exif.ts';
 
 	interface Props {
 		/** thumbnail: single-pick for the post cover. insert: pick/upload into
@@ -67,7 +68,11 @@
 				});
 				settle({ status: 'uploading' });
 				const { width, height } = await probe(dataUrl);
-				const created = await client.addPhoto({ name: file.name, dataUrl, width, height });
+				// the EXIF capture rides the same read the upload does (Round B):
+				// curated fields only, GPS never requested — lumen allowlists
+				// what it stores, this side never even reads the rest
+				const exif = await captureExif(file);
+				const created = await client.addPhoto({ name: file.name, dataUrl, width, height, exif });
 				grid = [created, ...grid];
 				settle({ status: 'done' });
 				if (mode === 'upload' || mode === 'upload-cover') onUploaded?.(created);

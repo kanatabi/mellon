@@ -230,6 +230,9 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				new Blob([bytes], { type: mime }),
 				/\.(png|jpe?g|gif|webp)$/i.test(p.name) ? p.name : `${p.name}.${ext}`
 			);
+			// the EXIF capture (Round B): client-side, BEFORE upload — lumen
+			// allowlists what it stores; absent = the field ships not at all
+			if (p.exif) form.append('exif', JSON.stringify(p.exif));
 			const url = new URL(at('/admin/photos'));
 			const requestId = newRequestId();
 			const hop = upstreamFor('/admin/photos');
