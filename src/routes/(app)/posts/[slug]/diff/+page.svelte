@@ -16,7 +16,9 @@
 		fieldRows,
 		splitMarkdown,
 		splitRegions,
-		toDraft
+		toDraft,
+		unifiedLines,
+		DIFF_VIEW_KEY
 	} from '#lib/post-diff.ts';
 	import { DIFF_BLOCK } from '#lib/secrets-diff.ts';
 
@@ -46,6 +48,22 @@
 	let changedOnly = $state(browser ? matchMedia('(max-width: 47.99rem)').matches : false);
 	let hideUnchanged = $state(false); // metadata: show all rows ⇄ changed only
 
+	// THE VIEW MODE (the owner's calls, 2026-11-22): the REMEMBERED choice
+	// wins (localStorage — 'remember the choice'); no memory = the viewport
+	// default — INLINE on mobile (one −/+ document beats the stacked pair
+	// at 390px), SPLIT on desktop. The one-frame hydration adoption = the
+	// changedOnly precedent (owner call (b)).
+	let view = $state<'split' | 'inline'>(
+		browser
+			? ((localStorage.getItem(DIFF_VIEW_KEY) as 'split' | 'inline' | null) ??
+					(matchMedia('(max-width: 47.99rem)').matches ? 'inline' : 'split'))
+			: 'split'
+	);
+	function setView(v: 'split' | 'inline') {
+		view = v;
+		localStorage.setItem(DIFF_VIEW_KEY, v);
+	}
+
 	onMount(() => {
 		void (async () => {
 			pending = await editStore.read(data.post.slug);
@@ -58,6 +76,9 @@
 	const conflict = $derived(pending !== null && pending.baseRev !== data.post.rev);
 	const rows = $derived(pending ? fieldRows(pending.draft, head) : []);
 	const splitRows = $derived(pending ? splitMarkdown(head, pending.draft) : []);
+	// the unified's lines: the alignment flattened — one line per row, the
+	// del+add pairs as the − then + consecutive lines
+	const unified = $derived(pending ? unifiedLines(head, pending.draft) : []);
 	// the mobile's full comparison = the TWO INDEPENDENT trace rows
 	// ($bindable open — the free collapse: the shared-tab mapping forced an
 	// accordion nobody asked for, walked)
@@ -247,6 +268,37 @@
 				</button>
 			</div>
 			<div class="flex items-center gap-2">
+				{#if tab === 'markdown' && !changedOnly}
+					<!-- THE VIEW MODE (Split ⇄ Inline): the segmented control (the
+					     tabs' grammar — a mode, not a pressed state); the choice
+					     remembers itself (localStorage). -->
+					<div
+						class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
+						role="group"
+						aria-label="Diff layout"
+					>
+						<button
+							type="button"
+							aria-pressed={view === 'split'}
+							class="rounded-full px-3 py-1 font-mono text-xs transition-colors {view === 'split'
+								? 'bg-brand/15 text-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setView('split')}
+						>
+							Split
+						</button>
+						<button
+							type="button"
+							aria-pressed={view === 'inline'}
+							class="rounded-full px-3 py-1 font-mono text-xs transition-colors {view === 'inline'
+								? 'bg-brand/15 text-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setView('inline')}
+						>
+							Inline
+						</button>
+					</div>
+				{/if}
 				{#if tab === 'markdown'}
 					<Button
 						type="button"
@@ -446,85 +498,139 @@
 					</div>
 				{:else}
 					<!-- THE FULL COMPARISON (the editor-preview's grammar): the whole
-					     file, two panes — the md+ = the side-by-side split; the mobile
-					     = the Saved/Pending TABS (one pane at a time — the stacked full
-					     documents = the endless duplicated scroll). ONE snippet pair
-					     renders both modes: the markup cannot drift. -->
-					<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
-					     the line-number gutters, the ± signs, the tints per side —
-					     the pane headers sit over their panes (the owner's indicator
-					     row: HEAD −dels left, PENDING +adds right; ONE chevron).
-					     THE CONTAINMENT: the card = h-full bounded flex column — the
-					     header stays pinned, only the lines scroll (the parent NEVER
-					     scrolls — the h-full the b61dead lists got and this page
-					     lacked). -->
-					<div class="hidden h-full md:block">
+					     file. THE VIEW MODE picks the body: the UNIFIED (the GitHub's
+					     inline — ONE header, the two number bars; the mobile's
+					     default, the desktop's one tap away) or the SPLIT (the
+					     side-by-side). -->
+					{#if view === 'inline'}
 						<div
 							class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
 						>
-							<div
-								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border/60 bg-muted"
-							>
-								<div class="col-span-3">
-									{@render paneHeader(
-										`saved (head) · rev ${data.post.rev}`,
-										`−${stats.dels}`,
-										'text-diff-del',
-										true
-									)}
-								</div>
-								<div class="col-span-3">
-									{@render paneHeader(
-										'pending',
-										`+${stats.adds}`,
-										'text-diff-add',
-										false,
-										`forked from rev ${pending.baseRev}`
-									)}
-								</div>
+							<div class="shrink-0">
+								<DiffFileHeader
+									title="pending"
+									{stats}
+									note={`forked from rev ${pending.baseRev}`}
+									bind:open={mdOpen}
+								/>
 							</div>
 							{#if mdOpen}
 								<div
 									class="min-h-0 flex-1 overflow-y-auto overscroll-contain font-mono text-[11px]"
 								>
-									{#each splitRows as row, i (i)}
+									{#each unified as line, i (i)}
 										<div
-											class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+											class="grid grid-cols-[2.5rem_2.5rem_1.25rem_1fr] {line.kind === 'same'
+												? ''
+												: DIFF_BLOCK[line.kind]}"
 										>
-											{@render diffCells(row, 'left')}
-											{@render diffCells(row, 'right')}
+											<span
+												class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
+												>{line.lnHead ?? ''}</span
+											>
+											<span
+												class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
+												>{line.lnPending ?? ''}</span
+											>
+											<span
+												class="text-center select-none {line.kind === 'del'
+													? 'text-diff-del'
+													: line.kind === 'add'
+														? 'text-diff-add'
+														: ''}"
+											>
+												{line.kind === 'del' ? '−' : line.kind === 'add' ? '+' : ''}
+											</span>
+											<span
+												class="min-w-0 break-words whitespace-pre-wrap {line.kind === 'same'
+													? 'text-muted-foreground/80'
+													: line.kind === 'del'
+														? 'text-diff-del'
+														: 'text-diff-add'}"
+											>
+												{line.text || '\u00A0'}
+											</span>
 										</div>
 									{/each}
 								</div>
 							{/if}
 						</div>
-					</div>
+					{:else}
+						<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
+					     the line-number gutters, the ± signs, the tints per side —
+					     the pane headers sit over their panes (the owner's indicator
+					     row: HEAD −dels left, PENDING +adds right; ONE chevron).
+					     THE CONTAINMENT: the card hugs its content, capped at the
+					     pane (max-h-full) — the header stays pinned, only the lines
+					     scroll (the parent NEVER scrolls). -->
+						<div class="hidden h-full md:block">
+							<div
+								class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
+							>
+								<div
+									class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border/60 bg-muted"
+								>
+									<div class="col-span-3">
+										{@render paneHeader(
+											`saved (head) · rev ${data.post.rev}`,
+											`−${stats.dels}`,
+											'text-diff-del',
+											true
+										)}
+									</div>
+									<div class="col-span-3">
+										{@render paneHeader(
+											'pending',
+											`+${stats.adds}`,
+											'text-diff-add',
+											false,
+											`forked from rev ${pending.baseRev}`
+										)}
+									</div>
+								</div>
+								{#if mdOpen}
+									<div
+										class="min-h-0 flex-1 overflow-y-auto overscroll-contain font-mono text-[11px]"
+									>
+										{#each splitRows as row, i (i)}
+											<div
+												class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+											>
+												{@render diffCells(row, 'left')}
+												{@render diffCells(row, 'right')}
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						</div>
 
-					<!-- THE MOBILE: the two independent Trace rows (the GitHub's
+						<!-- THE MOBILE: the two independent Trace rows (the GitHub's
 						     file-header: the left chevron, the stats; the sticky trigger);
 						     the scroll = the region's, the headers pinned. -->
-					<div class="md:hidden">
-						<div class="overflow-hidden rounded-lg border border-border bg-card">
-							<TraceRow title="saved (head) · rev {data.post.rev}" bind:open={headOpen}>
-								{#each splitRows as row, i (i)}
-									<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
-										{@render diffCells(row, 'left')}
-									</div>
-								{/each}
-							</TraceRow>
-							<TraceRow
-								title="pending"
-								description="+{stats.adds} −{stats.dels} · forked from rev {pending.baseRev}"
-								bind:open={pendingOpen}
-							>
-								{#each splitRows as row, i (i)}
-									<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
-										{@render diffCells(row, 'right')}
-									</div>
-								{/each}
-							</TraceRow>
+						<div class="md:hidden">
+							<div class="overflow-hidden rounded-lg border border-border bg-card">
+								<TraceRow title="saved (head) · rev {data.post.rev}" bind:open={headOpen}>
+									{#each splitRows as row, i (i)}
+										<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
+											{@render diffCells(row, 'left')}
+										</div>
+									{/each}
+								</TraceRow>
+								<TraceRow
+									title="pending"
+									description="+{stats.adds} −{stats.dels} · forked from rev {pending.baseRev}"
+									bind:open={pendingOpen}
+								>
+									{#each splitRows as row, i (i)}
+										<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
+											{@render diffCells(row, 'right')}
+										</div>
+									{/each}
+								</TraceRow>
+							</div>
 						</div>
-					</div>
+					{/if}
 				{/if}
 			</div>
 		{:else}

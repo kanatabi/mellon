@@ -107,4 +107,45 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		expect(getByText('asdkjasdkj')).toBeTruthy();
 		expect(getByText('EDITED')).toBeTruthy();
 	});
+
+	describe('the inline view (the unified)', () => {
+		it('flattens to the two number bars: one − line, the + lines, the same lines both-numbered', async () => {
+			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
+			const { getByRole, getByText, getAllByText } = render(Fixture);
+			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
+			await fireEvent.click(getByRole('button', { name: 'Inline' }));
+			// the flattening: 1 del (the sign alone in red), 3 adds, the same
+			// lines carry NO sign — the sign column is EMPTY for them
+			expect(getAllByText('−')).toHaveLength(1);
+			expect(getAllByText('+')).toHaveLength(3);
+			// the remembered choice: the toggle wrote the memory
+			expect(localStorage.getItem('mellon.diff-view')).toBe('inline');
+			// the header = the ONE DiffFileHeader (the split's cells are gone)
+			expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(1);
+			// the collapse = the header's chevron, the same round-trip
+			await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
+			expect(() => getByText('asdkjasdkj')).toThrow();
+			expect(getByRole('button', { name: 'Expand diff' })).toBeTruthy();
+			await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
+			await vi.waitFor(() => expect(getByText('asdkjasdkj')).toBeTruthy());
+		});
+
+		it('the remembered choice wins on the next visit', async () => {
+			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
+			localStorage.setItem('mellon.diff-view', 'inline');
+			const { getByRole, getAllByText } = render(Fixture);
+			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
+			// the inline body WITHOUT the toggle tap — the memory rode in
+			expect(getAllByText('−')).toHaveLength(1);
+			expect(getByRole('button', { name: 'Split' })).toBeTruthy();
+			// back to split: the two-cell headers return
+			await fireEvent.click(getByRole('button', { name: 'Split' }));
+			await vi.waitFor(() =>
+				expect(
+					getAllByText('saved (head) · rev 3', { selector: 'h2' }).length
+				).toBeGreaterThanOrEqual(1)
+			);
+			expect(localStorage.getItem('mellon.diff-view')).toBe('split');
+		});
+	});
 });

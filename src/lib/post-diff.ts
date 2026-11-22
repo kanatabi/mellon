@@ -78,10 +78,46 @@ export function fieldRows(pending: PostDraft, head: PostDraft): FieldRow[] {
 
 export const METADATA_FIELD_COUNT = METADATA_FIELDS.length;
 
+/** The diff page's layout memory (the owner call: remember the choice) —
+ *  the split/inline toggle's localStorage key, namespaced like the
+ *  editor-buffer keys. */
+export const DIFF_VIEW_KEY = 'mellon.diff-view';
+
 /** The markdown tab: aligned two-pane rows over the raw body (left = saved,
  *  right = pending). Full documents pair fine — the LCS is review-aid sized. */
 export function splitMarkdown(base: PostDraft, pending: PostDraft): SplitRow[] {
 	return alignDiff(diffLines(base.content, pending.content));
+}
+
+/** The unified inline line (the GitHub's): ONE row per line, TWO number
+ *  bars — a `same` line carries both numbers; a `del` line the head's
+ *  number only (the pending bar blank); an `add` line the pending's only
+ *  (the head bar blank). The split alignment's null sides make this a
+ *  flat map — a del+add pair row flattens to TWO consecutive lines (−
+ *  then +), never a re-diff. */
+export type UnifiedLine = {
+	kind: 'same' | 'del' | 'add';
+	text: string;
+	lnHead: number | null;
+	lnPending: number | null;
+};
+
+export function unifiedLines(base: PostDraft, pending: PostDraft): UnifiedLine[] {
+	const out: UnifiedLine[] = [];
+	for (const row of splitMarkdown(base, pending)) {
+		if (row.left) {
+			out.push({
+				kind: row.left.kind === 'same' ? 'same' : 'del',
+				text: row.left.text,
+				lnHead: row.ln.left,
+				lnPending: row.left.kind === 'same' ? row.ln.right : null
+			});
+		}
+		if (row.right?.kind === 'add') {
+			out.push({ kind: 'add', text: row.right.text, lnHead: null, lnPending: row.ln.right });
+		}
+	}
+	return out;
 }
 
 export type DiffRegion = { kind: 'rows'; rows: SplitRow[] } | { kind: 'gap'; count: number };

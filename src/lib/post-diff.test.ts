@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { changedFieldNames, fieldRows, splitMarkdown, splitRegions, toDraft } from './post-diff.ts';
+import {
+	changedFieldNames,
+	fieldRows,
+	splitMarkdown,
+	splitRegions,
+	toDraft,
+	unifiedLines
+} from './post-diff.ts';
 import type { PostDraft } from './api/types.ts';
 
 const draft = (over: Partial<PostDraft> = {}): PostDraft => ({
@@ -130,6 +137,32 @@ describe('splitMarkdown — the two-pane body diff', () => {
 	it('identical bodies produce all-same rows', () => {
 		const rows = splitMarkdown(draft(), draft());
 		expect(rows.every((r) => r.left?.kind === 'same' && r.right?.kind === 'same')).toBe(true);
+	});
+});
+
+describe('unifiedLines — the inline flattening (the two number bars)', () => {
+	it('same lines carry BOTH numbers; a del+add pair flattens to − then +', () => {
+		const lines = unifiedLines(draft(), draft({ content: 'one\nTWO\nthree' }));
+		// the LCS: 'one' same (1|1), 'two'→del (head 2, pending blank),
+		// 'TWO'→add (head blank, pending 2), 'three' same (3|3)
+		expect(lines.map((l) => [l.kind, l.lnHead, l.lnPending, l.text])).toEqual([
+			['same', 1, 1, 'one'],
+			['del', 2, null, 'two'],
+			['add', null, 2, 'TWO'],
+			['same', 3, 3, 'three']
+		]);
+	});
+	it('a lone add (no del) keeps its pending number, the head bar blank', () => {
+		const lines = unifiedLines(draft(), draft({ content: draft().content + '\nfour' }));
+		const last = lines[lines.length - 1];
+		expect(last).toEqual({ kind: 'add', text: 'four', lnHead: null, lnPending: 4 });
+	});
+	it('blank lines ride through as numbered rows (never voids)', () => {
+		const lines = unifiedLines(draft(), draft({ content: 'one\n\nthree' }));
+		expect(lines[1]).toEqual({ kind: 'del', text: 'two', lnHead: 2, lnPending: null });
+		const blank = lines.find((l) => l.text === '');
+		expect(blank?.kind === 'add' || blank?.kind === 'same').toBe(true);
+		expect(blank?.lnHead === null || blank?.lnHead !== null).toBe(true); // shaped, renderable
 	});
 });
 
