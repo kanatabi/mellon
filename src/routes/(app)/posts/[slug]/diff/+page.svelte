@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { browser } from '$app/env';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { FileDiff, List, RotateCcw } from 'lucide-svelte';
@@ -36,7 +37,14 @@
 	let expanded = $state(false);
 	// the two presentation toggles (the vault compare's button pattern:
 	// aria-pressed + amber active state), both OFF by default:
-	let changedOnly = $state(false); // markdown: whole file ⇄ change regions
+	// THE MOBILE DEFAULT (the owner's call): on touch widths the compact
+	// changed-only view is the first paint — the full comparison = the
+	// explicit 'Show all lines' tap. (browser guard: matchMedia is client-only;
+	// the SSR renders the full view and the client adopts the compact one.)
+	let changedOnly = $state(browser ? matchMedia('(max-width: 47.99rem)').matches : false);
+	// the full comparison's mobile tab (the editor-preview's grammar: the
+	// tabs below md, the side-by-side split at md+)
+	let fullTab = $state<'head' | 'pending'>('head');
 	let hideUnchanged = $state(false); // metadata: show all rows ⇄ changed only
 
 	onMount(() => {
@@ -184,67 +192,49 @@
 			</p>
 		{/if}
 
-		<!-- Tabs (house roving-tabindex pattern): markdown ⇄ metadata. -->
-		<!-- svelte-ignore a11y_interactive_supports_focus -->
-		<div
-			class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
-			role="tablist"
-			aria-label="Diff view"
-			onkeydown={onTabKey}
-		>
-			<button
-				type="button"
-				id="diff-tab-markdown"
-				role="tab"
-				aria-selected={tab === 'markdown'}
-				aria-controls="diff-panel-markdown"
-				tabindex={tab === 'markdown' ? 0 : -1}
-				onclick={() => setTab('markdown', false)}
-				class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'markdown'
-					? 'bg-brand/15 text-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
-				Markdown
-			</button>
-			<button
-				type="button"
-				id="diff-tab-metadata"
-				role="tab"
-				aria-selected={tab === 'metadata'}
-				aria-controls="diff-panel-metadata"
-				tabindex={tab === 'metadata' ? 0 : -1}
-				onclick={() => setTab('metadata', false)}
-				class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'metadata'
-					? 'bg-brand/15 text-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
-				Metadata
-			</button>
-		</div>
-
+		<!-- THE TABS ROW (the owner's spec): the view-toggle lives HERE —
+		     beside the tabs, aligned right — not in the action band (the band
+		     = the verbs only). The row wraps on the narrowest screens; the
+		     toggle never overflows. -->
 		<div class="flex flex-wrap items-center justify-between gap-2">
-			<p class="font-mono text-[11px] text-muted-foreground/70">
-				{#if tab === 'markdown'}
-					{#if changedOnly}
-						{regions.filter((r) => r.kind === 'rows').length} change region{regions.filter(
-							(r) => r.kind === 'rows'
-						).length === 1
-							? ''
-							: 's'} — <span class="text-diff-del">saved (head)</span> ⇄
-						<span class="text-diff-add">pending</span>
-					{:else}
-						<span class="text-diff-del">saved (head)</span> ⇄
-						<span class="text-diff-add">pending</span>
-						— rev {data.post.rev} ⇄ forked from rev {pending.baseRev}
-					{/if}
-				{:else}
-					{changedCount} changed · {unchangedCount} unchanged
-				{/if}
-			</p>
+			<!-- Tabs (house roving-tabindex pattern): markdown ⇄ metadata. -->
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div
+				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
+				role="tablist"
+				aria-label="Diff view"
+				onkeydown={onTabKey}
+			>
+				<button
+					type="button"
+					id="diff-tab-markdown"
+					role="tab"
+					aria-selected={tab === 'markdown'}
+					aria-controls="diff-panel-markdown"
+					tabindex={tab === 'markdown' ? 0 : -1}
+					onclick={() => setTab('markdown', false)}
+					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'markdown'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					Markdown
+				</button>
+				<button
+					type="button"
+					id="diff-tab-metadata"
+					role="tab"
+					aria-selected={tab === 'metadata'}
+					aria-controls="diff-panel-metadata"
+					tabindex={tab === 'metadata' ? 0 : -1}
+					onclick={() => setTab('metadata', false)}
+					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'metadata'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					Metadata
+				</button>
+			</div>
 			<div class="flex items-center gap-2">
-				<!-- UNIFORM BAR (owner feedback): one size across the group;
-				     order = the toggle, then the DESTRUCTIVE verb (red at rest —
-				     danger reads before you click), Save (primary) last. -->
 				{#if tab === 'markdown'}
 					<Button
 						type="button"
@@ -271,25 +261,27 @@
 						{hideUnchanged ? 'Show unchanged' : 'Hide unchanged'}
 					</Button>
 				{/if}
-				<Button
-					type="button"
-					variant="danger"
-					class="h-auto rounded-full px-4 py-2 font-sans text-sm"
-					disabled={saving}
-					onclick={() => void discard()}
-				>
-					Discard my changes
-				</Button>
-				<Button
-					type="button"
-					variant="primary"
-					disabled={saving}
-					onclick={() => void saveFrom(conflict)}
-				>
-					{conflict ? 'Save anyway (overwrites head)' : 'Save'}
-				</Button>
 			</div>
 		</div>
+
+		<p class="font-mono text-[11px] text-muted-foreground/70">
+			{#if tab === 'markdown'}
+				{#if changedOnly}
+					{regions.filter((r) => r.kind === 'rows').length} change region{regions.filter(
+						(r) => r.kind === 'rows'
+					).length === 1
+						? ''
+						: 's'} — <span class="text-diff-del">saved (head)</span> ⇄
+					<span class="text-diff-add">pending</span>
+				{:else}
+					<span class="text-diff-del">saved (head)</span> ⇄
+					<span class="text-diff-add">pending</span>
+					— rev {data.post.rev} ⇄ forked from rev {pending.baseRev}
+				{/if}
+			{:else}
+				{changedCount} changed · {unchangedCount} unchanged
+			{/if}
+		</p>
 
 		{#if tab === 'markdown'}
 			<div
@@ -333,9 +325,12 @@
 						{/each}
 					</div>
 				{:else}
-					<!-- The default view: the WHOLE file, two text panes (no row grid —
-					     free-flowing lines, block-highlighted where they changed). -->
-					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<!-- THE FULL COMPARISON (the editor-preview's grammar): the whole
+					     file, two panes — the md+ = the side-by-side split; the mobile
+					     = the Saved/Pending TABS (one pane at a time — the stacked full
+					     documents = the endless duplicated scroll). ONE snippet pair
+					     renders both modes: the markup cannot drift. -->
+					{#snippet headPane()}
 						<div class="min-w-0">
 							<p
 								class="border-b border-border px-1 pb-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
@@ -356,6 +351,8 @@
 								{/each}
 							</div>
 						</div>
+					{/snippet}
+					{#snippet pendingPane()}
 						<div class="min-w-0">
 							<p
 								class="border-b border-border px-1 pb-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
@@ -376,6 +373,45 @@
 								{/each}
 							</div>
 						</div>
+					{/snippet}
+
+					<div class="md:hidden">
+						<div
+							class="mb-3 flex w-fit gap-1 rounded-full border border-border bg-card p-1"
+							role="tablist"
+							aria-label="Comparison side"
+						>
+							<button
+								type="button"
+								role="tab"
+								aria-selected={fullTab === 'head'}
+								onclick={() => (fullTab = 'head')}
+								class="rounded-full px-3 py-1 font-mono text-xs transition-colors {fullTab ===
+								'head'
+									? 'bg-brand/15 text-foreground'
+									: 'text-muted-foreground hover:text-foreground'}"
+							>
+								saved (head)
+							</button>
+							<button
+								type="button"
+								role="tab"
+								aria-selected={fullTab === 'pending'}
+								onclick={() => (fullTab = 'pending')}
+								class="rounded-full px-3 py-1 font-mono text-xs transition-colors {fullTab ===
+								'pending'
+									? 'bg-brand/15 text-foreground'
+									: 'text-muted-foreground hover:text-foreground'}"
+							>
+								pending
+							</button>
+						</div>
+						{#if fullTab === 'head'}{@render headPane()}{:else}{@render pendingPane()}{/if}
+					</div>
+
+					<div class="hidden gap-4 md:grid md:grid-cols-2">
+						{@render headPane()}
+						{@render pendingPane()}
 					</div>
 				{/if}
 			</div>
@@ -386,71 +422,107 @@
 				aria-labelledby="diff-tab-metadata"
 				class="overflow-hidden rounded-lg border border-border bg-card"
 			>
-				{#each shownRows as row (row.key)}
-					<div
-						class="grid grid-cols-[6rem_1fr_1fr] items-start gap-2 border-b border-border/60 p-3 last:border-b-0 md:grid-cols-[8rem_1fr_1fr_5.5rem] md:gap-4"
-					>
-						<div class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-							{row.label}
-							<span
-								class="rounded px-1.5 py-0.5 font-mono text-[9px] {chip[row.status]}"
-								title="field status"
+				<!-- THE HORIZONTAL SCROLL LIVES HERE (the viewport-fit doctrine:
+				     the content scrolls in its own pane) — the values render at
+				     their natural readable width, never squeezed into slivers. -->
+				<div class="overflow-x-auto">
+					<div class="min-w-[48rem]">
+						{#each shownRows as row (row.key)}
+							<div
+								class="grid grid-cols-[6rem_1fr_1fr] items-start gap-2 border-b border-border/60 p-3 last:border-b-0 md:grid-cols-[8rem_1fr_1fr_5.5rem] md:gap-4"
 							>
-								{row.status}
-							</span>
-						</div>
-						<div
-							class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
-							'changed'
-								? `${DIFF_BLOCK.del} text-diff-del`
-								: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
-								? 'line-clamp-3'
-								: ''} whitespace-pre-wrap"
-						>
-							{#if row.key === 'thumbnail' && row.from}
-								<img
-									src={row.from}
-									alt="saved cover"
-									class="mb-1 h-10 w-16 rounded border border-border object-cover"
-								/>
-							{/if}
-							{row.from || '—'}
-						</div>
-						<div
-							class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
-							'changed'
-								? `${DIFF_BLOCK.add} text-diff-add`
-								: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
-								? 'line-clamp-3'
-								: ''} whitespace-pre-wrap"
-						>
-							{#if row.key === 'thumbnail' && row.to}
-								<img
-									src={row.to}
-									alt="pending cover"
-									class="mb-1 h-10 w-16 rounded border border-border object-cover"
-								/>
-							{/if}
-							{row.to || '—'}
-						</div>
-						<span class="hidden md:block" aria-hidden="true"></span>
+								<div class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+									{row.label}
+									<span
+										class="rounded px-1.5 py-0.5 font-mono text-[9px] {chip[row.status]}"
+										title="field status"
+									>
+										{row.status}
+									</span>
+								</div>
+								<div
+									class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
+									'changed'
+										? `${DIFF_BLOCK.del} text-diff-del`
+										: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
+										? 'line-clamp-3'
+										: ''} whitespace-pre-wrap"
+								>
+									{#if row.key === 'thumbnail' && row.from}
+										<img
+											src={row.from}
+											alt="saved cover"
+											class="mb-1 h-10 w-16 rounded border border-border object-cover"
+										/>
+									{/if}
+									{row.from || '—'}
+								</div>
+								<div
+									class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
+									'changed'
+										? `${DIFF_BLOCK.add} text-diff-add`
+										: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
+										? 'line-clamp-3'
+										: ''} whitespace-pre-wrap"
+								>
+									{#if row.key === 'thumbnail' && row.to}
+										<img
+											src={row.to}
+											alt="pending cover"
+											class="mb-1 h-10 w-16 rounded border border-border object-cover"
+										/>
+									{/if}
+									{row.to || '—'}
+								</div>
+								<span class="hidden md:block" aria-hidden="true"></span>
+							</div>
+						{/each}
+						{#if rows.some((r) => r.key === 'preview' && r.status === 'changed')}
+							<button
+								type="button"
+								onclick={() => (expanded = !expanded)}
+								class="px-3 py-2 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+							>
+								{expanded ? 'Collapse preview values' : 'Expand preview values'}
+							</button>
+						{/if}
+						{#if unchangedCount > 0}
+							<p class="px-3 py-2 font-mono text-[11px] text-muted-foreground/70">
+								{unchangedCount} field{unchangedCount === 1 ? '' : 's'} unchanged
+							</p>
+						{/if}
 					</div>
-				{/each}
-				{#if rows.some((r) => r.key === 'preview' && r.status === 'changed')}
-					<button
-						type="button"
-						onclick={() => (expanded = !expanded)}
-						class="px-3 py-2 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-					>
-						{expanded ? 'Collapse preview values' : 'Expand preview values'}
-					</button>
-				{/if}
-				{#if unchangedCount > 0}
-					<p class="px-3 py-2 font-mono text-[11px] text-muted-foreground/70">
-						{unchangedCount} field{unchangedCount === 1 ? '' : 's'} unchanged
-					</p>
-				{/if}
+				</div>
 			</div>
 		{/if}
+	{/if}
+
+	<!-- THE STICKY ACTION BAND (the photos' pattern, the third use): the
+		     VERBS always visible, pinned to the pane's bottom. The mobile =
+		     the stacked full-width (the horizontal overflow = impossible);
+		     the sm+ = the inline, right-aligned. -->
+	{#if pending}
+		<div
+			class="sticky bottom-0 -mx-4 mt-auto -mb-6 flex flex-col gap-2 border-t border-border bg-card p-3 sm:flex-row sm:justify-end sm:gap-2 sm:px-6"
+		>
+			<Button
+				type="button"
+				variant="danger"
+				class="h-auto w-full rounded-full px-4 py-2 font-sans text-sm sm:w-auto"
+				disabled={saving}
+				onclick={() => void discard()}
+			>
+				Discard my changes
+			</Button>
+			<Button
+				type="button"
+				variant="primary"
+				class="h-auto w-full rounded-full px-4 py-2 font-sans text-sm sm:w-auto"
+				disabled={saving}
+				onclick={() => void saveFrom(conflict)}
+			>
+				{conflict ? 'Save anyway (overwrites head)' : 'Save'}
+			</Button>
+		</div>
 	{/if}
 </section>
