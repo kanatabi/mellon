@@ -40,6 +40,7 @@
 	import StatusPill from '#lib/components/StatusPill.svelte';
 	import { editorRail } from '#lib/rails.svelte.ts';
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
+	import { patchPreview } from '#lib/preview/preview-diff.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
 	import {
@@ -370,6 +371,15 @@ flowchart LR
 	let previewSeq = 0;
 	let previewPending = $state(false);
 	let previewEl: HTMLDivElement | undefined = $state();
+	let proseEl: HTMLDivElement | undefined = $state();
+	// THE INCREMENTAL PAINT (the long-doc round): instead of the {@html}
+	// swap (the browser re-parsed the ENTIRE preview per keystroke — the
+	// long-doc tail), the patcher diffs at the block level and touches only
+	// the changed node. The line-map rebuild below rides the tick after.
+	$effect(() => {
+		if (!proseEl || !html) return;
+		patchPreview(proseEl, html);
+	});
 	$effect(() => {
 		const md = draft.content;
 		if (!previewLive) return;
@@ -1125,8 +1135,11 @@ flowchart LR
 							<Skeleton class="h-3.5 w-2/3" />
 						</div>
 					{:else}
-						<!-- eslint-disable-next-line svelte/no-at-html-tags -- server-rendered, DOMPurify-sanitized in the pipeline -->
-						<div class="prose max-w-none">{@html html}</div>
+						<!-- the paint = preview-diff.ts (the block-level patch —
+						     the {@html} swap re-parsed the whole preview per
+						     keystroke; the patch touches the changed block only).
+						     Server-rendered, DOMPurify-sanitized in the pipeline. -->
+						<div class="prose max-w-none" bind:this={proseEl}></div>
 					{/if}
 				</div>
 			</div>
