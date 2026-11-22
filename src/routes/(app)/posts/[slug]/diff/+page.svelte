@@ -134,7 +134,7 @@
 	<title>diff · {data.post.title} · mellon</title>
 </svelte:head>
 
-<section class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+<section class="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden">
 	<SubCrumb href="/posts/{data.post.slug}" label="posts">
 		<span>diff</span>
 	</SubCrumb>
@@ -320,18 +320,28 @@
 								<ChevronDown class="size-4 transition-transform {mdOpen ? '' : '-rotate-90'}" />
 							</button>
 						{/if}
-						<h2 class="min-w-0 truncate font-sans text-sm font-medium">{title}</h2>
+						<!-- The chrome voice: tracked mono, like every other pane label —
+						     the header is an indicator, not a headline (owner call). -->
+						<h2
+							class="min-w-0 truncate font-mono text-[11px] tracking-widest text-muted-foreground uppercase"
+						>
+							{title}
+						</h2>
 						<span class="ml-auto shrink-0 font-mono text-[11px] tabular-nums {statCls}">{stat}</span
 						>
 					</div>
 				{/snippet}
 
 				{#if changedOnly}
-					<!-- The collapsed view: change regions (+context) with gap bands. -->
+					<!-- The collapsed view: change regions (+context) with gap bands —
+					     the SAME pane-header pair + the SAME containment (the card is
+					     the bounded flex column; the regions scroll beneath it). -->
 					<div
-						class="overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
+						class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
-						<div class="grid grid-cols-1 border-b border-border bg-muted/30 md:grid-cols-2">
+						<div
+							class="grid shrink-0 grid-cols-1 border-b border-border bg-muted/30 md:grid-cols-2"
+						>
 							{@render paneHeader(
 								`HEAD · rev ${data.post.rev}`,
 								`−${stats.dels}`,
@@ -345,34 +355,38 @@
 								false
 							)}
 						</div>
-						{#each regions as region, i (i)}
-							{#if region.kind === 'gap'}
-								<div
-									class="border-y border-border/60 bg-muted/30 px-3 py-1 text-center font-mono text-[10px] text-muted-foreground/60"
-								>
-									⋯ {region.count} unchanged line{region.count === 1 ? '' : 's'}
-								</div>
-							{:else}
-								{#each region.rows as row, j (j)}
-									<div class="grid grid-cols-1 gap-px md:grid-cols-2">
-										<div
-											class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap md:border-r md:border-border/40 {lineCls(
-												row.left?.kind
-											)} {row.left?.kind === 'same' ? '' : DIFF_BLOCK[row.left?.kind ?? 'same']}"
-										>
-											{row.left?.text ?? ''}
-										</div>
-										<div
-											class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap {lineCls(
-												row.right?.kind
-											)} {row.right?.kind === 'same' ? '' : DIFF_BLOCK[row.right?.kind ?? 'same']}"
-										>
-											{row.right?.text ?? ''}
-										</div>
+						<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+							{#each regions as region, i (i)}
+								{#if region.kind === 'gap'}
+									<div
+										class="border-y border-border/60 bg-muted/30 px-3 py-1 text-center font-mono text-[10px] text-muted-foreground/60"
+									>
+										⋯ {region.count} unchanged line{region.count === 1 ? '' : 's'}
 									</div>
-								{/each}
-							{/if}
-						{/each}
+								{:else}
+									{#each region.rows as row, j (j)}
+										<div class="grid grid-cols-1 gap-px md:grid-cols-2">
+											<div
+												class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap md:border-r md:border-border/40 {lineCls(
+													row.left?.kind
+												)} {row.left?.kind === 'same' ? '' : DIFF_BLOCK[row.left?.kind ?? 'same']}"
+											>
+												{row.left?.text ?? ''}
+											</div>
+											<div
+												class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap {lineCls(
+													row.right?.kind
+												)} {row.right?.kind === 'same'
+													? ''
+													: DIFF_BLOCK[row.right?.kind ?? 'same']}"
+											>
+												{row.right?.text ?? ''}
+											</div>
+										</div>
+									{/each}
+								{/if}
+							{/each}
+						</div>
 					</div>
 				{:else}
 					<!-- THE FULL COMPARISON (the editor-preview's grammar): the whole
@@ -411,11 +425,17 @@
 					<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
 					     the line-number gutters, the ± signs, the tints per side —
 					     the pane headers sit over their panes (the owner's indicator
-					     row: HEAD −dels left, PENDING +adds right; ONE chevron). -->
-					<div class="hidden md:block">
-						<div class="overflow-hidden rounded-lg border border-border bg-card">
+					     row: HEAD −dels left, PENDING +adds right; ONE chevron).
+					     THE CONTAINMENT: the card = h-full bounded flex column — the
+					     header stays pinned, only the lines scroll (the parent NEVER
+					     scrolls — the h-full the b61dead lists got and this page
+					     lacked). -->
+					<div class="hidden h-full md:block">
+						<div
+							class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
+						>
 							<div
-								class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border bg-muted/30"
+								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border bg-muted/30"
 							>
 								<div class="col-span-3">
 									{@render paneHeader(
@@ -435,7 +455,9 @@
 								</div>
 							</div>
 							{#if mdOpen}
-								<div class="font-mono text-[11px]">
+								<div
+									class="min-h-0 flex-1 overflow-y-auto overscroll-contain font-mono text-[11px]"
+								>
 									{#each splitRows as row, i (i)}
 										<div
 											class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
@@ -481,12 +503,13 @@
 				id="diff-panel-metadata"
 				role="tabpanel"
 				aria-labelledby="diff-tab-metadata"
-				class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+				class="flex min-h-0 flex-1 flex-col overflow-hidden"
 			>
-				<!-- THE HORIZONTAL SCROLL LIVES HERE (the viewport-fit doctrine:
-				     the content scrolls in its own pane) — the values render at
-				     their natural readable width, never squeezed into slivers. -->
-				<div class="overflow-x-auto">
+				<!-- THE SCROLL LIVES HERE (the viewport-fit doctrine:
+				     the content scrolls in its own pane — both axes; the values
+				     render at their natural readable width, never squeezed into
+				     slivers). -->
+				<div class="min-h-0 flex-1 overflow-auto overscroll-contain">
 					<div class="min-w-[48rem]">
 						{#each shownRows as row (row.key)}
 							<div
