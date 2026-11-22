@@ -335,7 +335,10 @@
 
 <section class="flex h-full min-h-0 gap-4">
 	<div class="flex min-w-0 grow flex-col gap-6">
-		<div class="shrink-0">
+		<!-- The controls block owns its rhythm (flex-col gap-4): the b61dead split
+	     made title/search/chips grandchildren of the page's gap-6 — a plain
+	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
+		<div class="flex shrink-0 flex-col gap-4">
 			<div class="flex items-end justify-between gap-4">
 				<h1 class="font-brand text-4xl font-semibold tracking-tight">Posts</h1>
 				<div class="flex items-center gap-2">
@@ -464,7 +467,7 @@
 			{/if}
 		</div>
 
-		<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+		<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2">
 			<!-- The list: stacked rows below lg (the view the owner keeps for
 		     phones), a columnar TABLE at lg+ — one loop so the two never
 		     drift. Rows are link-cards: the title's ::after spans the row, so
