@@ -527,7 +527,8 @@
 			<Button
 				type="button"
 				variant="primary"
-				class="active:scale-[0.98] disabled:opacity-40"
+				size="default"
+				class="h-8 active:scale-[0.98] disabled:opacity-40"
 				onclick={() => void save()}
 				disabled={!dirty || saving}
 			>
@@ -551,7 +552,7 @@
 			<Button
 				type="button"
 				variant="quiet"
-				class="gap-1.5 border-danger/40 hover:bg-danger/10 hover:text-danger active:scale-[0.98]"
+				class="gap-1.5 border-danger/40 text-danger hover:border-danger hover:bg-danger/10 active:scale-[0.98]"
 				onclick={() => (confirmDelete = true)}
 			>
 				<Trash2 class="size-3.5" /> Delete image

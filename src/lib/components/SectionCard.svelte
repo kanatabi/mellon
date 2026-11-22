@@ -25,6 +25,7 @@
 		reorderable = true,
 		ontoggle,
 		onmove,
+		hint,
 		children
 	}: {
 		id: string;
@@ -37,6 +38,10 @@
 		reorderable?: boolean;
 		ontoggle: () => void;
 		onmove?: (dir: -1 | 1) => void;
+		/** The one-line explanation, read where the question is asked: the
+		 *  open panel's top (the in-panel hint beats the '?' tooltip — no
+		 *  second interaction, works on touch). */
+		hint?: string;
 		children?: Snippet;
 	} = $props();
 
@@ -93,6 +98,9 @@
 
 	{#if open}
 		<div class="flex flex-col gap-2.5" transition:slide={{ duration: 220, easing: cubicOut }}>
+			{#if hint}
+				<p class="text-xs leading-relaxed text-muted-foreground/80">{hint}</p>
+			{/if}
 			{@render children?.()}
 		</div>
 	{/if}

@@ -1402,6 +1402,7 @@ flowchart LR
 		<SectionCard
 			id="title"
 			reorderable={movable}
+			hint="The post's headline — the serif voice on the blog and the browser tab."
 			label="title"
 			icon={Type}
 			open={postSections.isOpen('title')}
@@ -1419,6 +1420,7 @@ flowchart LR
 		<SectionCard
 			id="subtitle"
 			reorderable={movable}
+			hint="The dek: one line under the headline on the post page."
 			label="subtitle"
 			icon={AlignLeft}
 			open={postSections.isOpen('subtitle')}
@@ -1436,6 +1438,7 @@ flowchart LR
 		<SectionCard
 			id="preview"
 			reorderable={movable}
+			hint="The excerpt the homepage card and the search results read."
 			label="preview"
 			icon={AlignLeft}
 			open={postSections.isOpen('preview')}
@@ -1454,6 +1457,7 @@ flowchart LR
 		<SectionCard
 			id="slug"
 			reorderable={movable}
+			hint="The URL's tail — immutable after creation."
 			label="slug"
 			icon={LinkIcon}
 			open={postSections.isOpen('slug')}
@@ -1487,6 +1491,7 @@ flowchart LR
 		<SectionCard
 			id="date"
 			reorderable={movable}
+			hint="The date the blog displays on the article — editorial, independent of created/edited. Backdate freely."
 			label="date"
 			icon={CalendarDays}
 			open={postSections.isOpen('date')}
@@ -1593,6 +1598,7 @@ flowchart LR
 		<SectionCard
 			id="export"
 			reorderable={movable}
+			hint="Portable author artifacts — the markdown file, the PDF print, the clipboard copy. lumen still holds the post; this exports it."
 			label="export"
 			icon={Download}
 			open={postSections.isOpen('export')}
@@ -1606,7 +1612,7 @@ flowchart LR
 					onclick={exportMd}
 					class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
 				>
-					<Download class="size-3.5" />download markdown
+					<Download class="size-3.5" /> Download markdown
 				</button>
 				<button
 					type="button"
@@ -1620,7 +1626,7 @@ flowchart LR
 					onclick={copyMd}
 					class="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.99]"
 				>
-					<ClipboardCopy class="size-3.5" />copy markdown
+					<ClipboardCopy class="size-3.5" /> Copy markdown
 				</button>
 			</div>
 			{#if exportMsg}

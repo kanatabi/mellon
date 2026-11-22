@@ -1,5 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { importMarkdownFile } from '#lib/import-markdown.ts';
+	import { slugify } from '#lib/slug.ts';
+	import { client } from '#lib/api/client.ts';
+	import type { PostDraft } from '#lib/api/types.ts';
+	import { FileUp } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import {
 		ArrowDownWideNarrow,
@@ -160,6 +165,39 @@
 	// svelte-ignore state_referenced_locally
 	let qApplied = data.q ?? ''; // what we last pushed to (or read from) the URL
 	let qTimer: ReturnType<typeof setTimeout> | undefined;
+
+	// THE MARKDOWN IMPORT (owner round 2026-11-22): write in Obsidian/Notion,
+	// pick the file here, review in the editor. Never auto-publishes.
+	let fileInput: HTMLInputElement | undefined = $state();
+	let importing = $state(false);
+	let importError = $state('');
+	async function onImportFile(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		if (!file || importing) return;
+		importing = true;
+		importError = '';
+		try {
+			const imported = await importMarkdownFile(file);
+			const draft: PostDraft = {
+				slug: slugify(imported.title),
+				title: imported.title,
+				subtitle: '',
+				preview: '', // BE defaults to the first paragraph at publish
+				date: imported.date,
+				tags: [],
+				content: imported.content,
+				thumbnail: null
+			};
+			await client.createPost(draft);
+			await goto(`/posts/${draft.slug}`);
+		} catch (err) {
+			importError = err instanceof Error ? err.message : 'the import failed';
+		} finally {
+			importing = false;
+			if (fileInput) fileInput.value = ''; // the same file re-picks
+		}
+	}
+
 	$effect(() => {
 		const fromUrl = data.q ?? '';
 		if (fromUrl !== qApplied) {
@@ -299,13 +337,36 @@
 	<div class="flex min-w-0 grow flex-col gap-6 overflow-y-auto overscroll-contain pr-1">
 		<div class="flex items-end justify-between gap-4">
 			<h1 class="font-brand text-4xl font-semibold tracking-tight">Posts</h1>
-			<a
-				href="/posts/new"
-				class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
-			>
-				<Plus class="size-4" /> New Post
-			</a>
+			<div class="flex items-center gap-2">
+				<button
+					type="button"
+					class="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+					onclick={() => fileInput?.click()}
+					disabled={importing}
+				>
+					<FileUp class="size-4" />
+					{importing ? 'importing…' : 'Import markdown'}
+				</button>
+				<input
+					bind:this={fileInput}
+					type="file"
+					accept=".md,.markdown,.txt"
+					class="hidden"
+					aria-label="Import a markdown file"
+					onchange={(e) => void onImportFile(e)}
+				/>
+				<a
+					href="/posts/new"
+					class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
+				>
+					<Plus class="size-4" /> New Post
+				</a>
+			</div>
 		</div>
+
+		{#if importError}
+			<p class="font-mono text-xs text-danger" role="alert">import: {importError}</p>
+		{/if}
 
 		<!-- Engine search: debounced into the URL (?q=), lumen routes it to
 		     Meilisearch — typo-tolerant over the whole corpus, facets honored,
