@@ -123,7 +123,7 @@
 	<title>diff · {data.post.title} · mellon</title>
 </svelte:head>
 
-<section class="flex min-h-0 flex-1 flex-col gap-4">
+<section class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
 	<SubCrumb href="/posts/{data.post.slug}" label="posts">
 		<span>diff</span>
 	</SubCrumb>
@@ -240,7 +240,7 @@
 						type="button"
 						variant="quiet"
 						aria-pressed={changedOnly}
-						class="h-auto gap-1.5 rounded-full px-4 py-2 font-sans text-sm {changedOnly
+						class="gap-1.5 rounded-full px-3 py-1 font-mono text-xs {changedOnly
 							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 							: ''}"
 						onclick={() => (changedOnly = !changedOnly)}
@@ -253,7 +253,7 @@
 						type="button"
 						variant="quiet"
 						aria-pressed={hideUnchanged}
-						class="h-auto gap-1.5 rounded-full px-4 py-2 font-sans text-sm {hideUnchanged
+						class="gap-1.5 rounded-full px-3 py-1 font-mono text-xs {hideUnchanged
 							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 							: ''}"
 						onclick={() => (hideUnchanged = !hideUnchanged)}
@@ -288,7 +288,7 @@
 				id="diff-panel-markdown"
 				role="tabpanel"
 				aria-labelledby="diff-tab-markdown"
-				class="min-h-0"
+				class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
 			>
 				{#if changedOnly}
 					<!-- The collapsed view: change regions (+context) with gap bands. -->
@@ -420,7 +420,7 @@
 				id="diff-panel-metadata"
 				role="tabpanel"
 				aria-labelledby="diff-tab-metadata"
-				class="overflow-hidden rounded-lg border border-border bg-card"
+				class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
 			>
 				<!-- THE HORIZONTAL SCROLL LIVES HERE (the viewport-fit doctrine:
 				     the content scrolls in its own pane) — the values render at
@@ -503,7 +503,7 @@
 		     the sm+ = the inline, right-aligned. -->
 	{#if pending}
 		<div
-			class="sticky bottom-0 -mx-4 mt-auto -mb-6 flex flex-col gap-2 border-t border-border bg-card p-3 sm:flex-row sm:justify-end sm:gap-2 sm:px-6"
+			class="-mx-4 mt-auto -mb-6 flex flex-col gap-2 border-t border-border bg-background px-4 pt-3 pb-6 sm:flex-row sm:justify-end sm:gap-2 sm:px-6"
 		>
 			<Button
 				type="button"
