@@ -3,7 +3,7 @@
 	import { browser } from '$app/env';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { ChevronDown, Ellipsis, FileDiff, RotateCcw } from 'lucide-svelte';
+	import { ArrowLeft, ChevronDown, Ellipsis, FileDiff, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import DiffFileHeader from '#lib/components/DiffFileHeader.svelte';
@@ -93,8 +93,7 @@
 	// the unified's lines: the alignment flattened — one line per row, the
 	// del+add pairs as the − then + consecutive lines
 	const unified = $derived(pending ? unifiedLines(head, pending.draft) : []);
-	// the desktop split-table's collapse (the GitHub file-header's chevron —
-	// the same free-collapse right the mobile TraceRows have)
+	// the split-table's collapse (the GitHub file-header's chevron)
 	let mdOpen = $state(true);
 	// the diff's stats (the GitHub's file-header's +N −N)
 	const stats = $derived({
@@ -170,21 +169,25 @@
 		<span>diff</span>
 	</SubCrumb>
 
-	<div class="flex flex-wrap items-center justify-between gap-3">
-		<div class="flex min-w-0 items-center gap-3">
-			<h1 class="min-w-0 truncate font-brand text-2xl font-semibold tracking-tight">
-				{data.post.title}
-			</h1>
-			<span class="font-mono text-[10px] tracking-wider text-muted-foreground/60 uppercase"
-				>pending diff</span
-			>
-		</div>
+	<div class="flex min-w-0 items-center gap-3">
+		<!-- THE BACK ARROW (the owner's call — the genuine "Back", leading
+		     the title, EVERY viewport): icon-only; the link stays a link
+		     (the kit's Tooltip.Trigger = a button — the native title carries
+		     the name), the aria-label = the keyboard's truth. -->
 		<a
 			href="/posts/{data.post.slug}"
-			class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+			aria-label="Back to editor"
+			title="Back to editor"
+			class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 		>
-			Back to editor
+			<ArrowLeft class="size-4" />
 		</a>
+		<h1 class="min-w-0 truncate font-brand text-2xl font-semibold tracking-tight">
+			{data.post.title}
+		</h1>
+		<span class="shrink-0 font-mono text-[10px] tracking-wider text-muted-foreground/60 uppercase"
+			>pending diff</span
+		>
 	</div>
 
 	{#if !loaded}
@@ -497,11 +500,12 @@
 				{#if changedOnly}
 					<!-- The collapsed view: change regions (+context) with gap bands —
 					     the SAME containment (the card hugs its content, capped at
-					     the pane). The HEADER follows the VIEW MODE (the owner's
-					     correction): the inline regions = ONE body = the ONE
-					     DiffFileHeader (every viewport); the split regions = the
-					     two cells over the two columns (the mobile gets the single
-					     header — its stack has no second column). -->
+					     the pane). THE HEADER FOLLOWS THE VIEW MODE: the inline
+					     regions = ONE body = the ONE DiffFileHeader (every
+					     viewport); the split regions = the SAME two-cell anatomy as
+					     the full view's split — the cells over their panes at EVERY
+					     width (the phone's single-header stand-in is dead: split
+					     means the same thing in both views now). -->
 					<div
 						class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
@@ -515,34 +519,30 @@
 								/>
 							</div>
 						{:else}
-							<div class="shrink-0 md:hidden">
-								<DiffFileHeader
-									title="pending"
-									{stats}
-									note={`forked from rev ${pending.baseRev}`}
-									bind:open={mdOpen}
-								/>
-							</div>
 							<div
-								class="hidden shrink-0 border-b border-border/60 bg-muted md:grid md:grid-cols-2"
+								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border/60 bg-muted"
 							>
-								{@render paneHeader(
-									`saved (head) · rev ${data.post.rev}`,
-									`−${stats.dels}`,
-									'text-diff-del',
-									true
-								)}
-								{@render paneHeader(
-									'pending',
-									`+${stats.adds}`,
-									'text-diff-add',
-									false,
-									`forked from rev ${pending.baseRev}`
-								)}
+								<div class="col-span-3">
+									{@render paneHeader(
+										`saved (head) · rev ${data.post.rev}`,
+										`−${stats.dels}`,
+										'text-diff-del',
+										true
+									)}
+								</div>
+								<div class="col-span-3">
+									{@render paneHeader(
+										'pending',
+										`+${stats.adds}`,
+										'text-diff-add',
+										false,
+										`forked from rev ${pending.baseRev}`
+									)}
+								</div>
 							</div>
 						{/if}
 						{#if mdOpen}
-							<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+							<div class="min-h-0 flex-1 overflow-auto overscroll-contain">
 								{#each regions as region, i (i)}
 									{#if region.kind === 'gap'}
 										<div
@@ -556,19 +556,14 @@
 										{/each}
 									{:else}
 										{#each region.rows as row, j (j)}
-											<!-- THE SAME diffCells as the full view — the numbers,
-											     the ± signs, the gutters: the blank context lines
-											     read as file lines, never as voids (one snippet,
-											     the markup cannot drift). -->
-											<div class="grid grid-cols-1 gap-px md:grid-cols-2">
-												<div
-													class="grid grid-cols-[2.75rem_1.25rem_minmax(0,1fr)] md:border-r md:border-border/40"
-												>
-													{@render diffCells(row, 'left')}
-												</div>
-												<div class="grid grid-cols-[2.75rem_1.25rem_minmax(0,1fr)]">
-													{@render diffCells(row, 'right')}
-												</div>
+											<!-- the SAME side-by-side row as the full view's table —
+											     every width, the cells wrap, the panes share the
+											     viewport -->
+											<div
+												class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+											>
+												{@render diffCells(row, 'left')}
+												{@render diffCells(row, 'right')}
 											</div>
 										{/each}
 									{/if}

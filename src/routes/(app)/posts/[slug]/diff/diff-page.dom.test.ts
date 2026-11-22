@@ -72,16 +72,19 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		// the split regions' headers = the two cells (the phone's single
 		// header rides the stack)
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
+		// the split regions = the SAME anatomy as the full view: the two
+		// cells over their panes at EVERY width (the phone's single-header
+		// stand-in is dead)
 		expect(getAllByText('saved (head) · rev 3', { selector: 'h2' })).toHaveLength(1); // the left cell
-		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(2); // the right cell + the phone's single header
-		expect(getAllByText(/forked from rev 3/)).toHaveLength(2); // the notes
+		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(1); // the right cell
+		expect(getAllByText(/forked from rev 3/)).toHaveLength(1); // the right cell's note
 		// the regions' signs: the split cells carry them per side
 		expect(getAllByText('−')).toHaveLength(1);
 		expect(getAllByText('+')).toHaveLength(3);
-		// the collapse round-trip (the shared mdOpen — two chevrons, either obeys)
-		await fireEvent.click(getAllByRole('button', { name: 'Collapse diff' })[0]);
+		// the collapse round-trip (ONE chevron — the left cell's)
+		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
 		expect(() => getByText(/1 unchanged line/)).toThrow();
-		await fireEvent.click(getAllByRole('button', { name: 'Expand diff' })[0]);
+		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 
 		// THE MENU: three checkable items — 'Changed only' checked BY DEFAULT
