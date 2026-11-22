@@ -308,7 +308,7 @@
 			     the chevron rides the FIRST instance only and collapses the
 			     whole comparison (the table is one grid — no per-side split). -->
 				{#snippet paneHeader(title: string, stat: string, statCls: string, withChevron: boolean)}
-					<div class="flex items-center gap-2 px-3 py-2">
+					<div class="flex h-full items-center gap-2 px-3 py-2">
 						{#if withChevron}
 							<button
 								type="button"
@@ -337,7 +337,7 @@
 					     the SAME pane-header pair + the SAME containment (the card is
 					     the bounded flex column; the regions scroll beneath it). -->
 					<div
-						class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
+						class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
 						<div
 							class="grid shrink-0 grid-cols-1 border-b border-border bg-muted/30 md:grid-cols-2"
@@ -432,7 +432,7 @@
 					     lacked). -->
 					<div class="hidden h-full md:block">
 						<div
-							class="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
+							class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
 						>
 							<div
 								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border bg-muted/30"
