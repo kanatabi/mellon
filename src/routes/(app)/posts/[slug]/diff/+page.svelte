@@ -107,15 +107,6 @@
 	const changedCount = $derived(rows.filter((r) => r.status === 'changed').length);
 	const unchangedCount = $derived(METADATA_FIELD_COUNT - changedCount);
 
-	// block-highlight line classes — DIFF_BLOCK is the one shared language
-	// (secrets-diff.ts): a solid row/cell background, not a font tint
-	const lineCls = (kind: 'same' | 'add' | 'del' | null | undefined) =>
-		kind === 'del'
-			? `${DIFF_BLOCK.del} text-diff-del`
-			: kind === 'add'
-				? `${DIFF_BLOCK.add} text-diff-add`
-				: 'text-muted-foreground/80';
-
 	async function saveFrom(overwrite: boolean) {
 		if (!pending) return;
 		saving = true;
