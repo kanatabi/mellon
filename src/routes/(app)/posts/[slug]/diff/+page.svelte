@@ -18,7 +18,9 @@
 		splitRegions,
 		toDraft,
 		unifiedLines,
-		DIFF_VIEW_KEY
+		unifyRows,
+		DIFF_VIEW_KEY,
+		type UnifiedLine
 	} from '#lib/post-diff.ts';
 	import { DIFF_BLOCK } from '#lib/secrets-diff.ts';
 
@@ -268,10 +270,11 @@
 				</button>
 			</div>
 			<div class="flex items-center gap-2">
-				{#if tab === 'markdown' && !changedOnly}
+				{#if tab === 'markdown'}
 					<!-- THE VIEW MODE (Split ⇄ Inline): the segmented control (the
 					     tabs' grammar — a mode, not a pressed state); the choice
-					     remembers itself (localStorage). -->
+					     remembers itself (localStorage). Drives BOTH bodies — the
+					     full comparison's AND the Changed-only regions'. -->
 					<div
 						class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
 						role="group"
@@ -389,6 +392,46 @@
 					</span>
 				{/snippet}
 
+				<!-- THE UNIFIED ROW (the two number bars): shared by the full
+				     view's inline body AND the Changed-only's inline regions —
+				     the same line = both numbers; a − line = the head's bar
+				     only; a + line = the pending's only; the tint spans the
+				     full row, gutters included (the GitHub's anatomy). -->
+				{#snippet unifiedRow(line: UnifiedLine)}
+					<div
+						class="grid grid-cols-[2.5rem_2.5rem_1.25rem_1fr] {line.kind === 'same'
+							? ''
+							: DIFF_BLOCK[line.kind]}"
+					>
+						<span
+							class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
+							>{line.lnHead ?? ''}</span
+						>
+						<span
+							class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
+							>{line.lnPending ?? ''}</span
+						>
+						<span
+							class="text-center select-none {line.kind === 'del'
+								? 'text-diff-del'
+								: line.kind === 'add'
+									? 'text-diff-add'
+									: ''}"
+						>
+							{line.kind === 'del' ? '−' : line.kind === 'add' ? '+' : ''}
+						</span>
+						<span
+							class="min-w-0 break-words whitespace-pre-wrap {line.kind === 'same'
+								? 'text-muted-foreground/80'
+								: line.kind === 'del'
+									? 'text-diff-del'
+									: 'text-diff-add'}"
+						>
+							{line.text || '\u00A0'}
+						</span>
+					</div>
+				{/snippet}
+
 				{#snippet paneHeader(
 					title: string,
 					stat: string,
@@ -434,37 +477,50 @@
 				{#if changedOnly}
 					<!-- The collapsed view: change regions (+context) with gap bands —
 					     the SAME containment (the card hugs its content, capped at
-					     the pane). THE HEADER SPLITS BY SURFACE: the mobile's regions
-					     stack single-column — the two cells sit over nothing — so the
-					     phone gets the ONE GitHub file-header (the DiffFileHeader
-					     component, built for the unified view's reuse); the desktop
-					     keeps the two cells over the two region columns. -->
+					     the pane). The HEADER follows the VIEW MODE (the owner's
+					     correction): the inline regions = ONE body = the ONE
+					     DiffFileHeader (every viewport); the split regions = the
+					     two cells over the two columns (the mobile gets the single
+					     header — its stack has no second column). -->
 					<div
 						class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
-						<div class="shrink-0 md:hidden">
-							<DiffFileHeader
-								title="pending"
-								{stats}
-								note={`forked from rev ${pending.baseRev}`}
-								bind:open={mdOpen}
-							/>
-						</div>
-						<div class="hidden shrink-0 border-b border-border/60 bg-muted md:grid md:grid-cols-2">
-							{@render paneHeader(
-								`saved (head) · rev ${data.post.rev}`,
-								`−${stats.dels}`,
-								'text-diff-del',
-								true
-							)}
-							{@render paneHeader(
-								'pending',
-								`+${stats.adds}`,
-								'text-diff-add',
-								false,
-								`forked from rev ${pending.baseRev}`
-							)}
-						</div>
+						{#if view === 'inline'}
+							<div class="shrink-0">
+								<DiffFileHeader
+									title="pending"
+									{stats}
+									note={`forked from rev ${pending.baseRev}`}
+									bind:open={mdOpen}
+								/>
+							</div>
+						{:else}
+							<div class="shrink-0 md:hidden">
+								<DiffFileHeader
+									title="pending"
+									{stats}
+									note={`forked from rev ${pending.baseRev}`}
+									bind:open={mdOpen}
+								/>
+							</div>
+							<div
+								class="hidden shrink-0 border-b border-border/60 bg-muted md:grid md:grid-cols-2"
+							>
+								{@render paneHeader(
+									`saved (head) · rev ${data.post.rev}`,
+									`−${stats.dels}`,
+									'text-diff-del',
+									true
+								)}
+								{@render paneHeader(
+									'pending',
+									`+${stats.adds}`,
+									'text-diff-add',
+									false,
+									`forked from rev ${pending.baseRev}`
+								)}
+							</div>
+						{/if}
 						{#if mdOpen}
 							<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
 								{#each regions as region, i (i)}
@@ -474,6 +530,10 @@
 										>
 											⋯ {region.count} unchanged line{region.count === 1 ? '' : 's'}
 										</div>
+									{:else if view === 'inline'}
+										{#each unifyRows(region.rows) as line, j (j)}
+											{@render unifiedRow(line)}
+										{/each}
 									{:else}
 										{#each region.rows as row, j (j)}
 											<!-- THE SAME diffCells as the full view — the numbers,
@@ -519,38 +579,7 @@
 									class="min-h-0 flex-1 overflow-y-auto overscroll-contain font-mono text-[11px]"
 								>
 									{#each unified as line, i (i)}
-										<div
-											class="grid grid-cols-[2.5rem_2.5rem_1.25rem_1fr] {line.kind === 'same'
-												? ''
-												: DIFF_BLOCK[line.kind]}"
-										>
-											<span
-												class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
-												>{line.lnHead ?? ''}</span
-											>
-											<span
-												class="text-right whitespace-nowrap text-muted-foreground/50 tabular-nums select-none"
-												>{line.lnPending ?? ''}</span
-											>
-											<span
-												class="text-center select-none {line.kind === 'del'
-													? 'text-diff-del'
-													: line.kind === 'add'
-														? 'text-diff-add'
-														: ''}"
-											>
-												{line.kind === 'del' ? '−' : line.kind === 'add' ? '+' : ''}
-											</span>
-											<span
-												class="min-w-0 break-words whitespace-pre-wrap {line.kind === 'same'
-													? 'text-muted-foreground/80'
-													: line.kind === 'del'
-														? 'text-diff-del'
-														: 'text-diff-add'}"
-											>
-												{line.text || '\u00A0'}
-											</span>
-										</div>
+										{@render unifiedRow(line)}
 									{/each}
 								</div>
 							{/if}

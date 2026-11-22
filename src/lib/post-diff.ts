@@ -103,8 +103,16 @@ export type UnifiedLine = {
 };
 
 export function unifiedLines(base: PostDraft, pending: PostDraft): UnifiedLine[] {
+	return unifyRows(splitMarkdown(base, pending));
+}
+
+/** The generic flattener — the rows-level primitive the views compose:
+ *  the full document's alignment AND the Changed-only regions' rows are
+ *  the same SplitRow shape, so one flattener serves both (the regions
+ *  pass each region's `rows`; the full view passes the whole document). */
+export function unifyRows(rows: SplitRow[]): UnifiedLine[] {
 	const out: UnifiedLine[] = [];
-	for (const row of splitMarkdown(base, pending)) {
+	for (const row of rows) {
 		if (row.left) {
 			out.push({
 				kind: row.left.kind === 'same' ? 'same' : 'del',

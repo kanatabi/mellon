@@ -130,6 +130,30 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 			await vi.waitFor(() => expect(getByText('asdkjasdkj')).toBeTruthy());
 		});
 
+		it('the Changed-only regions flatten too: one header, the gap bands survive', async () => {
+			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
+			const { getByRole, getByText, getAllByText } = render(Fixture);
+			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
+			await fireEvent.click(getByRole('button', { name: 'Inline' }));
+			await fireEvent.click(getByRole('button', { name: 'Changed only' }));
+			await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
+			// ONE header over the flattened regions — the two cells are gone
+			// even on the desktop (one body, one header)
+			expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(1);
+			expect(() => getByText('saved (head) · rev 3', { selector: 'h2' })).toThrow();
+			// the region's lines = the SAME two-bar anatomy (the flattening
+			// rode the regions' rows)
+			expect(getAllByText('−')).toHaveLength(1);
+			expect(getAllByText('+')).toHaveLength(3);
+			expect(getByText('EDITED')).toBeTruthy();
+			// the gap band survives the flattening (the view-agnostic band)
+			expect(getByText(/1 unchanged line/)).toBeTruthy();
+			// the collapse = the single header's chevron
+			await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
+			expect(() => getByText('EDITED')).toThrow();
+			expect(() => getByText(/1 unchanged line/)).toThrow(); // the bands hide too
+		});
+
 		it('the remembered choice wins on the next visit', async () => {
 			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
 			localStorage.setItem('mellon.diff-view', 'inline');
