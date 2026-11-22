@@ -3,7 +3,7 @@
 	import { browser } from '$app/env';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { ChevronDown, Ellipsis, FileDiff, List, RotateCcw } from 'lucide-svelte';
+	import { ChevronDown, Ellipsis, FileDiff, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import DiffFileHeader from '#lib/components/DiffFileHeader.svelte';
@@ -20,6 +20,7 @@
 		unifiedLines,
 		unifyRows,
 		DIFF_VIEW_KEY,
+		DIFF_CHANGED_ONLY_KEY,
 		type UnifiedLine
 	} from '#lib/post-diff.ts';
 	import { DIFF_BLOCK } from '#lib/secrets-diff.ts';
@@ -47,7 +48,7 @@
 	// changed-only view is the first paint — the full comparison = the
 	// explicit 'Show all lines' tap. (browser guard: matchMedia is client-only;
 	// the SSR renders the full view and the client adopts the compact one.)
-	let changedOnly = $state(browser ? matchMedia('(max-width: 47.99rem)').matches : false);
+	let changedOnly = $state(browser ? readChangedOnlyMemory() : true);
 	let hideUnchanged = $state(false); // metadata: show all rows ⇄ changed only
 
 	// THE VIEW MODE (the owner's calls, 2026-11-22): the REMEMBERED choice
@@ -64,6 +65,17 @@
 	function setView(v: 'split' | 'inline') {
 		view = v;
 		localStorage.setItem(DIFF_VIEW_KEY, v);
+	}
+	// 'Changed only' DEFAULTS ON (the owner call — the compact review view
+	// is the first paint EVERYWHERE; the old matchMedia viewport default is
+	// dead). The uncheck ('show all lines') remembers itself.
+	function readChangedOnlyMemory(): boolean {
+		const raw = localStorage.getItem(DIFF_CHANGED_ONLY_KEY);
+		return raw === null ? true : raw === 'true';
+	}
+	function setChangedOnly(v: boolean) {
+		changedOnly = v;
+		localStorage.setItem(DIFF_CHANGED_ONLY_KEY, String(v));
 	}
 
 	onMount(() => {
@@ -226,7 +238,7 @@
 		     beside the tabs, aligned right — not in the action band (the band
 		     = the verbs only). The row wraps on the narrowest screens; the
 		     toggle never overflows. -->
-		<div class="flex flex-wrap items-center justify-between gap-2">
+		<div class="flex flex-nowrap items-center justify-between gap-2">
 			<!-- Tabs (house roving-tabindex pattern): markdown ⇄ metadata. -->
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
@@ -287,6 +299,20 @@
 							>
 								Preferences
 							</DropdownMenu.Label>
+							<!-- 'Changed only' lives here now (the band's amber button is
+							     gone) — and DEFAULTS ON: the compact review view is the
+							     first paint everywhere; the uncheck remembers itself. -->
+							<DropdownMenu.CheckboxItem
+								checked={changedOnly}
+								onCheckedChange={(v) => {
+									if (v !== undefined) setChangedOnly(v);
+								}}
+								closeOnSelect={false}
+								class="rounded-md py-1.5 font-mono text-xs"
+							>
+								Changed only
+							</DropdownMenu.CheckboxItem>
+							<DropdownMenu.Separator class="my-1" />
 							<DropdownMenu.CheckboxItem
 								checked={view === 'split'}
 								onCheckedChange={(v) => {
@@ -309,20 +335,6 @@
 							</DropdownMenu.CheckboxItem>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
-				{/if}
-				{#if tab === 'markdown'}
-					<Button
-						type="button"
-						variant="quiet"
-						aria-pressed={changedOnly}
-						class="gap-1.5 rounded-full px-3 py-1 font-mono text-xs {changedOnly
-							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
-							: ''}"
-						onclick={() => (changedOnly = !changedOnly)}
-					>
-						{#if changedOnly}<List class="size-3.5" />{:else}<FileDiff class="size-3.5" />{/if}
-						{changedOnly ? 'Show all lines' : 'Changed only'}
-					</Button>
 				{:else}
 					<Button
 						type="button"
@@ -626,20 +638,18 @@
 							</div>
 							{#if mdOpen}
 								<div class="min-h-0 flex-1 overflow-auto overscroll-contain font-mono text-[11px]">
-									<!-- the min-width floor: a 390px screen PANS the two
-									     panes inside the card (the viewport-fit doctrine:
-									     the content scrolls in its own pane) — the cells
-									     still wrap, the scroll is the safety valve -->
-									<div class="min-w-[42rem]">
-										{#each splitRows as row, i (i)}
-											<div
-												class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
-											>
-												{@render diffCells(row, 'left')}
-												{@render diffCells(row, 'right')}
-											</div>
-										{/each}
-									</div>
+									<!-- the TWO PANES SIDE-BY-SIDE at every width (the GitHub
+									     mobile's shape — the owner's correction): the columns
+									     SHARE the viewport and the cells wrap; overflow-auto
+									     stays only as the long-token safety valve -->
+									{#each splitRows as row, i (i)}
+										<div
+											class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+										>
+											{@render diffCells(row, 'left')}
+											{@render diffCells(row, 'right')}
+										</div>
+									{/each}
 								</div>
 							{/if}
 						</div>

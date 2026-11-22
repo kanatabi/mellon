@@ -64,45 +64,43 @@ describe('the diff page — metadata tab (the vault table view)', () => {
 });
 
 describe('the diff page — markdown tab (whole file ⇄ changed regions)', () => {
-	it('shows the whole file by default and collapses to regions on the toggle', async () => {
+	it('the CHANGED-ONLY view is the default first paint; the menu reveals the full file', async () => {
 		localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
 		const { getByRole, getByText, getAllByText, getAllByRole } = render(Fixture);
 		await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-		// the head's identity = the mobile's TRACE ROW's title + the desktop
-		// PANE HEADERS (the owner's indicator row: HEAD −dels over the left
-		// pane, PENDING +adds over the right — one chevron, the cells sit
-		// over their panes); the l0 line renders in the both modes' both sides
-		expect(getAllByText('saved (head) · rev 3')).toHaveLength(1); // the h2 cell — the trace pair is RETIRED
-		expect(getAllByText('pending', { exact: false }).length).toBeGreaterThanOrEqual(2);
-		expect(getByText('forked from rev 3')).toBeTruthy(); // the right cell's note (the mobile's is the longer line)
-		expect(getByText('+3')).toBeTruthy(); // the additions, on the PENDING header
-		expect(getByText('−1')).toBeTruthy(); // the deletions, on the HEAD header
-		expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2);
-		// the header's chevron collapses the desktop table, the headers
-		// stay (the mobile's free-collapse, mirrored)
-		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
-		expect(() => getByText('l0')).toThrow();
-		expect(getByRole('button', { name: 'Expand diff' })).toBeTruthy();
-		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
-		await vi.waitFor(() => expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2));
-		// the toggle collapses: a gap band + the changes highlighted — the
-		// header splits by surface: the desktop keeps the two cells over the
-		// region columns; the mobile gets the ONE file-header (the
-		// DiffFileHeader component — the unified view's future shape)
-		await fireEvent.click(getByRole('button', { name: 'Changed only' }));
+		// THE DEFAULT (the owner call): the compact regions view, NO clicks —
+		// the split regions' headers = the two cells (the phone's single
+		// header rides the stack)
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
-		expect(getByRole('button', { name: 'Show all lines' })).toBeTruthy();
-		expect(getAllByText('saved (head) · rev 3', { selector: 'h2' })).toHaveLength(1); // the desktop cell
-		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(2); // the cell + the single header
-		expect(getAllByText(/forked from rev 3/)).toHaveLength(2); // the cell's note + the single header's
-		// the chevron collapses THIS view's body too (the shared mdOpen —
-		// one comparison body): two chevrons render (the single header's +
-		// the desktop cell's), either obeys
+		expect(getAllByText('saved (head) · rev 3', { selector: 'h2' })).toHaveLength(1); // the left cell
+		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(2); // the right cell + the phone's single header
+		expect(getAllByText(/forked from rev 3/)).toHaveLength(2); // the notes
+		// the regions' signs: the split cells carry them per side
+		expect(getAllByText('−')).toHaveLength(1);
+		expect(getAllByText('+')).toHaveLength(3);
+		// the collapse round-trip (the shared mdOpen — two chevrons, either obeys)
 		await fireEvent.click(getAllByRole('button', { name: 'Collapse diff' })[0]);
 		expect(() => getByText(/1 unchanged line/)).toThrow();
-		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(2); // the headers stay
 		await fireEvent.click(getAllByRole('button', { name: 'Expand diff' })[0]);
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
+
+		// THE MENU: three checkable items — 'Changed only' checked BY DEFAULT
+		await fireEvent.click(getByRole('button', { name: 'Diff preferences' }));
+		const items = getAllByRole('menuitemcheckbox');
+		expect(items).toHaveLength(3);
+		expect(items[0].textContent).toContain('Changed only');
+		expect(items[0].getAttribute('aria-checked')).toBe('true');
+		// the uncheck reveals the FULL file (the split, the memory writes)
+		await fireEvent.click(items[0]);
+		expect(localStorage.getItem('mellon.diff-changed-only')).toBe('false');
+		await vi.waitFor(() => expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2));
+		expect(getAllByText('saved (head) · rev 3', { selector: 'h2' })).toHaveLength(1); // the full view's cell
+		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(1); // the right cell — the phone's header is the full view's ONE table
+		// the full view's collapse round-trip
+		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
+		expect(() => getByText('l0')).toThrow();
+		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
+		await vi.waitFor(() => expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2));
 		// the trailing token is a real, visible add — never an invisible strip
 		expect(getByText('asdkjasdkj')).toBeTruthy();
 		expect(getByText('EDITED')).toBeTruthy();
@@ -135,7 +133,7 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 			localStorage.setItem('mellon.diff-view', 'inline');
 			const { getByRole, getByText, getAllByText } = render(Fixture);
 			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-			await fireEvent.click(getByRole('button', { name: 'Changed only' }));
+			// the changed-only default = ON — the regions are the first paint
 			await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 			// ONE header over the flattened regions — the two cells are gone
 			// even on the desktop (one body, one header)
@@ -161,11 +159,13 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 			// the split is the desktop default; the menu's checks agree
 			await fireEvent.click(getByRole('button', { name: 'Diff preferences' }));
 			const items = getAllByRole('menuitemcheckbox');
-			expect(items).toHaveLength(2);
-			expect(items[0].textContent).toContain('Split view');
-			expect(items[1].textContent).toContain('Inline view');
-			// pick inline: the body swaps, the memory writes
-			await fireEvent.click(items[1]);
+			expect(items).toHaveLength(3);
+			expect(items[0].textContent).toContain('Changed only');
+			expect(items[1].textContent).toContain('Split view');
+			expect(items[2].textContent).toContain('Inline view');
+			// pick inline: the body swaps (the changed-only default stays on —
+			// the regions flatten), the memory writes
+			await fireEvent.click(items[2]);
 			expect(localStorage.getItem('mellon.diff-view')).toBe('inline');
 			await vi.waitFor(() => expect(getAllByText('−')).toHaveLength(1));
 		});

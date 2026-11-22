@@ -83,6 +83,11 @@ export const METADATA_FIELD_COUNT = METADATA_FIELDS.length;
  *  editor-buffer keys. */
 export const DIFF_VIEW_KEY = 'mellon.diff-view';
 
+/** The compact mode's memory — 'Changed only' DEFAULTS ON (the owner call:
+ *  the compact review view is the first paint everywhere); the user's
+ *  uncheck (show all lines) survives navigation. */
+export const DIFF_CHANGED_ONLY_KEY = 'mellon.diff-changed-only';
+
 /** The markdown tab: aligned two-pane rows over the raw body (left = saved,
  *  right = pending). Full documents pair fine — the LCS is review-aid sized. */
 export function splitMarkdown(base: PostDraft, pending: PostDraft): SplitRow[] {
