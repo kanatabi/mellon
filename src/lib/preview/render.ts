@@ -155,6 +155,16 @@ function markdownEngine(): Promise<MarkdownItInstance> {
 	return engine;
 }
 
+/** The boot warm-up: the Shiki grammar build = the seconds of SYNCHRONOUS,
+ * event-loop-freezing CPU — paid at the pod's STARTUP (the k8s lifecycle
+ * expects it: the old pod serves, the readiness probe retries), never on
+ * the owner's first typing burst after a deploy (the cold-engine walk,
+ * 2026-11-22 — earendil's twin). The module is DYNAMICALLY imported by the
+ * relay route, so hooks.server.ts is the eager touchpoint that fires this. */
+export function warmup(): Promise<MarkdownItInstance> {
+	return markdownEngine();
+}
+
 export async function renderMarkdown(markdown: string): Promise<{ html: string; toc: TocEntry[] }> {
 	const instance = await markdownEngine();
 	const env = {};

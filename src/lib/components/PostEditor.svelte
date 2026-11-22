@@ -1153,7 +1153,9 @@ flowchart LR
 		     panels stay mounted, the inactive one is visibility-hidden via
 		     max-lg: variants so desktop semantics are untouched. Roving
 		     tabindex: Tab lands on the selected tab, arrows walk. -->
-		<div class="flex items-center gap-2 @min-[48rem]/editor:hidden">
+		<div
+			class="flex items-center gap-2 px-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] @min-[48rem]/editor:hidden"
+		>
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
 				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"

@@ -22,3 +22,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 	);
 	return res;
 };
+
+// THE BOOT WARM-UP (2026-11-22): the preview's markdown engine = the
+// seconds of sync, event-loop-freezing CPU on its first build — pay it at
+// the pod's STARTUP, never on the owner's first typing burst after a
+// deploy (the cold-engine walk — earendil's twin). The render module is
+// DYNAMICALLY imported by the relay route, so the hooks = the only eager
+// touchpoint that can start the build off the request path.
+import('#lib/preview/render.ts')
+	.then((m) => m.warmup())
+	.then(() => console.log('[boot] markdown engine warm'))
+	.catch(() => {}); // the failure surfaces on the first render (the engine's own retry)
