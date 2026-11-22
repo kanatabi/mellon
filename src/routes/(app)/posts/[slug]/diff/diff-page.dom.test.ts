@@ -68,11 +68,11 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
 		const { getByRole, getByText, getAllByText } = render(Fixture);
 		await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-		// default: the FULL document — the BOTH-modes render (the mobile's tab
-		// branch + the md+'s grid share the snippets; the CSS decides the
-		// visibility) — the head's label exists in both modes; the l0 line
-		// renders in both sides of both modes
-		expect(getAllByText('saved (head) · rev 3')).toHaveLength(3); // the mobile's trace row + the both modes' pane labels
+		// the head's identity = the mobile's TRACE ROW's title + the md+'s
+		// column header (the snippet's own labels = removed — the trace's
+		// title carries it, the owner's dedup); the l0 line renders in the
+		// both modes' both sides
+		expect(getAllByText('saved (head) · rev 3')).toHaveLength(2);
 		expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2);
 		// the toggle collapses: a gap band + the changes highlighted
 		await fireEvent.click(getByRole('button', { name: 'Changed only' }));

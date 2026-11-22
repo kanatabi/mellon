@@ -43,9 +43,6 @@
 	// explicit 'Show all lines' tap. (browser guard: matchMedia is client-only;
 	// the SSR renders the full view and the client adopts the compact one.)
 	let changedOnly = $state(browser ? matchMedia('(max-width: 47.99rem)').matches : false);
-	// the full comparison's mobile tab (the editor-preview's grammar: the
-	// tabs below md, the side-by-side split at md+)
-	let fullTab = $state<'head' | 'pending'>('head');
 	let hideUnchanged = $state(false); // metadata: show all rows ⇄ changed only
 
 	onMount(() => {
@@ -60,6 +57,16 @@
 	const conflict = $derived(pending !== null && pending.baseRev !== data.post.rev);
 	const rows = $derived(pending ? fieldRows(pending.draft, head) : []);
 	const splitRows = $derived(pending ? splitMarkdown(head, pending.draft) : []);
+	// the mobile's full comparison = the TWO INDEPENDENT trace rows
+	// ($bindable open — the free collapse: the shared-tab mapping forced an
+	// accordion nobody asked for, walked)
+	let headOpen = $state(false);
+	let pendingOpen = $state(true);
+	// the diff's stats (the GitHub's file-header's +N −N)
+	const stats = $derived({
+		adds: splitRows.filter((r) => r.right?.kind === 'add').length,
+		dels: splitRows.filter((r) => r.left?.kind === 'del').length
+	});
 	const regions = $derived(pending ? splitRegions(head, pending.draft, 2) : []);
 	const shownRows = $derived(hideUnchanged ? rows.filter((r) => r.status !== 'same') : rows);
 	const changedCount = $derived(rows.filter((r) => r.status === 'changed').length);
@@ -331,79 +338,81 @@
 					     = the Saved/Pending TABS (one pane at a time — the stacked full
 					     documents = the endless duplicated scroll). ONE snippet pair
 					     renders both modes: the markup cannot drift. -->
-					{#snippet headPane()}
-						<div class="min-w-0">
-							<p
-								class="border-b border-border px-1 pb-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-							>
-								saved (head) · rev {data.post.rev}
-							</p>
-							<div
-								class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-[11px] leading-relaxed"
-							>
-								{#each splitRows as row, i (i)}
-									<div
-										class="min-h-[1.4em] min-w-0 break-words whitespace-pre-wrap {lineCls(
-											row.left?.kind
-										)} {row.left?.kind === 'same' ? '' : DIFF_BLOCK[row.left?.kind ?? 'same']}"
-									>
-										{row.left?.text ?? '\u00A0'}
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/snippet}
-					{#snippet pendingPane()}
-						<div class="min-w-0">
-							<p
-								class="border-b border-border px-1 pb-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-							>
-								pending
-							</p>
-							<div
-								class="rounded-lg border border-border bg-card px-3 py-2 font-mono text-[11px] leading-relaxed"
-							>
-								{#each splitRows as row, i (i)}
-									<div
-										class="min-h-[1.4em] min-w-0 break-words whitespace-pre-wrap {lineCls(
-											row.right?.kind
-										)} {row.right?.kind === 'same' ? '' : DIFF_BLOCK[row.right?.kind ?? 'same']}"
-									>
-										{row.right?.text ?? '\u00A0'}
-									</div>
-								{/each}
-							</div>
-						</div>
+					{#snippet diffCells(row: (typeof splitRows)[number], side: 'left' | 'right')}
+						{@const op = side === 'left' ? row.left : row.right}
+						{@const no = side === 'left' ? row.ln.left : row.ln.right}
+						<span class="text-right text-muted-foreground/50 tabular-nums select-none"
+							>{no ?? ''}</span
+						>
+						<span
+							class="text-center select-none {op?.kind === 'del'
+								? 'text-diff-del'
+								: op?.kind === 'add'
+									? 'text-diff-add'
+									: ''}"
+						>
+							{op?.kind === 'del' ? '−' : op?.kind === 'add' ? '+' : ''}
+						</span>
+						<span
+							class="min-w-0 break-words whitespace-pre-wrap {op?.kind === 'same'
+								? ''
+								: DIFF_BLOCK[op?.kind ?? 'same']} {op?.kind === 'del'
+								? 'text-diff-del'
+								: op?.kind === 'add'
+									? 'text-diff-add'
+									: ''}"
+						>
+							{op?.text ?? '\u00A0'}
+						</span>
 					{/snippet}
 
-					<div class="flex flex-col gap-2 overflow-hidden md:hidden">
-						<!-- THE TRACE ROWS (the shadcn Trace's anatomy, ported onto the
-						     kit's Collapsible): both documents EXIST on the phone — the
-						     same semantics as the desktop's split, stacked collapsed.
-						     The pending = open by default (the review's eye); the scroll
-						     = inside the open body (the headers never leave). -->
-						<div class="overflow-hidden rounded-lg border border-border bg-card">
-							<TraceRow
-								title="saved (head) · rev {data.post.rev}"
-								open={fullTab === 'head'}
-								onOpenChange={(v) => (fullTab = v ? 'head' : 'pending')}
-							>
-								{@render headPane()}
-							</TraceRow>
-							<TraceRow
-								title="pending"
-								description="forked from rev {pending.baseRev}"
-								open={fullTab === 'pending'}
-								onOpenChange={(v) => (fullTab = v ? 'pending' : 'head')}
-							>
-								{@render pendingPane()}
-							</TraceRow>
+					<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
+						     the line-number gutters, the ± signs, the tints per side. -->
+					<div class="hidden md:block">
+						<div
+							class="mb-2 grid grid-cols-2 gap-4 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+						>
+							<p>saved (head) · rev {data.post.rev}</p>
+							<p>pending · forked from rev {pending.baseRev}</p>
+						</div>
+						<div
+							class="overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
+						>
+							{#each splitRows as row, i (i)}
+								<div
+									class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+								>
+									{@render diffCells(row, 'left')}
+									{@render diffCells(row, 'right')}
+								</div>
+							{/each}
 						</div>
 					</div>
 
-					<div class="hidden gap-4 md:grid md:grid-cols-2">
-						{@render headPane()}
-						{@render pendingPane()}
+					<!-- THE MOBILE: the two independent Trace rows (the GitHub's
+						     file-header: the left chevron, the stats; the sticky trigger);
+						     the scroll = the region's, the headers pinned. -->
+					<div class="md:hidden">
+						<div class="overflow-hidden rounded-lg border border-border bg-card">
+							<TraceRow title="saved (head) · rev {data.post.rev}" bind:open={headOpen}>
+								{#each splitRows as row, i (i)}
+									<div class="grid grid-cols-[2rem_1rem_1fr] divide-x divide-border/40">
+										{@render diffCells(row, 'left')}
+									</div>
+								{/each}
+							</TraceRow>
+							<TraceRow
+								title="pending"
+								description="+{stats.adds} −{stats.dels} · forked from rev {pending.baseRev}"
+								bind:open={pendingOpen}
+							>
+								{#each splitRows as row, i (i)}
+									<div class="grid grid-cols-[2rem_1rem_1fr] divide-x divide-border/40">
+										{@render diffCells(row, 'right')}
+									</div>
+								{/each}
+							</TraceRow>
+						</div>
 					</div>
 				{/if}
 			</div>

@@ -52,13 +52,21 @@ describe('secrets-diff (pure compare engine)', () => {
 			{ kind: 'add', text: '3' }
 		]);
 		expect(pad.length).toBe(3);
-		expect(pad[0]).toEqual({ left: { kind: 'del', text: 'X' }, right: { kind: 'add', text: '1' } });
+		expect(pad[0].left).toEqual({ kind: 'del', text: 'X' });
+		expect(pad[0].right).toEqual({ kind: 'add', text: '1' });
+		// the line numbers: the del = the left's counter; the adds = the right's
+		expect(pad[0].ln).toEqual({ left: 1, right: 1 });
 		expect(pad[1].left).toBeNull();
+		expect(pad[1].ln).toEqual({ left: null, right: 2 });
 		expect(pad[2].left).toBeNull();
-		// same rows pair with themselves on both sides
+		// same rows pair with themselves on both sides, one number each
 		const same = alignDiff([{ kind: 'same', text: 'S' }]);
 		expect(same).toEqual([
-			{ left: { kind: 'same', text: 'S' }, right: { kind: 'same', text: 'S' } }
+			{
+				ln: { left: 1, right: 1 },
+				left: { kind: 'same', text: 'S' },
+				right: { kind: 'same', text: 'S' }
+			}
 		]);
 	});
 

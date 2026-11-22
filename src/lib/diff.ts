@@ -44,17 +44,39 @@ export function diffLines(before: string, after: string): DiffOp[] {
  *  pair them index-for-index and null-pad the shorter side so both panes
  *  keep the SAME row count — the Gitlab alignment that makes scanning work.
  *  Generic: secrets version-compare and the post diff page both render this. */
-export type SplitRow = { left: DiffOp | null; right: DiffOp | null };
+export type SplitRow = {
+	ln: { left: number | null; right: number | null };
+	left: DiffOp | null;
+	right: DiffOp | null;
+};
 
 export function alignDiff(ops: DiffOp[]): SplitRow[] {
 	const rows: SplitRow[] = [];
+	let leftNo = 0;
+	let rightNo = 0;
+	const bump = (op: DiffOp) => {
+		if (op.kind === 'same') {
+			leftNo++;
+			rightNo++;
+		} else if (op.kind === 'del') {
+			leftNo++;
+		} else {
+			rightNo++;
+		}
+	};
+	const numbered = (op: DiffOp): DiffOp => {
+		bump(op);
+		return op;
+	};
+	const noLn = { left: null as number | null, right: null as number | null };
 	let i = 0;
 	while (i < ops.length) {
 		if (ops[i].kind === 'same') {
-			const text = ops[i].text;
+			const op = numbered(ops[i]);
 			rows.push({
-				left: { kind: 'same', text },
-				right: { kind: 'same', text }
+				ln: { left: leftNo, right: rightNo },
+				left: { kind: 'same', text: op.text },
+				right: { kind: 'same', text: op.text }
 			});
 			i++;
 			continue;
@@ -65,10 +87,18 @@ export function alignDiff(ops: DiffOp[]): SplitRow[] {
 		while (i < ops.length && ops[i].kind === 'add') adds.push(ops[i++].text);
 		const height = Math.max(dels.length, adds.length);
 		for (let k = 0; k < height; k++) {
-			rows.push({
-				left: k < dels.length ? { kind: 'del', text: dels[k] } : null,
-				right: k < adds.length ? { kind: 'add', text: adds[k] } : null
-			});
+			const left = k < dels.length ? { kind: 'del' as const, text: dels[k] } : null;
+			const right = k < adds.length ? { kind: 'add' as const, text: adds[k] } : null;
+			const ln = { ...noLn };
+			if (left) {
+				leftNo++;
+				ln.left = leftNo;
+			}
+			if (right) {
+				rightNo++;
+				ln.right = rightNo;
+			}
+			rows.push({ ln, left, right });
 		}
 	}
 	return rows;
