@@ -334,255 +334,261 @@
 </svelte:head>
 
 <section class="flex h-full min-h-0 gap-4">
-	<div class="flex min-w-0 grow flex-col gap-6 overflow-y-auto overscroll-contain pr-1">
-		<div class="flex items-end justify-between gap-4">
-			<h1 class="font-brand text-4xl font-semibold tracking-tight">Posts</h1>
-			<div class="flex items-center gap-2">
-				<button
-					type="button"
-					class="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
-					onclick={() => fileInput?.click()}
-					disabled={importing}
-				>
-					<FileUp class="size-4" />
-					{importing ? 'importing…' : 'Import markdown'}
-				</button>
-				<input
-					bind:this={fileInput}
-					type="file"
-					accept=".md,.markdown,.txt"
-					class="hidden"
-					aria-label="Import a markdown file"
-					onchange={(e) => void onImportFile(e)}
-				/>
-				<a
-					href="/posts/new"
-					class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
-				>
-					<Plus class="size-4" /> New Post
-				</a>
+	<div class="flex min-w-0 grow flex-col gap-6">
+		<div class="shrink-0">
+			<div class="flex items-end justify-between gap-4">
+				<h1 class="font-brand text-4xl font-semibold tracking-tight">Posts</h1>
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						class="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+						onclick={() => fileInput?.click()}
+						disabled={importing}
+					>
+						<FileUp class="size-4" />
+						{importing ? 'importing…' : 'Import markdown'}
+					</button>
+					<input
+						bind:this={fileInput}
+						type="file"
+						accept=".md,.markdown,.txt"
+						class="hidden"
+						aria-label="Import a markdown file"
+						onchange={(e) => void onImportFile(e)}
+					/>
+					<a
+						href="/posts/new"
+						class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
+					>
+						<Plus class="size-4" /> New Post
+					</a>
+				</div>
 			</div>
-		</div>
 
-		{#if importError}
-			<p class="font-mono text-xs text-danger" role="alert">import: {importError}</p>
-		{/if}
+			{#if importError}
+				<p class="font-mono text-xs text-danger" role="alert">import: {importError}</p>
+			{/if}
 
-		<!-- Engine search: debounced into the URL (?q=), lumen routes it to
+			<!-- Engine search: debounced into the URL (?q=), lumen routes it to
 		     Meilisearch — typo-tolerant over the whole corpus, facets honored,
 		     order becomes relevance. Full width at every viewport. -->
-		<div class="relative">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-				aria-hidden="true"
-			/>
-			<Input
-				type="text"
-				bind:value={qInput}
-				oninput={searchSoon}
-				autocomplete="off"
-				aria-label="Search posts"
-				placeholder="search posts — title, body, tags"
-				class="w-full py-2 pr-9 pl-9 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
-			/>
-			{#if qInput}
-				<Button
-					type="button"
-					variant="soft"
-					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
-					onclick={clearSearch}
-					aria-label="Clear search"
-					title="Clear search"
-				>
-					<X class="size-3.5" />
-				</Button>
-			{/if}
-		</div>
+			<div class="relative">
+				<Search
+					class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+					aria-hidden="true"
+				/>
+				<Input
+					type="text"
+					bind:value={qInput}
+					oninput={searchSoon}
+					autocomplete="off"
+					aria-label="Search posts"
+					placeholder="search posts — title, body, tags"
+					class="w-full py-2 pr-9 pl-9 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
+				/>
+				{#if qInput}
+					<Button
+						type="button"
+						variant="soft"
+						class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
+						onclick={clearSearch}
+						aria-label="Clear search"
+						title="Clear search"
+					>
+						<X class="size-3.5" />
+					</Button>
+				{/if}
+			</div>
 
-		<!-- Status row — the §4 machine's three states, filterable. -->
-		<!-- Status strip + pinned filters key (owner call): the chips scroll
+			<!-- Status row — the §4 machine's three states, filterable. -->
+			<!-- Status strip + pinned filters key (owner call): the chips scroll
 		     sideways at phone widths (no wrap — the row keeps one line), the
              key holds the same h-9 w-11 language as the editor's thumb band.
              Badge + tint answer "is anything filtered?" at a glance. -->
-		<div class="flex items-center gap-2">
-			<div
-				class="-mx-1 flex min-w-0 grow [scrollbar-width:none] gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
-				role="group"
-				aria-label="Filter by status"
-			>
-				{#each statusChips as chip (chip.label)}
-					{@const active = (data.statusFilter ?? null) === chip.value}
-					<a
-						href={buildUrl({ status: chip.value })}
-						aria-current={active ? 'true' : undefined}
-						class="shrink-0 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
-							? 'border-brand bg-brand/10 text-foreground'
-							: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
-					>
-						{chip.label}
-					</a>
-				{/each}
-				{#if hasFilters}
-					<a
-						href="/posts"
-						class="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
-					>
-						<X class="size-3" /> clear
-					</a>
-				{/if}
+			<div class="flex items-center gap-2">
+				<div
+					class="-mx-1 flex min-w-0 grow [scrollbar-width:none] gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
+					role="group"
+					aria-label="Filter by status"
+				>
+					{#each statusChips as chip (chip.label)}
+						{@const active = (data.statusFilter ?? null) === chip.value}
+						<a
+							href={buildUrl({ status: chip.value })}
+							aria-current={active ? 'true' : undefined}
+							class="shrink-0 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
+								? 'border-brand bg-brand/10 text-foreground'
+								: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
+						>
+							{chip.label}
+						</a>
+					{/each}
+					{#if hasFilters}
+						<a
+							href="/posts"
+							class="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<X class="size-3" /> clear
+						</a>
+					{/if}
+				</div>
+				<Button
+					type="button"
+					variant="soft"
+					class="relative h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
+						? 'border-brand bg-brand/10 text-foreground'
+						: 'border-border text-muted-foreground hover:text-foreground'}"
+					bind:ref={filtersTrigger}
+					onclick={() => (filtersSheet = true)}
+					aria-haspopup="dialog"
+					aria-expanded={filtersSheet}
+					aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
+					title="Filters"
+				>
+					<SlidersHorizontal class="size-4" />
+					{#if sheetCount}
+						<span
+							class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
+							>{sheetCount}</span
+						>
+					{/if}
+				</Button>
 			</div>
-			<Button
-				type="button"
-				variant="soft"
-				class="relative h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
-					? 'border-brand bg-brand/10 text-foreground'
-					: 'border-border text-muted-foreground hover:text-foreground'}"
-				bind:ref={filtersTrigger}
-				onclick={() => (filtersSheet = true)}
-				aria-haspopup="dialog"
-				aria-expanded={filtersSheet}
-				aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
-				title="Filters"
-			>
-				<SlidersHorizontal class="size-4" />
-				{#if sheetCount}
-					<span
-						class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
-						>{sheetCount}</span
-					>
-				{/if}
-			</Button>
+
+			<!-- The engine answers in its own voice: count of the FULL match set,
+		     and the order it picked. Sort controls below rest while q lives. -->
+			{#if data.q}
+				<p class="font-mono text-xs text-muted-foreground" role="status">
+					engine results · {data.total} matching “{data.q}” — order is relevance
+				</p>
+			{/if}
 		</div>
 
-		<!-- The engine answers in its own voice: count of the FULL match set,
-		     and the order it picked. Sort controls below rest while q lives. -->
-		{#if data.q}
-			<p class="font-mono text-xs text-muted-foreground" role="status">
-				engine results · {data.total} matching “{data.q}” — order is relevance
-			</p>
-		{/if}
-
-		<!-- The list: stacked rows below lg (the view the owner keeps for
+		<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+			<!-- The list: stacked rows below lg (the view the owner keeps for
 		     phones), a columnar TABLE at lg+ — one loop so the two never
 		     drift. Rows are link-cards: the title's ::after spans the row, so
 		     the whole row clicks while the link remains the only tab stop.
 		     Hover AND focus-within tint — no mouse-only affordance. -->
-		<div role="table" aria-label="Posts" class="flex flex-col">
-			<div
-				role="row"
-				class="hidden items-center gap-4 border-b border-border pb-2 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem]"
-			>
-				{#each headerCols as col (col.field)}
-					<a
-						role="columnheader"
-						href={searching ? undefined : sortUrl(col.field)}
-						aria-disabled={searching || undefined}
-						title={searching ? 'relevance order while searching' : undefined}
-						aria-sort={data.sort === col.field
-							? data.dir === 'asc'
-								? 'ascending'
-								: 'descending'
-							: 'none'}
-						class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {searching
-							? 'opacity-40'
-							: data.sort === col.field
-								? 'text-foreground'
-								: 'text-muted-foreground hover:text-foreground'}"
-					>
-						{col.label}
-						{#if data.sort === col.field}
-							{#if data.dir === 'asc'}
-								<ArrowUpNarrowWide class="size-3" />
-							{:else}
-								<ArrowDownWideNarrow class="size-3" />
-							{/if}
-						{/if}
-					</a>
-				{/each}
-				<span
-					role="columnheader"
-					class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-				>
-					Status
-				</span>
-			</div>
-			{#each data.posts as post (post.slug)}
+			<div role="table" aria-label="Posts" class="flex flex-col">
 				<div
 					role="row"
-					transition:fade|local={{ duration: 140 }}
-					class="group relative flex items-center justify-between gap-4 border-b border-border py-3.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem] lg:justify-start"
+					class="hidden items-center gap-4 border-b border-border pb-2 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem]"
 				>
-					<div role="cell" class="min-w-0">
+					{#each headerCols as col (col.field)}
 						<a
-							href="/posts/{post.slug}"
-							class="font-brand text-lg leading-snug font-semibold tracking-tight after:absolute after:inset-0 after:content-[''] focus-visible:underline"
+							role="columnheader"
+							href={searching ? undefined : sortUrl(col.field)}
+							aria-disabled={searching || undefined}
+							title={searching ? 'relevance order while searching' : undefined}
+							aria-sort={data.sort === col.field
+								? data.dir === 'asc'
+									? 'ascending'
+									: 'descending'
+								: 'none'}
+							class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {searching
+								? 'opacity-40'
+								: data.sort === col.field
+									? 'text-foreground'
+									: 'text-muted-foreground hover:text-foreground'}"
 						>
-							{post.title}
+							{col.label}
+							{#if data.sort === col.field}
+								{#if data.dir === 'asc'}
+									<ArrowUpNarrowWide class="size-3" />
+								{:else}
+									<ArrowDownWideNarrow class="size-3" />
+								{/if}
+							{/if}
 						</a>
-						<p class="min-w-0 truncate text-xs text-muted-foreground">{post.subtitle}</p>
-						<p class="font-mono text-[10px] text-muted-foreground lg:hidden">
-							{fmt.format(new Date(post.createdAt))} created{#if post.publishedAt}
-								· {fmt.format(new Date(post.publishedAt))} published{/if}
-							· {fmt.format(new Date(post.updatedAt))} edit · rev {post.rev}
-						</p>
-					</div>
+					{/each}
 					<span
-						role="cell"
-						class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+						role="columnheader"
+						class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
 					>
-						{fmtDate(post.createdAt)}
+						Status
 					</span>
-					<span
-						role="cell"
-						class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
-					>
-						{fmtDate(post.updatedAt)}
-					</span>
-					<span
-						role="cell"
-						class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
-					>
-						{fmtDate(post.publishedAt)}
-					</span>
-					<div role="cell" class="flex flex-col items-end gap-1 lg:items-start">
-						<StatusPill status={post.status} />
-						<span class="hidden font-mono text-[10px] text-muted-foreground/60 lg:block">
-							rev {post.rev}
-						</span>
-					</div>
 				</div>
-			{:else}
-				<p class="border-t border-border py-10 text-center font-mono text-xs text-muted-foreground">
-					{data.q ? `nothing matches “${data.q}”` : 'nothing matches these filters'}
-				</p>
-			{/each}
-		</div>
-
-		<!-- Pager: links, not fetch logic — shareable, back-button honest,
-		     keyboard-native. Hidden when the corpus fits one page. -->
-		{#if data.totalPages > 1}
-			<div class="flex items-center justify-between gap-4 font-mono text-xs">
-				{#if data.page > 1}
-					<a
-						href={buildUrl({ page: data.page - 1 })}
-						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
-						>← prev</a
+				{#each data.posts as post (post.slug)}
+					<div
+						role="row"
+						transition:fade|local={{ duration: 140 }}
+						class="group relative flex items-center justify-between gap-4 border-b border-border py-3.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem] lg:justify-start"
 					>
+						<div role="cell" class="min-w-0">
+							<a
+								href="/posts/{post.slug}"
+								class="font-brand text-lg leading-snug font-semibold tracking-tight after:absolute after:inset-0 after:content-[''] focus-visible:underline"
+							>
+								{post.title}
+							</a>
+							<p class="min-w-0 truncate text-xs text-muted-foreground">{post.subtitle}</p>
+							<p class="font-mono text-[10px] text-muted-foreground lg:hidden">
+								{fmt.format(new Date(post.createdAt))} created{#if post.publishedAt}
+									· {fmt.format(new Date(post.publishedAt))} published{/if}
+								· {fmt.format(new Date(post.updatedAt))} edit · rev {post.rev}
+							</p>
+						</div>
+						<span
+							role="cell"
+							class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+						>
+							{fmtDate(post.createdAt)}
+						</span>
+						<span
+							role="cell"
+							class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+						>
+							{fmtDate(post.updatedAt)}
+						</span>
+						<span
+							role="cell"
+							class="hidden font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+						>
+							{fmtDate(post.publishedAt)}
+						</span>
+						<div role="cell" class="flex flex-col items-end gap-1 lg:items-start">
+							<StatusPill status={post.status} />
+							<span class="hidden font-mono text-[10px] text-muted-foreground/60 lg:block">
+								rev {post.rev}
+							</span>
+						</div>
+					</div>
 				{:else}
-					<span class="px-3 py-1 text-muted-foreground/40">← prev</span>
-				{/if}
-				<span class="text-muted-foreground">page {data.page} / {data.totalPages}</span>
-				{#if data.page < data.totalPages}
-					<a
-						href={buildUrl({ page: data.page + 1 })}
-						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
-						>next →</a
+					<p
+						class="border-t border-border py-10 text-center font-mono text-xs text-muted-foreground"
 					>
-				{:else}
-					<span class="px-3 py-1 text-muted-foreground/40">next →</span>
-				{/if}
+						{data.q ? `nothing matches “${data.q}”` : 'nothing matches these filters'}
+					</p>
+				{/each}
 			</div>
-		{/if}
+
+			<!-- Pager: links, not fetch logic — shareable, back-button honest,
+		     keyboard-native. Hidden when the corpus fits one page. -->
+			{#if data.totalPages > 1}
+				<div class="flex items-center justify-between gap-4 font-mono text-xs">
+					{#if data.page > 1}
+						<a
+							href={buildUrl({ page: data.page - 1 })}
+							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							>← prev</a
+						>
+					{:else}
+						<span class="px-3 py-1 text-muted-foreground/40">← prev</span>
+					{/if}
+					<span class="text-muted-foreground">page {data.page} / {data.totalPages}</span>
+					{#if data.page < data.totalPages}
+						<a
+							href={buildUrl({ page: data.page + 1 })}
+							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							>next →</a
+						>
+					{:else}
+						<span class="px-3 py-1 text-muted-foreground/40">next →</span>
+					{/if}
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Right rail: tags + sort (earendil's kit roles, admin shape). Folds to

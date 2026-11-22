@@ -390,385 +390,292 @@
 </svelte:head>
 
 <section class="flex h-full min-h-0 gap-4">
-	<div class="flex min-w-0 grow flex-col gap-6 overflow-y-auto overscroll-contain pr-1">
-		<div class="flex items-center justify-between gap-4">
-			<h1 class="font-brand text-4xl font-semibold tracking-tight">Photos</h1>
-			<div class="flex items-center gap-3">
-				<!-- View segment (md+): tiles ⇄ table. -->
-				<div
-					class="hidden gap-1 rounded-full border border-border bg-card p-1 md:flex"
-					role="group"
-					aria-label="Photos view"
-				>
-					<button
-						type="button"
-						onclick={() => setView('tiles')}
-						aria-pressed={view === 'tiles'}
-						class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
-						'tiles'
-							? 'bg-brand/15 text-foreground'
-							: 'text-muted-foreground hover:text-foreground'}"
+	<div class="flex min-w-0 grow flex-col gap-6">
+		<div class="shrink-0">
+			<div class="flex items-center justify-between gap-4">
+				<h1 class="font-brand text-4xl font-semibold tracking-tight">Photos</h1>
+				<div class="flex items-center gap-3">
+					<!-- View segment (md+): tiles ⇄ table. -->
+					<div
+						class="hidden gap-1 rounded-full border border-border bg-card p-1 md:flex"
+						role="group"
+						aria-label="Photos view"
 					>
-						<LayoutGrid class="size-3.5" /> Tiles
-					</button>
-					<button
+						<button
+							type="button"
+							onclick={() => setView('tiles')}
+							aria-pressed={view === 'tiles'}
+							class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
+							'tiles'
+								? 'bg-brand/15 text-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+						>
+							<LayoutGrid class="size-3.5" /> Tiles
+						</button>
+						<button
+							type="button"
+							onclick={() => setView('table')}
+							aria-pressed={view === 'table'}
+							class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
+							'table'
+								? 'bg-brand/15 text-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+						>
+							<Table class="size-3.5" /> Table
+						</button>
+					</div>
+					<Button
 						type="button"
-						onclick={() => setView('table')}
-						aria-pressed={view === 'table'}
-						class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
-						'table'
-							? 'bg-brand/15 text-foreground'
-							: 'text-muted-foreground hover:text-foreground'}"
+						variant="quiet"
+						class="gap-2 px-4 py-2 text-sm hover:border-brand active:scale-[0.98]"
+						onclick={() => (pickerOpen = true)}
 					>
-						<Table class="size-3.5" /> Table
-					</button>
+						<Plus class="size-4" /> Upload Photos
+					</Button>
 				</div>
-				<Button
-					type="button"
-					variant="quiet"
-					class="gap-2 px-4 py-2 text-sm hover:border-brand active:scale-[0.98]"
-					onclick={() => (pickerOpen = true)}
-				>
-					<Plus class="size-4" /> Upload Photos
-				</Button>
 			</div>
-		</div>
 
-		<!-- Engine search: debounced into the URL (?q=), lumen routes it to
+			<!-- Engine search: debounced into the URL (?q=), lumen routes it to
 		     Meilisearch — typo-tolerant over the whole library (alt text and
 		     collection), gallery/collection facets honored, order becomes
 		     relevance. Full width at every viewport. -->
-		<div class="relative">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-				aria-hidden="true"
-			/>
-			<Input
-				type="text"
-				bind:value={qInput}
-				oninput={searchSoon}
-				autocomplete="off"
-				aria-label="Search photos"
-				placeholder="search photos — alt text, collections"
-				class="w-full py-2 pr-9 pl-9 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
-			/>
-			{#if qInput}
-				<Button
-					type="button"
-					variant="soft"
-					class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
-					onclick={clearSearch}
-					aria-label="Clear search"
-					title="Clear search"
-				>
-					<X class="size-3.5" />
-				</Button>
-			{/if}
-		</div>
-
-		<!-- Filter strip: the always-visible axes (gallery state, select-all) live
-	     here; collection + dates + sort moved to the sidebar (like posts). -->
-		<div
-			class="flex min-w-0 [scrollbar-width:none] gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
-		>
-			<div class="flex shrink-0 items-center gap-2" role="group" aria-label="Filter by gallery">
-				<a
-					href={buildUrl({ gallery: true })}
-					aria-current={data.gallery === true ? 'true' : undefined}
-					class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
-					true
-						? 'border-accent-teal bg-accent-teal/10 text-foreground'
-						: 'border-border text-muted-foreground hover:text-foreground'}"
-				>
-					<Eye class="size-3" /> in gallery
-				</a>
-				<a
-					href={buildUrl({ gallery: false })}
-					aria-current={data.gallery === false ? 'true' : undefined}
-					class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
-					false
-						? 'border-accent-teal bg-accent-teal/10 text-foreground'
-						: 'border-border text-muted-foreground hover:text-foreground'}"
-				>
-					<EyeOff class="size-3" /> out
-				</a>
-			</div>
-			{#if hasFilters}
-				<a
-					href="/photos"
-					class="flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-1 font-mono text-xs text-muted-foreground hover:text-foreground"
-				>
-					<X class="size-3" /> clear
-				</a>
-			{/if}
-			<Button
-				type="button"
-				variant="quiet"
-				class="shrink-0 gap-1.5 self-start py-1"
-				onclick={selectAll}
-			>
-				<Check class="size-3" />
-				{selection.size === rows.length && rows.length > 0 ? 'deselect all' : 'select all'}
-			</Button>
-			<!-- Sheet trigger (phones only): collections + dates + sort live behind it. -->
-			<Button
-				type="button"
-				variant="soft"
-				class="relative ml-auto h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
-					? 'border-brand bg-brand/10 text-foreground'
-					: 'border-border text-muted-foreground hover:text-foreground'}"
-				bind:ref={filtersTrigger}
-				onclick={() => (filtersSheet = true)}
-				aria-haspopup="dialog"
-				aria-expanded={filtersSheet}
-				aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
-				title="Filters"
-			>
-				<SlidersHorizontal class="size-4" />
-				{#if sheetCount}
-					<span
-						class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
-						>{sheetCount}</span
-					>
-				{/if}
-			</Button>
-		</div>
-
-		<!-- Bulk bar: appears only with a live selection (owner call — curation is
-	     a mode, not a permanent limb). -->
-		{#if selection.size > 0}
-			<div
-				transition:fade={{ duration: 140 }}
-				class="flex flex-wrap items-center gap-3 rounded-lg border border-brand/40 bg-brand/5 px-3 py-2"
-				role="toolbar"
-				aria-label="Bulk curation"
-			>
-				<span class="font-mono text-xs text-brand">{selection.size} selected</span>
-				<div class="w-44">
-					<Combobox
-						items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
-						multiple={false}
-						selected={[]}
-						emptyLabel="set collection…"
-						noneLabel="Uncategorized"
-						create={(n) => client.createCollection(n)}
-						onchange={(next) => void bulk({ collection: next[0] ?? null })}
-					/>
-				</div>
-				<Button
-					type="button"
-					variant="quiet"
-					class="gap-1.5 py-1"
-					onclick={() => void bulk({ gallery: true })}
-				>
-					<Eye class="size-3" /> in gallery
-				</Button>
-				<Button
-					type="button"
-					variant="quiet"
-					class="gap-1.5 py-1"
-					onclick={() => void bulk({ gallery: false })}
-				>
-					<EyeOff class="size-3" /> out
-				</Button>
-				<Button
-					type="button"
-					variant="soft"
-					class="ml-auto rounded-full p-1.5"
-					onclick={() => selection.clear()}
-					aria-label="Clear selection"
-				>
-					<X class="size-3.5" />
-				</Button>
-			</div>
-		{/if}
-
-		{#if message}
-			<p
-				class="w-fit rounded-full bg-brand/10 px-3 py-1 font-mono text-xs text-brand"
-				role="status"
-			>
-				{message}
-			</p>
-		{/if}
-
-		<!-- The engine answers in its own voice: count of the FULL match set,
-		     and the order it picked. Sort and the date window rest while q lives. -->
-		{#if data.q}
-			<p class="font-mono text-xs text-muted-foreground" role="status">
-				engine results · {data.total} matching “{data.q}” — order is relevance
-			</p>
-		{/if}
-
-		{#if rows.length === 0}
-			<div class="relative flex flex-col items-center gap-3 py-24">
-				<Watermark
-					class="pointer-events-none absolute inset-0 m-auto aspect-square w-72"
-					opacity={0.08}
+			<div class="relative">
+				<Search
+					class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+					aria-hidden="true"
 				/>
-				<Images class="relative size-6 text-muted-foreground" />
-				<p class="relative font-mono text-xs text-muted-foreground">
-					{data.q
-						? `nothing matches “${data.q}”`
-						: hasFilters
-							? 'nothing matches these filters'
-							: 'no photographs yet — the darkroom is empty'}
-				</p>
-			</div>
-		{:else}
-			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 {view === 'table' ? 'md:hidden' : ''}">
-				{#each rows as p (p.id)}
-					{@const sel = selection.has(p.id)}
-					<figure class="flex flex-col gap-2">
-						<div class="relative">
-							<!-- the image is the door to the detail page; the overlay
-							     keys (absolute, later in DOM) keep click priority -->
-							<a href="/photos/{p.id}" aria-label="Open {p.alt} in detail view">
-								<img
-									src={p.src}
-									alt={p.alt}
-									width={p.width}
-									height={p.height}
-									class="aspect-[4/3] w-full rounded-lg border border-border object-cover transition-opacity hover:opacity-90"
-								/>
-							</a>
-							<!-- checkbox key -->
-							<button
-								type="button"
-								onclick={() => toggleSelect(p.id)}
-								aria-pressed={selection.has(p.id)}
-								aria-label={selection.has(p.id) ? `Deselect ${p.alt}` : `Select ${p.alt}`}
-								class={sel
-									? 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-brand bg-brand text-white backdrop-blur transition-colors'
-									: 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground'}
-							>
-								<Check class="size-3.5" />
-							</button>
-							<!-- copy-link key, beside the gallery eye -->
-							<button
-								type="button"
-								onclick={() => void copyLink(p)}
-								aria-label={`Copy link for ${p.alt}`}
-								title="Copy link"
-								class="absolute top-2 right-10 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
-							>
-								<Link class="size-3.5" />
-							</button>
-							<!-- gallery eye key: pressed = published to the blog Gallery -->
-							<button
-								type="button"
-								onclick={() => void patch(p.id, { gallery: !p.gallery })}
-								aria-pressed={p.gallery}
-								aria-label={p.gallery ? `Remove ${p.alt} from gallery` : `Add ${p.alt} to gallery`}
-								title="In gallery"
-								class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md border backdrop-blur transition-colors {p.gallery
-									? 'border-brand bg-brand/90 text-white'
-									: 'border-border bg-card/80 text-muted-foreground hover:text-foreground'}"
-							>
-								{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
-							</button>
-						</div>
-						<!-- the picker sits in the flow; figcaption stays the figure's
-					     last child (a11y). -->
-						<div>
-							<Combobox
-								items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
-								multiple={false}
-								selected={p.collection ? [p.collection] : []}
-								emptyLabel="Uncategorized"
-								noneLabel="Uncategorized"
-								create={(n) => client.createCollection(n)}
-								onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
-							/>
-						</div>
-						<figcaption class="font-mono text-[10px] leading-relaxed text-muted-foreground">
-							{p.width}×{p.height} · {p.alt}
-						</figcaption>
-					</figure>
-				{/each}
+				<Input
+					type="text"
+					bind:value={qInput}
+					oninput={searchSoon}
+					autocomplete="off"
+					aria-label="Search photos"
+					placeholder="search photos — alt text, collections"
+					class="w-full py-2 pr-9 pl-9 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
+				/>
+				{#if qInput}
+					<Button
+						type="button"
+						variant="soft"
+						class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
+						onclick={clearSearch}
+						aria-label="Clear search"
+						title="Clear search"
+					>
+						<X class="size-3.5" />
+					</Button>
+				{/if}
 			</div>
 
-			<!-- Table view (md+; phones always see tiles): same controls as the
-		     tiles — checkbox, collection combobox, gallery key — laid out in
-		     sortable columns through the API (headers are links). -->
-			{#if view === 'table'}
-				<div role="table" aria-label="Photos" class="hidden flex-col md:flex">
-					<div
-						role="row"
-						class="mb-1 grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border pb-2"
+			<!-- Filter strip: the always-visible axes (gallery state, select-all) live
+	     here; collection + dates + sort moved to the sidebar (like posts). -->
+			<div
+				class="flex min-w-0 [scrollbar-width:none] gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
+			>
+				<div class="flex shrink-0 items-center gap-2" role="group" aria-label="Filter by gallery">
+					<a
+						href={buildUrl({ gallery: true })}
+						aria-current={data.gallery === true ? 'true' : undefined}
+						class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
+						true
+							? 'border-accent-teal bg-accent-teal/10 text-foreground'
+							: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
-						{#each photoCols as col (col.label)}
-							{#if col.field}
-								<a
-									role="columnheader"
-									href={searching ? undefined : sortUrl(col.field)}
-									aria-disabled={searching || undefined}
-									title={searching ? 'relevance order while searching' : undefined}
-									aria-sort={data.sort === col.field
-										? data.dir === 'asc'
-											? 'ascending'
-											: 'descending'
-										: 'none'}
-									class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {searching
-										? 'opacity-40'
-										: data.sort === col.field
-											? 'text-foreground'
-											: 'text-muted-foreground hover:text-foreground'}"
-								>
-									{col.label}
-									{#if data.sort === col.field}
-										{#if data.dir === 'asc'}
-											<ArrowUpNarrowWide class="size-3" />
-										{:else}
-											<ArrowDownWideNarrow class="size-3" />
-										{/if}
-									{/if}
-								</a>
-							{:else}
-								<span
-									role="columnheader"
-									class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-								>
-									{col.label}
-								</span>
-							{/if}
-						{/each}
+						<Eye class="size-3" /> in gallery
+					</a>
+					<a
+						href={buildUrl({ gallery: false })}
+						aria-current={data.gallery === false ? 'true' : undefined}
+						class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
+						false
+							? 'border-accent-teal bg-accent-teal/10 text-foreground'
+							: 'border-border text-muted-foreground hover:text-foreground'}"
+					>
+						<EyeOff class="size-3" /> out
+					</a>
+				</div>
+				{#if hasFilters}
+					<a
+						href="/photos"
+						class="flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-1 font-mono text-xs text-muted-foreground hover:text-foreground"
+					>
+						<X class="size-3" /> clear
+					</a>
+				{/if}
+				<Button
+					type="button"
+					variant="quiet"
+					class="shrink-0 gap-1.5 self-start py-1"
+					onclick={selectAll}
+				>
+					<Check class="size-3" />
+					{selection.size === rows.length && rows.length > 0 ? 'deselect all' : 'select all'}
+				</Button>
+				<!-- Sheet trigger (phones only): collections + dates + sort live behind it. -->
+				<Button
+					type="button"
+					variant="soft"
+					class="relative ml-auto h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
+						? 'border-brand bg-brand/10 text-foreground'
+						: 'border-border text-muted-foreground hover:text-foreground'}"
+					bind:ref={filtersTrigger}
+					onclick={() => (filtersSheet = true)}
+					aria-haspopup="dialog"
+					aria-expanded={filtersSheet}
+					aria-label={sheetCount ? `Open filters, ${sheetCount} active` : 'Open filters'}
+					title="Filters"
+				>
+					<SlidersHorizontal class="size-4" />
+					{#if sheetCount}
+						<span
+							class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
+							>{sheetCount}</span
+						>
+					{/if}
+				</Button>
+			</div>
+
+			<!-- Bulk bar: appears only with a live selection (owner call — curation is
+	     a mode, not a permanent limb). -->
+			{#if selection.size > 0}
+				<div
+					transition:fade={{ duration: 140 }}
+					class="flex flex-wrap items-center gap-3 rounded-lg border border-brand/40 bg-brand/5 px-3 py-2"
+					role="toolbar"
+					aria-label="Bulk curation"
+				>
+					<span class="font-mono text-xs text-brand">{selection.size} selected</span>
+					<div class="w-44">
+						<Combobox
+							items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
+							multiple={false}
+							selected={[]}
+							emptyLabel="set collection…"
+							noneLabel="Uncategorized"
+							create={(n) => client.createCollection(n)}
+							onchange={(next) => void bulk({ collection: next[0] ?? null })}
+						/>
 					</div>
+					<Button
+						type="button"
+						variant="quiet"
+						class="gap-1.5 py-1"
+						onclick={() => void bulk({ gallery: true })}
+					>
+						<Eye class="size-3" /> in gallery
+					</Button>
+					<Button
+						type="button"
+						variant="quiet"
+						class="gap-1.5 py-1"
+						onclick={() => void bulk({ gallery: false })}
+					>
+						<EyeOff class="size-3" /> out
+					</Button>
+					<Button
+						type="button"
+						variant="soft"
+						class="ml-auto rounded-full p-1.5"
+						onclick={() => selection.clear()}
+						aria-label="Clear selection"
+					>
+						<X class="size-3.5" />
+					</Button>
+				</div>
+			{/if}
+
+			{#if message}
+				<p
+					class="w-fit rounded-full bg-brand/10 px-3 py-1 font-mono text-xs text-brand"
+					role="status"
+				>
+					{message}
+				</p>
+			{/if}
+
+			<!-- The engine answers in its own voice: count of the FULL match set,
+		     and the order it picked. Sort and the date window rest while q lives. -->
+			{#if data.q}
+				<p class="font-mono text-xs text-muted-foreground" role="status">
+					engine results · {data.total} matching “{data.q}” — order is relevance
+				</p>
+			{/if}
+		</div>
+
+		<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+			{#if rows.length === 0}
+				<div class="relative flex flex-col items-center gap-3 py-24">
+					<Watermark
+						class="pointer-events-none absolute inset-0 m-auto aspect-square w-72"
+						opacity={0.08}
+					/>
+					<Images class="relative size-6 text-muted-foreground" />
+					<p class="relative font-mono text-xs text-muted-foreground">
+						{data.q
+							? `nothing matches “${data.q}”`
+							: hasFilters
+								? 'nothing matches these filters'
+								: 'no photographs yet — the darkroom is empty'}
+					</p>
+				</div>
+			{:else}
+				<div class="grid grid-cols-2 gap-4 md:grid-cols-3 {view === 'table' ? 'md:hidden' : ''}">
 					{#each rows as p (p.id)}
 						{@const sel = selection.has(p.id)}
-						<div
-							role="row"
-							class="grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border py-2.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40"
-						>
-							<span role="cell">
+						<figure class="flex flex-col gap-2">
+							<div class="relative">
+								<!-- the image is the door to the detail page; the overlay
+							     keys (absolute, later in DOM) keep click priority -->
+								<a href="/photos/{p.id}" aria-label="Open {p.alt} in detail view">
+									<img
+										src={p.src}
+										alt={p.alt}
+										width={p.width}
+										height={p.height}
+										class="aspect-[4/3] w-full rounded-lg border border-border object-cover transition-opacity hover:opacity-90"
+									/>
+								</a>
+								<!-- checkbox key -->
 								<button
 									type="button"
 									onclick={() => toggleSelect(p.id)}
-									aria-pressed={sel}
-									aria-label={sel ? `Deselect ${p.alt}` : `Select ${p.alt}`}
-									class="flex size-6 items-center justify-center rounded border transition-colors {sel
-										? 'border-brand bg-brand text-white'
-										: 'border-border text-muted-foreground hover:text-foreground'}"
+									aria-pressed={selection.has(p.id)}
+									aria-label={selection.has(p.id) ? `Deselect ${p.alt}` : `Select ${p.alt}`}
+									class={sel
+										? 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-brand bg-brand text-white backdrop-blur transition-colors'
+										: 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground'}
 								>
-									<Check class="size-3" />
+									<Check class="size-3.5" />
 								</button>
-							</span>
-							<span role="cell">
-								<img
-									src={p.src}
-									alt={p.alt}
-									width={p.width}
-									height={p.height}
-									loading="lazy"
-									class="h-10 w-14 rounded border border-border object-cover"
-								/>
-							</span>
-							<span role="cell" class="min-w-0 truncate font-mono text-xs text-muted-foreground">
-								<a href="/photos/{p.id}" class="transition-colors hover:text-foreground">
-									{p.alt}
-								</a>
-							</span>
-							<div role="cell" class="w-44">
+								<!-- copy-link key, beside the gallery eye -->
+								<button
+									type="button"
+									onclick={() => void copyLink(p)}
+									aria-label={`Copy link for ${p.alt}`}
+									title="Copy link"
+									class="absolute top-2 right-10 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+								>
+									<Link class="size-3.5" />
+								</button>
+								<!-- gallery eye key: pressed = published to the blog Gallery -->
+								<button
+									type="button"
+									onclick={() => void patch(p.id, { gallery: !p.gallery })}
+									aria-pressed={p.gallery}
+									aria-label={p.gallery
+										? `Remove ${p.alt} from gallery`
+										: `Add ${p.alt} to gallery`}
+									title="In gallery"
+									class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md border backdrop-blur transition-colors {p.gallery
+										? 'border-brand bg-brand/90 text-white'
+										: 'border-border bg-card/80 text-muted-foreground hover:text-foreground'}"
+								>
+									{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
+								</button>
+							</div>
+							<!-- the picker sits in the flow; figcaption stays the figure's
+					     last child (a11y). -->
+							<div>
 								<Combobox
 									items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
 									multiple={false}
@@ -779,66 +686,165 @@
 									onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
 								/>
 							</div>
-							<span role="cell" class="flex items-center gap-1.5">
-								<button
-									type="button"
-									onclick={() => void patch(p.id, { gallery: !p.gallery })}
-									aria-pressed={p.gallery}
-									aria-label={p.gallery
-										? `Remove ${p.alt} from gallery`
-										: `Add ${p.alt} to gallery`}
-									class="flex size-7 items-center justify-center rounded border transition-colors {p.gallery
-										? 'border-brand bg-brand/15 text-brand'
-										: 'border-border text-muted-foreground hover:text-foreground'}"
-								>
-									{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
-								</button>
-								<button
-									type="button"
-									onclick={() => void copyLink(p)}
-									aria-label={`Copy link for ${p.alt}`}
-									title="Copy link"
-									class="flex size-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:text-foreground"
-								>
-									<Link class="size-3.5" />
-								</button>
-							</span>
-							<span role="cell" class="font-mono text-[11px] text-muted-foreground tabular-nums">
-								{p.width}×{p.height}
-							</span>
-							<span role="cell" class="font-mono text-[11px] text-muted-foreground tabular-nums">
-								{fmtDate(p.createdAt)}
-							</span>
-						</div>
+							<figcaption class="font-mono text-[10px] leading-relaxed text-muted-foreground">
+								{p.width}×{p.height} · {p.alt}
+							</figcaption>
+						</figure>
 					{/each}
 				</div>
-			{/if}
-		{/if}
 
-		<!-- Pager: links, not fetch logic. Hidden when everything fits one page. -->
-		{#if data.totalPages > 1}
-			<div class="flex items-center justify-between gap-4 font-mono text-xs">
-				{#if data.page > 1}
-					<a
-						href={buildUrl({ page: data.page - 1 })}
-						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
-						>← prev</a
-					>
-				{:else}
-					<span class="px-3 py-1 text-muted-foreground/40">← prev</span>
+				<!-- Table view (md+; phones always see tiles): same controls as the
+		     tiles — checkbox, collection combobox, gallery key — laid out in
+		     sortable columns through the API (headers are links). -->
+				{#if view === 'table'}
+					<div role="table" aria-label="Photos" class="hidden flex-col md:flex">
+						<div
+							role="row"
+							class="mb-1 grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border pb-2"
+						>
+							{#each photoCols as col (col.label)}
+								{#if col.field}
+									<a
+										role="columnheader"
+										href={searching ? undefined : sortUrl(col.field)}
+										aria-disabled={searching || undefined}
+										title={searching ? 'relevance order while searching' : undefined}
+										aria-sort={data.sort === col.field
+											? data.dir === 'asc'
+												? 'ascending'
+												: 'descending'
+											: 'none'}
+										class="flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase transition-colors {searching
+											? 'opacity-40'
+											: data.sort === col.field
+												? 'text-foreground'
+												: 'text-muted-foreground hover:text-foreground'}"
+									>
+										{col.label}
+										{#if data.sort === col.field}
+											{#if data.dir === 'asc'}
+												<ArrowUpNarrowWide class="size-3" />
+											{:else}
+												<ArrowDownWideNarrow class="size-3" />
+											{/if}
+										{/if}
+									</a>
+								{:else}
+									<span
+										role="columnheader"
+										class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+									>
+										{col.label}
+									</span>
+								{/if}
+							{/each}
+						</div>
+						{#each rows as p (p.id)}
+							{@const sel = selection.has(p.id)}
+							<div
+								role="row"
+								class="grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border py-2.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40"
+							>
+								<span role="cell">
+									<button
+										type="button"
+										onclick={() => toggleSelect(p.id)}
+										aria-pressed={sel}
+										aria-label={sel ? `Deselect ${p.alt}` : `Select ${p.alt}`}
+										class="flex size-6 items-center justify-center rounded border transition-colors {sel
+											? 'border-brand bg-brand text-white'
+											: 'border-border text-muted-foreground hover:text-foreground'}"
+									>
+										<Check class="size-3" />
+									</button>
+								</span>
+								<span role="cell">
+									<img
+										src={p.src}
+										alt={p.alt}
+										width={p.width}
+										height={p.height}
+										loading="lazy"
+										class="h-10 w-14 rounded border border-border object-cover"
+									/>
+								</span>
+								<span role="cell" class="min-w-0 truncate font-mono text-xs text-muted-foreground">
+									<a href="/photos/{p.id}" class="transition-colors hover:text-foreground">
+										{p.alt}
+									</a>
+								</span>
+								<div role="cell" class="w-44">
+									<Combobox
+										items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
+										multiple={false}
+										selected={p.collection ? [p.collection] : []}
+										emptyLabel="Uncategorized"
+										noneLabel="Uncategorized"
+										create={(n) => client.createCollection(n)}
+										onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
+									/>
+								</div>
+								<span role="cell" class="flex items-center gap-1.5">
+									<button
+										type="button"
+										onclick={() => void patch(p.id, { gallery: !p.gallery })}
+										aria-pressed={p.gallery}
+										aria-label={p.gallery
+											? `Remove ${p.alt} from gallery`
+											: `Add ${p.alt} to gallery`}
+										class="flex size-7 items-center justify-center rounded border transition-colors {p.gallery
+											? 'border-brand bg-brand/15 text-brand'
+											: 'border-border text-muted-foreground hover:text-foreground'}"
+									>
+										{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
+									</button>
+									<button
+										type="button"
+										onclick={() => void copyLink(p)}
+										aria-label={`Copy link for ${p.alt}`}
+										title="Copy link"
+										class="flex size-7 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:text-foreground"
+									>
+										<Link class="size-3.5" />
+									</button>
+								</span>
+								<span role="cell" class="font-mono text-[11px] text-muted-foreground tabular-nums">
+									{p.width}×{p.height}
+								</span>
+								<span role="cell" class="font-mono text-[11px] text-muted-foreground tabular-nums">
+									{fmtDate(p.createdAt)}
+								</span>
+							</div>
+						{/each}
+					</div>
 				{/if}
-				<span class="text-muted-foreground">page {data.page} / {data.totalPages}</span>
-				{#if data.page < data.totalPages}
-					<a
-						href={buildUrl({ page: data.page + 1 })}
-						class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
-						>next →</a
-					>
-				{:else}
-					<span class="px-3 py-1 text-muted-foreground/40">next →</span>
-				{/if}
-			</div>
-		{/if}
+			{/if}
+
+			<!-- Pager: links, not fetch logic. Hidden when everything fits one page. -->
+			{#if data.totalPages > 1}
+				<div class="flex items-center justify-between gap-4 font-mono text-xs">
+					{#if data.page > 1}
+						<a
+							href={buildUrl({ page: data.page - 1 })}
+							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							>← prev</a
+						>
+					{:else}
+						<span class="px-3 py-1 text-muted-foreground/40">← prev</span>
+					{/if}
+					<span class="text-muted-foreground">page {data.page} / {data.totalPages}</span>
+					{#if data.page < data.totalPages}
+						<a
+							href={buildUrl({ page: data.page + 1 })}
+							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							>next →</a
+						>
+					{:else}
+						<span class="px-3 py-1 text-muted-foreground/40">next →</span>
+					{/if}
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Right rail (lg+): sort + dates + collections — the posts page's

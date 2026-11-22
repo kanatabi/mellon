@@ -955,7 +955,7 @@ flowchart LR
 <svelte:window onkeydown={onKey} />
 
 <section class="flex h-full min-h-0 flex-1 gap-4">
-	<div class="@container/editor flex min-w-0 grow flex-col gap-4">
+	<div class="@container/editor flex min-h-0 min-w-0 grow flex-col gap-4">
 		<!-- The in-page back-crumb (owner call 2026-11-17): the topbar dropped
 		     breadcrumbs — sub-pages carry their own above the title. Parent-only:
 		     the title below IS the current crumb. -->
@@ -1059,7 +1059,7 @@ flowchart LR
 		     fills the row and the split grid animates 1fr↔0fr — the pane never
 		     leaves layout, so nothing can reflow (old ghost bug). -->
 		<div
-			class="relative h-[calc(100svh-13.5rem)] min-h-0 shrink-0 transition-[grid-template-columns,gap] duration-200 ease-out @min-[48rem]/editor:grid @min-[48rem]/editor:h-full @min-[48rem]/editor:min-h-0 @min-[48rem]/editor:flex-1 {showPreview
+			class="relative min-h-0 flex-1 transition-[grid-template-columns,gap] duration-200 ease-out @min-[48rem]/editor:grid {showPreview
 				? '@min-[48rem]/editor:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @min-[48rem]/editor:gap-4'
 				: '@min-[48rem]/editor:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] @min-[48rem]/editor:gap-0'}"
 		>

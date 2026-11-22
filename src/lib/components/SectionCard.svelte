@@ -39,11 +39,11 @@
 		reorderable?: boolean;
 		ontoggle: () => void;
 		onmove?: (dir: -1 | 1) => void;
-		/** The section-level explanation: a CircleHelp affordance beside the
-		 *  label, the HoverCard on hover (tap = the toggle on touch — no
-		 *  hover on a phone). The FIELD-level hints (the per-attribute
-		 *  micro-copy) stay inline under their labels — a "?" per field in
-		 *  one drawer = noise. */
+		/** The section-level explanation, in the affordance each input mode
+		 *  deserves: the CircleHelp + the Tooltip at sm+ (the hover exists);
+		 *  an INLINE line inside the open panel below sm (the touch has no
+		 *  hover). The FIELD-level hints (the per-attribute micro-copy) stay
+		 *  inline at every width — a "?" per field in one drawer = noise. */
 		hint?: string;
 		children?: Snippet;
 	} = $props();
@@ -86,7 +86,9 @@
 			{/if}
 			<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">{label}</p>
 			{#if hint}
-				<SectionHint text={hint} />
+				<span class="hidden sm:inline-flex">
+					<SectionHint text={hint} />
+				</span>
 			{/if}
 			{#if dirty && !open}
 				<span class="size-1.5 rounded-full bg-accent-amber" aria-label="unsaved changes"></span>
@@ -104,6 +106,9 @@
 
 	{#if open}
 		<div class="flex flex-col gap-2.5" transition:slide={{ duration: 220, easing: cubicOut }}>
+			{#if hint}
+				<p class="text-xs leading-relaxed text-muted-foreground/80 sm:hidden">{hint}</p>
+			{/if}
 			{@render children?.()}
 		</div>
 	{/if}
