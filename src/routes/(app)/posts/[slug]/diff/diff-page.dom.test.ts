@@ -72,7 +72,7 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		// PANE HEADERS (the owner's indicator row: HEAD −dels over the left
 		// pane, PENDING +adds over the right — one chevron, the cells sit
 		// over their panes); the l0 line renders in the both modes' both sides
-		expect(getAllByText('saved (head) · rev 3')).toHaveLength(2); // the trace row + the desktop header cell
+		expect(getAllByText('saved (head) · rev 3')).toHaveLength(1); // the h2 cell — the trace pair is RETIRED
 		expect(getAllByText('pending', { exact: false }).length).toBeGreaterThanOrEqual(2);
 		expect(getByText('forked from rev 3')).toBeTruthy(); // the right cell's note (the mobile's is the longer line)
 		expect(getByText('+3')).toBeTruthy(); // the additions, on the PENDING header
@@ -111,11 +111,11 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 	describe('the inline view (the unified)', () => {
 		it('flattens to the two number bars: one − line, the + lines, the same lines both-numbered', async () => {
 			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
+			localStorage.setItem('mellon.diff-view', 'inline');
 			const { getByRole, getByText, getAllByText } = render(Fixture);
 			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-			await fireEvent.click(getByRole('button', { name: 'Inline' }));
-			// the flattening: 1 del (the sign alone in red), 3 adds, the same
-			// lines carry NO sign — the sign column is EMPTY for them
+			// the memory rode in — no tap needed (the segmented control is
+			// GONE; the preferences menu owns the mode now)
 			expect(getAllByText('−')).toHaveLength(1);
 			expect(getAllByText('+')).toHaveLength(3);
 			// the remembered choice: the toggle wrote the memory
@@ -132,9 +132,9 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 
 		it('the Changed-only regions flatten too: one header, the gap bands survive', async () => {
 			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
+			localStorage.setItem('mellon.diff-view', 'inline');
 			const { getByRole, getByText, getAllByText } = render(Fixture);
 			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-			await fireEvent.click(getByRole('button', { name: 'Inline' }));
 			await fireEvent.click(getByRole('button', { name: 'Changed only' }));
 			await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 			// ONE header over the flattened regions — the two cells are gone
@@ -154,22 +154,20 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 			expect(() => getByText(/1 unchanged line/)).toThrow(); // the bands hide too
 		});
 
-		it('the remembered choice wins on the next visit', async () => {
+		it('the preferences menu: the checkable items swap the body and write the memory', async () => {
 			localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
-			localStorage.setItem('mellon.diff-view', 'inline');
-			const { getByRole, getAllByText } = render(Fixture);
+			const { getByRole, getAllByRole, getAllByText } = render(Fixture);
 			await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-			// the inline body WITHOUT the toggle tap — the memory rode in
-			expect(getAllByText('−')).toHaveLength(1);
-			expect(getByRole('button', { name: 'Split' })).toBeTruthy();
-			// back to split: the two-cell headers return
-			await fireEvent.click(getByRole('button', { name: 'Split' }));
-			await vi.waitFor(() =>
-				expect(
-					getAllByText('saved (head) · rev 3', { selector: 'h2' }).length
-				).toBeGreaterThanOrEqual(1)
-			);
-			expect(localStorage.getItem('mellon.diff-view')).toBe('split');
+			// the split is the desktop default; the menu's checks agree
+			await fireEvent.click(getByRole('button', { name: 'Diff preferences' }));
+			const items = getAllByRole('menuitemcheckbox');
+			expect(items).toHaveLength(2);
+			expect(items[0].textContent).toContain('Split view');
+			expect(items[1].textContent).toContain('Inline view');
+			// pick inline: the body swaps, the memory writes
+			await fireEvent.click(items[1]);
+			expect(localStorage.getItem('mellon.diff-view')).toBe('inline');
+			await vi.waitFor(() => expect(getAllByText('−')).toHaveLength(1));
 		});
 	});
 });

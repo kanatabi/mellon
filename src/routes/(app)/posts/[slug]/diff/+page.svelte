@@ -3,9 +3,9 @@
 	import { browser } from '$app/env';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { ChevronDown, FileDiff, List, RotateCcw } from 'lucide-svelte';
+	import { ChevronDown, Ellipsis, FileDiff, List, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
-	import TraceRow from '#lib/components/TraceRow.svelte';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import DiffFileHeader from '#lib/components/DiffFileHeader.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client, errorText } from '#lib/api/client.ts';
@@ -81,11 +81,6 @@
 	// the unified's lines: the alignment flattened — one line per row, the
 	// del+add pairs as the − then + consecutive lines
 	const unified = $derived(pending ? unifiedLines(head, pending.draft) : []);
-	// the mobile's full comparison = the TWO INDEPENDENT trace rows
-	// ($bindable open — the free collapse: the shared-tab mapping forced an
-	// accordion nobody asked for, walked)
-	let headOpen = $state(false);
-	let pendingOpen = $state(true);
 	// the desktop split-table's collapse (the GitHub file-header's chevron —
 	// the same free-collapse right the mobile TraceRows have)
 	let mdOpen = $state(true);
@@ -271,36 +266,49 @@
 			</div>
 			<div class="flex items-center gap-2">
 				{#if tab === 'markdown'}
-					<!-- THE VIEW MODE (Split ⇄ Inline): the segmented control (the
-					     tabs' grammar — a mode, not a pressed state); the choice
-					     remembers itself (localStorage). Drives BOTH bodies — the
-					     full comparison's AND the Changed-only regions'. -->
-					<div
-						class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
-						role="group"
-						aria-label="Diff layout"
-					>
-						<button
-							type="button"
-							aria-pressed={view === 'split'}
-							class="rounded-full px-3 py-1 font-mono text-xs transition-colors {view === 'split'
-								? 'bg-brand/15 text-foreground'
-								: 'text-muted-foreground hover:text-foreground'}"
-							onclick={() => setView('split')}
+					<!-- THE VIEW MODE lives in the settings menu now (the GitHub's
+					     ⋯ / GitLab's ⚙ pattern): the checkable items mark the active
+					     layout; the same memory (mellon.diff-view) drives both
+					     bodies — the full comparison's AND the Changed-only's. -->
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger
+							aria-label="Diff preferences"
+							class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 						>
-							Split
-						</button>
-						<button
-							type="button"
-							aria-pressed={view === 'inline'}
-							class="rounded-full px-3 py-1 font-mono text-xs transition-colors {view === 'inline'
-								? 'bg-brand/15 text-foreground'
-								: 'text-muted-foreground hover:text-foreground'}"
-							onclick={() => setView('inline')}
+							<Ellipsis class="size-4" />
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content
+							side="bottom"
+							align="end"
+							class="w-48 rounded-lg border border-border p-1"
 						>
-							Inline
-						</button>
-					</div>
+							<DropdownMenu.Label
+								class="px-2 py-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+							>
+								Preferences
+							</DropdownMenu.Label>
+							<DropdownMenu.CheckboxItem
+								checked={view === 'split'}
+								onCheckedChange={(v) => {
+									if (v) setView('split');
+								}}
+								closeOnSelect={false}
+								class="rounded-md py-1.5 font-mono text-xs"
+							>
+								Split view
+							</DropdownMenu.CheckboxItem>
+							<DropdownMenu.CheckboxItem
+								checked={view === 'inline'}
+								onCheckedChange={(v) => {
+									if (v) setView('inline');
+								}}
+								closeOnSelect={false}
+								class="rounded-md py-1.5 font-mono text-xs"
+							>
+								Inline view
+							</DropdownMenu.CheckboxItem>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 				{/if}
 				{#if tab === 'markdown'}
 					<Button
@@ -592,35 +600,37 @@
 					     THE CONTAINMENT: the card hugs its content, capped at the
 					     pane (max-h-full) — the header stays pinned, only the lines
 					     scroll (the parent NEVER scrolls). -->
-						<div class="hidden h-full md:block">
+						<div
+							class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
+						>
 							<div
-								class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
+								class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border/60 bg-muted"
 							>
-								<div
-									class="grid shrink-0 grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border/60 bg-muted"
-								>
-									<div class="col-span-3">
-										{@render paneHeader(
-											`saved (head) · rev ${data.post.rev}`,
-											`−${stats.dels}`,
-											'text-diff-del',
-											true
-										)}
-									</div>
-									<div class="col-span-3">
-										{@render paneHeader(
-											'pending',
-											`+${stats.adds}`,
-											'text-diff-add',
-											false,
-											`forked from rev ${pending.baseRev}`
-										)}
-									</div>
+								<div class="col-span-3">
+									{@render paneHeader(
+										`saved (head) · rev ${data.post.rev}`,
+										`−${stats.dels}`,
+										'text-diff-del',
+										true
+									)}
 								</div>
-								{#if mdOpen}
-									<div
-										class="min-h-0 flex-1 overflow-y-auto overscroll-contain font-mono text-[11px]"
-									>
+								<div class="col-span-3">
+									{@render paneHeader(
+										'pending',
+										`+${stats.adds}`,
+										'text-diff-add',
+										false,
+										`forked from rev ${pending.baseRev}`
+									)}
+								</div>
+							</div>
+							{#if mdOpen}
+								<div class="min-h-0 flex-1 overflow-auto overscroll-contain font-mono text-[11px]">
+									<!-- the min-width floor: a 390px screen PANS the two
+									     panes inside the card (the viewport-fit doctrine:
+									     the content scrolls in its own pane) — the cells
+									     still wrap, the scroll is the safety valve -->
+									<div class="min-w-[42rem]">
 										{#each splitRows as row, i (i)}
 											<div
 												class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
@@ -630,34 +640,8 @@
 											</div>
 										{/each}
 									</div>
-								{/if}
-							</div>
-						</div>
-
-						<!-- THE MOBILE: the two independent Trace rows (the GitHub's
-						     file-header: the left chevron, the stats; the sticky trigger);
-						     the scroll = the region's, the headers pinned. -->
-						<div class="md:hidden">
-							<div class="overflow-hidden rounded-lg border border-border bg-card">
-								<TraceRow title="saved (head) · rev {data.post.rev}" bind:open={headOpen}>
-									{#each splitRows as row, i (i)}
-										<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
-											{@render diffCells(row, 'left')}
-										</div>
-									{/each}
-								</TraceRow>
-								<TraceRow
-									title="pending"
-									description="+{stats.adds} −{stats.dels} · forked from rev {pending.baseRev}"
-									bind:open={pendingOpen}
-								>
-									{#each splitRows as row, i (i)}
-										<div class="grid grid-cols-[2.75rem_1.25rem_1fr] divide-x divide-border/40">
-											{@render diffCells(row, 'right')}
-										</div>
-									{/each}
-								</TraceRow>
-							</div>
+								</div>
+							{/if}
 						</div>
 					{/if}
 				{/if}
