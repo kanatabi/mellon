@@ -273,8 +273,8 @@
 	const nRefs = $derived(data.references.length);
 	const deleteDescription = $derived(
 		nRefs
-			? `Removing this image takes it out of the library for good. The file itself keeps being served until storage garbage collection — but ${nRefs} ${nRefs === 1 ? 'post' : 'posts'} embed${nRefs === 1 ? 's' : ''} it and will show a broken picture afterwards:`
-			: 'Removing this image takes it out of the library for good. The file itself keeps being served until storage garbage collection. No post embeds this one.'
+			? `Removing this image takes it out of the library for good — the stored file is deleted with it. ${nRefs} ${nRefs === 1 ? 'post' : 'posts'} embed${nRefs === 1 ? 's' : ''} it and will show a broken picture afterwards:`
+			: 'Removing this image takes it out of the library for good — the stored file is deleted with it. No post embeds this one.'
 	);
 	async function remove() {
 		await client.deletePhoto(data.photo.id);
