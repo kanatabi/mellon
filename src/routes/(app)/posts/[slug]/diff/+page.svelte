@@ -7,6 +7,7 @@
 	import Button from '#lib/components/ui/button/button.svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import DiffFileHeader from '#lib/components/DiffFileHeader.svelte';
+	import DiffTable from '#lib/components/DiffTable.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client, errorText } from '#lib/api/client.ts';
 	import type { PostDetailAdmin } from '#lib/api/types.ts';
@@ -24,6 +25,7 @@
 		type UnifiedLine
 	} from '#lib/post-diff.ts';
 	import { DIFF_BLOCK } from '#lib/secrets-diff.ts';
+	import type { DiffTableRow } from '#lib/diff.ts';
 
 	interface Props {
 		data: { post: PostDetailAdmin };
@@ -105,11 +107,6 @@
 	const changedCount = $derived(rows.filter((r) => r.status === 'changed').length);
 	const unchangedCount = $derived(METADATA_FIELD_COUNT - changedCount);
 
-	// the status chip vocabulary — the vault compare's own
-	const chip: Record<string, string> = {
-		changed: 'bg-accent-amber/15 text-accent-amber',
-		same: 'text-muted-foreground/60'
-	};
 	// block-highlight line classes — DIFF_BLOCK is the one shared language
 	// (secrets-diff.ts): a solid row/cell background, not a font tint
 	const lineCls = (kind: 'same' | 'add' | 'del' | null | undefined) =>
@@ -658,76 +655,64 @@
 				aria-labelledby="diff-tab-metadata"
 				class="flex min-h-0 flex-1 flex-col overflow-hidden"
 			>
-				<!-- THE SCROLL LIVES HERE (the viewport-fit doctrine:
-				     the content scrolls in its own pane — both axes; the values
-				     render at their natural readable width, never squeezed into
-				     slivers). -->
+				<!-- THE SHARED TABLE (the unification): the SAME per-key anatomy
+				     as the configs/compare's table presentation — one component,
+				     the cells = THIS domain's grammar (the thumbnails, the
+				     clamped previews, the wrap). The scroll lives here (the
+				     viewport-fit doctrine) — the values render at their natural
+				     readable width, never squeezed into slivers. -->
 				<div class="min-h-0 flex-1 overflow-auto overscroll-contain">
 					<div class="min-w-[48rem]">
-						{#each shownRows as row (row.key)}
-							<div
-								class="grid grid-cols-[6rem_1fr_1fr] items-start gap-2 border-b border-border/60 p-3 last:border-b-0 md:grid-cols-[8rem_1fr_1fr_5.5rem] md:gap-4"
-							>
-								<div class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-									{row.label}
-									<span
-										class="rounded px-1.5 py-0.5 font-mono text-[9px] {chip[row.status]}"
-										title="field status"
-									>
-										{row.status}
-									</span>
-								</div>
-								<div
-									class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
-									'changed'
+						<DiffTable
+							rows={shownRows}
+							keyHeading="field"
+							fromHeading="saved (head)"
+							toHeading="pending"
+							cell={metadataCell}
+							foot={metadataFoot}
+						/>
+						{#snippet metadataCell(row: DiffTableRow, side: 'from' | 'to')}
+							{@const val = side === 'from' ? row.from : row.to}
+							{@const tint =
+								side === 'from'
+									? row.status === 'changed'
 										? `${DIFF_BLOCK.del} text-diff-del`
-										: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
-										? 'line-clamp-3'
-										: ''} whitespace-pre-wrap"
-								>
-									{#if row.key === 'thumbnail' && row.from}
-										<img
-											src={row.from}
-											alt="saved cover"
-											class="mb-1 h-10 w-16 rounded border border-border object-cover"
-										/>
-									{/if}
-									{row.from || '—'}
-								</div>
-								<div
-									class="min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-words {row.status ===
-									'changed'
+										: 'text-muted-foreground/70'
+									: row.status === 'changed'
 										? `${DIFF_BLOCK.add} text-diff-add`
-										: 'text-muted-foreground/70'} {row.key === 'preview' && !expanded
-										? 'line-clamp-3'
-										: ''} whitespace-pre-wrap"
-								>
-									{#if row.key === 'thumbnail' && row.to}
-										<img
-											src={row.to}
-											alt="pending cover"
-											class="mb-1 h-10 w-16 rounded border border-border object-cover"
-										/>
-									{/if}
-									{row.to || '—'}
-								</div>
-								<span class="hidden md:block" aria-hidden="true"></span>
-							</div>
-						{/each}
-						{#if rows.some((r) => r.key === 'preview' && r.status === 'changed')}
-							<button
-								type="button"
-								onclick={() => (expanded = !expanded)}
-								class="px-3 py-2 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+										: 'text-muted-foreground/70'}
+							<td
+								class="min-w-0 px-4 py-2 align-top font-mono text-xs break-words {tint} {row.key ===
+									'preview' && !expanded
+									? 'line-clamp-3'
+									: ''} whitespace-pre-wrap"
 							>
-								{expanded ? 'Collapse preview values' : 'Expand preview values'}
-							</button>
-						{/if}
-						{#if unchangedCount > 0}
-							<p class="px-3 py-2 font-mono text-[11px] text-muted-foreground/70">
-								{unchangedCount} field{unchangedCount === 1 ? '' : 's'} unchanged
-							</p>
-						{/if}
+								{#if row.key === 'thumbnail' && val}
+									<img
+										src={val}
+										alt={side === 'from' ? 'saved cover' : 'pending cover'}
+										class="mb-1 h-10 w-16 rounded border border-border object-cover"
+									/>
+								{/if}
+								{val || '—'}
+							</td>
+						{/snippet}
+						{#snippet metadataFoot()}
+							<span class="flex items-center gap-3">
+								{#if rows.some((r) => r.key === 'preview' && r.status === 'changed')}
+									<button
+										type="button"
+										onclick={() => (expanded = !expanded)}
+										class="font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+									>
+										{expanded ? 'Collapse preview values' : 'Expand preview values'}
+									</button>
+								{/if}
+								{#if unchangedCount > 0}
+									{unchangedCount} field{unchangedCount === 1 ? '' : 's'} unchanged
+								{/if}
+							</span>
+						{/snippet}
 					</div>
 				</div>
 			</div>

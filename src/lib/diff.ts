@@ -50,6 +50,20 @@ export type SplitRow = {
 	right: DiffOp | null;
 };
 
+/** The per-key diff table's row — the OTHER grain (the parsed-map view:
+ *  one row per key/field, from→to, the status). The shared contract for
+ *  DiffTable (one anatomy, two consumers: the configs/compare's table
+ *  presentation + the post diff page's metadata tab). `label` = the
+ *  display name when the key is too machine ('preview' etc.); the fixed-
+ *  shape rows (the post's fields) never emit added/removed. */
+export type DiffTableRow = {
+	key: string;
+	label?: string;
+	from: string | null;
+	to: string | null;
+	status: 'same' | 'changed' | 'added' | 'removed';
+};
+
 export function alignDiff(ops: DiffOp[]): SplitRow[] {
 	const rows: SplitRow[] = [];
 	let leftNo = 0;

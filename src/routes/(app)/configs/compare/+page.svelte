@@ -15,6 +15,7 @@
 		tableDiff,
 		type CompareContent
 	} from '#lib/secrets-diff.ts';
+	import DiffTable from '#lib/components/DiffTable.svelte';
 	import type { PageData } from './$types';
 
 	interface Props {
@@ -110,13 +111,6 @@
 	const table = $derived(tableDiff(fromData, toData));
 	const changed = $derived(table.filter((r) => r.status !== 'same').length);
 	const shownTable = $derived(hideSame ? table.filter((r) => r.status !== 'same') : table);
-
-	const chip: Record<string, string> = {
-		added: 'bg-diff-add/15 text-diff-add',
-		removed: 'bg-diff-del/15 text-diff-del',
-		changed: 'bg-accent-amber/15 text-accent-amber',
-		same: 'text-muted-foreground/60'
-	};
 
 	// palette verbs for THIS page — same contract as the editor page
 	$effect(() => {
@@ -383,53 +377,34 @@
 				: 'the selected versions are unreadable (destroyed, or outside policy scope)'}
 		</p>
 	{:else if presentation === 'table'}
-		<div class="overflow-x-auto rounded-lg border border-border bg-card">
-			<table class="w-full font-mono text-xs">
-				<thead>
-					<tr class="border-b border-border text-left text-muted-foreground">
-						<th class="px-4 py-2 font-medium">key</th>
-						<th class="px-4 py-2 font-medium">v{data.fromV}</th>
-						<th class="px-4 py-2 font-medium">v{data.toV}</th>
-						<th class="px-4 py-2 text-right font-medium">status</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each shownTable as row (row.key)}
-						<tr
-							class="border-b border-border/50 last:border-0 {row.status === 'same'
-								? 'opacity-60'
-								: ''}"
-						>
-							<td class="px-4 py-2 whitespace-nowrap">{row.key}</td>
-							<td
-								class="max-w-40 truncate px-4 py-2 {row.status === 'removed' ||
-								row.status === 'changed'
-									? `${DIFF_BLOCK.del} text-diff-del`
-									: ''}"
-								title={row.from === null ? '' : displayValue(row.from, revealAll)}
-							>
-								{row.from === null ? '—' : displayValue(row.from, revealAll)}
-							</td>
-							<td
-								class="max-w-40 truncate px-4 py-2 {row.status === 'added' ||
-								row.status === 'changed'
-									? `${DIFF_BLOCK.add} text-diff-add`
-									: ''}"
-								title={row.to === null ? '' : displayValue(row.to, revealAll)}
-							>
-								{row.to === null ? '—' : displayValue(row.to, revealAll)}
-							</td>
-							<td class="px-4 py-2 text-right">
-								<span class="rounded-full px-2 py-0.5 {chip[row.status]}">{row.status}</span>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-			<p class="px-4 py-2 text-[10px] text-muted-foreground/70">
-				{changed} of {table.length} keys changed between v{data.fromV} and v{data.toV}
-			</p>
-		</div>
+		<DiffTable
+			rows={shownTable}
+			keyHeading="key"
+			fromHeading={`v${data.fromV}`}
+			toHeading={`v${data.toV}`}
+			cell={configCell}
+			foot={configFoot}
+		/>
+		<!-- the configs' cell grammar, verbatim: the mask + the truncate +
+		     the title (the redaction's hover leak-guard) + the tints -->
+		{#snippet configCell(row: (typeof table)[number], side: 'from' | 'to')}
+			{@const val = side === 'from' ? row.from : row.to}
+			<td
+				class="max-w-40 truncate px-4 py-2 {side === 'from'
+					? row.status === 'removed' || row.status === 'changed'
+						? `${DIFF_BLOCK.del} text-diff-del`
+						: ''
+					: row.status === 'added' || row.status === 'changed'
+						? `${DIFF_BLOCK.add} text-diff-add`
+						: ''}"
+				title={val === null ? '' : displayValue(val, revealAll)}
+			>
+				{val === null ? '—' : displayValue(val, revealAll)}
+			</td>
+		{/snippet}
+		{#snippet configFoot()}
+			{changed} of {table.length} keys changed between v{data.fromV} and v{data.toV}
+		{/snippet}
 	{:else if presentation === 'split'}
 		<div class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
 			<div class="min-w-0 overflow-x-auto rounded-lg border border-border bg-card">
