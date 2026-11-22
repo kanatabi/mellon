@@ -301,11 +301,50 @@
 				aria-labelledby="diff-tab-markdown"
 				class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
 			>
+				<!-- THE PANE HEADER (the owner's indicator row): the two cells sit
+			     OVER their panes — HEAD (its −dels) left, PENDING (its +adds)
+			     right — the ambiguity of the combined bar is dead: each label
+			     explains its own pane. ONE snippet renders both views' pairs;
+			     the chevron rides the FIRST instance only and collapses the
+			     whole comparison (the table is one grid — no per-side split). -->
+				{#snippet paneHeader(title: string, stat: string, statCls: string, withChevron: boolean)}
+					<div class="flex items-center gap-2 px-3 py-2">
+						{#if withChevron}
+							<button
+								type="button"
+								class="grid size-6 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:text-foreground"
+								aria-expanded={mdOpen}
+								aria-label={mdOpen ? 'Collapse diff' : 'Expand diff'}
+								onclick={() => (mdOpen = !mdOpen)}
+							>
+								<ChevronDown class="size-4 transition-transform {mdOpen ? '' : '-rotate-90'}" />
+							</button>
+						{/if}
+						<h2 class="min-w-0 truncate font-sans text-sm font-medium">{title}</h2>
+						<span class="ml-auto shrink-0 font-mono text-[11px] tabular-nums {statCls}">{stat}</span
+						>
+					</div>
+				{/snippet}
+
 				{#if changedOnly}
 					<!-- The collapsed view: change regions (+context) with gap bands. -->
 					<div
 						class="overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
+						<div class="grid grid-cols-1 border-b border-border bg-muted/30 md:grid-cols-2">
+							{@render paneHeader(
+								`HEAD · rev ${data.post.rev}`,
+								`−${stats.dels}`,
+								'text-diff-del',
+								true
+							)}
+							{@render paneHeader(
+								`PENDING · forked from rev ${pending.baseRev}`,
+								`+${stats.adds}`,
+								'text-diff-add',
+								false
+							)}
+						</div>
 						{#each regions as region, i (i)}
 							{#if region.kind === 'gap'}
 								<div
@@ -370,37 +409,30 @@
 					{/snippet}
 
 					<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
-					     the line-number gutters, the ± signs, the tints per side. -->
+					     the line-number gutters, the ± signs, the tints per side —
+					     the pane headers sit over their panes (the owner's indicator
+					     row: HEAD −dels left, PENDING +adds right; ONE chevron). -->
 					<div class="hidden md:block">
-						<!-- THE FILE-HEADER (the GitHub's): one row — the chevron
-						     collapse, the post identity, the +N −N stats, the side
-						     story muted at the right edge (the action slots live
-						     there when they come). Replaces the two bare labels. -->
 						<div class="overflow-hidden rounded-lg border border-border bg-card">
-							<div class="flex items-center gap-3 border-b border-border bg-muted/30 px-3 py-2">
-								<button
-									type="button"
-									class="grid size-6 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:text-foreground"
-									aria-expanded={mdOpen}
-									aria-label={mdOpen ? 'Collapse diff' : 'Expand diff'}
-									onclick={() => (mdOpen = !mdOpen)}
-								>
-									<ChevronDown class="size-4 transition-transform {mdOpen ? '' : '-rotate-90'}" />
-								</button>
-								<h2 class="min-w-0 truncate font-sans text-sm font-medium">
-									{data.post.title || 'Untitled'} · rev {data.post.rev}
-								</h2>
-								<span class="shrink-0 font-mono text-[11px] text-diff-add tabular-nums"
-									>+{stats.adds}</span
-								>
-								<span class="shrink-0 font-mono text-[11px] text-diff-del tabular-nums"
-									>−{stats.dels}</span
-								>
-								<span
-									class="ml-auto hidden shrink-0 font-mono text-[10px] tracking-widest text-muted-foreground uppercase lg:block"
-								>
-									saved (head) ⇄ pending · forked from rev {pending.baseRev}
-								</span>
+							<div
+								class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] border-b border-border bg-muted/30"
+							>
+								<div class="col-span-3">
+									{@render paneHeader(
+										`HEAD · rev ${data.post.rev}`,
+										`−${stats.dels}`,
+										'text-diff-del',
+										true
+									)}
+								</div>
+								<div class="col-span-3">
+									{@render paneHeader(
+										`PENDING · forked from rev ${pending.baseRev}`,
+										`+${stats.adds}`,
+										'text-diff-add',
+										false
+									)}
+								</div>
 							</div>
 							{#if mdOpen}
 								<div class="font-mono text-[11px]">

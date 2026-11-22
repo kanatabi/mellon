@@ -69,26 +69,30 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		const { getByRole, getByText, getAllByText } = render(Fixture);
 		await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
 		// the head's identity = the mobile's TRACE ROW's title + the desktop
-		// FILE-HEADER (chevron · "A renamed post · rev 3" · +N −N · the side
-		// story muted right) — the two bare column labels are gone; the l0
-		// line renders in the both modes' both sides
+		// PANE HEADERS (the owner's indicator row: HEAD −dels over the left
+		// pane, PENDING +adds over the right — one chevron, the cells sit
+		// over their panes); the l0 line renders in the both modes' both sides
 		expect(getAllByText('saved (head) · rev 3')).toHaveLength(1); // the trace row
-		expect(getByText('A post · rev 3')).toBeTruthy(); // the file-header (head identity)
-		expect(getByText('+3')).toBeTruthy();
-		expect(getByText('−1')).toBeTruthy();
-		expect(getByText(/saved \(head\) ⇄ pending · forked from rev 3/)).toBeTruthy();
+		expect(getByText('HEAD · rev 3')).toBeTruthy(); // the left pane's header
+		expect(getByText('PENDING · forked from rev 3')).toBeTruthy(); // the right's
+		expect(getByText('+3')).toBeTruthy(); // the additions, on the PENDING header
+		expect(getByText('−1')).toBeTruthy(); // the deletions, on the HEAD header
 		expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2);
-		// the file-header's chevron collapses the desktop table, the header
-		// stays (the mobile's free-collapse, mirrored)
+		// the header's chevron collapses the desktop table, the headers
+		// stay (the mobile's free-collapse, mirrored)
 		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
 		expect(() => getByText('l0')).toThrow();
 		expect(getByRole('button', { name: 'Expand diff' })).toBeTruthy();
 		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
 		await vi.waitFor(() => expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2));
-		// the toggle collapses: a gap band + the changes highlighted
+		// the toggle collapses: a gap band + the changes highlighted —
+		// and the SAME pane-header pair rides the regions view (the owner's
+		// apply-the-component ruling), cells over their panes
 		await fireEvent.click(getByRole('button', { name: 'Changed only' }));
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 		expect(getByRole('button', { name: 'Show all lines' })).toBeTruthy();
+		expect(getByText('HEAD · rev 3')).toBeTruthy();
+		expect(getByText('PENDING · forked from rev 3')).toBeTruthy();
 		// the trailing token is a real, visible add — never an invisible strip
 		expect(getByText('asdkjasdkj')).toBeTruthy();
 		expect(getByText('EDITED')).toBeTruthy();
