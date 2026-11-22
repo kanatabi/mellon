@@ -93,6 +93,13 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		expect(getByRole('button', { name: 'Show all lines' })).toBeTruthy();
 		expect(getByText('HEAD · rev 3')).toBeTruthy();
 		expect(getByText('PENDING · forked from rev 3')).toBeTruthy();
+		// the regions view's chevron collapses ITS body too (the shared
+		// mdOpen — one comparison body across both views)
+		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
+		expect(() => getByText(/1 unchanged line/)).toThrow();
+		expect(getByText('HEAD · rev 3')).toBeTruthy(); // the indicator bar stays
+		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
+		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 		// the trailing token is a real, visible add — never an invisible strip
 		expect(getByText('asdkjasdkj')).toBeTruthy();
 		expect(getByText('EDITED')).toBeTruthy();

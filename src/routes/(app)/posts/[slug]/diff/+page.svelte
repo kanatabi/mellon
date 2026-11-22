@@ -355,38 +355,42 @@
 								false
 							)}
 						</div>
-						<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-							{#each regions as region, i (i)}
-								{#if region.kind === 'gap'}
-									<div
-										class="border-y border-border/60 bg-muted/30 px-3 py-1 text-center font-mono text-[10px] text-muted-foreground/60"
-									>
-										⋯ {region.count} unchanged line{region.count === 1 ? '' : 's'}
-									</div>
-								{:else}
-									{#each region.rows as row, j (j)}
-										<div class="grid grid-cols-1 gap-px md:grid-cols-2">
-											<div
-												class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap md:border-r md:border-border/40 {lineCls(
-													row.left?.kind
-												)} {row.left?.kind === 'same' ? '' : DIFF_BLOCK[row.left?.kind ?? 'same']}"
-											>
-												{row.left?.text ?? ''}
-											</div>
-											<div
-												class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap {lineCls(
-													row.right?.kind
-												)} {row.right?.kind === 'same'
-													? ''
-													: DIFF_BLOCK[row.right?.kind ?? 'same']}"
-											>
-												{row.right?.text ?? ''}
-											</div>
+						{#if mdOpen}
+							<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+								{#each regions as region, i (i)}
+									{#if region.kind === 'gap'}
+										<div
+											class="border-y border-border/60 bg-muted/30 px-3 py-1 text-center font-mono text-[10px] text-muted-foreground/60"
+										>
+											⋯ {region.count} unchanged line{region.count === 1 ? '' : 's'}
 										</div>
-									{/each}
-								{/if}
-							{/each}
-						</div>
+									{:else}
+										{#each region.rows as row, j (j)}
+											<div class="grid grid-cols-1 gap-px md:grid-cols-2">
+												<div
+													class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap md:border-r md:border-border/40 {lineCls(
+														row.left?.kind
+													)} {row.left?.kind === 'same'
+														? ''
+														: DIFF_BLOCK[row.left?.kind ?? 'same']}"
+												>
+													{row.left?.text ?? ''}
+												</div>
+												<div
+													class="min-h-[1.4em] min-w-0 px-3 py-0.5 break-words whitespace-pre-wrap {lineCls(
+														row.right?.kind
+													)} {row.right?.kind === 'same'
+														? ''
+														: DIFF_BLOCK[row.right?.kind ?? 'same']}"
+												>
+													{row.right?.text ?? ''}
+												</div>
+											</div>
+										{/each}
+									{/if}
+								{/each}
+							</div>
+						{/if}
 					</div>
 				{:else}
 					<!-- THE FULL COMPARISON (the editor-preview's grammar): the whole
