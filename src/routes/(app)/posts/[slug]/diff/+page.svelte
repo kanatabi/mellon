@@ -3,7 +3,7 @@
 	import { browser } from '$app/env';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { FileDiff, List, RotateCcw } from 'lucide-svelte';
+	import { ChevronDown, FileDiff, List, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import TraceRow from '#lib/components/TraceRow.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
@@ -62,6 +62,9 @@
 	// accordion nobody asked for, walked)
 	let headOpen = $state(false);
 	let pendingOpen = $state(true);
+	// the desktop split-table's collapse (the GitHub file-header's chevron —
+	// the same free-collapse right the mobile TraceRows have)
+	let mdOpen = $state(true);
 	// the diff's stats (the GitHub's file-header's +N −N)
 	const stats = $derived({
 		adds: splitRows.filter((r) => r.right?.kind === 'add').length,
@@ -367,25 +370,50 @@
 					{/snippet}
 
 					<!-- THE MD+ SPLIT-TABLE (the GitHub's split view): the aligned rows,
-						     the line-number gutters, the ± signs, the tints per side. -->
+					     the line-number gutters, the ± signs, the tints per side. -->
 					<div class="hidden md:block">
-						<div
-							class="mb-2 grid grid-cols-2 gap-4 font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-						>
-							<p>saved (head) · rev {data.post.rev}</p>
-							<p>pending · forked from rev {pending.baseRev}</p>
-						</div>
-						<div
-							class="overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
-						>
-							{#each splitRows as row, i (i)}
-								<div
-									class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+						<!-- THE FILE-HEADER (the GitHub's): one row — the chevron
+						     collapse, the post identity, the +N −N stats, the side
+						     story muted at the right edge (the action slots live
+						     there when they come). Replaces the two bare labels. -->
+						<div class="overflow-hidden rounded-lg border border-border bg-card">
+							<div class="flex items-center gap-3 border-b border-border bg-muted/30 px-3 py-2">
+								<button
+									type="button"
+									class="grid size-6 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:text-foreground"
+									aria-expanded={mdOpen}
+									aria-label={mdOpen ? 'Collapse diff' : 'Expand diff'}
+									onclick={() => (mdOpen = !mdOpen)}
 								>
-									{@render diffCells(row, 'left')}
-									{@render diffCells(row, 'right')}
+									<ChevronDown class="size-4 transition-transform {mdOpen ? '' : '-rotate-90'}" />
+								</button>
+								<h2 class="min-w-0 truncate font-sans text-sm font-medium">
+									{data.post.title || 'Untitled'} · rev {data.post.rev}
+								</h2>
+								<span class="shrink-0 font-mono text-[11px] text-diff-add tabular-nums"
+									>+{stats.adds}</span
+								>
+								<span class="shrink-0 font-mono text-[11px] text-diff-del tabular-nums"
+									>−{stats.dels}</span
+								>
+								<span
+									class="ml-auto hidden shrink-0 font-mono text-[10px] tracking-widest text-muted-foreground uppercase lg:block"
+								>
+									saved (head) ⇄ pending · forked from rev {pending.baseRev}
+								</span>
+							</div>
+							{#if mdOpen}
+								<div class="font-mono text-[11px]">
+									{#each splitRows as row, i (i)}
+										<div
+											class="grid grid-cols-[3rem_1.25rem_1fr_3rem_1.25rem_1fr] divide-x divide-border/40"
+										>
+											{@render diffCells(row, 'left')}
+											{@render diffCells(row, 'right')}
+										</div>
+									{/each}
 								</div>
-							{/each}
+							{/if}
 						</div>
 					</div>
 

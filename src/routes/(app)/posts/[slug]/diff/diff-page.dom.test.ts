@@ -68,12 +68,23 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
 		const { getByRole, getByText, getAllByText } = render(Fixture);
 		await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
-		// the head's identity = the mobile's TRACE ROW's title + the md+'s
-		// column header (the snippet's own labels = removed — the trace's
-		// title carries it, the owner's dedup); the l0 line renders in the
-		// both modes' both sides
-		expect(getAllByText('saved (head) · rev 3')).toHaveLength(2);
+		// the head's identity = the mobile's TRACE ROW's title + the desktop
+		// FILE-HEADER (chevron · "A renamed post · rev 3" · +N −N · the side
+		// story muted right) — the two bare column labels are gone; the l0
+		// line renders in the both modes' both sides
+		expect(getAllByText('saved (head) · rev 3')).toHaveLength(1); // the trace row
+		expect(getByText('A post · rev 3')).toBeTruthy(); // the file-header (head identity)
+		expect(getByText('+3')).toBeTruthy();
+		expect(getByText('−1')).toBeTruthy();
+		expect(getByText(/saved \(head\) ⇄ pending · forked from rev 3/)).toBeTruthy();
 		expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2);
+		// the file-header's chevron collapses the desktop table, the header
+		// stays (the mobile's free-collapse, mirrored)
+		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
+		expect(() => getByText('l0')).toThrow();
+		expect(getByRole('button', { name: 'Expand diff' })).toBeTruthy();
+		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
+		await vi.waitFor(() => expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2));
 		// the toggle collapses: a gap band + the changes highlighted
 		await fireEvent.click(getByRole('button', { name: 'Changed only' }));
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
