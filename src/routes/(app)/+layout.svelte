@@ -175,6 +175,7 @@
 	// back into the Provider (init + external flips stay consistent), and the
 	// block's writes land as optimistic overrides until the store echoes.
 	let railOpen = $derived(!navRail.collapsed);
+	import Snackbar from '#lib/components/Snackbar.svelte';
 </script>
 
 <!-- today's frame: one chrome mass, h-svh, NO page scroll — the content
@@ -258,3 +259,6 @@
 {#if paletteOpen}
 	<Palette {commands} onClose={closePalette} />
 {/if}
+
+<!-- THE SNACKBAR: one instance for the portal; the pages fire `flash()`. -->
+<Snackbar />

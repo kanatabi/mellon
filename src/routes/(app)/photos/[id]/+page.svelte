@@ -18,6 +18,7 @@
 	import Button from '#lib/components/ui/button/button.svelte';
 	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
 	import RailDrawer from '#lib/components/RailDrawer.svelte';
+	import { flash } from '#lib/flash.svelte.ts';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client } from '#lib/api/client.ts';
 	import type { CollectionCount } from '#lib/api/types.ts';
@@ -67,7 +68,6 @@
 	const dirty = $derived(dirtyAlt || dirtyCollection || dirtyGallery);
 
 	let saving = $state(false);
-	let saved = $state(false);
 	let failed = $state('');
 	let message = $state('');
 
@@ -110,8 +110,7 @@
 				gallery: draft.gallery
 			});
 			baseline = { ...draft };
-			saved = true;
-			setTimeout(() => (saved = false), 2500);
+			flash('ok', 'metadata saved');
 			// server facts (and the collections' counts) refresh underneath the
 			// now-clean form; the draft/baseline survive because re-baselining
 			// is gated on photo IDENTITY above
@@ -119,6 +118,7 @@
 		} catch (e) {
 			// keep the edits — a failed save never silently reverts the form
 			failed = e instanceof Error ? e.message : 'save failed';
+			flash('danger', failed);
 		}
 		saving = false;
 	}
@@ -412,6 +412,10 @@
 				{/if}
 				Alt text
 			</span>
+			<span class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				Reads aloud to screen readers and describes the image for search — say what's in the
+				picture.
+			</span>
 			<Textarea
 				rows={2}
 				class="transition-colors"
@@ -428,6 +432,9 @@
 					<span class="size-1.5 rounded-full bg-brand" title="unsaved"></span>
 				{/if}
 				Collection
+			</span>
+			<span class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				Groups the image on the blog's Gallery page — one image, one collection.
 			</span>
 			<Combobox
 				items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
@@ -492,11 +499,24 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="font-mono text-[10px] text-muted-foreground/70">no post embeds this image</p>
+				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+					no post embeds this image
+				</p>
 			{/if}
+			<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				the links update automatically when the image changes
+			</p>
 		</div>
 
 		<div class="flex flex-col gap-1 font-mono text-[10px] leading-relaxed text-muted-foreground">
+			<p
+				class="font-sans text-[10px] font-medium tracking-widest text-muted-foreground/90 uppercase"
+			>
+				file
+			</p>
+			<span class="font-mono text-[10px] text-muted-foreground/70">
+				the image's public URL — paste it into any markdown
+			</span>
 			<span>{data.photo.width}×{data.photo.height} · created {fmtDate(data.photo.createdAt)}</span>
 			<span class="flex items-center gap-1.5">
 				<Button
@@ -511,6 +531,14 @@
 				</Button>
 				<span class="min-w-0 truncate select-all" title={data.photo.src}>{data.photo.src}</span>
 			</span>
+			<button
+				type="button"
+				class="flex w-fit items-center gap-2 rounded-md border border-border px-2 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98]"
+				onclick={() => void download()}
+				aria-label="Download image"
+			>
+				<Download class="size-3" /> Download image
+			</button>
 			{#if failed}
 				<p class="text-danger" role="alert">{failed}</p>
 			{/if}
@@ -523,41 +551,24 @@
 			? 'sticky bottom-0 bg-card'
 			: ''}"
 	>
-		<div class="flex items-center gap-3">
-			<Button
-				type="button"
-				variant="primary"
-				size="default"
-				class="h-8 active:scale-[0.98] disabled:opacity-40"
-				onclick={() => void save()}
-				disabled={!dirty || saving}
-			>
-				{saving ? 'saving…' : 'Save changes'}
-			</Button>
-			{#if saved}
-				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 180 }}>
-					Saved
-				</p>
-			{/if}
-		</div>
-		<div class="flex gap-2">
-			<Button
-				type="button"
-				variant="quiet"
-				class="gap-1.5 active:scale-[0.98]"
-				onclick={() => void download()}
-			>
-				<Download class="size-3.5" /> Download image
-			</Button>
-			<Button
-				type="button"
-				variant="quiet"
-				class="gap-1.5 border-danger/40 text-danger hover:border-danger hover:bg-danger/10 active:scale-[0.98]"
-				onclick={() => (confirmDelete = true)}
-			>
-				<Trash2 class="size-3.5" /> Delete image
-			</Button>
-		</div>
+		<Button
+			type="button"
+			variant="primary"
+			size="default"
+			class="h-8 w-full justify-center active:scale-[0.98] disabled:opacity-40"
+			onclick={() => void save()}
+			disabled={!dirty || saving}
+		>
+			{saving ? 'saving…' : 'Save changes'}
+		</Button>
+		<Button
+			type="button"
+			variant="quiet"
+			class="w-full justify-center gap-1.5 border-danger/40 text-danger hover:border-danger hover:bg-danger/10 active:scale-[0.98]"
+			onclick={() => (confirmDelete = true)}
+		>
+			<Trash2 class="size-3.5" /> Delete image
+		</Button>
 		<!-- gallery semantics echo (rail only, quiet) -->
 		{#if rail}
 			<p class="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground/70">

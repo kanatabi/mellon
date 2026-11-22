@@ -41,6 +41,7 @@
 	import { editorRail } from '#lib/rails.svelte.ts';
 	import { renderMermaid } from '#lib/mermaid-preview.ts';
 	import { patchPreview } from '#lib/preview/preview-diff.ts';
+	import { flash } from '#lib/flash.svelte.ts';
 	import { themeState } from '#lib/theme-state.svelte.ts';
 	import { ApiError, client, preview } from '#lib/api/client.ts';
 	import {
@@ -614,12 +615,10 @@ flowchart LR
 	// ── Export (item #3) — portable author artifacts, not the storage contract:
 	// YAML front-matter + the raw Route B body. PDF prints the live preview DOM
 	// (rendered diagrams included) through the browser's own Save-as-PDF.
-	let exportMsg = $state('');
-	let exportTimer: ReturnType<typeof setTimeout>;
+	// the export's confirmations ride the PORTAL'S SNACKBAR (the flash
+	// round, 2026-11-22) — the same surface as the photos' saves
 	function flashExport(msg: string) {
-		exportMsg = msg;
-		clearTimeout(exportTimer);
-		exportTimer = setTimeout(() => (exportMsg = ''), 2500);
+		flash('ok', msg);
 	}
 
 	function markdownDoc(): string {
@@ -1629,15 +1628,6 @@ flowchart LR
 					<ClipboardCopy class="size-3.5" /> Copy markdown
 				</button>
 			</div>
-			{#if exportMsg}
-				<p
-					class="font-mono text-[10px] text-brand"
-					role="status"
-					transition:fade={{ duration: 150 }}
-				>
-					{exportMsg}
-				</p>
-			{/if}
 		</SectionCard>
 
 		{#if !isNew && seed}
