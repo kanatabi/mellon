@@ -6,6 +6,7 @@
 	import { ChevronDown, FileDiff, List, RotateCcw } from 'lucide-svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import TraceRow from '#lib/components/TraceRow.svelte';
+	import DiffFileHeader from '#lib/components/DiffFileHeader.svelte';
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { client, errorText } from '#lib/api/client.ts';
 	import type { PostDetailAdmin } from '#lib/api/types.ts';
@@ -380,14 +381,24 @@
 
 				{#if changedOnly}
 					<!-- The collapsed view: change regions (+context) with gap bands —
-					     the SAME pane-header pair + the SAME containment (the card is
-					     the bounded flex column; the regions scroll beneath it). -->
+					     the SAME containment (the card hugs its content, capped at
+					     the pane). THE HEADER SPLITS BY SURFACE: the mobile's regions
+					     stack single-column — the two cells sit over nothing — so the
+					     phone gets the ONE GitHub file-header (the DiffFileHeader
+					     component, built for the unified view's reuse); the desktop
+					     keeps the two cells over the two region columns. -->
 					<div
 						class="flex max-h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card font-mono text-[11px]"
 					>
-						<div
-							class="grid shrink-0 grid-cols-1 border-b border-border/60 bg-muted md:grid-cols-2"
-						>
+						<div class="shrink-0 md:hidden">
+							<DiffFileHeader
+								title="pending"
+								{stats}
+								note={`forked from rev ${pending.baseRev}`}
+								bind:open={mdOpen}
+							/>
+						</div>
+						<div class="hidden shrink-0 border-b border-border/60 bg-muted md:grid md:grid-cols-2">
 							{@render paneHeader(
 								`saved (head) · rev ${data.post.rev}`,
 								`−${stats.dels}`,

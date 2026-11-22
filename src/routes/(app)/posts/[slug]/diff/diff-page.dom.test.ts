@@ -66,7 +66,7 @@ describe('the diff page — metadata tab (the vault table view)', () => {
 describe('the diff page — markdown tab (whole file ⇄ changed regions)', () => {
 	it('shows the whole file by default and collapses to regions on the toggle', async () => {
 		localStorage.setItem(bufferKey('a-post'), JSON.stringify(PENDING));
-		const { getByRole, getByText, getAllByText } = render(Fixture);
+		const { getByRole, getByText, getAllByText, getAllByRole } = render(Fixture);
 		await vi.waitFor(() => expect(getByRole('button', { name: 'Save' })).toBeTruthy());
 		// the head's identity = the mobile's TRACE ROW's title + the desktop
 		// PANE HEADERS (the owner's indicator row: HEAD −dels over the left
@@ -85,20 +85,23 @@ describe('the diff page — markdown tab (whole file ⇄ changed regions)', () =
 		expect(getByRole('button', { name: 'Expand diff' })).toBeTruthy();
 		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
 		await vi.waitFor(() => expect(getAllByText('l0').length).toBeGreaterThanOrEqual(2));
-		// the toggle collapses: a gap band + the changes highlighted —
-		// and the SAME pane-header pair rides the regions view (the owner's
-		// apply-the-component ruling), cells over their panes
+		// the toggle collapses: a gap band + the changes highlighted — the
+		// header splits by surface: the desktop keeps the two cells over the
+		// region columns; the mobile gets the ONE file-header (the
+		// DiffFileHeader component — the unified view's future shape)
 		await fireEvent.click(getByRole('button', { name: 'Changed only' }));
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 		expect(getByRole('button', { name: 'Show all lines' })).toBeTruthy();
-		expect(getByText('saved (head) · rev 3', { selector: 'h2' })).toBeTruthy();
-		expect(getByText('pending', { selector: 'h2' })).toBeTruthy();
-		// the regions view's chevron collapses ITS body too (the shared
-		// mdOpen — one comparison body across both views)
-		await fireEvent.click(getByRole('button', { name: 'Collapse diff' }));
+		expect(getAllByText('saved (head) · rev 3', { selector: 'h2' })).toHaveLength(1); // the desktop cell
+		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(2); // the cell + the single header
+		expect(getAllByText(/forked from rev 3/)).toHaveLength(2); // the cell's note + the single header's
+		// the chevron collapses THIS view's body too (the shared mdOpen —
+		// one comparison body): two chevrons render (the single header's +
+		// the desktop cell's), either obeys
+		await fireEvent.click(getAllByRole('button', { name: 'Collapse diff' })[0]);
 		expect(() => getByText(/1 unchanged line/)).toThrow();
-		expect(getByText('saved (head) · rev 3', { selector: 'h2' })).toBeTruthy(); // the indicator bar stays
-		await fireEvent.click(getByRole('button', { name: 'Expand diff' }));
+		expect(getAllByText('pending', { selector: 'h2' })).toHaveLength(2); // the headers stay
+		await fireEvent.click(getAllByRole('button', { name: 'Expand diff' })[0]);
 		await vi.waitFor(() => expect(getByText(/1 unchanged line/)).toBeTruthy());
 		// the trailing token is a real, visible add — never an invisible strip
 		expect(getByText('asdkjasdkj')).toBeTruthy();
