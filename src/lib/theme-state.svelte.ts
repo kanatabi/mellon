@@ -1,4 +1,5 @@
 import type { ThemeId, ThemeMode, ThemePair } from './theme.ts';
+import { availableMode, modesOf } from './theme-registry.ts';
 import { CORE_TOKENS } from './theme-registry.ts';
 import { getCustomTheme } from './custom-themes.svelte.ts';
 
@@ -39,12 +40,15 @@ function applyCustomVars() {
 
 /** The single write path: store + both data attributes + cookie + custom
  *  vars, VT-animated. The pair is resolved at CALL time into locals, so
- *  the apply callback reads NOTHING reactive — reads inside a
+ *  the apply callback reads NOTHING reactive (reads inside a
  *  startViewTransition callback escape tracking, and correctness must not
- *  depend on that escape hatch existing (browsers without VT run apply
- *  synchronously, inside the caller's effect scope). */
+ *  depend on that escape hatch existing — browsers without VT run apply
+ *  synchronously, inside the caller's effect scope). The mode is also
+ *  validated against the theme's own modes — a dark-only theme picked
+ *  while wearing light lands on its available mode, never an impossible
+ *  pair. */
 export function setTheme(next: ThemeId, mode?: ThemeMode) {
-	const resolvedMode: ThemeMode = mode ?? themeState.mode;
+	const resolvedMode: ThemeMode = availableMode(next, mode ?? themeState.mode);
 	const apply = () => {
 		themeState.theme = next;
 		themeState.mode = resolvedMode;

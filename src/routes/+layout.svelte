@@ -2,6 +2,7 @@
 	import './layout.css';
 	import { syncThemeFromServer } from '#lib/theme-state.svelte.ts';
 	import { getCustomTheme, initCustomThemes } from '#lib/custom-themes.svelte.ts';
+	import { availableMode } from '#lib/theme-registry.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -26,6 +27,17 @@
 			document.documentElement.dataset.mode = pair.mode;
 			document.cookie = `theme=portal-${pair.mode}; path=/; max-age=31536000; samesite=strict`;
 			syncThemeFromServer({ theme: 'portal', mode: pair.mode });
+			return;
+		}
+		// a cookie naming a mode the theme doesn't ship (a dark-only theme +
+		// light) is an impossible pair — land on the theme's available mode
+		// and rewrite the cookie (availableMode prefers the requested one).
+		const corrected = availableMode(pair.theme, pair.mode);
+		if (corrected !== pair.mode) {
+			document.documentElement.dataset.theme = pair.theme;
+			document.documentElement.dataset.mode = corrected;
+			document.cookie = `theme=${pair.theme}-${corrected}; path=/; max-age=31536000; samesite=strict`;
+			syncThemeFromServer({ theme: pair.theme, mode: corrected });
 			return;
 		}
 		syncThemeFromServer(pair);

@@ -1,4 +1,5 @@
 import type { ThemeId, ThemeMode } from './theme.ts';
+import { ANP_THEMES } from './theme-registry-anp.gen.ts';
 
 /**
  * The theme registry — the ONE list every surface reads: the settings
@@ -14,6 +15,12 @@ import type { ThemeId, ThemeMode } from './theme.ts';
 export interface ThemeDef {
 	id: ThemeId;
 	name: string;
+	/** The modes this theme actually ships — the picker renders only
+	 *  these (the theming round's both-modes rule relaxed for the
+	 *  AnuPpuccin set: Dracula is dark-only, Sandy Beaches light-only). */
+	modes: ThemeMode[];
+	/** The picker's grouping — section headers, never tabs. */
+	family: 'portal' | 'catppuccin' | 'anuppuccin' | 'custom';
 	/** The swatch preview's tokens per mode. A SUBSET — enough to feel the
 	 *  palette: the card on its background, its text, its borders and the
 	 *  three accent voices. */
@@ -62,6 +69,8 @@ export type CoreTokens = Record<CoreToken, string>;
 export const PORTAL_THEME: ThemeDef = {
 	id: 'portal',
 	name: 'Portal',
+	modes: ['light', 'dark'],
+	family: 'portal',
 	preview: {
 		light: {
 			background: '#f8f7fb',
@@ -89,6 +98,8 @@ export const PORTAL_THEME: ThemeDef = {
 export const CATPPUCCIN_THEME: ThemeDef = {
 	id: 'catppuccin',
 	name: 'catppuccin',
+	modes: ['light', 'dark'],
+	family: 'catppuccin',
 	preview: {
 		light: {
 			background: '#eff1f5',
@@ -116,6 +127,8 @@ export const CATPPUCCIN_THEME: ThemeDef = {
 export const TOKYONIGHT_THEME: ThemeDef = {
 	id: 'tokyonight',
 	name: 'tokyonight',
+	modes: ['light', 'dark'],
+	family: 'portal',
 	preview: {
 		light: {
 			background: '#e1e2e7',
@@ -141,4 +154,39 @@ export const TOKYONIGHT_THEME: ThemeDef = {
 };
 
 /** The picker's order: the portal's own first, then the ported families. */
-export const THEMES: ThemeDef[] = [PORTAL_THEME, CATPPUCCIN_THEME, TOKYONIGHT_THEME];
+/** The picker's grouping — section headers, never tabs. */
+export const FAMILIES: { family: ThemeDef['family']; title: string; hint?: string }[] = [
+	{ family: 'portal', title: 'Portal', hint: 'the one the estate wears' },
+	{ family: 'catppuccin', title: 'Catppuccin', hint: 'the original four-flavor port' },
+	{
+		family: 'custom',
+		title: 'Your themes',
+		hint: 'they live in THIS browser — export the JSON to move them'
+	},
+	{
+		family: 'anuppuccin',
+		title: 'AnuPpuccin',
+		hint: "the Obsidian theme's full palette set — GPL-3.0, credited in the CSS"
+	}
+];
+
+export const THEMES: ThemeDef[] = [
+	PORTAL_THEME,
+	CATPPUCCIN_THEME,
+	TOKYONIGHT_THEME,
+	// generated from AnuPpuccin (scripts/gen-anp-themes.mjs); the literal
+	// widens to string — the assertion pins the shape once, here.
+	...(ANP_THEMES as unknown as ThemeDef[])
+];
+
+/** The modes a theme ships — the segmented and the cookie correction both
+ *  read this. */
+export function modesOf(id: ThemeId): ThemeMode[] {
+	return THEMES.find((t) => t.id === id)?.modes ?? ['light', 'dark'];
+}
+
+/** An available mode for the theme, preferring the one requested. */
+export function availableMode(id: ThemeId, mode: ThemeMode): ThemeMode {
+	const modes = modesOf(id);
+	return modes.includes(mode) ? mode : modes[0];
+}

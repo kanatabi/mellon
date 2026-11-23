@@ -79,9 +79,20 @@ paint. The `dark:` custom variant keys on `[data-mode='dark']` (never the theme
 id — every theme's dark half must get the utilities), and so does the shiki
 dark override. Each theme's CSS block defines ONLY the CORE tokens; the shadcn
 aliases live in `:root` and flip per element through var() resolution.
-`theme-registry.ts` is the ONE theme list (identity + the swatch preview),
-pinned to the CSS by `palette.test.ts` (every theme × mode defines every CORE
-token; preview values equal the CSS values). Custom themes are DATA in
+`theme-registry.ts` is the ONE theme list (identity + `modes` + `family` + the
+swatch preview), pinned to the CSS by `palette.test.ts` (every theme × ITS OWN
+modes defines every CORE token; preview values equal the CSS values).
+**The AnuPpuccin set (2026-11-23, generated):** 24 themes ported from
+[AnuPpuccin](https://github.com/AnubisNekhet/AnuPpuccin) (AnubisNekhet's
+Obsidian theme, GPL-3.0) by `scripts/gen-anp-themes.mjs` — the theme
+re-expresses every colorscheme in the Catppuccin variable style, so the port
+is mechanical (the per-mode mapping table lives in the generator); the CSS
+blocks ride in `layout.css` under the ANUPPUCCIN markers carrying the license
+attribution. Themes declare `modes` (Dracula is dark-only; Sandy Beaches
+light-only) — the segmented renders only available modes, `setTheme` validates
+the pair, and the layout's cookie correction flips an impossible pair to the
+theme's available mode. The picker groups by `family` (Portal / Catppuccin /
+AnuPpuccin / Your themes) with section headers, never tabs. Custom themes are DATA in
 localStorage (`mellon.theme.custom.<slug>`): name + the full CORE grammar for
 BOTH modes, structurally validated (the ONLY door into the apply seam), applied
 as inline custom properties on `<html>` (they out-rank every CSS block; the

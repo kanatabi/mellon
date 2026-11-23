@@ -9,7 +9,7 @@
 	import ThemeImportDialog from '#lib/components/ThemeImportDialog.svelte';
 	import ThemeRenameDialog from '#lib/components/ThemeRenameDialog.svelte';
 	import Confirm from '#lib/components/Confirm.svelte';
-	import { THEMES, type ThemeDef } from '#lib/theme-registry.ts';
+	import { FAMILIES, THEMES, type ThemeDef } from '#lib/theme-registry.ts';
 	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import { customThemes, deleteCustomTheme, saveCustomTheme } from '#lib/custom-themes.svelte.ts';
 	import { toThemeDef, type CustomTheme } from '#lib/custom-theme.ts';
@@ -99,61 +99,82 @@
 					</span>
 				</span>
 			</div>
-			<div class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Theme">
-				{#each allThemes as t (t.id)}
-					{@const custom = customById.get(t.id) as CustomTheme | undefined}
-					<ThemeCard theme={t} selected={themeState.theme === t.id} onSelect={() => setTheme(t.id)}>
-						{#snippet actions()}
-							{#if custom}
-								<a
-									href="/settings/themes/edit/{custom.id}"
-									aria-label="Edit {custom.name} in the theme editor"
-									title="Edit"
-									class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-								>
-									<Palette class="size-3" />
-								</a>
-								<button
-									type="button"
-									onclick={() => {
-										void copyJson(custom);
-									}}
-									aria-label="Copy {custom.name}'s JSON"
-									title="Copy JSON"
-									class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-								>
-									<Copy class="size-3" />
-								</button>
-								<button
-									type="button"
-									onclick={() => (renameTarget = custom)}
-									aria-label="Rename {custom.name}"
-									title="Rename"
-									class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-								>
-									<Pencil class="size-3" />
-								</button>
-								<button
-									type="button"
-									onclick={() => (deleteTarget = custom)}
-									aria-label="Delete {custom.name}"
-									title="Delete"
-									class="rounded p-0.5 text-danger transition-colors hover:text-danger"
-								>
-									<Trash2 class="size-3" />
-								</button>
-							{:else}
-								<a
-									href="/settings/themes/edit/new?fork={t.id}"
-									aria-label="Fork {t.name} into a new theme"
-									title="Fork this theme"
-									class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-								>
-									<Palette class="size-3" />
-								</a>
-							{/if}
-						{/snippet}
-					</ThemeCard>
+			<div class="flex flex-col gap-3" aria-label="Theme">
+				{#each FAMILIES as f (f.family)}
+					{@const group = allThemes.filter((t) => t.family === f.family)}
+					{#if group.length}
+						<div class="flex flex-col gap-2">
+							<div>
+								<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+									{f.title}
+								</p>
+								{#if f.hint}
+									<p class="text-xs text-muted-foreground/60">{f.hint}</p>
+								{/if}
+							</div>
+							<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+								{#each group as t (t.id)}
+									{@const custom = customById.get(t.id) as CustomTheme | undefined}
+									<ThemeCard
+										theme={t}
+										selected={themeState.theme === t.id}
+										onSelect={() => setTheme(t.id)}
+									>
+										{#snippet actions()}
+											{#if custom}
+												<a
+													href="/settings/themes/edit/{custom.id}"
+													aria-label="Edit {custom.name} in the theme editor"
+													title="Edit"
+													class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												>
+													<Palette class="size-3" />
+												</a>
+												<button
+													type="button"
+													onclick={() => {
+														void copyJson(custom);
+													}}
+													aria-label="Copy {custom.name}'s JSON"
+													title="Copy JSON"
+													class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												>
+													<Copy class="size-3" />
+												</button>
+												<button
+													type="button"
+													onclick={() => (renameTarget = custom)}
+													aria-label="Rename {custom.name}"
+													title="Rename"
+													class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												>
+													<Pencil class="size-3" />
+												</button>
+												<button
+													type="button"
+													onclick={() => (deleteTarget = custom)}
+													aria-label="Delete {custom.name}"
+													title="Delete"
+													class="rounded p-0.5 text-danger transition-colors hover:text-danger"
+												>
+													<Trash2 class="size-3" />
+												</button>
+											{:else}
+												<a
+													href="/settings/themes/edit/new?fork={t.id}"
+													aria-label="Fork {t.name} into a new theme"
+													title="Fork this theme"
+													class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												>
+													<Palette class="size-3" />
+												</a>
+											{/if}
+										{/snippet}
+									</ThemeCard>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				{/each}
 			</div>
 			{#if note}

@@ -22,14 +22,14 @@ export type ThemeMode = 'light' | 'dark';
  *  fallback owns existence). */
 export const THEME_IDS = ['portal', 'catppuccin', 'tokyonight'] as const;
 export type BuiltinThemeId = (typeof THEME_IDS)[number];
-export type ThemeId = BuiltinThemeId | `custom-${string}`;
+export type ThemeId = BuiltinThemeId | `custom-${string}` | `anp-${string}`;
 export interface ThemePair {
 	theme: ThemeId;
 	mode: ThemeMode;
 }
 
 const MODES: readonly ThemeMode[] = ['light', 'dark'];
-const CUSTOM_ID_RE = /^custom-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CUSTOM_ID_RE = /^(?:custom|anp)-[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export function resolveThemePair(cookieValue: string | undefined): ThemePair {
 	const v = (cookieValue ?? '').trim();
@@ -41,8 +41,12 @@ export function resolveThemePair(cookieValue: string | undefined): ThemePair {
 	if (MODES.includes(mode as ThemeMode)) {
 		if ((THEME_IDS as readonly string[]).includes(id))
 			return { theme: id as BuiltinThemeId, mode: mode as ThemeMode };
-		if (CUSTOM_ID_RE.test(v.slice(0, v.lastIndexOf('-'))))
-			return { theme: v.slice(0, v.lastIndexOf('-')) as ThemeId, mode: mode as ThemeMode };
+		// the prefixed namespaces (custom bodies in localStorage, the
+		// generated anp- set) ride a SHAPE check on the theme-id PORTION —
+		// the mode is always the last dash segment, the id may carry dashes
+		const themePart = v.slice(0, v.lastIndexOf('-'));
+		if (CUSTOM_ID_RE.test(themePart))
+			return { theme: themePart as ThemeId, mode: mode as ThemeMode };
 	}
 	return { theme: 'portal', mode: 'light' };
 }

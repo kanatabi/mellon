@@ -148,9 +148,9 @@ function blockFor(id: string, mode: string): string {
 }
 
 describe('theme registry ↔ CSS', () => {
-	it('every registered theme × mode defines every CORE token', () => {
+	it('every registered theme ships its OWN modes, each with every CORE token', () => {
 		for (const theme of THEMES) {
-			for (const mode of ['light', 'dark'] as const) {
+			for (const mode of theme.modes) {
 				const scope = blockFor(theme.id, mode);
 				for (const t of CORE_NAMES) {
 					expect(scope, `${theme.id}-${mode}: --${t} missing`).toContain(`--${t}:`);
@@ -161,7 +161,7 @@ describe('theme registry ↔ CSS', () => {
 
 	it('the registry swatch preview values EQUAL the CSS values', () => {
 		for (const theme of THEMES) {
-			for (const mode of ['light', 'dark'] as const) {
+			for (const mode of theme.modes) {
 				const scope = blockFor(theme.id, mode);
 				for (const key of PREVIEW_TOKENS) {
 					const expected = theme.preview[mode][key];

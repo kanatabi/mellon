@@ -59,3 +59,10 @@ npx -y npm@10.9.2 ci --dry-run   # must exit 0 — this is the CI's resolution
 And never read a gate's exit code through a pipe (`eslint … | tail; echo $?` reports
 **tail's** status — four lint errors read as green). Run gates bare, or under
 `set -o pipefail`.
+
+## Credits
+
+- Theme palettes: [AnuPpuccin](https://github.com/AnubisNekhet/AnuPpuccin) by
+  [AnubisNekhet](https://github.com/AnubisNekhet) (GPL-3.0) — the generated
+  color schemes in `src/routes/layout.css` are extracted from its stylesheets.
+  If you like the palettes, [buy them a coffee](https://www.buymeacoffee.com/anubisnekhet).

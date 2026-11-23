@@ -185,6 +185,8 @@ export function toThemeDef(t: CustomTheme): ThemeDef {
 	return {
 		id: t.id,
 		name: t.name,
+		family: 'custom',
+		modes: ['light', 'dark'],
 		preview: { light: pick(t.tokens.light), dark: pick(t.tokens.dark) }
 	};
 }
