@@ -14,12 +14,19 @@
 	// Seed the runtime store from the server-resolved cookie pair; the
 	// pre-paint inline script below applies it BEFORE first paint (no flash).
 	// A cookie naming a custom theme this browser doesn't HAVE is a ghost:
-	// fall back to the portal and rewrite the cookie so it stays gone.
+	// fall back to the portal and rewrite the cookie so it stays gone. The
+	// fallback must NOT call setTheme here — this effect already writes
+	// themeState (syncThemeFromServer), and setTheme READS it: the self-loop
+	// rule (an effect that reads state it writes re-triggers forever). The
+	// minimal inline write keeps the loop impossible.
 	$effect(() => {
-		let pair = data.theme;
+		const pair = data.theme;
 		if (pair.theme.startsWith('custom-') && !getCustomTheme(pair.theme)) {
-			setTheme('portal', pair.mode);
-			pair = { theme: 'portal', mode: pair.mode };
+			document.documentElement.dataset.theme = 'portal';
+			document.documentElement.dataset.mode = pair.mode;
+			document.cookie = `theme=portal-${pair.mode}; path=/; max-age=31536000; samesite=strict`;
+			syncThemeFromServer({ theme: 'portal', mode: pair.mode });
+			return;
 		}
 		syncThemeFromServer(pair);
 	});

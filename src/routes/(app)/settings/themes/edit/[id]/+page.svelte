@@ -63,35 +63,45 @@
 	}
 
 	/** Seed per the route shape. Re-runs on param change — a different id is
-	 *  a different draft by definition. */
+	 *  a different draft by definition. THE SELF-LOOP RULE (walked live:
+	 *  effect_update_depth_exceeded): an effect must never READ a $state it
+	 *  also writes — every read is a dependency, so read-after-write in the
+	 *  same effect re-triggers itself forever. Compute into LOCALS, write
+	 *  each state exactly once at the end. */
 	$effect(() => {
 		const pid = id ?? '';
 		const pf = forkId;
-		computedBase = computedTokens();
+		const base = computedTokens(); // local — never assign-then-read a $state here
+		let nextName = '';
+		let nextTokens: Draft = { light: {}, dark: {} };
+		let nextFork: Draft = { light: {}, dark: {} };
+		let nextExisting: `${'custom'}-${string}` | null = null;
+
 		if (pid.startsWith('custom-')) {
 			const stored = getCustomTheme(pid);
 			if (stored) {
-				name = stored.name;
-				tokens = { light: { ...stored.tokens.light }, dark: { ...stored.tokens.dark } };
-				forkBase = { light: { ...stored.tokens.light }, dark: { ...stored.tokens.dark } };
-				existingId = pid as `${'custom'}-${string}`;
-				return;
+				nextName = stored.name;
+				nextTokens = { light: { ...stored.tokens.light }, dark: { ...stored.tokens.dark } };
+				nextFork = { light: { ...stored.tokens.light }, dark: { ...stored.tokens.dark } };
+				nextExisting = pid as `${'custom'}-${string}`;
 			}
-		}
-		if (pf) {
-			tokens = {
+		} else if (pf) {
+			nextTokens = {
 				light: readThemeTokens(pf as ThemeId, 'light'),
 				dark: readThemeTokens(pf as ThemeId, 'dark')
 			};
-			forkBase = { light: { ...tokens.light }, dark: { ...tokens.dark } };
-			existingId = null;
-			return;
+			nextFork = { light: { ...nextTokens.light }, dark: { ...nextTokens.dark } };
+		} else {
+			// new: start from the theme being worn, BOTH halves
+			nextTokens = { light: { ...base }, dark: { ...base } };
+			nextFork = { light: { ...base }, dark: { ...base } };
 		}
-		// new: start from the theme being worn, BOTH halves
-		name = '';
-		tokens = { light: { ...computedBase }, dark: { ...computedBase } };
-		forkBase = { light: { ...tokens.light }, dark: { ...tokens.dark } };
-		existingId = null;
+
+		computedBase = base;
+		name = nextName;
+		tokens = nextTokens;
+		forkBase = nextFork;
+		existingId = nextExisting;
 	});
 
 	/** LIVE preview: the draft paints over the stored theme for the mode

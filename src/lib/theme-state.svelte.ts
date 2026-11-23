@@ -38,14 +38,19 @@ function applyCustomVars() {
 }
 
 /** The single write path: store + both data attributes + cookie + custom
- *  vars, VT-animated. */
+ *  vars, VT-animated. The pair is resolved at CALL time into locals, so
+ *  the apply callback reads NOTHING reactive — reads inside a
+ *  startViewTransition callback escape tracking, and correctness must not
+ *  depend on that escape hatch existing (browsers without VT run apply
+ *  synchronously, inside the caller's effect scope). */
 export function setTheme(next: ThemeId, mode?: ThemeMode) {
+	const resolvedMode: ThemeMode = mode ?? themeState.mode;
 	const apply = () => {
 		themeState.theme = next;
-		if (mode) themeState.mode = mode;
-		document.documentElement.dataset.theme = themeState.theme;
-		document.documentElement.dataset.mode = themeState.mode;
-		document.cookie = `theme=${themeState.theme}-${themeState.mode}; path=/; max-age=31536000; samesite=strict`;
+		themeState.mode = resolvedMode;
+		document.documentElement.dataset.theme = next;
+		document.documentElement.dataset.mode = resolvedMode;
+		document.cookie = `theme=${next}-${resolvedMode}; path=/; max-age=31536000; samesite=strict`;
 		applyCustomVars();
 	};
 	if (document.startViewTransition) document.startViewTransition(apply);
