@@ -1,6 +1,6 @@
 <script lang="ts">
 	import './layout.css';
-	import { syncThemeFromServer, setTheme } from '#lib/theme-state.svelte.ts';
+	import { syncThemeFromServer } from '#lib/theme-state.svelte.ts';
 	import { getCustomTheme, initCustomThemes } from '#lib/custom-themes.svelte.ts';
 	import type { LayoutProps } from './$types';
 
