@@ -31,8 +31,9 @@
 
 	let { theme, selected, wornMode, onSelect, actions }: Props = $props();
 
-	// svelte-ignore state_referenced_locally — the card remounts per open;
-	// the worn mode IS the honest seed for the preview lens
+	// the card remounts per open; the worn mode IS the honest seed for the
+	// preview lens
+	// svelte-ignore state_referenced_locally
 	let variant = $state<ThemeMode>(theme.modes.includes(wornMode) ? wornMode : theme.modes[0]);
 </script>
 

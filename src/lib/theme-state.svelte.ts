@@ -1,6 +1,5 @@
 import type { ThemeId, ThemeMode, ThemePair } from './theme.ts';
-import { availableMode, modesOf } from './theme-registry.ts';
-import { CORE_TOKENS } from './theme-registry.ts';
+import { availableMode, CORE_TOKENS } from './theme-registry.ts';
 import { getCustomTheme } from './custom-themes.svelte.ts';
 
 /**

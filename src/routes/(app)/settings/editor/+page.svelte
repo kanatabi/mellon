@@ -1,14 +1,13 @@
 <script lang="ts">
 	import SubCrumb from '#lib/components/SubCrumb.svelte';
 	import { enhance } from '$app/forms';
-	import type { ActionData, PageData } from './$types';
+	import type { PageData } from './$types';
 
 	interface Props {
 		data: PageData;
-		form: ActionData;
 	}
 
-	let { data, form }: Props = $props();
+	let { data }: Props = $props();
 
 	// The EDITOR section (the settings master/detail split): the vim toggle
 	// owns its route AND its action — reset:false matters (SvelteKit resets
