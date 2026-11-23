@@ -164,14 +164,22 @@ function mapTokens(p, mode) {
 
 const PREVIEW_KEYS = [
 	'background',
-	'card',
 	'foreground',
-	'border',
+	'card',
+	'chrome',
 	'muted',
+	'muted-foreground',
+	'accent',
+	'border',
 	'brand',
+	'accent-blue',
+	'accent-teal',
+	'accent-amber',
+	'accent-slate',
 	'danger',
-	'accent-amber'
-];
+	'diff-add',
+	'diff-del'
+]; // the FULL grammar — the card's pane paints the complete inventory
 
 const themes = [];
 const cssBlocks = [];

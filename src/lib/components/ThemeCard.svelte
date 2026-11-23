@@ -9,7 +9,8 @@
 	// (a radio group without arrow-key roving would be broken AT).
 	import type { Snippet } from 'svelte';
 	import { Check } from 'lucide-svelte';
-	import { PREVIEW_TOKENS, type ThemeDef } from '#lib/theme-registry.ts';
+	import type { ThemeDef } from '#lib/theme-registry.ts';
+	import ThemePane from '#lib/components/ThemePane.svelte';
 	import type { ThemeMode } from '#lib/theme.ts';
 
 	interface Props {
@@ -22,11 +23,6 @@
 	}
 
 	let { theme, selected, onSelect, actions }: Props = $props();
-
-	/** The theme's token values as inline custom properties — the pane's
-	 *  scoping seam. */
-	const paneVars = (mode: ThemeMode) =>
-		PREVIEW_TOKENS.map((k) => `--${k}: ${theme.preview[mode]?.[k] ?? 'transparent'}`).join('; ');
 </script>
 
 <button
@@ -51,24 +47,15 @@
 			{@render actions?.()}
 		</span>
 	</span>
-	<!-- the panes render the theme's OWN modes — a dark-only theme shows
-	     ONE full-width pane (the settings 500: both hardcoded →
-	     preview.light of undefined) -->
-	<span class="grid gap-1.5 {theme.modes.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
+	<!-- the panes render the theme's OWN modes, STACKED full card width
+	     (4-up grid: side-by-side dual panes can't breathe) — the shared
+	     ThemePane paints the complete inventory -->
+	<span class="flex flex-col gap-1.5">
 		{#each theme.modes as mode (mode)}
-			<span
-				class="flex flex-col gap-1 rounded-md bg-background p-1.5"
-				style={paneVars(mode as ThemeMode)}
-			>
-				<!-- the mini mock: card on background, text line, the three voices -->
-				<span class="flex flex-col gap-1 rounded border border-border bg-card p-1.5">
-					<span class="h-1.5 w-3/4 rounded-full bg-foreground/70"></span>
-					<span class="h-1.5 w-1/2 rounded-full bg-muted-foreground/40"></span>
-					<span class="mt-0.5 flex items-center gap-1">
-						<span class="h-2 w-4 rounded-full bg-brand"></span>
-						<span class="size-1.5 rounded-full bg-danger"></span>
-						<span class="size-1.5 rounded-full bg-accent-amber"></span>
-					</span>
+			<span class="flex flex-col gap-1">
+				<span class="font-mono text-[10px] text-muted-foreground/60">{mode}</span>
+				<span class="overflow-hidden rounded-lg border border-border">
+					<ThemePane tokens={theme.preview[mode] ?? {}} />
 				</span>
 			</span>
 		{/each}

@@ -74,23 +74,39 @@ export const PORTAL_THEME: ThemeDef = {
 	preview: {
 		light: {
 			background: '#f8f7fb',
-			card: '#ffffff',
 			foreground: '#171521',
-			border: '#dcd6e9',
+			card: '#ffffff',
+			chrome: '#f1eef8',
 			muted: '#edeaf6',
+			'muted-foreground': '#6f6a80',
+			accent: '#ece8f4',
+			border: '#dcd6e9',
 			brand: '#7c3aed',
+			'accent-blue': '#6366f1',
+			'accent-teal': '#0d9488',
+			'accent-amber': '#d97706',
+			'accent-slate': '#64748b',
 			danger: '#b91c1c',
-			'accent-amber': '#d97706'
+			'diff-add': '#15803d',
+			'diff-del': '#b91c1c'
 		},
 		dark: {
 			background: '#0f0e17',
-			card: '#171522',
 			foreground: '#eae8f2',
-			border: '#2b2740',
+			card: '#171522',
+			chrome: '#0a0911',
 			muted: '#262336',
+			'muted-foreground': '#9d97b3',
+			accent: '#221f31',
+			border: '#2b2740',
 			brand: '#a78bfa',
+			'accent-blue': '#a5b4fc',
+			'accent-teal': '#5eead4',
+			'accent-amber': '#fcd34d',
+			'accent-slate': '#94a3b8',
 			danger: '#f87171',
-			'accent-amber': '#fcd34d'
+			'diff-add': '#4ade80',
+			'diff-del': '#f87171'
 		}
 	}
 };
@@ -103,23 +119,39 @@ export const CATPPUCCIN_THEME: ThemeDef = {
 	preview: {
 		light: {
 			background: '#eff1f5',
-			card: '#ffffff',
 			foreground: '#4c4f69',
-			border: '#ccd0da',
+			card: '#ffffff',
+			chrome: '#e9ebf1',
 			muted: '#e6e9ef',
+			'muted-foreground': '#6c6f85',
+			accent: '#dce0e8',
+			border: '#ccd0da',
 			brand: '#8839ef',
+			'accent-blue': '#1e66f5',
+			'accent-teal': '#179299',
+			'accent-amber': '#df8e1d',
+			'accent-slate': '#8c8fa1',
 			danger: '#d20f39',
-			'accent-amber': '#df8e1d'
+			'diff-add': '#40a02b',
+			'diff-del': '#d20f39'
 		},
 		dark: {
 			background: '#1e1e2e',
-			card: '#282839',
 			foreground: '#cdd6f4',
-			border: '#45475a',
+			card: '#282839',
+			chrome: '#11111b',
 			muted: '#313244',
+			'muted-foreground': '#9399b2',
+			accent: '#45475a',
+			border: '#45475a',
 			brand: '#cba6f7',
+			'accent-blue': '#89b4fa',
+			'accent-teal': '#94e2d5',
+			'accent-amber': '#fab387',
+			'accent-slate': '#7f849c',
 			danger: '#f38ba8',
-			'accent-amber': '#fab387'
+			'diff-add': '#a6e3a1',
+			'diff-del': '#f38ba8'
 		}
 	}
 };
@@ -132,23 +164,39 @@ export const TOKYONIGHT_THEME: ThemeDef = {
 	preview: {
 		light: {
 			background: '#e1e2e7',
-			card: '#eceef4',
 			foreground: '#3760bf',
-			border: '#c4c8da',
+			card: '#eceef4',
+			chrome: '#d8dae3',
 			muted: '#d5d9e5',
+			'muted-foreground': '#6172b0',
+			accent: '#cfd2e0',
+			border: '#c4c8da',
 			brand: '#7847bd',
+			'accent-blue': '#2e7de9',
+			'accent-teal': '#007196',
+			'accent-amber': '#b15c00',
+			'accent-slate': '#8990b9',
 			danger: '#f52a65',
-			'accent-amber': '#b15c00'
+			'diff-add': '#587539',
+			'diff-del': '#f52a65'
 		},
 		dark: {
 			background: '#1a1b26',
-			card: '#1f2335',
 			foreground: '#c0caf5',
-			border: '#3b4261',
+			card: '#1f2335',
+			chrome: '#16161e',
 			muted: '#292e42',
+			'muted-foreground': '#a9b1d6',
+			accent: '#3b4261',
+			border: '#3b4261',
 			brand: '#bb9af7',
+			'accent-blue': '#7aa2f7',
+			'accent-teal': '#1abc9c',
+			'accent-amber': '#e0af68',
+			'accent-slate': '#737aa2',
 			danger: '#f7768e',
-			'accent-amber': '#e0af68'
+			'diff-add': '#9ece6a',
+			'diff-del': '#f7768e'
 		}
 	}
 };

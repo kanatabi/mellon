@@ -16,13 +16,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#191724',
-				card: '#1f1d2e',
 				foreground: '#e0def4',
-				border: '#2e2a46',
+				card: '#1f1d2e',
+				chrome: '#0b0a10',
 				muted: '#21202e',
+				'muted-foreground': '#6e6a86',
+				accent: '#111019',
+				border: '#2e2a46',
 				brand: '#c4a7e7',
+				'accent-blue': '#4c7fa9',
+				'accent-teal': '#9ccfd8',
+				'accent-amber': '#eb9f6f',
+				'accent-slate': '#403d52',
 				danger: '#eb6f92',
-				'accent-amber': '#eb9f6f'
+				'diff-add': '#72b69c',
+				'diff-del': '#eb6f92'
 			}
 		}
 	},
@@ -34,13 +42,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#303446',
-				card: '#004145',
 				foreground: '#c6ceef',
-				border: '#026267',
+				card: '#004145',
+				chrome: '#232634',
 				muted: '#015156',
+				'muted-foreground': '#00a5ac',
+				accent: '#292c3c',
+				border: '#026267',
 				brand: '#ca9ee6',
+				'accent-blue': '#8caaee',
+				'accent-teal': '#81c8be',
+				'accent-amber': '#ef9f76',
+				'accent-slate': '#01838a',
 				danger: '#e78284',
-				'accent-amber': '#ef9f76'
+				'diff-add': '#a6d189',
+				'diff-del': '#e78284'
 			}
 		}
 	},
@@ -52,13 +68,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#24273a',
-				card: '#00363a',
 				foreground: '#c5cff5',
-				border: '#025a5f',
+				card: '#00363a',
+				chrome: '#181926',
 				muted: '#01484c',
+				'muted-foreground': '#00a1aa',
+				accent: '#1e2030',
+				border: '#025a5f',
 				brand: '#c6a0f6',
+				'accent-blue': '#8aadf4',
+				'accent-teal': '#8bd5ca',
+				'accent-amber': '#f5a97f',
+				'accent-slate': '#017d84',
 				danger: '#ed8796',
-				'accent-amber': '#f5a97f'
+				'diff-add': '#a6da95',
+				'diff-del': '#ed8796'
 			}
 		}
 	},
@@ -70,13 +94,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#1e1e2e',
-				card: '#00302d',
 				foreground: '#d9e0ee',
-				border: '#025752',
+				card: '#00302d',
+				chrome: '#161320',
 				muted: '#012d28',
+				'muted-foreground': '#00beb3',
+				accent: '#1a1826',
+				border: '#025752',
 				brand: '#cba6f7',
+				'accent-blue': '#87b0f9',
+				'accent-teal': '#94e2d5',
+				'accent-amber': '#fab387',
+				'accent-slate': '#01988b',
 				danger: '#f38ba8',
-				'accent-amber': '#fab387'
+				'diff-add': '#a6e3a1',
+				'diff-del': '#f38ba8'
 			}
 		}
 	},
@@ -88,13 +120,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#232323',
-				card: '#282828',
 				foreground: '#a3a5aa',
-				border: '#3d3d3d',
+				card: '#282828',
+				chrome: '#191919',
 				muted: '#333333',
+				'muted-foreground': '#6e7177',
+				accent: '#1e1e1e',
+				border: '#3d3d3d',
 				brand: '#b48ead',
+				'accent-blue': '#5e81ac',
+				'accent-teal': '#8fbcbb',
+				'accent-amber': '#d08770',
+				'accent-slate': '#525252',
 				danger: '#bf616a',
-				'accent-amber': '#d08770'
+				'diff-add': '#a3be8c',
+				'diff-del': '#bf616a'
 			}
 		}
 	},
@@ -106,23 +146,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#eceff4',
-				card: '#edf0f5',
 				foreground: '#2e3440',
-				border: '#d8dee9',
+				card: '#edf0f5',
+				chrome: '#e5e9f0',
 				muted: '#e5e9f0',
+				'muted-foreground': '#434c5e',
+				accent: '#d8dee9',
+				border: '#d8dee9',
 				brand: '#88c0d0',
+				'accent-blue': '#5e81ac',
+				'accent-teal': '#79bf8e',
+				'accent-amber': '#d08770',
+				'accent-slate': '#566176',
 				danger: '#bf616a',
-				'accent-amber': '#d08770'
+				'diff-add': '#88a76c',
+				'diff-del': '#bf616a'
 			},
 			dark: {
 				background: '#434c5e',
-				card: '#4d576a',
 				foreground: '#eceff4',
-				border: '#7d89a1',
+				card: '#4d576a',
+				chrome: '#2e3440',
 				muted: '#67748e',
+				'muted-foreground': '#d9dee8',
+				accent: '#3b4252',
+				border: '#7d89a1',
 				brand: '#88c0d0',
+				'accent-blue': '#5e81ac',
+				'accent-teal': '#8fbcbb',
+				'accent-amber': '#d08770',
+				'accent-slate': '#acb4c3',
 				danger: '#bf616a',
-				'accent-amber': '#d08770'
+				'diff-add': '#a3be8c',
+				'diff-del': '#bf616a'
 			}
 		}
 	},
@@ -134,23 +190,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#bdd6db',
-				card: '#c2d9de',
 				foreground: '#05090a',
-				border: '#477a85',
+				card: '#c2d9de',
+				chrome: '#88b6bf',
 				muted: '#6da5b0',
+				'muted-foreground': '#121f21',
+				accent: '#56939f',
+				border: '#477a85',
 				brand: '#623d8f',
+				'accent-blue': '#2e456d',
+				'accent-teal': '#477b85',
+				'accent-amber': '#c39172',
+				'accent-slate': '#2b4950',
 				danger: '#923e56',
-				'accent-amber': '#c39172'
+				'diff-add': '#336b2e',
+				'diff-del': '#923e56'
 			},
 			dark: {
 				background: '#121f21',
-				card: '#1d3135',
 				foreground: '#bdd6db',
-				border: '#39626a',
+				card: '#1d3135',
+				chrome: '#05090a',
 				muted: '#2b4950',
+				'muted-foreground': '#88b6bf',
+				accent: '#0b1214',
+				border: '#39626a',
 				brand: '#cba6f7',
+				'accent-blue': '#87b0f9',
+				'accent-teal': '#bdd6db',
+				'accent-amber': '#fab387',
+				'accent-slate': '#56939f',
 				danger: '#f38ba8',
-				'accent-amber': '#fab387'
+				'diff-add': '#a6e3a1',
+				'diff-del': '#f38ba8'
 			}
 		}
 	},
@@ -162,13 +234,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#2e3440',
-				card: '#3b4252',
 				foreground: '#eceff4',
-				border: '#7d89a1',
+				card: '#3b4252',
+				chrome: '#1e2229',
 				muted: '#434c5e',
+				'muted-foreground': '#d9dee8',
+				accent: '#272b35',
+				border: '#7d89a1',
 				brand: '#88c0d0',
+				'accent-blue': '#5e81ac',
+				'accent-teal': '#8fbcbb',
+				'accent-amber': '#d08770',
+				'accent-slate': '#acb4c3',
 				danger: '#bf616a',
-				'accent-amber': '#d08770'
+				'diff-add': '#a3be8c',
+				'diff-del': '#bf616a'
 			}
 		}
 	},
@@ -180,23 +260,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#fafafa',
-				card: '#fafafa',
 				foreground: '#383a42',
-				border: '#c9c5c5',
+				card: '#fafafa',
+				chrome: '#dbdbdc',
 				muted: '#ededed',
+				'muted-foreground': '#636674',
+				accent: '#dad8d8',
+				border: '#c9c5c5',
 				brand: '#a625a4',
+				'accent-blue': '#3d74f6',
+				'accent-teal': '#00bcb6',
+				'accent-amber': '#e35649',
+				'accent-slate': '#94949e',
 				danger: '#e75545',
-				'accent-amber': '#e35649'
+				'diff-add': '#4ea24c',
+				'diff-del': '#e75545'
 			},
 			dark: {
 				background: '#272b34',
-				card: '#303540',
 				foreground: '#dddedf',
-				border: '#424958',
+				card: '#303540',
+				chrome: '#1a1e24',
 				muted: '#393f4c',
+				'muted-foreground': '#878787',
+				accent: '#21252b',
+				border: '#424958',
 				brand: '#c678dd',
+				'accent-blue': '#61afef',
+				'accent-teal': '#56b6c2',
+				'accent-amber': '#d19a66',
+				'accent-slate': '#606676',
 				danger: '#e06c75',
-				'accent-amber': '#d19a66'
+				'diff-add': '#98c379',
+				'diff-del': '#e06c75'
 			}
 		}
 	},
@@ -208,13 +304,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#0a0a0a',
-				card: '#1e1e1e',
 				foreground: '#ffffff',
-				border: '#505050',
+				card: '#1e1e1e',
+				chrome: '#000000',
 				muted: '#323232',
+				'muted-foreground': '#bdbdbd',
+				accent: '#050505',
+				border: '#505050',
 				brand: '#cba6f7',
+				'accent-blue': '#87b0f9',
+				'accent-teal': '#94e2d5',
+				'accent-amber': '#fab387',
+				'accent-slate': '#939393',
 				danger: '#f38ba8',
-				'accent-amber': '#fab387'
+				'diff-add': '#a6e3a1',
+				'diff-del': '#f38ba8'
 			}
 		}
 	},
@@ -226,13 +330,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#453636',
-				card: '#534141',
 				foreground: '#ffe9c7',
-				border: '#725a5a',
+				card: '#534141',
+				chrome: '#1a1515',
 				muted: '#644f4f',
+				'muted-foreground': '#c2b2b2',
+				accent: '#2d2424',
+				border: '#725a5a',
 				brand: '#7b3d79',
+				'accent-blue': '#614f76',
+				'accent-teal': '#768f80',
+				'accent-amber': '#e39c45',
+				'accent-slate': '#9c8181',
 				danger: '#cf223e',
-				'accent-amber': '#e39c45'
+				'diff-add': '#959a6b',
+				'diff-del': '#cf223e'
 			}
 		}
 	},
@@ -244,13 +356,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#3a3845',
-				card: '#4c464e',
 				foreground: '#fadac3',
-				border: '#5e5456',
+				card: '#4c464e',
+				chrome: '#26252d',
 				muted: '#554d52',
+				'muted-foreground': '#ebc0a0',
+				accent: '#2f2e38',
+				border: '#5e5456',
 				brand: '#d79fea',
+				'accent-blue': '#a3c8eb',
+				'accent-teal': '#a4eac0',
+				'accent-amber': '#eab29f',
+				'accent-slate': '#ad907c',
 				danger: '#ea9f9f',
-				'accent-amber': '#eab29f'
+				'diff-add': '#aed5a5',
+				'diff-del': '#ea9f9f'
 			}
 		}
 	},
@@ -262,13 +382,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#282a36',
-				card: '#303241',
 				foreground: '#f8f8f2',
-				border: '#44475a',
+				card: '#303241',
+				chrome: '#1a1b23',
 				muted: '#383b4c',
+				'muted-foreground': '#bfbfb5',
+				accent: '#21222c',
+				border: '#44475a',
 				brand: '#bd93f9',
+				'accent-blue': '#5f7ede',
+				'accent-teal': '#68dbd3',
+				'accent-amber': '#ffb86c',
+				'accent-slate': '#6e7291',
 				danger: '#ff5555',
-				'accent-amber': '#ffb86c'
+				'diff-add': '#50fa7b',
+				'diff-del': '#ff5555'
 			}
 		}
 	},
@@ -280,23 +408,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#fdf6e3',
-				card: '#fdf7e5',
 				foreground: '#5c6a72',
-				border: '#e3e0cc',
+				card: '#fdf7e5',
+				chrome: '#f0edd8',
 				muted: '#f3efda',
+				'muted-foreground': '#879686',
+				accent: '#edead5',
+				border: '#e3e0cc',
 				brand: '#b87a9c',
+				'accent-blue': '#5a93a2',
+				'accent-teal': '#569d79',
+				'accent-amber': '#f57d26',
+				'accent-slate': '#a4ad9e',
 				danger: '#f85552',
-				'accent-amber': '#f57d26'
+				'diff-add': '#899c40',
+				'diff-del': '#f85552'
 			},
 			dark: {
 				background: '#2f383e',
-				card: '#374247',
 				foreground: '#d3c6aa',
-				border: '#4a555b',
+				card: '#374247',
+				chrome: '#22282c',
 				muted: '#404c51',
+				'muted-foreground': '#9aa79d',
+				accent: '#272f34',
+				border: '#4a555b',
 				brand: '#b87b9d',
+				'accent-blue': '#5a93a2',
+				'accent-teal': '#569d79',
+				'accent-amber': '#d77f48',
+				'accent-slate': '#7f897d',
 				danger: '#da6362',
-				'accent-amber': '#d77f48'
+				'diff-add': '#899c40',
+				'diff-del': '#da6362'
 			}
 		}
 	},
@@ -308,13 +452,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#1c1b1a',
-				card: '#343331',
 				foreground: '#cfcec4',
-				border: '#575653',
+				card: '#343331',
+				chrome: '#080707',
 				muted: '#403e3c',
+				'muted-foreground': '#9e9c94',
+				accent: '#100f0f',
+				border: '#575653',
 				brand: '#cba6f7',
+				'accent-blue': '#87b0f9',
+				'accent-teal': '#94e2d5',
+				'accent-amber': '#fab387',
+				'accent-slate': '#7b7a74',
 				danger: '#f38ba8',
-				'accent-amber': '#fab387'
+				'diff-add': '#a6e3a1',
+				'diff-del': '#f38ba8'
 			}
 		}
 	},
@@ -326,13 +478,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#2a2a2a',
-				card: '#3f3f3f',
 				foreground: '#ffffff',
-				border: '#696969',
+				card: '#3f3f3f',
+				chrome: '#000000',
 				muted: '#545454',
+				'muted-foreground': '#bdbdbd',
+				accent: '#151515',
+				border: '#696969',
 				brand: '#cba6f7',
+				'accent-blue': '#87b0f9',
+				'accent-teal': '#94e2d5',
+				'accent-amber': '#fab387',
+				'accent-slate': '#939393',
 				danger: '#f38ba8',
-				'accent-amber': '#fab387'
+				'diff-add': '#a6e3a1',
+				'diff-del': '#f38ba8'
 			}
 		}
 	},
@@ -344,23 +504,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#f9f5d7',
-				card: '#f9f6da',
 				foreground: '#282828',
-				border: '#d6c4a1',
+				card: '#f9f6da',
+				chrome: '#e6d7b2',
 				muted: '#f2e5bc',
+				'muted-foreground': '#665c54',
+				accent: '#ebdbb3',
+				border: '#d6c4a1',
 				brand: '#b16286',
+				'accent-blue': '#458588',
+				'accent-teal': '#66981a',
+				'accent-amber': '#d65d0e',
+				'accent-slate': '#a89985',
 				danger: '#cc241d',
-				'accent-amber': '#d65d0e'
+				'diff-add': '#98971a',
+				'diff-del': '#cc241d'
 			},
 			dark: {
 				background: '#282828',
-				card: '#32302f',
 				foreground: '#fbf1c7',
-				border: '#504945',
+				card: '#32302f',
+				chrome: '#131516',
 				muted: '#3c3836',
+				'muted-foreground': '#bdae93',
+				accent: '#1d2021',
+				border: '#504945',
 				brand: '#b16286',
+				'accent-blue': '#458588',
+				'accent-teal': '#66981a',
+				'accent-amber': '#d65d0e',
+				'accent-slate': '#7c6f64',
 				danger: '#cc241d',
-				'accent-amber': '#d65d0e'
+				'diff-add': '#98971a',
+				'diff-del': '#cc241d'
 			}
 		}
 	},
@@ -372,13 +548,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#1f1f28',
-				card: '#2a2a37',
 				foreground: '#dcd7ba',
-				border: '#3e3e51',
+				card: '#2a2a37',
+				chrome: '#0b0b0f',
 				muted: '#363645',
+				'muted-foreground': '#c8c093',
+				accent: '#16161d',
+				border: '#3e3e51',
 				brand: '#957fb8',
+				'accent-blue': '#7e9cd8',
+				'accent-teal': '#7aa89f',
+				'accent-amber': '#ffa066',
+				'accent-slate': '#54546d',
 				danger: '#ff5d62',
-				'accent-amber': '#ffa066'
+				'diff-add': '#98bb6c',
+				'diff-del': '#ff5d62'
 			}
 		}
 	},
@@ -390,13 +574,21 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#f2eee8',
-				card: '#f3efea',
 				foreground: '#654941',
-				border: '#f6f3ef',
+				card: '#f3efea',
+				chrome: '#ece7df',
 				muted: '#cdb7b1',
+				'muted-foreground': '#7a5b52',
+				accent: '#e1d4d0',
+				border: '#f6f3ef',
 				brand: '#d4a5c6',
+				'accent-blue': '#8292c9',
+				'accent-teal': '#629d8e',
+				'accent-amber': '#e5ac9a',
+				'accent-slate': '#c2aba3',
 				danger: '#e89897',
-				'accent-amber': '#e5ac9a'
+				'diff-add': '#94bd75',
+				'diff-del': '#e89897'
 			}
 		}
 	},
@@ -408,23 +600,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#ffffff',
-				card: '#ffffff',
 				foreground: '#37352f',
-				border: '#aab1b6',
+				card: '#ffffff',
+				chrome: '#e3e6e8',
 				muted: '#d0d4d7',
+				'muted-foreground': '#635f54',
+				accent: '#bdc3c7',
+				border: '#aab1b6',
 				brand: '#6940a5',
+				'accent-blue': '#0b6e99',
+				'accent-teal': '#0f7b7b',
+				'accent-amber': '#d9730d',
+				'accent-slate': '#7b878e',
 				danger: '#e03e3e',
-				'accent-amber': '#d9730d'
+				'diff-add': '#0f7b6c',
+				'diff-del': '#e03e3e'
 			},
 			dark: {
 				background: '#3d4448',
-				card: '#4b5358',
 				foreground: '#e3e6e8',
-				border: '#717d84',
+				card: '#4b5358',
+				chrome: '#2f3437',
 				muted: '#5e686e',
+				'muted-foreground': '#c8cdd0',
+				accent: '#363c3f',
+				border: '#717d84',
 				brand: '#9a6dd7',
+				'accent-blue': '#529cca',
+				'accent-teal': '#4daba5',
+				'accent-amber': '#ffa344',
+				'accent-slate': '#9ca5ab',
 				danger: '#ff7369',
-				'accent-amber': '#ffa344'
+				'diff-add': '#4dab9a',
+				'diff-del': '#ff7369'
 			}
 		}
 	},
@@ -436,13 +644,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#1e1e24',
-				card: '#303241',
 				foreground: '#f8f8f2',
-				border: '#44475a',
+				card: '#303241',
+				chrome: '#141419',
 				muted: '#383b4c',
+				'muted-foreground': '#bfbfb5',
+				accent: '#19191e',
+				border: '#44475a',
 				brand: '#c592de',
+				'accent-blue': '#5f7ede',
+				'accent-teal': '#72e0d6',
+				'accent-amber': '#e6c37d',
+				'accent-slate': '#6e7291',
 				danger: '#f078a0',
-				'accent-amber': '#e6c37d'
+				'diff-add': '#82eb82',
+				'diff-del': '#f078a0'
 			}
 		}
 	},
@@ -454,13 +670,21 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#f0eae2',
-				card: '#f1ebe4',
 				foreground: '#685850',
-				border: '#cdc5c1',
+				card: '#f1ebe4',
+				chrome: '#e6dfd8',
 				muted: '#ded8d1',
+				'muted-foreground': '#6f6058',
+				accent: '#d4cdc8',
+				border: '#cdc5c1',
 				brand: '#95888a',
+				'accent-blue': '#6d6f7b',
+				'accent-teal': '#959c99',
+				'accent-amber': '#c7a187',
+				'accent-slate': '#7c6e67',
 				danger: '#a6897b',
-				'accent-amber': '#c7a187'
+				'diff-add': '#989686',
+				'diff-del': '#a6897b'
 			}
 		}
 	},
@@ -472,23 +696,39 @@ export const ANP_THEMES = [
 		preview: {
 			light: {
 				background: '#fdf6e3',
-				card: '#fdf7e5',
 				foreground: '#002b36',
-				border: '#839496',
+				card: '#fdf7e5',
+				chrome: '#e0d7b8',
 				muted: '#adb8b8',
+				'muted-foreground': '#0a4c5c',
+				accent: '#91a0a1',
+				border: '#839496',
 				brand: '#6c71c4',
+				'accent-blue': '#268bd2',
+				'accent-teal': '#2aa198',
+				'accent-amber': '#cb4b16',
+				'accent-slate': '#586e75',
 				danger: '#dc322f',
-				'accent-amber': '#cb4b16'
+				'diff-add': '#859900',
+				'diff-del': '#dc322f'
 			},
 			dark: {
 				background: '#073642',
-				card: '#0a4c5c',
 				foreground: '#fdf6e3',
-				border: '#338199',
+				card: '#0a4c5c',
+				chrome: '#002129',
 				muted: '#266173',
+				'muted-foreground': '#e1d7b7',
+				accent: '#002b36',
+				border: '#338199',
 				brand: '#6c71c4',
+				'accent-blue': '#268bd2',
+				'accent-teal': '#2aa198',
+				'accent-amber': '#cb4b16',
+				'accent-slate': '#759fa3',
 				danger: '#dc322f',
-				'accent-amber': '#cb4b16'
+				'diff-add': '#859900',
+				'diff-del': '#dc322f'
 			}
 		}
 	},
@@ -500,13 +740,21 @@ export const ANP_THEMES = [
 		preview: {
 			dark: {
 				background: '#151515',
-				card: '#2e2e2e',
 				foreground: '#d8d0d5',
-				border: '#454545',
+				card: '#2e2e2e',
+				chrome: '#0a0a0a',
 				muted: '#3b3b3b',
+				'muted-foreground': '#909090',
+				accent: '#0f0f0f',
+				border: '#454545',
 				brand: '#ca97e8',
+				'accent-blue': '#979ae8',
+				'accent-teal': '#b2e1df',
+				'accent-amber': '#e8b197',
+				'accent-slate': '#707070',
 				danger: '#ee9598',
-				'accent-amber': '#e8b197'
+				'diff-add': '#9be099',
+				'diff-del': '#ee9598'
 			}
 		}
 	}
