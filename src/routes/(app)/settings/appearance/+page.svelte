@@ -71,13 +71,16 @@
 	<!-- The theme card: grouped by family (section headers, never tabs),
 	     one write path (setTheme: store + cookie + View Transition). -->
 	<div class="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+		<!-- the MODE leads the section (owner call): the control that flips
+		     what the whole grid shows belongs at the top, not a footer -->
 		<div class="flex items-start justify-between gap-4">
 			<span class="flex flex-col gap-1">
 				<span class="text-sm font-medium">Theme</span>
 				<span class="font-mono text-xs leading-relaxed text-muted-foreground">
-					each card previews its light and dark palette — pick feels before you commit
+					each card previews its palettes — pick feels before you commit
 				</span>
 			</span>
+			<ThemeSegmented />
 		</div>
 		<div class="flex flex-col gap-3" aria-label="Theme">
 			{#each FAMILIES as f (f.family)}
@@ -174,7 +177,6 @@
 					New theme
 				</Button>
 			</div>
-			<ThemeSegmented />
 		</div>
 	</div>
 
