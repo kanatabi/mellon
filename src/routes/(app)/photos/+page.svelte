@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidate } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
 		ArrowDownWideNarrow,
@@ -1016,7 +1016,12 @@
 		mode="upload"
 		photos={rows}
 		onClose={() => (pickerOpen = false)}
-		onUploaded={() => void invalidate((u) => u.pathname === page.url.pathname)}
-		onDeleted={() => void invalidate((u) => u.pathname === page.url.pathname)}
+		// refreshAll, NOT the URL-predicate invalidate: a predicate only
+		// re-runs loads that declared load.depends() — no load here ever
+		// did, so the old calls were silent no-ops (the stale listing the
+		// owner saw). refreshAll re-runs every load of the ACTIVE page,
+		// per finished upload / delete — Done closes onto a fresh grid.
+		onUploaded={() => void refreshAll()}
+		onDeleted={() => void refreshAll()}
 	/>
 {/if}

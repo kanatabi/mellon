@@ -10,7 +10,7 @@
 		PanelRightOpen,
 		Trash2
 	} from 'lucide-svelte';
-	import { beforeNavigate, goto, invalidate } from '$app/navigation';
+	import { beforeNavigate, goto, refreshAll } from '$app/navigation';
 	import Confirm from '#lib/components/Confirm.svelte';
 	import { fade } from 'svelte/transition';
 	import Combobox from '#lib/components/Combobox.svelte';
@@ -113,8 +113,11 @@
 			flash({ kind: 'ok', title: 'Metadata saved' });
 			// server facts (and the collections' counts) refresh underneath the
 			// now-clean form; the draft/baseline survive because re-baselining
-			// is gated on photo IDENTITY above
-			void invalidate((url) => url.pathname === `/photos/${data.photo.id}`);
+			// is gated on photo IDENTITY above. refreshAll, not the predicate
+			// invalidate: the predicate only re-runs loads that called
+			// depends() — which this load never did (a silent no-op until
+			// 2026-11-23; refreshAll re-runs every load of the active page).
+			void refreshAll();
 		} catch (e) {
 			// keep the edits — a failed save never silently reverts the form
 			failed = e instanceof Error ? e.message : 'save failed';
