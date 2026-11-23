@@ -361,7 +361,7 @@
 		<div class="flex flex-wrap items-center gap-1.5">
 			<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">theme</span>
 			<span
-				class="color-checkerboard block size-6 shrink-0 rounded-full ring-1 ring-brand"
+				class="color-checkerboard block size-7 shrink-0 rounded-full ring-1 ring-brand"
 				title={`current: ${currentHexA}`}
 			>
 				<span class="block size-full rounded-full" style={`background-color: ${currentHexA}`}
@@ -370,7 +370,7 @@
 			{#each themeSwatches.slice(0, 10) as s, i (s + i)}
 				<button
 					type="button"
-					class="size-6 shrink-0 rounded-full border border-border transition-transform hover:scale-110"
+					class="size-7 shrink-0 rounded-full ring-1 ring-border/50 transition-shadow ring-inset hover:ring-2 hover:ring-brand"
 					style={`background-color: ${s}`}
 					aria-label="Use {s}"
 					title={s}
@@ -384,7 +384,7 @@
 			{#each recents.slice(0, 8) as r, i (r + i)}
 				<button
 					type="button"
-					class="size-6 shrink-0 rounded-full border border-border transition-transform hover:scale-110"
+					class="size-7 shrink-0 rounded-full ring-1 ring-border/50 transition-shadow ring-inset hover:ring-2 hover:ring-brand"
 					style={`background-color: ${r}`}
 					aria-label="Use recent {r}"
 					title={r}
@@ -393,7 +393,7 @@
 			{/each}
 			<button
 				type="button"
-				class="grid size-6 shrink-0 place-items-center rounded-full border border-dashed border-border text-muted-foreground transition-colors hover:text-foreground"
+				class="grid size-7 shrink-0 place-items-center rounded-full border border-dashed border-border text-muted-foreground transition-colors hover:text-foreground"
 				aria-label="Remember the current color"
 				title="Remember the current color"
 				onclick={commitRecent}
