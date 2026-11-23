@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, CircleAlert, Clock, ImagePlus, Link, Upload, X } from 'lucide-svelte';
+	import { Check, CircleAlert, Clock, ImagePlus, Link, Trash2, Upload, X } from 'lucide-svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import { ApiError, client } from '#lib/api/client.ts';
@@ -20,9 +20,13 @@
 		onPick?: (photo: AdminPhoto) => void;
 		/** upload mode: each finished upload, newest last. */
 		onUploaded?: (photo: AdminPhoto) => void;
+		/** The queue row's trash (deleting needs no pick target, so it only
+		 *  exists where the fresh upload has no references yet — the /photos
+		 *  dialog; in the editor the photo is already applied to the doc). */
+		onDeleted?: (photo: AdminPhoto) => void;
 	}
 
-	let { mode, photos, onClose, onPick, onUploaded }: Props = $props();
+	let { mode, photos, onClose, onPick, onUploaded, onDeleted }: Props = $props();
 
 	// The upload queue: File → EXIF capture → multipart addPhoto. NO
 	// FileReader, NO dataUrl, NO dimension probe — lumen decodes the bytes
@@ -33,8 +37,10 @@
 		id: number;
 		name: string;
 		size: number;
-		status: 'queued' | 'preparing' | 'uploading' | 'done' | 'error';
+		status: 'queued' | 'preparing' | 'uploading' | 'done' | 'deleting' | 'error';
 		detail?: string;
+		/** Set once lumen accepted the upload — the trash's delete target. */
+		photo?: AdminPhoto;
 	};
 	let queue = $state<QueueItem[]>([]);
 	// seed: the dialog remounts per open, so a snapshot of the library is the
@@ -51,7 +57,7 @@
 	const stateOf = (q: QueueItem) =>
 		q.status === 'queued'
 			? 'idle'
-			: q.status === 'preparing'
+			: q.status === 'preparing' || q.status === 'deleting'
 				? 'processing'
 				: q.status === 'uploading'
 					? 'uploading'
@@ -64,9 +70,44 @@
 				preparing: 'preparing',
 				uploading: 'uploading',
 				done: 'uploaded',
+				deleting: 'deleting',
 				error: 'failed'
 			}) as const
 		)[q.status];
+
+	/** Option B (owner call 2026-11-23): the row is text-on-dialog by
+	 *  default — the border only speaks when it means something (dashed
+	 *  = waiting; the base's error state border wins over the transparent
+	 *  by variant specificity). */
+	const rowCls = (q: QueueItem) =>
+		q.status === 'queued'
+			? 'w-full rounded-lg border-border/60'
+			: 'w-full rounded-lg border-transparent bg-transparent';
+
+	/** ONE settle for every mutation site (the upload loop, the trash). */
+	const settle = (id: number, patch: Partial<QueueItem>) =>
+		(queue = queue.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+	const dismiss = (id: number) => (queue = queue.filter((x) => x.id !== id));
+
+	/** The trash on a done row: lumen's delete (row + eager object GC).
+	 *  Failure renders lumen's copy verbatim — the row flips to error and
+	 *  the photo's fate stays visible. */
+	async function removeUploaded(q: QueueItem) {
+		if (!q.photo) return;
+		const { photo } = q;
+		settle(q.id, { status: 'deleting' });
+		try {
+			await client.deletePhoto(photo.id);
+			queue = queue.filter((x) => x.id !== q.id);
+			grid = grid.filter((p) => p.id !== photo.id);
+			onDeleted?.(photo);
+		} catch (e) {
+			settle(q.id, {
+				status: 'error',
+				detail: e instanceof ApiError ? e.message : 'could not delete'
+			});
+		}
+	}
 
 	async function handleFiles(fileList: FileList | File[]) {
 		err = '';
@@ -80,21 +121,19 @@
 		queue = [...queue, ...items];
 		for (let i = 0; i < files.length; i++) {
 			const [file, q] = [files[i], items[i]];
-			const settle = (patch: Partial<QueueItem>) =>
-				(queue = queue.map((x) => (x.id === q.id ? { ...x, ...patch } : x)));
 			if (file.size > MAX_UPLOAD_BYTES) {
-				settle({ status: 'error', detail: 'over the 100 MB limit' });
+				settle(q.id, { status: 'error', detail: 'over the 100 MB limit' });
 				continue;
 			}
 			try {
-				settle({ status: 'preparing' });
+				settle(q.id, { status: 'preparing' });
 				// the EXIF capture reads the bytes BEFORE upload (Round B): curated
 				// fields only, GPS never requested — lumen allowlists what it stores
 				const exif = await captureExif(file);
-				settle({ status: 'uploading' });
+				settle(q.id, { status: 'uploading' });
 				const created = await client.addPhoto({ file, name: file.name, exif });
 				grid = [created, ...grid];
-				settle({ status: 'done' });
+				settle(q.id, { status: 'done', photo: created });
 				if (mode === 'upload' || mode === 'upload-cover') onUploaded?.(created);
 				// A single upload answers the dialog's question directly: the
 				// thumbnail picks itself; the insert embeds itself. Batches of
@@ -103,7 +142,7 @@
 				else if (mode === 'insert' || (mode === 'thumbnail' && files.length === 1))
 					onPick?.(created);
 			} catch (e) {
-				settle({
+				settle(q.id, {
 					status: 'error',
 					detail: e instanceof ApiError ? e.message : 'failed'
 				});
@@ -120,7 +159,13 @@
 	}
 
 	const busy = $derived(
-		queue.some((q) => q.status === 'queued' || q.status === 'preparing' || q.status === 'uploading')
+		queue.some(
+			(q) =>
+				q.status === 'queued' ||
+				q.status === 'preparing' ||
+				q.status === 'uploading' ||
+				q.status === 'deleting'
+		)
 	);
 	const title = $derived(
 		mode === 'thumbnail'
@@ -222,9 +267,9 @@
 				<ul class="flex flex-col gap-1.5" aria-label="Upload queue">
 					{#each queue as q (q.id)}
 						<li>
-							<Attachment.Root size="sm" state={stateOf(q)} class="w-full rounded-lg">
+							<Attachment.Root size="sm" state={stateOf(q)} class={rowCls(q)}>
 								<Attachment.Media>
-									{#if q.status === 'preparing' || q.status === 'uploading'}
+									{#if q.status === 'preparing' || q.status === 'uploading' || q.status === 'deleting'}
 										<Spinner class="size-3.5" aria-hidden="true" />
 									{:else if q.status === 'done'}
 										<Check class="size-3.5" aria-hidden="true" />
@@ -241,6 +286,32 @@
 										{q.status === 'error' ? q.detail : labelOf(q)}
 									</Attachment.Description>
 								</Attachment.Content>
+								<!-- The trash lives where deleting is safe (no onPick = the
+								     /photos dialog: a fresh upload has no references yet;
+								     in the editor the photo is already in the doc). The X
+								     is a DISMISSAL (queued/errored rows — nothing to delete
+								     server-side), never a delete. -->
+								{#if q.status === 'done' && q.photo && !onPick}
+									<Attachment.Actions>
+										<Attachment.Action
+											aria-label="Delete {q.name}"
+											class="text-danger hover:text-danger"
+											onclick={() => void removeUploaded(q)}
+										>
+											<Trash2 class="size-3.5" />
+										</Attachment.Action>
+									</Attachment.Actions>
+								{:else if q.status === 'queued' || q.status === 'error'}
+									<Attachment.Actions>
+										<Attachment.Action
+											aria-label="Remove {q.name} from the queue"
+											class="text-muted-foreground hover:text-foreground"
+											onclick={() => dismiss(q.id)}
+										>
+											<X class="size-3.5" />
+										</Attachment.Action>
+									</Attachment.Actions>
+								{/if}
 							</Attachment.Root>
 						</li>
 					{/each}
@@ -249,7 +320,7 @@
 				     (the per-row attachments stay quiet to SRs via their media's
 				     aria-hidden icons) without a polyphonic announcer. -->
 				<span class="sr-only" role="status">
-					{#each queue.filter((q) => q.status === 'preparing' || q.status === 'uploading') as q (q.id)}
+					{#each queue.filter((q) => q.status === 'preparing' || q.status === 'uploading' || q.status === 'deleting') as q (q.id)}
 						{q.name} — {labelOf(q)}
 					{/each}
 				</span>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Check, Hash, Minus, Plus, Search, X } from 'lucide-svelte';
+	import { Check, Hash, Minus, Plus, Search, Trash2, X } from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { focusOnMount } from '#lib/actions.ts';
@@ -586,7 +586,7 @@
 					onclick={() => (deleteOpen = true)}
 					disabled={busy}
 				>
-					<X class="size-3.5" /> delete
+					<Trash2 class="size-3.5" /> delete
 				</Button>
 				<div class="flex gap-2">
 					<Button

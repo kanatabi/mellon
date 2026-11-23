@@ -1017,5 +1017,6 @@
 		photos={rows}
 		onClose={() => (pickerOpen = false)}
 		onUploaded={() => void invalidate((u) => u.pathname === page.url.pathname)}
+		onDeleted={() => void invalidate((u) => u.pathname === page.url.pathname)}
 	/>
 {/if}

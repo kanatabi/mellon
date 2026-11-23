@@ -13,6 +13,7 @@
 		PinOff,
 		Plus,
 		Search,
+		Trash2,
 		X
 	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
@@ -671,7 +672,7 @@
 						onclick={() => removeRow(k)}
 						aria-label={`Remove ${k}`}
 					>
-						×
+						<Trash2 class="size-3" />
 					</Button>
 				</div>
 			{:else}
