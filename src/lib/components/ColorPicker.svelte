@@ -32,6 +32,7 @@
 	let alpha = $state(1);
 	let svEl = $state<HTMLDivElement | undefined>();
 	let hueEl = $state<HTMLDivElement | undefined>();
+	let alphaEl = $state<HTMLDivElement | undefined>();
 
 	// seed from the value each time the picker mounts (the popover mounts
 	// fresh per open); an unparsable value keeps the default HSV — the raw
@@ -88,6 +89,13 @@
 		if (!hueEl) return;
 		const r = hueEl.getBoundingClientRect();
 		hsv = { ...hsv, h: clamp01((e.clientX - r.left) / r.width) * 360 };
+		emit();
+	}
+
+	function alphaPoint(e: PointerEvent) {
+		if (!alphaEl) return;
+		const r = alphaEl.getBoundingClientRect();
+		alpha = clamp01((e.clientX - r.left) / r.width);
 		emit();
 	}
 
@@ -289,76 +297,100 @@
 		</div>
 	{/if}
 
-	<!-- the shared opacity bar: checkerboard under the color's own gradient -->
+	<!-- the opacity slider IS the indicator: ONE track — checkerboard
+	     under the color's own gradient — with the thumb riding it (the
+	     hue-bar pattern; arrow keys step 5%) -->
 	<div class="flex items-center gap-2">
 		<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">opacity</span>
 		<div
-			class="color-checkerboard relative h-3 min-w-0 flex-1 overflow-hidden rounded-full border border-border"
+			bind:this={alphaEl}
+			class="color-checkerboard relative h-4 min-w-0 flex-1 cursor-pointer touch-none overflow-hidden rounded-full border border-border"
+			role="slider"
+			aria-label="Opacity"
+			aria-valuenow={Math.round(alpha * 100)}
+			aria-valuemin={0}
+			aria-valuemax={100}
+			aria-valuetext={`opacity ${Math.round(alpha * 100)}%`}
+			tabindex="0"
+			onpointerdown={(e) => {
+				e.currentTarget.setPointerCapture(e.pointerId);
+				alphaPoint(e);
+			}}
+			onpointermove={(e) => {
+				if (e.buttons & 1) alphaPoint(e);
+			}}
+			onpointerup={commitRecent}
+			onkeydown={(e) => {
+				const a =
+					e.key === 'ArrowLeft' ? alpha - 0.05 : e.key === 'ArrowRight' ? alpha + 0.05 : alpha;
+				if (a !== alpha) {
+					e.preventDefault();
+					alpha = clamp01(a);
+					emit();
+				}
+			}}
 		>
 			<div
 				class="absolute inset-0"
 				style={`background: linear-gradient(to right, ${currentHex}00, ${currentHex})`}
 			></div>
+			<div
+				class="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+				style={`left: ${alpha * 100}%; background-color: ${currentHex}`}
+			></div>
 		</div>
-		<input
-			type="range"
-			min="0"
-			max="100"
-			value={Math.round(alpha * 100)}
-			oninput={(e) => {
-				alpha = Number(e.currentTarget.value) / 100;
-				emit();
-			}}
-			onchange={commitRecent}
-			aria-label="Opacity"
-			class="w-16 shrink-0 accent-brand"
-		/>
 		<span class="w-10 shrink-0 text-right font-mono text-[10px] text-muted-foreground"
 			>{Math.round(alpha * 100)}%</span
 		>
 	</div>
 
-	<!-- the swatch row: current | the theme's own values | save | recents -->
-	<div class="flex flex-wrap items-center gap-1.5">
-		<button
-			type="button"
-			class="color-checkerboard size-7 shrink-0 rounded-md"
-			aria-label="Current color"
-			title={currentHexA}
-			onclick={() => (tab = 'sliders')}
-		>
-			<span class="block size-full rounded-md" style={`background-color: ${currentHexA}`}></span>
-		</button>
-		{#each themeSwatches.slice(0, 6) as s, i (s + i)}
+	<!-- the swatches: TWO labeled lines (the owner's read: one wrapped
+	     row made every swatch look like a recent) — the theme's own
+	     values first, the current ringed; the recents below, the
+	     remember-+ at the END of their line -->
+	<div class="flex flex-col gap-1.5">
+		<div class="flex items-center gap-1.5">
+			<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">theme</span>
+			<span
+				class="color-checkerboard block size-6 shrink-0 rounded-full ring-1 ring-brand"
+				title={`current: ${currentHexA}`}
+			>
+				<span class="block size-full rounded-full" style={`background-color: ${currentHexA}`}
+				></span>
+			</span>
+			{#each themeSwatches.slice(0, 7) as s, i (s + i)}
+				<button
+					type="button"
+					class="size-6 shrink-0 rounded-full border border-border transition-transform hover:scale-110"
+					style={`background-color: ${s}`}
+					aria-label="Use {s}"
+					title={s}
+					onclick={() => pickSwatch(s)}
+				></button>
+			{/each}
+		</div>
+		<div class="flex items-center gap-1.5">
+			<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">recent</span
+			>
+			{#each recents.slice(0, 6) as r, i (r + i)}
+				<button
+					type="button"
+					class="size-6 shrink-0 rounded-full border border-border transition-transform hover:scale-110"
+					style={`background-color: ${r}`}
+					aria-label="Use recent {r}"
+					title={r}
+					onclick={() => pickSwatch(r)}
+				></button>
+			{/each}
 			<button
 				type="button"
-				class="size-6 rounded-full border border-border transition-transform hover:scale-110"
-				style={`background-color: ${s}`}
-				aria-label="Use {s}"
-				title={s}
-				onclick={() => pickSwatch(s)}
-			></button>
-		{/each}
-		<button
-			type="button"
-			class="grid size-6 place-items-center rounded-full border border-dashed border-border text-muted-foreground transition-colors hover:text-foreground"
-			aria-label="Remember the current color"
-			title="Remember"
-			onclick={() => {
-				commitRecent();
-			}}
-		>
-			<Plus class="size-3" />
-		</button>
-		{#each recents.slice(0, 4) as r, i (r + i)}
-			<button
-				type="button"
-				class="size-6 rounded-full border border-border transition-transform hover:scale-110"
-				style={`background-color: ${r}`}
-				aria-label="Use recent {r}"
-				title={r}
-				onclick={() => pickSwatch(r)}
-			></button>
-		{/each}
+				class="grid size-6 shrink-0 place-items-center rounded-full border border-dashed border-border text-muted-foreground transition-colors hover:text-foreground"
+				aria-label="Remember the current color"
+				title="Remember the current color"
+				onclick={commitRecent}
+			>
+				<Plus class="size-3" />
+			</button>
+		</div>
 	</div>
 </div>
