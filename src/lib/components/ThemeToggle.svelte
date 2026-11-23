@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { Moon, Sun } from 'lucide-svelte';
+	import type { ThemeMode } from '#lib/theme.ts';
 
 	interface Props {
-		theme: 'light' | 'dark';
+		mode: ThemeMode;
 		onToggle: () => void;
 	}
 
-	let { theme, onToggle }: Props = $props();
+	let { mode, onToggle }: Props = $props();
 </script>
 
 <button
@@ -15,7 +16,7 @@
 	aria-label="Toggle light and dark mode"
 	onclick={onToggle}
 >
-	{#if theme === 'dark'}
+	{#if mode === 'dark'}
 		<Moon class="size-4" />
 	{:else}
 		<Sun class="size-4" />

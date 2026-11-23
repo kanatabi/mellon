@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { LoaderCircle } from 'lucide-svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
-	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData } from './$types';
@@ -32,7 +32,7 @@
 	     decision 2026-11-08) — all other chrome stays flat. -->
 	<div class="login-aura" aria-hidden="true"></div>
 	<div class="absolute top-4 right-4 z-10">
-		<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
+		<ThemeToggle mode={themeState.mode} onToggle={toggleMode} />
 	</div>
 	<h1 class="relative font-brand text-4xl font-semibold tracking-tight">
 		Speak, friend, and enter

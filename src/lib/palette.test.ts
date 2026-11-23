@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { PREVIEW_TOKENS, THEMES } from './theme-registry.ts';
 
 /**
  * Palette doctrine guards (§11.3 wayfinding amendment): every color token must
@@ -28,7 +29,7 @@ function block(selector: RegExp): string {
 }
 
 const light = block(/:root\s*\{[^}]*\}/);
-const dark = block(/\[data-theme='dark'\]\s*\{[^}]*\}/);
+const dark = block(/\[data-theme='portal'\]\[data-mode='dark'\]\s*\{[^}]*\}/);
 
 /** Declared value of `token` inside a block, or undefined. */
 function value(scope: string, token: string): string | undefined {
@@ -126,5 +127,48 @@ describe('palette parity (§11.3)', () => {
 		expect(light).not.toContain('--background: #ffffff;');
 		expect(light).toMatch(/--background: #\w{6};/);
 		expect(dark).not.toContain('--background: #09090b;');
+	});
+});
+
+/**
+ * The registry ↔ CSS pin (the theming round, 2026-11-23): every registered
+ * theme × mode must have a CSS block defining every CORE token, and the
+ * registry's swatch preview values must EQUAL the CSS values — a registry
+ * drift is a test failure, not a wrong swatch on the picker. The portal's
+ * LIGHT values live in `:root` (the cascade's fallback floor); every other
+ * block is `[data-theme='…'][data-mode='…']`.
+ */
+function blockFor(id: string, mode: string): string {
+	if (id === 'portal' && mode === 'light') return light;
+	return block(new RegExp(`\\[data-theme='${id}'\\]\\[data-mode='${mode}'\\]\\s*\\{[^}]*\\}`));
+}
+
+describe('theme registry ↔ CSS', () => {
+	it('every registered theme × mode defines every CORE token', () => {
+		for (const theme of THEMES) {
+			for (const mode of ['light', 'dark'] as const) {
+				const scope = blockFor(theme.id, mode);
+				for (const t of CORE) {
+					expect(scope, `${theme.id}-${mode}: ${t} missing`).toContain(`${t}:`);
+				}
+			}
+		}
+	});
+
+	it('the registry swatch preview values EQUAL the CSS values', () => {
+		for (const theme of THEMES) {
+			for (const mode of ['light', 'dark'] as const) {
+				const scope = blockFor(theme.id, mode);
+				for (const key of PREVIEW_TOKENS) {
+					const expected = theme.preview[mode][key];
+					expect(
+						expected,
+						`${theme.id}-${mode}: preview token ${key} missing in registry`
+					).toBeTruthy();
+					const actual = value(scope, `--${key}`);
+					expect(actual, `${theme.id}-${mode}: --${key} registry/CSS drift`).toBe(expected);
+				}
+			}
+		}
 	});
 });

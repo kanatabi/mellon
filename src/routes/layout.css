@@ -55,7 +55,7 @@
 	--diff-del: #b91c1c;
 
 	/* ── shadcn aliases (SHADCN.md §3.2/§3.3) — theme-agnostic by construction:
-	   each points at a token that already flips in [data-theme='dark']. ── */
+	   each points at a token that already flips in [data-theme='portal'][data-mode='dark']. ── */
 	--primary-foreground: var(--background);
 	--secondary: var(--muted);
 	--secondary-foreground: var(--foreground);
@@ -77,7 +77,7 @@
 	--sidebar-ring: var(--brand);
 }
 
-[data-theme='dark'] {
+[data-theme='portal'][data-mode='dark'] {
 	--background: #0f0e17;
 	--foreground: #eae8f2;
 	/* one step above the page — depth without shadows (§11.3 holds) */
@@ -102,7 +102,7 @@
 	--diff-del: #f87171;
 }
 
-@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
 
 @theme inline {
 	--container-nav: 240px;
@@ -170,7 +170,7 @@
 	); /* the row-structure family: blue shared with lists (option 1); the treatments differ */
 	--cue-link: #4f46e5;
 }
-[data-theme='dark'] {
+[data-theme='portal'][data-mode='dark'] {
 	--cue-quote: #fbbf24;
 	--cue-code: #4ade80;
 	--cue-strike: #f87171;
@@ -370,8 +370,8 @@
 	color: var(--shiki-light);
 	background: var(--shiki-light-bg);
 }
-[data-theme='dark'] .shiki,
-[data-theme='dark'] .shiki span {
+[data-theme='portal'][data-mode='dark'] .shiki,
+[data-theme='portal'][data-mode='dark'] .shiki span {
 	color: var(--shiki-dark) !important;
 	background: var(--shiki-dark-bg) !important;
 }

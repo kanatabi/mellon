@@ -9,7 +9,7 @@
 	const children = createRawSnippet(() => ({ render: () => '<div data-testid="page">x</div>' }));
 
 	const data = {
-		theme: 'light' as const,
+		theme: { theme: 'portal', mode: 'light' } as const,
 		principal: { username: 'probe', role: 'admin' as const, mustChange: false },
 		recent: [],
 		vim: false,

@@ -20,7 +20,7 @@
 	import { navRail } from '#lib/rails.svelte.ts';
 	import { writeVimCookie } from '#lib/session.ts';
 	import { stateToggle } from '#lib/command-kit.ts';
-	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
 	import { baseCommands, recentCommands, type Command } from '#lib/commands.ts';
 	import { pageCommands } from '#lib/page-commands.svelte.ts';
 	import AppSidebar from './app-sidebar.svelte';
@@ -75,11 +75,11 @@
 		// answers "what mode am I in?" before you flip it (owner call).
 		stateToggle({
 			id: 'toggle.theme',
-			title: 'Toggle theme',
-			on: themeState.theme === 'dark',
+			title: 'Toggle mode',
+			on: themeState.mode === 'dark',
 			onHint: 'dark',
 			offHint: 'light',
-			run: () => toggleTheme()
+			run: () => toggleMode()
 		}),
 		stateToggle({
 			id: 'toggle.vim',

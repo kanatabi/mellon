@@ -415,7 +415,10 @@ flowchart LR
 		mermaidTimer = setTimeout(() => void renderMermaid(el), 450);
 	});
 	$effect(() => {
-		void themeState.theme; // flip: re-diagram from the surviving sources
+		// the palette flip (mode, and the theme id once themes multiply) is
+		// what re-colors mermaid's output — re-diagram from the surviving sources
+		void themeState.mode;
+		void themeState.theme;
 		if (!previewEl || !previewLive || !html) return;
 		const el = previewEl;
 		void tick().then(() => renderMermaid(el, true));

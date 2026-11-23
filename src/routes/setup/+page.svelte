@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
-	import { toggleTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -27,7 +27,7 @@
 	     the gate's first impression, it earns the same staging -->
 	<div class="login-aura" aria-hidden="true"></div>
 	<div class="absolute top-4 right-4 z-10">
-		<ThemeToggle theme={themeState.theme} onToggle={toggleTheme} />
+		<ThemeToggle mode={themeState.mode} onToggle={toggleMode} />
 	</div>
 	<div class="flex flex-col items-center gap-1.5">
 		<h1 class="relative font-brand text-4xl font-semibold tracking-tight">
