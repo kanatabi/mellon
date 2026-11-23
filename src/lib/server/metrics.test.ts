@@ -58,7 +58,7 @@ describe('the registry shape', () => {
 
 describe('effectiveTimeout (missing or empty env = default)', () => {
 	it('the table: the upload override wins, the dep default fills the rest', () => {
-		expect(effectiveTimeout(DEP.cms, 'photos.upload')).toBe(30000);
+		expect(effectiveTimeout(DEP.cms, 'photos.upload')).toBe(180000);
 		expect(effectiveTimeout(DEP.cms, 'posts.list')).toBe(5000);
 		expect(effectiveTimeout(DEP.admin, 'bao.write')).toBe(5000);
 	});

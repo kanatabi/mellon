@@ -11,8 +11,17 @@ import { RoutingError, ROUTE_TABLE, baseFor, upstreamFor } from './routing.ts';
 import { createLumenApi } from './fetch-adapter.ts';
 import { resolveUpstreams, isUpstreamConfigured } from './index.ts';
 
-const PNG_DATA_URL =
-	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+const PNG_BLOB = new Blob(
+	[
+		Uint8Array.from(
+			atob(
+				'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+			),
+			(c) => c.charCodeAt(0)
+		)
+	],
+	{ type: 'image/png' }
+);
 
 describe('route-class table — control plane (ADMIN_URL)', () => {
 	it.each([
@@ -128,7 +137,7 @@ describe('resolveUpstreams — the env wiring chain', () => {
 });
 
 describe('fetch-adapter — two stub bases, per route class', () => {
-	type Sent = { url: string; auth?: string; method: string };
+	type Sent = { url: string; auth?: string; method: string; contentType?: string };
 	let sent: Sent[] = [];
 	function stub() {
 		sent = [];
@@ -136,7 +145,8 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 			sent.push({
 				url: String(input),
 				method: init?.method ?? 'GET',
-				auth: new Headers(init?.headers).get('Authorization') ?? undefined
+				auth: new Headers(init?.headers).get('Authorization') ?? undefined,
+				contentType: new Headers(init?.headers).get('content-type') ?? undefined
 			});
 			// '{}' parses to a truthy object for the adapters that read a
 			// field off the result (bulkFeatureTags); routing is what's
@@ -205,7 +215,7 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		await a.unpublishPost('s');
 		await a.deletePost('s');
 		await a.listPhotos();
-		await a.addPhoto({ name: 'p', dataUrl: PNG_DATA_URL, width: 1, height: 1 });
+		await a.addPhoto({ name: 'p', file: PNG_BLOB });
 		await a.updatePhoto('p1', { alt: 'x' });
 		await a.getPhoto('p1');
 		await a.listPhotoReferences('p1');
@@ -229,6 +239,29 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		expect(sent.some((s) => s.method === 'POST' && s.url === 'http://cms.test/admin/photos')).toBe(
 			true
 		);
+	});
+
+	it('the stream shape forwards verbatim: the given content-type to the CMS URL, bearer rides', async () => {
+		stub();
+		const body = new ReadableStream<Uint8Array>({
+			start(c) {
+				c.enqueue(new Uint8Array([1, 2, 3]));
+				c.close();
+			}
+		});
+		await api().addPhoto({
+			body,
+			contentType: 'multipart/form-data; boundary=kit-boundary',
+			contentLength: 3
+		});
+		expect(sent).toHaveLength(1);
+		const s = sent[0];
+		expect(s.url).toBe('http://cms.test/admin/photos'); // the CMS plane decides, as for {file}
+		expect(s.method).toBe('POST');
+		expect(s.auth).toBe('Bearer tok-1'); // auth forwarding identical, both shapes
+		// the relay's content-type SHIPS UNTOUCHED — the multipart boundary
+		// the browser stamped must reach lumen intact
+		expect(s.contentType).toBe('multipart/form-data; boundary=kit-boundary');
 	});
 
 	it('a single string target = single binary: both classes ride the one base', async () => {

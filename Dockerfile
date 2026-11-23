@@ -15,6 +15,12 @@ RUN npm prune --omit=dev
 FROM node:22-alpine AS output
 WORKDIR /app
 ENV NODE_ENV=production
+# adapter-node reads BODY_SIZE_LIMIT at module import, so it must be
+# image-level — a server.js assignment would be too late (the handler is
+# imported statically, no dynamic import to pre-empt). 110M = backstop
+# ABOVE the relay's 101 MiB pre-check, so our formatted 413 (and lumen's)
+# always wins for real files; the env backstop only catches the remainder.
+ENV BODY_SIZE_LIMIT=110M
 # Amended 2026-11-11: mellon's SSR preview chain (jsdom, shiki, isomorphic-
 # dompurify) is intentionally EXTERNAL (see vite.config ssr.external — they
 # resolve assets/require paths against their package layout and break bundled).

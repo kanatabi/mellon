@@ -15,9 +15,15 @@ const USER = process.env.LUMEN_ADMIN_USER ?? 'gofar';
 const PASS = process.env.LUMEN_ADMIN_PASSWORD ?? 'mellon-dev-password';
 const live = BASE !== '';
 
-// 1x1 transparent PNG, tiny and real (lumen's decoder must accept it)
-const PNG_DATA_URL =
-	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+// 1x1 transparent PNG, tiny and real (lumen's decoder must accept it) —
+// shipped as bytes now: the wire is multipart, no data-URL anywhere
+const PNG_BYTES = Uint8Array.from(
+	atob(
+		'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+	),
+	(c) => c.charCodeAt(0)
+);
+const PNG_BLOB = new Blob([PNG_BYTES], { type: 'image/png' });
 
 let token = '';
 const slug = 'mellon-live-cutover';
@@ -107,12 +113,7 @@ describe.skipIf(!live)('mellon AdminApi against real lumen', () => {
 		'photo upload rides multipart and content-addresses through lumen',
 		async () => {
 			const api = createLumenApi(BASE, token);
-			const photo = await api.addPhoto({
-				name: 'mellon-live.png',
-				dataUrl: PNG_DATA_URL,
-				width: 1,
-				height: 1
-			});
+			const photo = await api.addPhoto({ name: 'mellon-live.png', file: PNG_BLOB });
 			photoIds.push(photo.id);
 			expect(photo.src).toContain('/media/');
 			expect(photo.src).toMatch(/\.png$/);

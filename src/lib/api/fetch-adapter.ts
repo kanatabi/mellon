@@ -217,33 +217,63 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				})
 			}),
 		addPhoto: async (p) => {
-			// the dataUrl's browser-measured dims are advisory: lumen DECODES the
-			// bytes and the response carries truth (the §5 probe is the authority)
-			const comma = p.dataUrl.indexOf(',');
-			const head = p.dataUrl.slice(0, comma);
-			const mime = /image\/(\w+)/.exec(head)?.[0] ?? 'image/png';
-			const bytes = Uint8Array.from(atob(p.dataUrl.slice(comma + 1)), (c) => c.charCodeAt(0));
-			const form = new FormData();
-			const ext = mime === 'image/jpeg' ? 'jpg' : mime === 'image/png' ? 'png' : 'img';
-			form.append(
-				'photo',
-				new Blob([bytes], { type: mime }),
-				/\.(png|jpe?g|gif|webp)$/i.test(p.name) ? p.name : `${p.name}.${ext}`
-			);
-			// the EXIF capture (Round B): client-side, BEFORE upload — lumen
-			// allowlists what it stores; absent = the field ships not at all
-			if (p.exif) form.append('exif', JSON.stringify(p.exif));
-			const url = new URL(at('/admin/photos'));
 			const requestId = newRequestId();
 			const hop = upstreamFor('/admin/photos');
 			const dep = DEP[hop];
+			// the shared response leg — both wire shapes converge here: the
+			// access line, the error copy (lumen's verbatim), the JSON photo
+			const settle = async (res: Response): Promise<AdminPhoto> => {
+				logAccess(hop, 'POST', '/admin/photos', res.status, echoedRequestId(res, requestId));
+				const text = await res.text();
+				if (!res.ok) {
+					throw new AdminApiError(
+						res.status,
+						safeError(text, `HTTP ${res.status}`),
+						echoedRequestId(res, requestId)
+					);
+				}
+				return JSON.parse(text) as AdminPhoto;
+			};
+			// the relay's shape: the browser's multipart request streams through
+			// VERBATIM — no parse, no buffer (the 100 MB path). Node 22 requires
+			// `duplex: 'half'` for stream bodies; RequestInit's types don't know it.
+			if ('body' in p) {
+				let res: Response;
+				try {
+					res = await outbound(dep, 'photos.upload', (signal) =>
+						fetch(new URL(at('/admin/photos')), {
+							method: 'POST',
+							signal,
+							headers: {
+								Authorization: `Bearer ${bearer}`,
+								[REQUEST_ID_HEADER]: requestId,
+								'content-type': p.contentType
+							},
+							body: p.body,
+							duplex: 'half'
+						} as RequestInit)
+					);
+				} catch {
+					logAccess(hop, 'POST', '/admin/photos', 'unreachable', requestId);
+					throw new AdminApiError(503, 'lumen unreachable', requestId);
+				}
+				return settle(res);
+			}
+			// the browser's shape: wrap the bytes in the multipart lumen expects —
+			// photo + optional exif ONLY. Dims are not on the wire: lumen decodes
+			// the bytes and the response carries truth (the §5 probe is the authority)
+			const form = new FormData();
+			form.append('photo', p.file, p.name);
+			// the EXIF capture (Round B): client-side, BEFORE upload — lumen
+			// allowlists what it stores; absent = the field ships not at all
+			if (p.exif) form.append('exif', JSON.stringify(p.exif));
 			let res: Response;
 			try {
 				// COUNTED + BOUNDED like every call: the upload is the ONE slow
-				// op by nature (multi-MB bodies) — it gets the table's 30s
+				// op by nature (multi-MB bodies) — it gets the table's
 				// photos.upload budget, everything else rides the dep default
 				res = await outbound(dep, 'photos.upload', (signal) =>
-					fetch(url, {
+					fetch(new URL(at('/admin/photos')), {
 						method: 'POST',
 						signal,
 						headers: { Authorization: `Bearer ${bearer}`, [REQUEST_ID_HEADER]: requestId },
@@ -254,16 +284,7 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				logAccess(hop, 'POST', '/admin/photos', 'unreachable', requestId);
 				throw new AdminApiError(503, 'lumen unreachable', requestId);
 			}
-			logAccess(hop, 'POST', '/admin/photos', res.status, echoedRequestId(res, requestId));
-			const text = await res.text();
-			if (!res.ok) {
-				throw new AdminApiError(
-					res.status,
-					safeError(text, `HTTP ${res.status}`),
-					echoedRequestId(res, requestId)
-				);
-			}
-			return JSON.parse(text) as AdminPhoto;
+			return settle(res);
 		},
 		updatePhoto: (id, patch: { alt?: string; collection?: string | null; gallery?: boolean }) =>
 			call<AdminPhoto>('PATCH', `/admin/photos/${encodeURIComponent(id)}`, {

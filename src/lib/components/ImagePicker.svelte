@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { ImagePlus, Link, Upload, X } from 'lucide-svelte';
+	import { Check, CircleAlert, Clock, ImagePlus, Link, Upload, X } from 'lucide-svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { focusOnMount } from '#lib/actions.ts';
 	import { ApiError, client } from '#lib/api/client.ts';
 	import type { AdminPhoto } from '#lib/api/types.ts';
 	import { captureExif } from '#lib/exif.ts';
+	import { formatBytes, MAX_UPLOAD_BYTES } from '#lib/upload.ts';
+	import * as Attachment from '#lib/components/ui/attachment/index.js';
+	import { Spinner } from '#lib/components/ui/spinner/index.js';
 
 	interface Props {
 		/** thumbnail: single-pick for the post cover. insert: pick/upload into
@@ -21,13 +24,16 @@
 
 	let { mode, photos, onClose, onPick, onUploaded }: Props = $props();
 
-	// The upload queue: File → data-URL → client-side dimension probe
-	// (the mock-era deviation) → addPhoto. Per-file state is visible;
-	// a failed file never sinks the batch.
+	// The upload queue: File → EXIF capture → multipart addPhoto. NO
+	// FileReader, NO dataUrl, NO dimension probe — lumen decodes the bytes
+	// and its response carries truth; the browser ships the Blob untouched
+	// (the base64 detour is what capped uploads at ~a third of the wire).
+	// Per-file state is visible; a failed file never sinks the batch.
 	type QueueItem = {
 		id: number;
 		name: string;
-		status: 'reading' | 'uploading' | 'done' | 'error';
+		size: number;
+		status: 'queued' | 'preparing' | 'uploading' | 'done' | 'error';
 		detail?: string;
 	};
 	let queue = $state<QueueItem[]>([]);
@@ -39,13 +45,28 @@
 	let note = $state('');
 	let fileInput = $state<HTMLInputElement | undefined>();
 	let qid = 0;
-	const probe = (src: string) =>
-		new Promise<{ width: number; height: number }>((resolve, reject) => {
-			const img = new Image();
-			img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-			img.onerror = reject;
-			img.src = src;
-		});
+
+	/** QueueItem status → the Attachment's data-state (drives the shimmer,
+	 *  the error border, the media slot's colors). */
+	const stateOf = (q: QueueItem) =>
+		q.status === 'queued'
+			? 'idle'
+			: q.status === 'preparing'
+				? 'processing'
+				: q.status === 'uploading'
+					? 'uploading'
+					: q.status;
+
+	const labelOf = (q: QueueItem) =>
+		(
+			({
+				queued: 'waiting',
+				preparing: 'preparing',
+				uploading: 'uploading',
+				done: 'uploaded',
+				error: 'failed'
+			}) as const
+		)[q.status];
 
 	async function handleFiles(fileList: FileList | File[]) {
 		err = '';
@@ -54,25 +75,24 @@
 			err = 'no image files there';
 			return;
 		}
-		for (const file of files) {
-			const id = ++qid;
-			queue = [...queue, { id, name: file.name, status: 'reading' }];
+		// enqueue ALL first (the queue is the evidence), then upload sequentially
+		const items = files.map((f) => ({ id: ++qid, name: f.name, size: f.size }) as QueueItem);
+		queue = [...queue, ...items];
+		for (let i = 0; i < files.length; i++) {
+			const [file, q] = [files[i], items[i]];
 			const settle = (patch: Partial<QueueItem>) =>
-				(queue = queue.map((q) => (q.id === id ? { ...q, ...patch } : q)));
+				(queue = queue.map((x) => (x.id === q.id ? { ...x, ...patch } : x)));
+			if (file.size > MAX_UPLOAD_BYTES) {
+				settle({ status: 'error', detail: 'over the 100 MB limit' });
+				continue;
+			}
 			try {
-				const dataUrl = await new Promise<string>((res, rej) => {
-					const r = new FileReader();
-					r.onload = () => res(String(r.result));
-					r.onerror = rej;
-					r.readAsDataURL(file);
-				});
-				settle({ status: 'uploading' });
-				const { width, height } = await probe(dataUrl);
-				// the EXIF capture rides the same read the upload does (Round B):
-				// curated fields only, GPS never requested — lumen allowlists
-				// what it stores, this side never even reads the rest
+				settle({ status: 'preparing' });
+				// the EXIF capture reads the bytes BEFORE upload (Round B): curated
+				// fields only, GPS never requested — lumen allowlists what it stores
 				const exif = await captureExif(file);
-				const created = await client.addPhoto({ name: file.name, dataUrl, width, height, exif });
+				settle({ status: 'uploading' });
+				const created = await client.addPhoto({ file, name: file.name, exif });
 				grid = [created, ...grid];
 				settle({ status: 'done' });
 				if (mode === 'upload' || mode === 'upload-cover') onUploaded?.(created);
@@ -99,7 +119,9 @@
 			.catch(() => (err = 'clipboard blocked by the browser'));
 	}
 
-	const busy = $derived(queue.some((q) => q.status === 'reading' || q.status === 'uploading'));
+	const busy = $derived(
+		queue.some((q) => q.status === 'queued' || q.status === 'preparing' || q.status === 'uploading')
+	);
 	const title = $derived(
 		mode === 'thumbnail'
 			? 'Cover image'
@@ -197,25 +219,40 @@
 			{/if}
 
 			{#if queue.length}
-				<ul class="flex flex-col gap-1" aria-label="Upload queue">
+				<ul class="flex flex-col gap-1.5" aria-label="Upload queue">
 					{#each queue as q (q.id)}
-						<li
-							class="flex items-center justify-between rounded-md px-2 py-1 font-mono text-[11px]"
-						>
-							<span class="min-w-0 truncate text-muted-foreground">{q.name}</span>
-							<span
-								class={q.status === 'error'
-									? 'text-danger'
-									: q.status === 'done'
-										? 'text-brand'
-										: 'text-muted-foreground/70'}
-							>
-								{q.status}{#if q.detail}
-									· {q.detail}{/if}
-							</span>
+						<li>
+							<Attachment.Root size="sm" state={stateOf(q)} class="w-full rounded-lg">
+								<Attachment.Media>
+									{#if q.status === 'preparing' || q.status === 'uploading'}
+										<Spinner class="size-3.5" aria-hidden="true" />
+									{:else if q.status === 'done'}
+										<Check class="size-3.5" aria-hidden="true" />
+									{:else if q.status === 'error'}
+										<CircleAlert class="size-3.5" aria-hidden="true" />
+									{:else}
+										<Clock class="size-3.5" aria-hidden="true" />
+									{/if}
+								</Attachment.Media>
+								<Attachment.Content>
+									<Attachment.Title>{q.name}</Attachment.Title>
+									<Attachment.Description class="font-mono text-[10px]" title={q.detail}>
+										{formatBytes(q.size)} ·
+										{q.status === 'error' ? q.detail : labelOf(q)}
+									</Attachment.Description>
+								</Attachment.Content>
+							</Attachment.Root>
 						</li>
 					{/each}
 				</ul>
+				<!-- ONE live region for the whole queue: announces the active row
+				     (the per-row attachments stay quiet to SRs via their media's
+				     aria-hidden icons) without a polyphonic announcer. -->
+				<span class="sr-only" role="status">
+					{#each queue.filter((q) => q.status === 'preparing' || q.status === 'uploading') as q (q.id)}
+						{q.name} — {labelOf(q)}
+					{/each}
+				</span>
 			{/if}
 
 			{#if mode !== 'upload' || grid.length}

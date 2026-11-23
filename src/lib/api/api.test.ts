@@ -402,28 +402,23 @@ describe('mock AdminApi contract', () => {
 
 	it('photos: uploads land bytes in the media store, src is a serving URL', async () => {
 		const api = createMockApi();
-		const created = await api.addPhoto({
-			name: 'alpine dawn.png',
-			dataUrl: 'data:image/png;base64,aW1hZ2U=',
-			width: 900,
-			height: 560
-		});
+		const png = new Blob(['png-bytes'], { type: 'image/png' });
+		const created = await api.addPhoto({ name: 'alpine dawn.png', file: png });
 		expect(created.src).toMatch(/^\/api\/media\/m\d+$/);
 		expect(created.alt).toBe('alpine dawn');
 		// fresh captures start private & uncategorized — curation is deliberate
 		expect(created.gallery).toBe(false);
 		expect(created.collection).toBeNull();
 		expect(created.exif).toBeNull(); // no capture sent — the honest empty state
-		expect(mediaStore.get(created.id)).toBe('data:image/png;base64,aW1hZ2U=');
+		expect(mediaStore.get(created.id)).toBe(png); // the Blob, undecoded
 		const list = await api.listPhotos();
 		expect(list.items[0].id).toBe(created.id); // newest first, seeds follow
 		// the twin stores the capture verbatim — the ALLOWLIST lives in lumen;
 		// the panel reads the shape identically either way (Round B)
+		const jpg = new Blob(['jpg-bytes'], { type: 'image/jpeg' });
 		const withExif = await api.addPhoto({
 			name: 'ridge.jpg',
-			dataUrl: 'data:image/jpeg;base64,aW1hZ2U=',
-			width: 800,
-			height: 600,
+			file: jpg,
 			exif: { camera: 'X100VI', iso: 640, aperture: 2.8, GPSLatitude: 46.5 } as never
 		});
 		expect(withExif.exif).toEqual({
@@ -432,6 +427,19 @@ describe('mock AdminApi contract', () => {
 			aperture: 2.8,
 			GPSLatitude: 46.5
 		});
+	});
+
+	it('photos: the stream shape is a relay concern — the twin refuses with 501', async () => {
+		const api = createMockApi();
+		const body = new ReadableStream<Uint8Array>({
+			start(c) {
+				c.enqueue(new Uint8Array([1, 2, 3]));
+				c.close();
+			}
+		});
+		await expect(
+			api.addPhoto({ body, contentType: 'multipart/form-data; boundary=x' })
+		).rejects.toMatchObject({ status: 501 });
 	});
 
 	it('curation: gallery flag + collection vocabulary, filtered/sorted lists, PATCH merges', async () => {

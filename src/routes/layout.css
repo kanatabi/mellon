@@ -603,3 +603,25 @@
 		transform: translateX(100%);
 	}
 }
+
+/* The Attachment queue's in-flight title (uploading/preparing): a text-clip
+   gradient sweep — "working" motion without a spinner inside the words.
+   The global prefers-reduced-motion rule above already snaps it still. */
+@utility shimmer {
+	background-image: linear-gradient(
+		100deg,
+		var(--muted-foreground) 40%,
+		var(--foreground) 50%,
+		var(--muted-foreground) 60%
+	);
+	background-size: 200% 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	animation: shimmer-sweep 2s linear infinite;
+}
+@keyframes shimmer-sweep {
+	to {
+		background-position: -200% 0;
+	}
+}

@@ -42,6 +42,11 @@ const metricsServer = http.createServer(async (req, res) => {
 	res.end();
 });
 
+// Node's 300s default requestTimeout kills a slow 100 MB upload mid-flight;
+// the app server gets the full ten minutes. Header pacing stays on the
+// default headersTimeout — only the (streaming) body needs the long rope.
+appServer.requestTimeout = 10 * 60 * 1000;
+
 appServer.listen({ port, host }, () => {
 	console.log(`app: listening on ${host}:${port}`);
 });

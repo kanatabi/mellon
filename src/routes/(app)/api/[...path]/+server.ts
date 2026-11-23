@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { createApi, AdminApiError } from '#lib/api/index.ts';
 import { isAuthed, SESSION_COOKIE } from '#lib/session.ts';
+import { MAX_UPLOAD_BYTES, MULTIPART_SLACK } from '#lib/upload.ts';
 import type { RequestHandler } from './$types';
 
 /**
@@ -124,7 +125,23 @@ async function route(ctx: Ctx) {
 				})
 			);
 		}
-		if (request.method === 'POST') return json(await api.addPhoto(await body()), { status: 201 });
+		// the ONE transport-only path through AdminApi (like `preview`): the
+		// relay forwards, it never parses. The browser's multipart request
+		// streams through to lumen untouched — no `request.formData()` read,
+		// no buffer (the 100 MB path). Only the ceilings are checked, and
+		// BOTH before a single body byte is read.
+		if (request.method === 'POST') {
+			const contentType = request.headers.get('content-type') ?? '';
+			if (!request.body || !contentType.startsWith('multipart/form-data'))
+				return json({ error: 'multipart/form-data required' }, { status: 415 });
+			const len = Number(request.headers.get('content-length') ?? '0');
+			if (len > MAX_UPLOAD_BYTES + MULTIPART_SLACK)
+				return json({ error: 'photo uploads are capped at 100 MB' }, { status: 413 });
+			return json(
+				await api.addPhoto({ body: request.body, contentType, contentLength: len || undefined }),
+				{ status: 201 }
+			);
+		}
 	}
 	if (p[0] === 'photos' && p.length === 2 && request.method === 'PATCH') {
 		return json(await api.updatePhoto(p[1], await body()));

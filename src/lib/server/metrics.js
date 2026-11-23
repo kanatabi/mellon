@@ -114,7 +114,9 @@ export const TIMEOUT_TABLE = {
 	[DEP.cms]: {
 		default: 5000,
 		ops: {
-			[OP.PhotosUpload]: 30000 // multi-MB photo uploads are slow by nature
+			// the 100 MB upload over a slow uplink: ~4.5 Mbps sustained. The
+			// old 30s budget killed real uploads mid-flight.
+			[OP.PhotosUpload]: 180000
 		}
 	}
 };

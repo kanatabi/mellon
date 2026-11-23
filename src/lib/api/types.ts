@@ -295,20 +295,14 @@ export interface AdminApi {
 	deletePost(slug: string): Promise<void>;
 
 	listPhotos(opts?: PhotoListOpts): Promise<Paged<AdminPhoto>>;
-	/** Upload entry point. `dataUrl` stands in for the bytes during the mock
-	 *  era (journaled); Phase B transports multipart POST /admin/photos and
-	 *  lumen probes dims + strips EXIF server-side — this interface's output
-	 *  (an AdminPhoto whose src is the serving URL) is what survives both.
-	 *  `exif` = the client-side capture (Round B 2026-11-22): exifr reads
-	 *  the curated fields BEFORE upload, lumen allowlists what it stores —
-	 *  GPS cannot pass. */
-	addPhoto(p: {
-		name: string;
-		dataUrl: string;
-		width: number;
-		height: number;
-		exif?: PhotoExif | null;
-	}): Promise<AdminPhoto>;
+	/** Upload entry point. `{ file }` = the browser's shape (the adapter wraps
+	 *  it in multipart). `{ body }` = the relay's shape: the incoming multipart
+	 *  request streams through untouched — no parse, no buffer (the 100 MB path). */
+	addPhoto(
+		p:
+			| { file: Blob; name: string; exif?: PhotoExif | null }
+			| { body: ReadableStream<Uint8Array>; contentType: string; contentLength?: number }
+	): Promise<AdminPhoto>;
 	/** Curation metadata setter (alt/collection/gallery). No CAS: photos carry
 	 *  no rev, and single-author album metadata is last-write-wins (journaled). */
 	updatePhoto(

@@ -21,6 +21,7 @@ import type {
 	TagCount,
 	SearchResults
 } from './types.ts';
+import { MAX_UPLOAD_BYTES } from '#lib/upload.ts';
 
 export class ApiError extends Error {
 	constructor(
@@ -47,7 +48,13 @@ export function errorText(e: unknown): string {
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(`/api${path}`, {
 		...init,
-		headers: init?.body ? { 'content-type': 'application/json' } : undefined
+		// JSON is the default dialect — but a FormData body must set its OWN
+		// content-type (the browser stamps the multipart boundary; an explicit
+		// JSON header here would strip it)
+		headers:
+			init?.body && !(init.body instanceof FormData)
+				? { 'content-type': 'application/json' }
+				: undefined
 	});
 	if (!res.ok) {
 		const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -126,7 +133,19 @@ export const client: AdminApi = {
 		const qs = params.toString();
 		return call<Paged<AdminPhoto>>(`/photos${qs ? `?${qs}` : ''}`);
 	},
-	addPhoto: (p) => call<AdminPhoto>('/photos', { method: 'POST', body: JSON.stringify(p) }),
+	addPhoto: (p) => {
+		// the stream shape is the RELAY's verb — the browser never holds one
+		if ('body' in p) throw new ApiError(500, 'stream uploads are a server-side concern');
+		// ask before reading: lumen 413s the same cap, and a doomed 100 MB
+		// upload should die here, not after the wire
+		if (p.file.size > MAX_UPLOAD_BYTES) throw new ApiError(413, 'over the 100 MB limit');
+		const form = new FormData();
+		form.append('photo', p.file, p.name);
+		// the EXIF capture (Round B): client-side, BEFORE upload — lumen
+		// allowlists what it stores; absent = the field ships not at all
+		if (p.exif) form.append('exif', JSON.stringify(p.exif));
+		return call<AdminPhoto>('/photos', { method: 'POST', body: form });
+	},
 	updatePhoto: (id, patch) =>
 		call<AdminPhoto>(`/photos/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 	getPhoto: (id) => call<AdminPhoto>(`/photos/${id}`),

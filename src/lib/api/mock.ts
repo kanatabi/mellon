@@ -20,9 +20,9 @@ import type {
  * In-process mock of the AdminApi — the Phase A source of truth for the UI
  * contract. Shape fidelity notes: content keeps ```mermaid fences (Route B),
  * secrets mirror Bao's KV-v2 {data, metadata} payloads, writes are CAS-checked
- * exactly like lumen's §8/§9 will be. Deviation (journal 2026-11-08): photo
- * dimensions are probed CLIENT-side here (browser Image decode) because the
- * server-side probe lives in lumen; the UI contract is unchanged.
+ * exactly like lumen's §8/§9 will be. Photo uploads store the Blob undecoded —
+ * the twin cannot probe dimensions (placeholder dims stand in); lumen's
+ * server-side probe is the only truth.
  */
 
 const now = () => new Date().toISOString();
@@ -298,12 +298,12 @@ function paged<T>(all: T[], page: number, pageSize: number): Paged<T> {
 }
 
 /**
- * Mock-era media bytes: id → data-URL. Module-level (the relay route reads
- * it outside the API object) — the same process-lifetime singleton as the
+ * Mock-era media bytes: id → Blob. Module-level (the relay route reads it
+ * outside the API object) — the same process-lifetime singleton as the
  * fixtures. Phase B replaces this whole path: bytes live in object storage,
  * `src` is the CDN URL, and mellon serves nothing.
  */
-export const mediaStore = new Map<string, string>();
+export const mediaStore = new Map<string, Blob>();
 
 export function createMockApi(): AdminApi {
 	let posts = seedPosts();
@@ -584,19 +584,23 @@ export function createMockApi(): AdminApi {
 		},
 
 		async addPhoto(p) {
-			// deviation (journal 2026-11-08): bytes as a data-URL in the mock;
-			// lumen takes multipart, probes dims + strips EXIF server-side.
+			// the relay's shape is a LIVE-transport verb: the twin has no upstream
+			// to stream into, so a body arriving here is a routing bug
+			if ('body' in p) throw new AdminApiError(501, 'stream forwarding is a relay concern');
+			// bytes land verbatim (the Blob, undecoded) — the twin cannot probe
+			// dimensions, so the placeholder dims stand in; lumen's decode is
+			// the only truth the panel ever reads in real mode.
 			// The exif field: the twin stores what the client captured — the
 			// ALLOWLIST lives in lumen (the twin is the wire's SHAPE, not its
 			// policy; the panel reads it identically either way).
 			const id = `m${seq++}`;
-			mediaStore.set(id, p.dataUrl);
+			mediaStore.set(id, p.file);
 			const created: AdminPhoto = {
 				id,
 				src: `/api/media/${id}`,
 				alt: p.name.replace(/\.[^.]+$/, ''),
-				width: p.width,
-				height: p.height,
+				width: 1600,
+				height: 1200,
 				exif: p.exif ?? null,
 				// fresh captures start private & uncategorized — curation is deliberate
 				gallery: false,
