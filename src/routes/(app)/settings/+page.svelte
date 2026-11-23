@@ -4,6 +4,9 @@
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
 	import ThemeSegmented from '#lib/components/ThemeSegmented.svelte';
+	import ThemeCard from '#lib/components/ThemeCard.svelte';
+	import { THEMES } from '#lib/theme-registry.ts';
+	import { setTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -30,22 +33,37 @@
 <section class="mx-auto flex w-full max-w-xl flex-col gap-6 py-4">
 	<h1 class="font-brand text-4xl font-semibold tracking-tight">Settings</h1>
 
-	<!-- Appearance: the theme, where it belongs — a setting. One control
-	     (ThemeSegmented) shared with the account menu; one write path
-	     (setTheme: store + cookie + View Transition) shared with the palette. -->
+	<!-- Appearance: the theme, where it belongs — a setting. The THEME is
+	     the card grid (each card a dual-pane mini-mockup painted with the
+	     theme's own tokens); the MODE is the segmented control shared with
+	     the account menu. One write path (setTheme: store + cookie + View
+	     Transition) shared with the palette. -->
 	<div class="flex flex-col gap-4">
 		<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
 			Appearance
 		</p>
-		<div class="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4">
-			<span class="flex flex-col gap-1">
-				<span class="text-sm font-medium">Theme</span>
-				<span class="font-mono text-xs leading-relaxed text-muted-foreground">
-					light or dark, flipped with a crossfade and persisted via the theme cookie — instant on
-					every surface
+		<div class="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+			<div class="flex items-start justify-between gap-4">
+				<span class="flex flex-col gap-1">
+					<span class="text-sm font-medium">Theme</span>
+					<span class="font-mono text-xs leading-relaxed text-muted-foreground">
+						each card previews its light and dark palette — pick feels before you commit
+					</span>
 				</span>
-			</span>
-			<ThemeSegmented />
+			</div>
+			<div class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Theme">
+				{#each THEMES as t (t.id)}
+					<ThemeCard
+						theme={t}
+						selected={themeState.theme === t.id}
+						onSelect={() => setTheme(t.id)}
+					/>
+				{/each}
+			</div>
+			<div class="flex items-center justify-between gap-4 border-t border-border pt-3">
+				<span class="font-mono text-xs text-muted-foreground">mode</span>
+				<ThemeSegmented />
+			</div>
 		</div>
 	</div>
 

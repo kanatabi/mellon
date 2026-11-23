@@ -102,6 +102,93 @@
 	--diff-del: #f87171;
 }
 
+/* ── THE PORTED FAMILIES (theming round 1, 2026-11-23). Each theme ships
+   BOTH modes (owner scoping call) and defines ONLY the CORE tokens — the
+   shadcn aliases stay in :root, because var() resolves against the element's
+   own cascaded values: override --brand here and --primary flips with it
+   (SHADCN.md §3.1's theme-safe-by-construction holds per theme). Mark-cue
+   literals stay :root-level (content markers, verified on light AND dark);
+   a theme may override them later. Derived blends (values the palette
+   doesn't carry but the portal's elevation/wayfinding grammar needs) are
+   marked DERIVED. ── */
+
+/* catppuccin — latte (light) / mocha (dark). brand = mauve (the violet). */
+[data-theme='catppuccin'][data-mode='light'] {
+	--background: #eff1f5; /* base */
+	--foreground: #4c4f69; /* text */
+	--card: #ffffff; /* lighter than the page — the elevation trick holds */
+	--muted: #e6e9ef; /* mantle */
+	--muted-foreground: #6c6f85; /* subtext0 */
+	--accent: #dce0e8; /* crust */
+	--border: #ccd0da; /* surface0 */
+	--chrome: #e9ebf1; /* DERIVED: a half-step off the canvas, §11.1 */
+	--brand: #8839ef; /* mauve */
+	--accent-blue: #1e66f5; /* blue */
+	--accent-teal: #179299; /* teal */
+	--accent-amber: #df8e1d; /* yellow */
+	--accent-slate: #8c8fa1; /* overlay1 */
+	--danger: #d20f39; /* red */
+	--diff-add: #40a02b; /* green */
+	--diff-del: #d20f39; /* red */
+}
+[data-theme='catppuccin'][data-mode='dark'] {
+	--background: #1e1e2e; /* base */
+	--foreground: #cdd6f4; /* text */
+	--card: #282839; /* DERIVED: base↔surface0 mid — one step ABOVE the page */
+	--muted: #313244; /* surface0 */
+	--muted-foreground: #9399b2; /* overlay2 */
+	--accent: #313244; /* surface0 */
+	--border: #45475a; /* surface1 */
+	--chrome: #11111b; /* crust — DEEPER than the canvas (§11.3 dark grammar) */
+	--brand: #cba6f7; /* mauve */
+	--accent-blue: #89b4fa; /* blue */
+	--accent-teal: #94e2d5; /* teal */
+	--accent-amber: #fab387; /* peach */
+	--accent-slate: #7f849c; /* overlay1 */
+	--danger: #f38ba8; /* red */
+	--diff-add: #a6e3a1; /* green */
+	--diff-del: #f38ba8; /* red */
+}
+
+/* tokyonight — day (light) / night (dark). brand = purple; the day ink is
+   the family's signature blue (this theme reads blue-on-gray by design). */
+[data-theme='tokyonight'][data-mode='light'] {
+	--background: #e1e2e7; /* bg */
+	--foreground: #3760bf; /* fg — the blue ink IS the look */
+	--card: #eceef4; /* DERIVED: one step above the page */
+	--muted: #d5d9e5; /* DERIVED: a half-step off the canvas */
+	--muted-foreground: #6172b0; /* fg_dark */
+	--accent: #cfd2e0; /* DERIVED: hover wash, near bg_highlight */
+	--border: #c4c8da; /* bg_highlight */
+	--chrome: #d8dae3; /* DERIVED: a step apart from the canvas */
+	--brand: #7847bd; /* purple */
+	--accent-blue: #2e7de9; /* blue1 */
+	--accent-teal: #007196; /* cyan */
+	--accent-amber: #b15c00; /* orange */
+	--accent-slate: #8990b9; /* comment */
+	--danger: #f52a65; /* red1 */
+	--diff-add: #587539; /* green1 */
+	--diff-del: #f52a65; /* red1 */
+}
+[data-theme='tokyonight'][data-mode='dark'] {
+	--background: #1a1b26; /* bg */
+	--foreground: #c0caf5; /* fg */
+	--card: #1f2335; /* DERIVED: one step above the page */
+	--muted: #292e42; /* bg_highlight */
+	--muted-foreground: #a9b1d6; /* fg_dark */
+	--accent: #292e42; /* bg_highlight */
+	--border: #3b4261; /* fg_gutter */
+	--chrome: #16161e; /* bg_dark — DEEPER than the canvas (§11.3) */
+	--brand: #bb9af7; /* magenta */
+	--accent-blue: #7aa2f7; /* blue */
+	--accent-teal: #1abc9c; /* teal */
+	--accent-amber: #e0af68; /* yellow */
+	--accent-slate: #737aa2; /* DERIVED: comment #565f89 lifted to icon weight */
+	--danger: #f7768e; /* red */
+	--diff-add: #9ece6a; /* green */
+	--diff-del: #f7768e; /* red */
+}
+
 @custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
 
 @theme inline {
@@ -370,8 +457,8 @@
 	color: var(--shiki-light);
 	background: var(--shiki-light-bg);
 }
-[data-theme='portal'][data-mode='dark'] .shiki,
-[data-theme='portal'][data-mode='dark'] .shiki span {
+[data-mode='dark'] .shiki,
+[data-mode='dark'] .shiki span {
 	color: var(--shiki-dark) !important;
 	background: var(--shiki-dark-bg) !important;
 }

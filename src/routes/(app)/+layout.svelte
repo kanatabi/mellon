@@ -20,7 +20,8 @@
 	import { navRail } from '#lib/rails.svelte.ts';
 	import { writeVimCookie } from '#lib/session.ts';
 	import { stateToggle } from '#lib/command-kit.ts';
-	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
+	import { toggleMode, setTheme, themeState } from '#lib/theme-state.svelte.ts';
+	import { THEMES } from '#lib/theme-registry.ts';
 	import { baseCommands, recentCommands, type Command } from '#lib/commands.ts';
 	import { pageCommands } from '#lib/page-commands.svelte.ts';
 	import AppSidebar from './app-sidebar.svelte';
@@ -81,6 +82,18 @@
 			offHint: 'light',
 			run: () => toggleMode()
 		}),
+		// Theme switching (the theming round): one row per registered theme —
+		// the current one carries the on-state. Same write path as the grid.
+		...THEMES.map((t) =>
+			stateToggle({
+				id: `theme.${t.id}`,
+				title: `Theme: ${t.name}`,
+				on: themeState.theme === t.id,
+				onHint: 'current',
+				offHint: 'switch',
+				run: () => setTheme(t.id)
+			})
+		),
 		stateToggle({
 			id: 'toggle.vim',
 			title: 'Toggle vim editing',

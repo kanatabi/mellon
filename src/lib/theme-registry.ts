@@ -60,5 +60,59 @@ export const PORTAL_THEME: ThemeDef = {
 	}
 };
 
+export const CATPPUCCIN_THEME: ThemeDef = {
+	id: 'catppuccin',
+	name: 'catppuccin',
+	preview: {
+		light: {
+			background: '#eff1f5',
+			card: '#ffffff',
+			foreground: '#4c4f69',
+			border: '#ccd0da',
+			muted: '#e6e9ef',
+			brand: '#8839ef',
+			danger: '#d20f39',
+			'accent-amber': '#df8e1d'
+		},
+		dark: {
+			background: '#1e1e2e',
+			card: '#282839',
+			foreground: '#cdd6f4',
+			border: '#45475a',
+			muted: '#313244',
+			brand: '#cba6f7',
+			danger: '#f38ba8',
+			'accent-amber': '#fab387'
+		}
+	}
+};
+
+export const TOKYONIGHT_THEME: ThemeDef = {
+	id: 'tokyonight',
+	name: 'tokyonight',
+	preview: {
+		light: {
+			background: '#e1e2e7',
+			card: '#eceef4',
+			foreground: '#3760bf',
+			border: '#c4c8da',
+			muted: '#d5d9e5',
+			brand: '#7847bd',
+			danger: '#f52a65',
+			'accent-amber': '#b15c00'
+		},
+		dark: {
+			background: '#1a1b26',
+			card: '#1f2335',
+			foreground: '#c0caf5',
+			border: '#3b4261',
+			muted: '#292e42',
+			brand: '#bb9af7',
+			danger: '#f7768e',
+			'accent-amber': '#e0af68'
+		}
+	}
+};
+
 /** The picker's order: the portal's own first, then the ported families. */
-export const THEMES: ThemeDef[] = [PORTAL_THEME];
+export const THEMES: ThemeDef[] = [PORTAL_THEME, CATPPUCCIN_THEME, TOKYONIGHT_THEME];

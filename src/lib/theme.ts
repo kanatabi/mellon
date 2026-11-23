@@ -13,8 +13,12 @@
  * variant keys on (`[data-mode='dark']`, layout.css), which is why every
  * theme must ship both modes (owner scoping call).
  */
-export type ThemeId = 'portal';
 export type ThemeMode = 'light' | 'dark';
+
+/** The allowlist — ids the resolver accepts. The registry (theme-registry.ts)
+ *  gives each id its name/preview; the palette test pins the two together. */
+export const THEME_IDS = ['portal', 'catppuccin', 'tokyonight'] as const;
+export type ThemeId = (typeof THEME_IDS)[number];
 export interface ThemePair {
 	theme: ThemeId;
 	mode: ThemeMode;
@@ -28,8 +32,8 @@ export function resolveThemePair(cookieValue: string | undefined): ThemePair {
 	if (v === 'dark' || v === 'portal-dark') return { theme: 'portal', mode: 'dark' };
 	if (v === 'light' || v === 'portal-light') return { theme: 'portal', mode: 'light' };
 	const [id, mode] = v.split('-');
-	if (id === 'portal' && MODES.includes(mode as ThemeMode))
-		return { theme: 'portal', mode: mode as ThemeMode };
+	if ((THEME_IDS as readonly string[]).includes(id) && MODES.includes(mode as ThemeMode))
+		return { theme: id as ThemeId, mode: mode as ThemeMode };
 	return { theme: 'portal', mode: 'light' };
 }
 
