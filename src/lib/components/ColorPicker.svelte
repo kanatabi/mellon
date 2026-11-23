@@ -95,7 +95,11 @@
 	function alphaPoint(e: PointerEvent) {
 		if (!alphaEl) return;
 		const r = alphaEl.getBoundingClientRect();
-		alpha = clamp01((e.clientX - r.left) / r.width);
+		// the thumb's travel is inset by its 8px radius — the mapping must
+		// agree, or the ends click at the wrong alpha
+		const travel = r.width - 16;
+		if (travel <= 0) return;
+		alpha = clamp01((e.clientX - r.left - 8) / travel);
 		emit();
 	}
 
@@ -304,7 +308,7 @@
 		<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">opacity</span>
 		<div
 			bind:this={alphaEl}
-			class="color-checkerboard relative h-4 min-w-0 flex-1 cursor-pointer touch-none overflow-hidden rounded-full border border-border"
+			class="color-checkerboard relative h-4 min-w-0 flex-1 cursor-pointer touch-none rounded-full border border-border"
 			role="slider"
 			aria-label="Opacity"
 			aria-valuenow={Math.round(alpha * 100)}
@@ -331,12 +335,17 @@
 			}}
 		>
 			<div
-				class="absolute inset-0"
+				class="absolute inset-0 overflow-hidden rounded-full"
 				style={`background: linear-gradient(to right, ${currentHex}00, ${currentHex})`}
 			></div>
+			<!-- the thumb travels INSET by its own radius — at 0% and 100%
+			     it kisses the ends instead of being swallowed (the track's
+			     overflow-hidden moved to the gradient child, so the 20px
+			     thumb can overhang the 16px track vertically like the hue
+			     bar's does) -->
 			<div
-				class="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
-				style={`left: ${alpha * 100}%; background-color: ${currentHex}`}
+				class="absolute top-1/2 size-4 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+				style={`left: calc(8px + ${alpha} * (100% - 16px)); background-color: ${currentHex}`}
 			></div>
 		</div>
 		<span class="w-10 shrink-0 text-right font-mono text-[10px] text-muted-foreground"
@@ -349,7 +358,7 @@
 	     values first, the current ringed; the recents below, the
 	     remember-+ at the END of their line -->
 	<div class="flex flex-col gap-1.5">
-		<div class="flex items-center gap-1.5">
+		<div class="flex flex-wrap items-center gap-1.5">
 			<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">theme</span>
 			<span
 				class="color-checkerboard block size-6 shrink-0 rounded-full ring-1 ring-brand"
@@ -358,7 +367,7 @@
 				<span class="block size-full rounded-full" style={`background-color: ${currentHexA}`}
 				></span>
 			</span>
-			{#each themeSwatches.slice(0, 7) as s, i (s + i)}
+			{#each themeSwatches.slice(0, 10) as s, i (s + i)}
 				<button
 					type="button"
 					class="size-6 shrink-0 rounded-full border border-border transition-transform hover:scale-110"
@@ -369,10 +378,10 @@
 				></button>
 			{/each}
 		</div>
-		<div class="flex items-center gap-1.5">
+		<div class="flex flex-wrap items-center gap-1.5">
 			<span class="w-16 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">recent</span
 			>
-			{#each recents.slice(0, 6) as r, i (r + i)}
+			{#each recents.slice(0, 8) as r, i (r + i)}
 				<button
 					type="button"
 					class="size-6 shrink-0 rounded-full border border-border transition-transform hover:scale-110"
