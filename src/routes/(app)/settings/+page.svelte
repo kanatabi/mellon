@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { Copy, Pencil, Plus, ShieldCheck, Trash2, Users } from 'lucide-svelte';
+	import { Copy, Palette, Pencil, Plus, ShieldCheck, Trash2, Users } from 'lucide-svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { fade } from 'svelte/transition';
 	import ThemeSegmented from '#lib/components/ThemeSegmented.svelte';
@@ -104,6 +105,14 @@
 					<ThemeCard theme={t} selected={themeState.theme === t.id} onSelect={() => setTheme(t.id)}>
 						{#snippet actions()}
 							{#if custom}
+								<a
+									href="/settings/themes/edit/{custom.id}"
+									aria-label="Edit {custom.name} in the theme editor"
+									title="Edit"
+									class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+								>
+									<Palette class="size-3" />
+								</a>
 								<button
 									type="button"
 									onclick={() => {
@@ -133,6 +142,15 @@
 								>
 									<Trash2 class="size-3" />
 								</button>
+							{:else}
+								<a
+									href="/settings/themes/edit/new?fork={t.id}"
+									aria-label="Fork {t.name} into a new theme"
+									title="Fork this theme"
+									class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+								>
+									<Palette class="size-3" />
+								</a>
 							{/if}
 						{/snippet}
 					</ThemeCard>
@@ -144,10 +162,16 @@
 				</p>
 			{/if}
 			<div class="flex items-center justify-between gap-4 border-t border-border pt-3">
-				<Button type="button" variant="quiet" onclick={() => (importOpen = true)}>
-					<Plus class="size-3.5" />
-					Import a theme…
-				</Button>
+				<div class="flex items-center gap-2">
+					<Button type="button" variant="quiet" onclick={() => (importOpen = true)}>
+						<Plus class="size-3.5" />
+						Import a theme…
+					</Button>
+					<Button type="button" variant="quiet" onclick={() => goto('/settings/themes/edit/new')}>
+						<Palette class="size-3.5" />
+						New theme
+					</Button>
+				</div>
 				<ThemeSegmented />
 			</div>
 		</div>

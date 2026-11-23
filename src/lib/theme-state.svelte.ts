@@ -60,3 +60,10 @@ export function setMode(mode: ThemeMode) {
 export function toggleMode() {
 	setMode(themeState.mode === 'dark' ? 'light' : 'dark');
 }
+
+/** The editor's revert path: re-derive the STORED theme's vars (customs
+ *  re-apply their body; built-ins get their overrides removed), undoing
+ *  any draft values painted over them. */
+export function reapplyThemeVars() {
+	applyCustomVars();
+}
