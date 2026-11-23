@@ -255,7 +255,11 @@
 				</span>
 			{/if}
 
-			{#if mode !== 'upload' || grid.length}
+			<!-- The library exists to PICK (onPick = the reason it renders): the
+			     photos page's dialog has no pick target, so its grid would be
+			     inert buttons — it renders nothing there (owner call 2026-11-23).
+			     The editor's modes all pass onPick and keep "library (now)". -->
+			{#if onPick && (mode !== 'upload' || grid.length)}
 				<div class="flex flex-col gap-2">
 					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
 						{mode === 'upload' || mode === 'upload-cover' ? 'library (now)' : 'choose one'}
