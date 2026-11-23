@@ -72,6 +72,25 @@ script — copy of the earendil recipe). Tokens are the _semantic_ contract
 (`--background`, `--foreground`, `--border`, `--brand`, `--muted-*`) — values copied from
 earendil's `layout.css`; admin-specific colors (status green/red, diff tints) are
 **additive** mellon tokens, never divergent ones.
+**Multi-theme (the theming round, 2026-11-23):** the cookie is ONE composite
+`theme=<themeId>-<mode>`, resolved into TWO attributes — `data-theme` (palette
+family) + `data-mode` (light|dark) — set by the pre-paint script before first
+paint. The `dark:` custom variant keys on `[data-mode='dark']` (never the theme
+id — every theme's dark half must get the utilities), and so does the shiki
+dark override. Each theme's CSS block defines ONLY the CORE tokens; the shadcn
+aliases live in `:root` and flip per element through var() resolution.
+`theme-registry.ts` is the ONE theme list (identity + the swatch preview),
+pinned to the CSS by `palette.test.ts` (every theme × mode defines every CORE
+token; preview values equal the CSS values). Custom themes are DATA in
+localStorage (`mellon.theme.custom.<slug>`): name + the full CORE grammar for
+BOTH modes, structurally validated (the ONLY door into the apply seam), applied
+as inline custom properties on `<html>` (they out-rank every CSS block; the
+built-in path REMOVES them on switch). Imports lift ONLY core custom-property
+declarations out of a detached stylesheet — arbitrary CSS never executes.
+The editor (`/settings/themes/edit/[id]`) paints its LIVE draft over the worn
+theme through the same seam, effect-scoped with a revert-first cleanup — a
+draft never persists unless Save. Deliberately NOT themeable: the login aura
+gradient, the photo-detail canvas, the editor's syntax palette (per-token).
 
 ## 4. Architecture
 
