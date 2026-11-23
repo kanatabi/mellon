@@ -221,7 +221,7 @@
 	<title>Theme editor · mellon</title>
 </svelte:head>
 
-<section class="mx-auto flex w-full max-w-7xl flex-col gap-4 py-4">
+<section class="mx-auto flex w-full max-w-6xl flex-col gap-4 py-4">
 	<!-- The header: the name IS the title (the rename pattern — one field
 	     less in the body), the secondary actions live in the ⋯, one primary
 	     verb. No mismatched pill heights. -->
@@ -288,10 +288,10 @@
 		<Button type="button" variant="primary" onclick={save}>Save theme</Button>
 	</div>
 
-	<!-- the preview is the CO-STAR: half the editor, sticky, first on
+	<!-- the preview is the CO-STAR: sticky ~460px column, first on
 	     mobile — and the panes ARE the editing switcher (click a pane to
 	     edit that half); the live toggle lives in the ⋯ menu -->
-	<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+	<div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_460px]">
 		<div class="order-1 flex flex-col gap-3 lg:order-2">
 			<div class="flex flex-col gap-2 lg:sticky lg:top-4">
 				{#each ['light', 'dark'] as m (m)}
@@ -310,14 +310,15 @@
 							.join('; ')}
 					>
 						<!-- a miniature of the portal, painted with the draft —
-						     generic ANATOMY (top bar, card, verbs, markers, diff
-						     bars), never named pages -->
+						     the COMPLETE token inventory: every CORE token
+						     visible, so the pane answers for the whole theme.
+						     Generic ANATOMY, never named pages. -->
 						<div class="flex items-center gap-1.5 rounded-lg bg-chrome px-2.5 py-2">
 							<span class="size-2 rounded-full bg-brand"></span>
 							<span class="h-1.5 w-10 rounded-full bg-foreground/30"></span>
 							<span class="ml-auto flex items-center gap-1">
-								<span class="size-2 rounded-full bg-accent-blue/60"></span>
-								<span class="size-2 rounded-full bg-accent-slate/60"></span>
+								<span class="size-2 rounded-full bg-accent-slate/70"></span>
+								<span class="size-2 rounded-full bg-accent-blue/70"></span>
 							</span>
 						</div>
 						<div class="mt-2 rounded-lg border border-border bg-card p-3">
@@ -338,18 +339,26 @@
 								<span class="h-1.5 flex-1 rounded-full bg-muted-foreground/30"></span>
 							</div>
 						</div>
-						<div class="mt-2 flex items-center gap-1.5">
+						<!-- the hover wash: a row painted in --accent, a blue
+						     marker riding it -->
+						<div class="mt-2 flex items-center gap-2 rounded-lg bg-accent px-2.5 py-2">
 							<span class="size-2.5 rounded-full bg-accent-blue"></span>
-							<span class="size-2.5 rounded-full bg-accent-teal"></span>
-							<span class="size-2.5 rounded-full bg-accent-amber"></span>
-							<span class="size-2.5 rounded-full bg-accent-slate"></span>
-							<span class="ml-2 rounded bg-muted px-2 py-0.5 text-[9px] text-muted-foreground"
-								>quiet ink on muted</span
-							>
+							<span class="h-1.5 w-2/3 rounded-full bg-foreground/40"></span>
 						</div>
-						<div class="mt-2 flex flex-col gap-1">
-							<span class="h-1.5 w-11/12 rounded-full bg-diff-add/30"></span>
-							<span class="h-1.5 w-3/4 rounded-full bg-diff-del/30"></span>
+						<!-- the marker list rows: teal · amber · slate, each a
+						     dot + an ink line on the canvas -->
+						<div class="mt-2 flex flex-col gap-1.5 px-1">
+							{#each ['accent-teal', 'accent-amber', 'accent-slate'] as hue (hue)}
+								<div class="flex items-center gap-2">
+									<span class="size-2.5 shrink-0 rounded-full bg-{hue}"></span>
+									<span class="h-1.5 w-3/4 rounded-full bg-foreground/25"></span>
+								</div>
+							{/each}
+						</div>
+						<!-- the diff tints -->
+						<div class="mt-2 flex flex-col gap-1 rounded-lg border border-border p-2">
+							<span class="h-2 w-11/12 rounded-full bg-diff-add/30"></span>
+							<span class="h-2 w-3/4 rounded-full bg-diff-del/30"></span>
 						</div>
 						<div class="mt-2 flex items-center justify-between">
 							<span class="font-mono text-[10px] text-muted-foreground">{m}</span>
