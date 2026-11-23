@@ -221,7 +221,7 @@
 	<title>Theme editor · mellon</title>
 </svelte:head>
 
-<section class="mx-auto flex w-full max-w-6xl flex-col gap-4 py-4">
+<section class="mx-auto flex w-full max-w-7xl flex-col gap-4 py-4">
 	<!-- The header: the name IS the title (the rename pattern — one field
 	     less in the body), the secondary actions live in the ⋯, one primary
 	     verb. No mismatched pill heights. -->
@@ -269,49 +269,42 @@
 					<RotateCcw class="mr-2 inline size-3.5" />
 					Reset to fork base
 				</DropdownMenu.Item>
+				<DropdownMenu.Separator class="my-1" />
+				<!-- preview live rides here (the diff page's 'Changed only'
+				     pattern): a checked menu item, not a form row — the
+				     panes own the editing switch -->
+				<DropdownMenu.CheckboxItem
+					checked={live}
+					onCheckedChange={(v) => {
+						if (v !== undefined) live = v;
+					}}
+					closeOnSelect={false}
+					class="rounded-md py-1.5 font-mono text-xs"
+				>
+					Preview live
+				</DropdownMenu.CheckboxItem>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 		<Button type="button" variant="primary" onclick={save}>Save theme</Button>
 	</div>
 
-	<!-- the preview is the CO-STAR: sticky, big, first on mobile; the
-	     editing controls live WITH the panes they control. -->
-	<div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+	<!-- the preview is the CO-STAR: half the editor, sticky, first on
+	     mobile — and the panes ARE the editing switcher (click a pane to
+	     edit that half); the live toggle lives in the ⋯ menu -->
+	<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 		<div class="order-1 flex flex-col gap-3 lg:order-2">
-			<div
-				class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"
-			>
-				<div
-					class="flex w-fit gap-1 rounded-full border border-border bg-background p-1"
-					role="radiogroup"
-					aria-label="Editing"
-				>
-					{#each ['light', 'dark'] as m (m)}
-						<button
-							type="button"
-							role="radio"
-							aria-checked={editMode === m}
-							onclick={() => (editMode = m as ThemeMode)}
-							class="rounded-full px-3 py-1 font-mono text-xs transition-colors {editMode === m
-								? 'bg-brand/15 text-foreground'
-								: 'text-muted-foreground hover:text-foreground'}"
-						>
-							{m}
-						</button>
-					{/each}
-				</div>
-				<label class="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-					<input type="checkbox" bind:checked={live} class="accent-brand" />
-					preview live
-				</label>
-			</div>
 			<div class="flex flex-col gap-2 lg:sticky lg:top-4">
 				{#each ['light', 'dark'] as m (m)}
 					{@const pane = tokens[m as ThemeMode]}
-					<div
-						class="rounded-xl border border-border p-2.5 {editMode === m
+					<button
+						type="button"
+						aria-pressed={editMode === m}
+						aria-label="Edit the {m} half"
+						onclick={() => (editMode = m as ThemeMode)}
+						class="group rounded-xl border border-border p-2.5 text-left transition-shadow {editMode ===
+						m
 							? 'ring-1 ring-brand'
-							: ''}"
+							: 'hover:border-brand/50'}"
 						style={Object.entries(pane)
 							.map(([k, v]) => `--${k}: ${v}`)
 							.join('; ')}
@@ -338,6 +331,11 @@
 								<span class="rounded-full bg-danger/10 px-2 py-1 text-[9px] text-danger"
 									>danger</span
 								>
+								<span class="ml-auto h-5 w-24 rounded-md border border-border bg-background"></span>
+							</div>
+							<div class="mt-2 flex items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5">
+								<span class="size-2 rounded-full bg-accent-amber"></span>
+								<span class="h-1.5 flex-1 rounded-full bg-muted-foreground/30"></span>
 							</div>
 						</div>
 						<div class="mt-2 flex items-center gap-1.5">
@@ -353,10 +351,17 @@
 							<span class="h-1.5 w-11/12 rounded-full bg-diff-add/30"></span>
 							<span class="h-1.5 w-3/4 rounded-full bg-diff-del/30"></span>
 						</div>
-						<p class="mt-2 font-mono text-[10px] text-muted-foreground">
-							{m} · {editMode === m ? 'editing' : 'preview'}
-						</p>
-					</div>
+						<div class="mt-2 flex items-center justify-between">
+							<span class="font-mono text-[10px] text-muted-foreground">{m}</span>
+							<span
+								class="rounded-full px-2 py-0.5 font-mono text-[9px] {editMode === m
+									? 'bg-brand/15 text-foreground'
+									: 'text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100'}"
+							>
+								{editMode === m ? 'editing' : 'click to edit'}
+							</span>
+						</div>
+					</button>
 				{/each}
 			</div>
 		</div>
