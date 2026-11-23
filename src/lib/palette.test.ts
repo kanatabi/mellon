@@ -55,6 +55,10 @@ const CORE = [
 	'--diff-del'
 ];
 
+// parity + the registry both read ONE grammar (the theming round): the
+// bare names are CORE_TOKENS; the `--` forms are this test's CSS lens.
+const CORE_NAMES = CORE.map((t) => t.slice(2));
+
 /** The shadcn vocabulary, all `var(--core)` except the deliberately
  *  transparent sidebar border (§11.1: one chrome mass, no internal hairline). */
 const ALIAS = [
@@ -148,8 +152,8 @@ describe('theme registry ↔ CSS', () => {
 		for (const theme of THEMES) {
 			for (const mode of ['light', 'dark'] as const) {
 				const scope = blockFor(theme.id, mode);
-				for (const t of CORE) {
-					expect(scope, `${theme.id}-${mode}: ${t} missing`).toContain(`${t}:`);
+				for (const t of CORE_NAMES) {
+					expect(scope, `${theme.id}-${mode}: --${t} missing`).toContain(`--${t}:`);
 				}
 			}
 		}

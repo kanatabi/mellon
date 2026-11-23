@@ -7,6 +7,7 @@
 	// bg-brand…) resolve inside its scope. No CSS duplication, no iframe.
 	// aria-pressed buttons in a labeled group: every card stays tabbable
 	// (a radio group without arrow-key roving would be broken AT).
+	import type { Snippet } from 'svelte';
 	import { Check } from 'lucide-svelte';
 	import { PREVIEW_TOKENS, type ThemeDef } from '#lib/theme-registry.ts';
 	import type { ThemeMode } from '#lib/theme.ts';
@@ -15,9 +16,12 @@
 		theme: ThemeDef;
 		selected: boolean;
 		onSelect: () => void;
+		/** Custom themes' manage row (copy/rename/delete) — the built-ins
+		 *  render none. The actions belong to the PAGE, not this card. */
+		actions?: Snippet;
 	}
 
-	let { theme, selected, onSelect }: Props = $props();
+	let { theme, selected, onSelect, actions }: Props = $props();
 
 	/** The theme's token values as inline custom properties — the pane's
 	 *  scoping seam. */
@@ -40,9 +44,12 @@
 		>
 			{theme.name}
 		</span>
-		{#if selected}
-			<Check class="size-3.5 shrink-0 text-brand" aria-hidden="true" />
-		{/if}
+		<span class="flex shrink-0 items-center gap-1">
+			{#if selected}
+				<Check class="size-3.5 text-brand" aria-hidden="true" />
+			{/if}
+			{@render actions?.()}
+		</span>
 	</span>
 	<span class="grid grid-cols-2 gap-1.5">
 		{#each ['light', 'dark'] as mode (mode)}

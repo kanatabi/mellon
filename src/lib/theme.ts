@@ -15,25 +15,35 @@
  */
 export type ThemeMode = 'light' | 'dark';
 
-/** The allowlist — ids the resolver accepts. The registry (theme-registry.ts)
- *  gives each id its name/preview; the palette test pins the two together. */
+/** The allowlist — builtin ids the resolver accepts. The registry
+ *  (theme-registry.ts) gives each id its name/preview; the palette test
+ *  pins the two together. `custom-*` ids ride a SHAPE check (the body
+ *  lives in localStorage — the server can't know it; the client's ghost
+ *  fallback owns existence). */
 export const THEME_IDS = ['portal', 'catppuccin', 'tokyonight'] as const;
-export type ThemeId = (typeof THEME_IDS)[number];
+export type BuiltinThemeId = (typeof THEME_IDS)[number];
+export type ThemeId = BuiltinThemeId | `custom-${string}`;
 export interface ThemePair {
 	theme: ThemeId;
 	mode: ThemeMode;
 }
 
 const MODES: readonly ThemeMode[] = ['light', 'dark'];
+const CUSTOM_ID_RE = /^custom-[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export function resolveThemePair(cookieValue: string | undefined): ThemePair {
 	const v = (cookieValue ?? '').trim();
 	// legacy two-value cookies (the 2026-11-16 era) resolve as the portal
 	if (v === 'dark' || v === 'portal-dark') return { theme: 'portal', mode: 'dark' };
 	if (v === 'light' || v === 'portal-light') return { theme: 'portal', mode: 'light' };
-	const [id, mode] = v.split('-');
-	if ((THEME_IDS as readonly string[]).includes(id) && MODES.includes(mode as ThemeMode))
-		return { theme: id as ThemeId, mode: mode as ThemeMode };
+	const [id] = v.split('-');
+	const mode = v.slice(v.lastIndexOf('-') + 1); // customs may carry dashes: the mode is ALWAYS the last segment
+	if (MODES.includes(mode as ThemeMode)) {
+		if ((THEME_IDS as readonly string[]).includes(id))
+			return { theme: id as BuiltinThemeId, mode: mode as ThemeMode };
+		if (CUSTOM_ID_RE.test(v.slice(0, v.lastIndexOf('-'))))
+			return { theme: v.slice(0, v.lastIndexOf('-')) as ThemeId, mode: mode as ThemeMode };
+	}
 	return { theme: 'portal', mode: 'light' };
 }
 

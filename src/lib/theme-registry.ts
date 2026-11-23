@@ -33,6 +33,32 @@ export const PREVIEW_TOKENS = [
 	'accent-amber'
 ] as const;
 
+/** The CORE token grammar — the values a theme MUST carry (the shadcn
+ *  aliases resolve against these and never need re-declaring). The palette
+ *  test's parity list and the custom-theme validator both read THIS, so
+ *  "required" is defined once. Bare names (no `--`). */
+export const CORE_TOKENS = [
+	'background',
+	'foreground',
+	'card',
+	'muted',
+	'muted-foreground',
+	'accent',
+	'border',
+	'chrome',
+	'brand',
+	'accent-blue',
+	'accent-teal',
+	'accent-amber',
+	'accent-slate',
+	'danger',
+	'diff-add',
+	'diff-del'
+] as const;
+
+export type CoreToken = (typeof CORE_TOKENS)[number];
+export type CoreTokens = Record<CoreToken, string>;
+
 export const PORTAL_THEME: ThemeDef = {
 	id: 'portal',
 	name: 'Portal',

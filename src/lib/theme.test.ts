@@ -27,4 +27,18 @@ describe('resolveThemePair', () => {
 		expect(resolveThemePair('dracula-dark')).toEqual({ theme: 'portal', mode: 'light' });
 		expect(resolveThemePair('portal-dark; evil')).toEqual({ theme: 'portal', mode: 'light' });
 	});
+
+	it('custom-* ids ride the SHAPE check — the body lives client-side', () => {
+		expect(resolveThemePair('custom-midnight-dark')).toEqual({
+			theme: 'custom-midnight',
+			mode: 'dark'
+		});
+		expect(resolveThemePair('custom-solarized-light')).toEqual({
+			theme: 'custom-solarized',
+			mode: 'light'
+		});
+		// a custom id without a mode, or with an upper-case slug, is noise
+		expect(resolveThemePair('custom-midnight')).toEqual({ theme: 'portal', mode: 'light' });
+		expect(resolveThemePair('custom-Midnight-dark')).toEqual({ theme: 'portal', mode: 'light' });
+	});
 });
