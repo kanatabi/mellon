@@ -4,6 +4,8 @@
 	import { page } from '$app/state';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
+	import * as Popover from '#lib/components/ui/popover/index.js';
+	import ColorPicker from '#lib/components/ColorPicker.svelte';
 	import { CORE_TOKENS, type CoreToken } from '#lib/theme-registry.ts';
 	import { slugify, ThemeValidationError, validateCustomTheme } from '#lib/custom-theme.ts';
 	import { customThemes, getCustomTheme, saveCustomTheme } from '#lib/custom-themes.svelte.ts';
@@ -35,6 +37,43 @@
 	let live = $state(true);
 	let issues = $state<string[]>([]);
 	let existingId = $state<`${'custom'}-${string}` | null>(null);
+
+	// ── the picker state: ONE popover open at a time (clicking another chip
+	// sets this — the previous popover's `open` flips false), recents shared
+	// across every chip (localStorage, 8 max).
+	let openToken = $state<string | null>(null);
+	const RECENTS_KEY = 'mellon.color-recent';
+	let recents = $state<string[]>(loadRecents());
+
+	function loadRecents(): string[] {
+		try {
+			const v = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as unknown;
+			return Array.isArray(v) ? v.filter((x) => typeof x === 'string').slice(0, 8) : [];
+		} catch {
+			return [];
+		}
+	}
+
+	function rememberColor(hex: string) {
+		recents = [hex, ...recents.filter((r) => r !== hex)].slice(0, 8);
+		localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
+	}
+
+	/** The picker's harmonizing presets: the draft's OTHER token values
+	 *  (both halves, deduped) — pick the border's color from the muted
+	 *  swatch and the theme stays coherent. */
+	function swatchesFor(tk: string): string[] {
+		const own = tokens[editMode as ThemeMode][tk as CoreToken];
+		const all = [...Object.values(tokens.light), ...Object.values(tokens.dark)];
+		const seen: string[] = [];
+		const out: string[] = [];
+		for (const v of all) {
+			if (!v || v === own || seen.includes(v)) continue;
+			seen.push(v);
+			out.push(v);
+		}
+		return out.slice(0, 10);
+	}
 
 	const SECTIONS: { title: string; tokens: CoreToken[] }[] = [
 		{
@@ -127,11 +166,6 @@
 		else delete set[tk];
 		tokens = { ...tokens, [editMode]: set };
 	}
-
-	/** The native picker speaks hex only; a non-hex draft value shows the
-	 *  neutral gray chip and picking replaces it with hex. */
-	const hexOrGray = (v: string | undefined): string =>
-		v && /^#[0-9a-fA-F]{6}$/.test(v) ? v : '#7d7d8a';
 
 	function save() {
 		issues = [];
@@ -272,13 +306,33 @@
 										spellcheck="false"
 										class="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1 font-mono text-xs outline-none focus:border-brand"
 									/>
-									<input
-										type="color"
-										value={hexOrGray(v)}
-										onchange={(e) => setToken(tk, e.currentTarget.value)}
-										aria-label="Pick {tk}"
-										class="size-7 shrink-0 cursor-pointer rounded border border-border bg-background p-0.5"
-									/>
+									<!-- the picker chip: ONE popover open at a time (the
+									     page's openToken — clicking another chip closes
+									     this one); Esc/outside close and null it. The
+									     chip paints the value ITSELF (CSS renders hex
+									     AND oklch natively) over a checkerboard. -->
+									<Popover.Root
+										open={openToken === tk}
+										onOpenChange={(o) => (openToken = o ? tk : null)}
+									>
+										<Popover.Trigger
+											aria-label="Pick {tk}"
+											title={v ?? 'unset'}
+											class="color-checkerboard size-7 shrink-0 cursor-pointer rounded border border-border"
+											style={`background-color: ${v ?? 'transparent'}`}
+										></Popover.Trigger>
+										<Popover.Content
+											class="w-auto gap-2 rounded-lg bg-popover p-3 shadow-2xl ring-1 ring-foreground/10"
+										>
+											<ColorPicker
+												value={v ?? ''}
+												themeSwatches={swatchesFor(tk)}
+												{recents}
+												onRemember={rememberColor}
+												onInput={(hex) => setToken(tk, hex)}
+											/>
+										</Popover.Content>
+									</Popover.Root>
 								</div>
 							{/each}
 						</div>
