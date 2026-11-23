@@ -98,6 +98,7 @@
 								<ThemeCard
 									theme={t}
 									selected={themeState.theme === t.id}
+									wornMode={themeState.mode}
 									onSelect={() => setTheme(t.id)}
 								>
 									{#snippet actions()}
