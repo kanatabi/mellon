@@ -26,7 +26,7 @@
 	/** The theme's token values as inline custom properties — the pane's
 	 *  scoping seam. */
 	const paneVars = (mode: ThemeMode) =>
-		PREVIEW_TOKENS.map((k) => `--${k}: ${theme.preview[mode][k] ?? 'transparent'}`).join('; ');
+		PREVIEW_TOKENS.map((k) => `--${k}: ${theme.preview[mode]?.[k] ?? 'transparent'}`).join('; ');
 </script>
 
 <button
@@ -51,8 +51,11 @@
 			{@render actions?.()}
 		</span>
 	</span>
-	<span class="grid grid-cols-2 gap-1.5">
-		{#each ['light', 'dark'] as mode (mode)}
+	<!-- the panes render the theme's OWN modes — a dark-only theme shows
+	     ONE full-width pane (the settings 500: both hardcoded →
+	     preview.light of undefined) -->
+	<span class="grid gap-1.5 {theme.modes.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
+		{#each theme.modes as mode (mode)}
 			<span
 				class="flex flex-col gap-1 rounded-md bg-background p-1.5"
 				style={paneVars(mode as ThemeMode)}
