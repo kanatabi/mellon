@@ -568,10 +568,21 @@ body }` — **adding a widget = one folder + one registry line**
     pixel size, the preview clamps to the same bounds the commit
     enforces, the release applies + persists once. Keyboard parity:
     Alt+arrows nudge by whole cells, Shift+Alt+arrows resize.
+  - **Placed-or-absent + the picker** (the Round D model, 2026-11-25):
+    the canvas holds only placed widgets — the card's trash button
+    DELETEs (no confirm; re-add restores the default span at a free
+    slot, the old position is not kept), and the **Add Widget** side
+    panel lists the registry with STATIC previews (icon + description
+    over skeleton bars — the real body never mounts there, so opening
+    it fires zero relay calls), multi-select rows, and a one-action
+    footer commit (selection order = placement order, each via
+    `firstFit` — the first free slot, holes before growth). The tray
+    retired.
   - **Persistence**: per-user (`mellon.dashboard.<username>`) behind a
     `DashboardLayoutStorage` seam — localStorage today, a server-side
     per-user table is the recorded second implementation (schema
-    version 3; older layouts migrate by simulating the old flow).
+    version 4 — no hidden flag; older layouts migrate chained, v3's
+    unpinned entries deleting under the placed-or-absent model).
 
 - **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
   on row focus** — the AGENTS §10.5 lesson, restated for keyboards: _"no mouse-only
