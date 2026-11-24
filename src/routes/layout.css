@@ -651,6 +651,23 @@
 		2px 2px;
 }
 
+/* The dashboard widget grid (the widget-home round): spans ride the --cs
+   variable per entry, adapted per breakpoint — 6 cols at md (span --cs),
+   12 at xl (span --cs×2, the finer stepping); mobile stacks full width. */
+[data-widget-entry] {
+	grid-column: 1 / -1;
+}
+@media (min-width: 768px) {
+	[data-widget-entry] {
+		grid-column: span min(var(--cs, 1), 6);
+	}
+}
+@media (min-width: 1280px) {
+	[data-widget-entry] {
+		grid-column: span min(calc(var(--cs, 1) * 2), 12);
+	}
+}
+
 /* View Transitions theme swap: cross-fade only (earendil parity). */
 @media (prefers-reduced-motion: reduce) {
 	::view-transition-old(root),

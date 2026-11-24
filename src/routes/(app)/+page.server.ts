@@ -1,4 +1,3 @@
-import { createApi } from '#lib/api/index.ts';
 import { SESSION_COOKIE, requireAuthed } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
@@ -6,20 +5,9 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	// the cheap gate first: a dead session never dials lumen (the
 	// layout's redirect runs in parallel and cannot stop these fetches)
 	requireAuthed(cookies.get(SESSION_COOKIE), url);
-	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
-	// One round trip feeds all three dashboard cards. Sort defaults already
-	// mean "latest" (posts: updated desc · photos: created desc ·
-	// listNewestTags: created_at desc) — the page slices, never re-sorts.
-	const [posts, photos, tags, newest] = await Promise.all([
-		api.listPosts(),
-		api.listPhotos(),
-		api.listTags(),
-		api.listNewestTags()
-	]);
-	return {
-		counts: { posts: posts.total, photos: photos.total, tags: tags.length },
-		latestPosts: posts.items.slice(0, 5),
-		latestPhotos: photos.items.slice(0, 8),
-		newestTags: newest.slice(0, 8)
-	};
+	// The dashboard is the USER'S HOME (the widget-home round): its server
+	// load dials NO scoped API — each widget body fetches its own data
+	// CLIENT-SIDE and only mounts when the principal holds its scope. A
+	// scope-less user's home is the empty-state hint, never a 403 → 500
+	// (the cliff the courtesy gates exist to prevent).
 };

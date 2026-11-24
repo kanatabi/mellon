@@ -156,11 +156,17 @@
 	// backs the courtesy gates in each section's page server — one truth,
 	// two consumers (the rail + the palette read the same declared table).
 	const SCOPED_NAV = [
+		// the DASHBOARD is the home (the widget-home round): every
+		// authenticated user gets it — it renders widgets for whatever
+		// scopes the principal holds
+		{
+			label: 'Home',
+			items: [{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' }]
+		},
 		{
 			label: 'Content',
 			scope: 'content:manage' as const,
 			items: [
-				{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' },
 				{ href: '/posts', icon: FileText, label: 'Posts', hue: 'var(--accent-blue)' },
 				{ href: '/photos', icon: Images, label: 'Photos', hue: 'var(--accent-teal)' },
 				{ href: '/tags', icon: Tag, label: 'Tags', hue: 'var(--accent-slate)' }
@@ -183,7 +189,8 @@
 	];
 	const held = (scope: string) => data.principal?.scopes?.includes(scope) ?? false; // degradation rule: quiet, never 500
 	const navGroups = $derived([
-		...SCOPED_NAV.filter((g) => held(g.scope)),
+		// the HOME group has no scope — it renders for everyone
+		...SCOPED_NAV.filter((g) => !('scope' in g) || held((g as { scope: string }).scope ?? '')),
 		...(held('users:manage')
 			? [
 					{
