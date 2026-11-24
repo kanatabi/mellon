@@ -37,7 +37,7 @@
 		{#each [0, 1, 2] as i (i)}
 			<!-- the REAL row shape: title + meta line + the status pill chrome -->
 			<div class="flex items-center justify-between gap-3 rounded-lg px-3 py-2">
-				<span class="flex min-w-0 flex-col gap-1">
+				<span class="flex min-w-0 flex-1 flex-col gap-1">
 					<span class="h-3 w-2/3 animate-pulse rounded bg-muted/70"></span>
 					<span class="h-2 w-1/2 animate-pulse rounded bg-muted/50"></span>
 				</span>

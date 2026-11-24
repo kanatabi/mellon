@@ -18,7 +18,7 @@ function open(c: { container: HTMLElement }): HTMLElement {
 }
 
 describe('the widget picker (Round D)', () => {
-	it('renders rows for the available widgets with STATIC previews — no mounted bodies', () => {
+	it('renders rows with the REAL preview structure — placeholder bars render, zero fetches', () => {
 		const c = render(Picker, {
 			props: {
 				registry: WIDGETS,
@@ -35,6 +35,14 @@ describe('the widget picker (Round D)', () => {
 		expect(c.getAllByLabelText(/widget row/)).toHaveLength(3);
 		// the posts preview shows the real row shape: status pill chrome
 		expect(c.container.textContent?.toLowerCase()).toContain('draft');
+		// the placeholder bars must RENDER — percentage widths need a
+		// definite parent (the zero-width collapse bug): the posts
+		// preview's title bar is a growing flex item
+		const bar = c.container.querySelector<HTMLElement>(
+			'[aria-label="Recent posts widget row"] .h-3'
+		)!;
+		expect(bar.className).toContain('w-2/3');
+		expect(bar.parentElement?.className).toContain('flex-1');
 	});
 
 	it('opening the panel fires ZERO relay calls — bodies never fetch in preview mode', () => {
