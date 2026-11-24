@@ -170,7 +170,7 @@
 				}
 			]
 		},
-		...(data.principal?.scopes.includes('users:manage')
+		...(data.principal?.scopes?.includes('users:manage')
 			? [
 					{
 						label: 'Admin',

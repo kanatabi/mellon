@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	const principal = await api.whoami();
 	// users:manage gates the WHOLE page (lumen 403s the list; this is
 	// courtesy, not security — the honest order of those two)
-	if (!principal.scopes.includes('users:manage')) redirect(307, '/settings');
+	if (!(principal.scopes?.includes('users:manage') ?? false)) redirect(307, '/settings');
 	return {
 		users: await api.listUsers(),
 		catalog: await api.listScopes(),

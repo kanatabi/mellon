@@ -30,7 +30,7 @@
 	];
 	// the USERS door is the users:manage surface (the RBAC spine): the nav
 	// renders lumen's truth as affordance — lumen enforces regardless
-	const admin = $derived(page.data.principal?.scopes.includes('users:manage') ?? false);
+	const admin = $derived(page.data.principal?.scopes?.includes('users:manage') ?? false);
 </script>
 
 <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
