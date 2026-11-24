@@ -72,7 +72,7 @@ export function writeVimCookie(on: boolean): void {
  * ("the relay forwards; it never decides" — the honest order of those
  * two). Server-only: reads the bearer through whoami's fresh row read.
  */
-export function requireScope(principal: Principal, scope: string, url: URL): void {
+export function requireScope(principal: Principal, scope: string): void {
 	if (!(principal.scopes?.includes(scope) ?? false)) {
 		redirect(307, '/');
 	}

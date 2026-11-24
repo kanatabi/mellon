@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { KeyRound, Plus, UserPlus, Users } from 'lucide-svelte';
+	import { UserPlus, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';

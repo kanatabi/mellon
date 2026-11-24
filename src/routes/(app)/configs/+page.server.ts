@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	// the COURTESY gate (the RBAC spine): the nav hides what the principal
 	// cannot open; a bookmarked URL lands on the dashboard instead. lumen
 	// 403s the API underneath regardless — affordance, not enforcement.
-	requireScope(await createApi(cookies.get(SESSION_COOKIE) ?? '').whoami(), 'secrets:admin', url);
+	requireScope(await createApi(cookies.get(SESSION_COOKIE) ?? '').whoami(), 'secrets:admin');
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	return { rows: await api.estateSummary() };
 };
