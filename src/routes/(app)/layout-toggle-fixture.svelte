@@ -14,7 +14,8 @@
 			username: 'probe',
 			id: 'u-probe',
 			scopes: ['content:manage', 'secrets:admin', 'users:manage', 'settings:manage'],
-			mustChange: false
+			mustChange: false,
+			disabled: false
 		},
 		recent: [],
 		vim: false,
