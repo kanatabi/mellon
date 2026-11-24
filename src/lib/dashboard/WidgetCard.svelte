@@ -167,9 +167,10 @@
 		if (!canvas) return;
 		const canvasRect = canvas.getBoundingClientRect();
 		const rect = el.getBoundingClientRect();
-		// column pitch is the canvas width over its columns (1px floor
-		// keeps the math finite in non-rendered environments)
-		const colW = Math.max(1, canvasRect.width / GRID_COLS);
+		// column pitch INCLUDES the gutter (the RGL margin rule — the cell
+		// is (canvasWidth + gap) / 24), matching the entry styles (1px
+		// floor keeps the math finite in non-rendered environments)
+		const colW = Math.max(1, (canvasRect.width + GRID_GAP_PX) / GRID_COLS);
 		armed = true;
 		dragStart = {
 			px: e.clientX,

@@ -1,6 +1,13 @@
 <script lang="ts">
 	import WidgetCard from './WidgetCard.svelte';
-	import { GRID_COLS, GRID_GAP_PX, ROW_UNIT_PX, canvasHeightPx, spanHeightPx } from './layout.ts';
+	import {
+		GRID_GAP_PX,
+		ROW_UNIT_PX,
+		canvasHeightPx,
+		columnLeftStyle,
+		columnWidthStyle,
+		spanHeightPx
+	} from './layout.ts';
 	import type { WidgetLayoutEntry } from './layout.ts';
 	import type { WidgetDef as WidgetDefT } from './widgets/registry.ts';
 
@@ -109,7 +116,7 @@
 		const e = entries.find((p) => p.id === id);
 		if (!e) return null;
 		return {
-			style: `left: ${((e.x / GRID_COLS) * 100).toFixed(4)}%; top: ${e.y * (ROW_UNIT_PX + GRID_GAP_PX)}px; width: ${((w / GRID_COLS) * 100).toFixed(4)}%; height: ${spanHeightPx(h)}px;`
+			style: `left: ${columnLeftStyle(e.x)}; top: ${e.y * (ROW_UNIT_PX + GRID_GAP_PX)}px; width: ${columnWidthStyle(w)}; height: ${spanHeightPx(h)}px;`
 		};
 	});
 </script>
@@ -143,8 +150,8 @@
 				data-widget-entry
 				data-widget-id={entry.id}
 				style={dragPx?.id === entry.id
-					? `left: ${dragPx.left}px; top: ${dragPx.top}px; width: ${((entry.w / GRID_COLS) * 100).toFixed(4)}%; height: ${spanHeightPx(entry.h)}px; z-index: 30;`
-					: `left: ${((entry.x / GRID_COLS) * 100).toFixed(4)}%; top: ${entry.y * (ROW_UNIT_PX + GRID_GAP_PX)}px; width: ${((entry.w / GRID_COLS) * 100).toFixed(4)}%; height: ${spanHeightPx(entry.h)}px;`}
+					? `left: ${dragPx.left}px; top: ${dragPx.top}px; width: ${columnWidthStyle(entry.w)}; height: ${spanHeightPx(entry.h)}px; z-index: 30;`
+					: `left: ${columnLeftStyle(entry.x)}; top: ${entry.y * (ROW_UNIT_PX + GRID_GAP_PX)}px; width: ${columnWidthStyle(entry.w)}; height: ${spanHeightPx(entry.h)}px;`}
 				class="absolute transition-[left,top,width,height] duration-200 ease-out {dragPx?.id ===
 				entry.id
 					? 'transition-none'

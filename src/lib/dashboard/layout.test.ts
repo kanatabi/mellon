@@ -5,6 +5,9 @@ import {
 	collides,
 	compact,
 	GRID_COLS,
+	GRID_GAP_PX,
+	columnLeftPx,
+	columnWidthPx,
 	migrateLayout,
 	nudgeEntry,
 	reconcileLayout,
@@ -208,5 +211,20 @@ describe('the canvas geometry', () => {
 		expect(canvasHeightPx([at('a', 0, 0, 6, 6), at('b', 12, 3, 6, 6)])).toBe(
 			spanHeightPx(9) // b's bottom edge (3 + 6)
 		);
+	});
+});
+
+describe('the column gutter (the RGL margin rule)', () => {
+	it('adjacent cells keep exactly one gap between them, at any canvas width', () => {
+		for (const canvasWidth of [800, 1000, 1920, 2540]) {
+			const left = columnLeftPx(12, canvasWidth);
+			const prevRight = columnLeftPx(0, canvasWidth) + columnWidthPx(12, canvasWidth);
+			expect(left - prevRight).toBe(GRID_GAP_PX);
+		}
+	});
+
+	it('a full-width widget spans the canvas exactly', () => {
+		expect(columnWidthPx(24, 1000)).toBe(1000);
+		expect(columnLeftPx(24, 1000)).toBe(1016); // one gap past the right edge
 	});
 });

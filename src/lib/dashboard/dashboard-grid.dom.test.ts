@@ -7,6 +7,7 @@
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { describe, expect, it } from 'vitest';
+import { columnLeftStyle, columnWidthStyle } from './layout.ts';
 import Fixture from './grid-fixture.svelte';
 
 function corner(c: { container: HTMLElement }): HTMLElement {
@@ -19,13 +20,13 @@ function captures(c: { getByTestId(id: string): HTMLElement }): HTMLElement {
 }
 
 describe('the dashboard canvas wiring (the coordinate model)', () => {
-	it('places entries absolutely — percent columns, px rows', () => {
+	it('places entries absolutely — gutter columns, px rows', () => {
 		const c = render(Fixture);
 		const a = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
-		expect(parseFloat(a.style.left)).toBe(0);
-		expect(parseFloat(a.style.width)).toBe(50); // 12 of 24 columns
+		expect(a.style.left).toBe(columnLeftStyle(0));
+		expect(a.style.width).toBe(columnWidthStyle(12)); // half the canvas, one gap narrow
 		const b = c.container.querySelector<HTMLElement>('[data-widget-id="w-b"]')!;
-		expect(parseFloat(b.style.left)).toBe(50);
+		expect(b.style.left).toBe(columnLeftStyle(12));
 		expect(b.style.top).toBe('0px');
 	});
 
@@ -69,7 +70,7 @@ describe('the dashboard canvas wiring (the coordinate model)', () => {
 		expect(JSON.parse(captures(c).dataset.nudged!)).toEqual({ id: 'w-a', dx: 1, dy: 0 });
 		// the nudge went through the REAL engine: a moved, b yielded below
 		const a = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
-		expect(a.style.left).not.toBe('0%');
+		expect(a.style.left).not.toBe(columnLeftStyle(0));
 	});
 
 	it('free drag: the header is the handle — threshold, shadow layout, landing on release', async () => {

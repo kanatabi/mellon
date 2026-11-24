@@ -38,6 +38,28 @@ export const LAYOUT_VERSION = 3;
 export function spanHeightPx(rowSpan: number): number {
 	return rowSpan * ROW_UNIT_PX + (rowSpan - 1) * GRID_GAP_PX;
 }
+
+/**
+ * The column geometry with the GUTTER (the react-grid-layout margin
+ * rule): the CELL pitch is (canvasWidth + gap) / 24 and each widget
+ * renders one gap narrower — adjacent cells keep exactly `gap` px
+ * between them, and a full-width widget spans the canvas exactly.
+ * (The rows already follow this shape — that's why vertical gaps work.)
+ */
+export function columnLeftPx(x: number, canvasWidth: number): number {
+	return (x * (canvasWidth + GRID_GAP_PX)) / GRID_COLS;
+}
+export function columnWidthPx(w: number, canvasWidth: number): number {
+	return Math.max(1, (w * (canvasWidth + GRID_GAP_PX)) / GRID_COLS - GRID_GAP_PX);
+}
+/** The same geometry as responsive CSS: percentages + the gap in calc,
+ *  so the browser re-derives it on every resize without JS. */
+export function columnLeftStyle(x: number): string {
+	return `calc((100% + ${GRID_GAP_PX}px) * ${x} / ${GRID_COLS})`;
+}
+export function columnWidthStyle(w: number): string {
+	return `calc((100% + ${GRID_GAP_PX}px) * ${w} / ${GRID_COLS} - ${GRID_GAP_PX}px)`;
+}
 /** The canvas height for a given bottom edge (y + h). */
 export function canvasHeightPx(entries: WidgetLayoutEntry[]): number {
 	const bottom = entries.reduce((m, e) => Math.max(m, e.y + e.h), 0);
