@@ -29,7 +29,8 @@
 		registry: WidgetDefT[];
 		entries: WidgetLayoutEntry[];
 		held: (scope: string) => boolean;
-		onToggleHidden: (id: string) => void;
+		/** DELETE (placed-or-absent): the card's trash button. */
+		onDelete: (id: string) => void;
 		/** Keyboard nudge by whole cells (collision-resolved in the engine). */
 		onNudge: (id: string, dx: number, dy: number) => void;
 		/** The provisional resize, applied + persisted ONCE on release. */
@@ -46,7 +47,7 @@
 		registry,
 		entries,
 		held,
-		onToggleHidden,
+		onDelete,
 		onNudge,
 		onSpanApply,
 		onDragMove,
@@ -141,7 +142,7 @@
 	{/if}
 	{#each entries as entry (entry.id)}
 		{@const def = registry.find((d) => d.id === entry.id)}
-		{#if def && (held(def.scope ?? '') ?? true) && !entry.hidden}
+		{#if def && (held(def.scope ?? '') ?? true)}
 			<!-- absolute placement: left/width are CANVAS PERCENTAGES (any
 			     breakpoint), top/height the fixed 44px rows. The position
 			     transitions make every engine move glide — except the
@@ -160,10 +161,9 @@
 			>
 				<WidgetCard
 					{def}
-					hidden={false}
 					w={entry.w}
 					h={entry.h}
-					onToggleHidden={() => onToggleHidden(entry.id)}
+					onDelete={() => onDelete(entry.id)}
 					onSpanCommit={commitSpan}
 					onNudge={(dx, dy) => onNudge(entry.id, dx, dy)}
 					onSpanTarget={(w, h) => previewSpan(entry.id, w, h)}

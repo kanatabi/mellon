@@ -188,15 +188,16 @@ describe('the dashboard canvas wiring (the coordinate model)', () => {
 		expect(c.container.querySelector('[data-resize-placeholder]')).toBeNull();
 	});
 
-	it('hidden reflow: the un-pinned card leaves the canvas', async () => {
+	it('delete: the trash button removes the card from the canvas', async () => {
 		const c = render(Fixture);
 		const before = c.container.querySelectorAll('[data-widget-card]').length;
-		const eye = c.container.querySelector<HTMLElement>(
-			'[data-widget-id="w-a"] [aria-label="Unpin Widget A"]'
+		const trash = c.container.querySelector<HTMLElement>(
+			'[data-widget-id="w-a"] [aria-label="Delete Widget A from the dashboard"]'
 		)!;
-		eye.click();
+		trash.click();
 		await tick();
 		expect(c.container.querySelectorAll('[data-widget-card]').length).toBe(before - 1);
-		expect(captures(c).dataset.toggled).toBe('w-a');
+		expect(c.container.querySelector('[data-widget-id="w-a"]')).toBeNull();
+		expect(captures(c).dataset.deleted).toBe('w-a');
 	});
 });

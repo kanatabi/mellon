@@ -34,13 +34,13 @@
 
 	// REACTIVE: applies and toggles must reflow the canvas
 	let entries = $state<WidgetLayoutEntry[]>([
-		{ id: 'w-a', x: 0, y: 0, w: 12, h: 6, hidden: false },
-		{ id: 'w-b', x: 12, y: 0, w: 12, h: 6, hidden: false }
+		{ id: 'w-a', x: 0, y: 0, w: 12, h: 6 },
+		{ id: 'w-b', x: 12, y: 0, w: 12, h: 6 }
 	]);
 
 	let applied: { id: string; w: number; h: number } | null = $state(null);
 	let nudged: { id: string; dx: number; dy: number } | null = $state(null);
-	let toggled: string | null = $state(null);
+	let deleted: string | null = $state(null);
 	let moved: { id: string; x: number; y: number } | null = $state(null);
 	let dropped: { id: string; x: number; y: number } | null = $state(null);
 	let cancelled = $state(false);
@@ -61,9 +61,9 @@
 	registry={defs}
 	entries={view}
 	held={() => true}
-	onToggleHidden={(id) => {
-		toggled = id;
-		entries = entries.map((e) => (e.id === id ? { ...e, hidden: !e.hidden } : e));
+	onDelete={(id) => {
+		deleted = id;
+		entries = entries.filter((e) => e.id !== id);
 	}}
 	onSpanApply={(id, w, h) => {
 		applied = { id, w, h };
@@ -100,7 +100,7 @@
 	data-testid="captures"
 	data-applied={JSON.stringify(applied)}
 	data-nudged={JSON.stringify(nudged)}
-	data-toggled={toggled ?? ''}
+	data-deleted={deleted ?? ''}
 	data-dropped={JSON.stringify(dropped)}
 	data-cancelled={cancelled}
 ></div>

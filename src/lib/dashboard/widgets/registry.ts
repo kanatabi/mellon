@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import { FileText, Images, Tag } from 'lucide-svelte';
 
 /**
  * The widget registry — the plugin seam of the dashboard home (the RBAC
@@ -23,6 +24,9 @@ export interface WidgetDef {
 	scope?: string;
 	defaultSpan: { col: number; row: number };
 	minSpan: { col: number; row: number };
+	/** The picker's STATIC preview icon (no fetches — the real body never
+	 *  mounts in the panel). */
+	icon?: typeof import('lucide-svelte').FileText;
 	/** The card's inner component — self-contained, fetches its own data. */
 	body: Component<Record<string, never>>;
 }
@@ -40,6 +44,7 @@ export const WIDGETS: WidgetDef[] = [
 		scope: 'content:manage',
 		defaultSpan: { col: 6, row: 6 },
 		minSpan: { col: 2, row: 2 },
+		icon: FileText,
 		body: RecentPostsBody
 	},
 	{
@@ -50,6 +55,7 @@ export const WIDGETS: WidgetDef[] = [
 		scope: 'content:manage',
 		defaultSpan: { col: 6, row: 6 },
 		minSpan: { col: 2, row: 2 },
+		icon: Images,
 		body: RecentPhotosBody
 	},
 	{
@@ -60,6 +66,7 @@ export const WIDGETS: WidgetDef[] = [
 		scope: 'content:manage',
 		defaultSpan: { col: 6, row: 6 },
 		minSpan: { col: 2, row: 2 },
+		icon: Tag,
 		body: RecentTagsBody
 	}
 ];

@@ -9,19 +9,20 @@
 import type { WidgetDef } from './widgets/registry.ts';
 
 /** One placed widget: WHERE (x/y) and HOW BIG (w/h) — the four numbers
- *  Grafana stores. x/w are canvas columns (1/24 steps), y/h are 44px rows. */
+ *  Grafana stores. x/w are canvas columns (1/24 steps), y/h are 44px rows.
+ *  Schema v4: NO hidden flag — a widget is placed or absent (the picker
+ *  owns availability; deleted widgets stay deleted across reloads). */
 export interface WidgetLayoutEntry {
 	id: string;
 	x: number;
 	y: number;
 	w: number;
 	h: number;
-	hidden: boolean;
 }
 
 export interface DashboardLayout {
 	entries: WidgetLayoutEntry[];
-	/** The storage schema version. 3 = the coordinate model. */
+	/** The storage schema version. 4 = placed-or-absent (no hidden). */
 	version?: number;
 }
 
@@ -33,7 +34,7 @@ export const GRID_GAP_PX = 16;
 /** Generous height ceiling (16 rows ≈ 944px) — the old 8 capped the very
  *  tall cards the owner asked for. */
 export const MAX_ROW_SPAN = 16;
-export const LAYOUT_VERSION = 3;
+export const LAYOUT_VERSION = 4;
 /** The height a widget occupies for a given rowSpan (tracks + inner gaps). */
 export function spanHeightPx(rowSpan: number): number {
 	return rowSpan * ROW_UNIT_PX + (rowSpan - 1) * GRID_GAP_PX;
@@ -146,10 +147,33 @@ export function nudgeEntry(
 }
 
 /**
- * Registry-validated layout (v3): unknown ids DROP, registry widgets
- * missing from the stored layout APPEND at the first free slot under
- * everything (bottom-left — new widgets never cover old ones), positions
- * clamp, and the result compacts.
+ * The FIRST-FIT slot (the picker's add verb): scan top-down for the
+ * first free position where a widget of w×h fits — holes get filled
+ * before the canvas grows. Nothing free within the scan bound lands at
+ * the bottom-left. Shared with the v2 migration's packing.
+ */
+export function firstFit(
+	entries: WidgetLayoutEntry[],
+	w: number,
+	h: number
+): { x: number; y: number } {
+	const free = (x: number, y: number): boolean =>
+		!entries.some((e) => x < e.x + e.w && e.x < x + w && y < e.y + e.h && e.y < y + h);
+	const width = Math.min(GRID_COLS, w);
+	for (let y = 0; y < 400; y++) {
+		for (let x = 0; x + width <= GRID_COLS; x++) {
+			if (free(x, y)) return { x, y };
+		}
+	}
+	const bottom = entries.reduce((m, e) => Math.max(m, e.y + e.h), 0);
+	return { x: 0, y: bottom };
+}
+
+/**
+ * Registry-validated layout (v4): unknown ids DROP, positions clamp,
+ * and the result compacts. Placed-or-absent: the registry's unplaced
+ * widgets are NOT appended (deleted widgets stay deleted — the picker
+ * owns availability; the add verb appends explicitly).
  */
 export function reconcileLayout(
 	stored: DashboardLayout | null,
@@ -164,43 +188,23 @@ export function reconcileLayout(
 		seen.add(entry.id);
 		out.push(clampEntry(def, entry));
 	}
-	for (const def of registry) {
-		if (seen.has(def.id)) continue;
-		seen.add(def.id);
-		const bottom = out.reduce((m, e) => Math.max(m, e.y + e.h), 0);
-		out.push(
-			clampEntry(def, {
-				id: def.id,
-				x: 0,
-				y: bottom,
-				w: def.defaultSpan.col,
-				h: def.defaultSpan.row,
-				hidden: false
-			})
-		);
-	}
 	return compact(out);
 }
 
 /**
- * The v2 → v3 migration: order-based entries (colSpan on the 12-unit
- * grid) become coordinates by SIMULATING the old dense flow — first-fit
- * placement in the stored order over a 24-column occupancy grid, with
- * w = colSpan×2 (the old doubling rule) and h unchanged. The visual
- * result matches the old arrangement; version stamps it done.
+ * The schema migration, chained: v2 order shapes → v3 coordinates
+ * (first-fit packing, w = colSpan×2), then EVERYTHING pre-v4 loses the
+ * hidden flag — v3's unpinned entries become DELETED under the
+ * placed-or-absent model (the picker re-adds them on demand). The
+ * result stamps v4. Migrates by SHAPE (a stamp can lie).
  */
 export function migrateLayout(stored: DashboardLayout | null): DashboardLayout | null {
 	if (!stored) return null;
-	// trust the stamp only if it is honest: a v2-shaped payload with a
-	// v3 stamp (hand-edited storage) migrates by SHAPE, not by stamp
-	const looksV3 = stored.entries.length === 0 || 'x' in stored.entries[0];
-	if (stored.version === LAYOUT_VERSION && looksV3) return stored;
-	const v2 = stored.entries as unknown as Array<{
-		id: string;
-		colSpan: number;
-		rowSpan: number;
-		hidden: boolean;
-	}>;
+	// trust the stamp only if it is honest: a pre-v4-shaped payload with
+	// a v4 stamp (hand-edited storage) migrates by SHAPE, not by stamp
+	const looksV4 =
+		stored.entries.length === 0 || ('x' in stored.entries[0] && !('hidden' in stored.entries[0]));
+	if (stored.version === LAYOUT_VERSION && looksV4) return stored;
 	// occupancy: rows of 24 cells
 	const rows: boolean[][] = [];
 	const free = (x: number, y: number, w: number, h: number): boolean => {
@@ -215,48 +219,65 @@ export function migrateLayout(stored: DashboardLayout | null): DashboardLayout |
 			for (let c = x; c < x + w; c++) rows[r][c] = true;
 		}
 	};
-	const entries: WidgetLayoutEntry[] = v2.map((e) => {
-		const w = Math.min(GRID_COLS, e.colSpan * 2);
-		const h = e.rowSpan;
-		let placed = { x: 0, y: 0 };
-		outer: for (let y = 0; y < 400; y++) {
-			for (let x = 0; x + w <= GRID_COLS; x++) {
-				if (free(x, y, w, h)) {
-					placed = { x, y };
-					break outer;
+	const isV2Shape = stored.entries.length > 0 && 'colSpan' in stored.entries[0];
+	const entries: WidgetLayoutEntry[] = stored.entries
+		.map((raw) => {
+			if (isV2Shape) {
+				const e = raw as unknown as {
+					id: string;
+					colSpan: number;
+					rowSpan: number;
+					hidden: boolean;
+				};
+				const w = Math.min(GRID_COLS, e.colSpan * 2);
+				const h = e.rowSpan;
+				let placed = { x: 0, y: 0 };
+				outer: for (let y = 0; y < 400; y++) {
+					for (let x = 0; x + w <= GRID_COLS; x++) {
+						if (free(x, y, w, h)) {
+							placed = { x, y };
+							break outer;
+						}
+					}
 				}
+				mark(placed.x, placed.y, w, h);
+				return { id: e.id, x: placed.x, y: placed.y, w, h, hidden: Boolean(e.hidden) };
 			}
-		}
-		mark(placed.x, placed.y, w, h);
-		return { id: e.id, x: placed.x, y: placed.y, w, h, hidden: Boolean(e.hidden) };
-	});
+			return raw as WidgetLayoutEntry & { hidden?: boolean };
+		})
+		.filter((e) => !('hidden' in e && e.hidden))
+		.map((e) => {
+			const out = { ...e } as unknown as Record<string, unknown>;
+			delete out.hidden;
+			return out as unknown as WidgetLayoutEntry;
+		});
 	return { version: LAYOUT_VERSION, entries };
 }
 
-/** sanitize a persisted layout: accept BOTH the v3 coordinate shape and
- *  the v2 order shape (the migration reads the latter); anything else is
- *  rejected wholesale. The version stamp passes through. */
+/** sanitize a persisted layout: accept the v4 coordinate shape, the v3
+ *  coordinate shape (with hidden — the migration reads it), and the v2
+ *  order shape; anything else is rejected wholesale. The version stamp
+ *  passes through. */
 export function sanitizeLayout(stored: unknown, registry: WidgetDef[]): DashboardLayout | null {
 	if (!stored || typeof stored !== 'object') return null;
 	const raw = (stored as { entries?: unknown }).entries;
 	if (!Array.isArray(raw)) return null;
 	const known = new Set(registry.map((d) => d.id));
-	const isV3 = (e: unknown): e is WidgetLayoutEntry =>
+	const isCoordinate = (e: unknown): boolean =>
 		!!e &&
 		typeof (e as WidgetLayoutEntry).id === 'string' &&
 		known.has((e as WidgetLayoutEntry).id) &&
 		typeof (e as WidgetLayoutEntry).x === 'number' &&
 		typeof (e as WidgetLayoutEntry).y === 'number' &&
 		typeof (e as WidgetLayoutEntry).w === 'number' &&
-		typeof (e as WidgetLayoutEntry).h === 'number' &&
-		typeof (e as WidgetLayoutEntry).hidden === 'boolean';
+		typeof (e as WidgetLayoutEntry).h === 'number';
 	const isV2 = (e: unknown): boolean =>
 		!!e &&
 		typeof (e as { id?: unknown }).id === 'string' &&
 		known.has((e as { id: string }).id) &&
 		typeof (e as { colSpan?: unknown }).colSpan === 'number' &&
 		typeof (e as { rowSpan?: unknown }).rowSpan === 'number';
-	const entries = raw.filter((e) => isV3(e) || isV2(e));
+	const entries = raw.filter((e) => isCoordinate(e) || isV2(e));
 	if (entries.length === 0) return null;
 	const version = (stored as { version?: unknown }).version;
 	return { entries, ...(typeof version === 'number' ? { version } : {}) } as DashboardLayout;

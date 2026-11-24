@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { GripVertical, Eye, EyeOff, GripHorizontal } from 'lucide-svelte';
+	import { GripVertical, Trash2, GripHorizontal } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 	import { GRID_COLS, GRID_GAP_PX, MAX_ROW_SPAN, ROW_UNIT_PX } from './layout.ts';
 	import type { WidgetDef } from './widgets/registry.ts';
@@ -22,10 +22,12 @@
 	 */
 	interface Props {
 		def: WidgetDef;
-		hidden: boolean;
 		w: number;
 		h: number;
-		onToggleHidden: () => void;
+		/** DELETE (the placed-or-absent model): gone from the canvas and
+		 *  the stored layout; the picker offers it unselected again. No
+		 *  confirm — the owner call (Round D). */
+		onDelete: () => void;
 		/** Absolute target w/h from a resize drag or Shift+Alt+arrows —
 		 *  applied live (no persist); the release persists once. */
 		onSpanTarget: (w: number, h: number) => void;
@@ -45,10 +47,9 @@
 
 	let {
 		def,
-		hidden,
 		w,
 		h,
-		onToggleHidden,
+		onDelete,
 		onSpanTarget,
 		onSpanCommit,
 		onNudge,
@@ -318,61 +319,52 @@
 			{/if}
 			<button
 				type="button"
-				onclick={onToggleHidden}
-				aria-pressed={!hidden}
-				aria-label={hidden ? `Pin ${def.title}` : `Unpin ${def.title}`}
-				title={hidden ? 'Pin to dashboard' : 'Unpin (moves to the tray)'}
-				class="rounded p-1 text-muted-foreground/50 transition-colors hover:text-foreground"
+				onclick={onDelete}
+				aria-label={`Delete ${def.title} from the dashboard`}
+				title="Delete from the dashboard (re-add from the Add Widget panel)"
+				class="rounded p-1 text-muted-foreground/50 transition-colors hover:text-danger"
 			>
-				{#if hidden}
-					<Eye class="size-3.5" />
-				{:else}
-					<EyeOff class="size-3.5" />
-				{/if}
+				<Trash2 class="size-3.5" />
 			</button>
 		</div>
 	</header>
-	{#if !hidden}
-		<!-- the body fills the card's remaining height; content that
-		     outgrows the span scrolls INSIDE (the fixed-row model) -->
-		<div class="min-h-0 min-w-0 flex-1 overflow-y-auto">{@render children()}</div>
-	{/if}
-	{#if !hidden}
-		<!-- the resize zones (the Grafana custom-grid feel): the right
+	<!-- the body fills the card's remaining height; content that
+	     outgrows the span scrolls INSIDE (the fixed-row model) -->
+	<div class="min-h-0 min-w-0 flex-1 overflow-y-auto">{@render children()}</div>
+	<!-- the resize zones (the Grafana custom-grid feel): the right
 		     edge = width only, the bottom edge = height only, the corner =
 		     both (last in DOM so it wins the overlap). touch-none keeps a
 		     touch drag from scrolling the page instead. -->
-		<div
-			class="absolute top-4 -right-1 bottom-4 z-10 w-2 cursor-ew-resize touch-none"
-			role="separator"
-			aria-label="Resize {def.title} width — drag, or Shift+Alt+arrows"
-			onpointerdown={(e) => resizeStart(e, 'e')}
-			onpointermove={resizeMove}
-			onpointerup={resizeEnd}
-			onpointercancel={resizeEnd}
-			ondragstart={killDrag}
-		></div>
-		<div
-			class="absolute right-4 -bottom-1 left-4 z-10 h-2 cursor-ns-resize touch-none"
-			role="separator"
-			aria-label="Resize {def.title} height — drag, or Shift+Alt+arrows"
-			onpointerdown={(e) => resizeStart(e, 's')}
-			onpointermove={resizeMove}
-			onpointerup={resizeEnd}
-			onpointercancel={resizeEnd}
-			ondragstart={killDrag}
-		></div>
-		<div
-			class="absolute right-0 bottom-0 z-10 cursor-nwse-resize touch-none p-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100"
-			role="separator"
-			aria-label="Resize {def.title} — drag the corner, or Shift+Alt+arrows"
-			onpointerdown={(e) => resizeStart(e, 'corner')}
-			onpointermove={resizeMove}
-			onpointerup={resizeEnd}
-			onpointercancel={resizeEnd}
-			ondragstart={killDrag}
-		>
-			<GripHorizontal class="size-3 text-muted-foreground/60" aria-hidden="true" />
-		</div>
-	{/if}
+	<div
+		class="absolute top-4 -right-1 bottom-4 z-10 w-2 cursor-ew-resize touch-none"
+		role="separator"
+		aria-label="Resize {def.title} width — drag, or Shift+Alt+arrows"
+		onpointerdown={(e) => resizeStart(e, 'e')}
+		onpointermove={resizeMove}
+		onpointerup={resizeEnd}
+		onpointercancel={resizeEnd}
+		ondragstart={killDrag}
+	></div>
+	<div
+		class="absolute right-4 -bottom-1 left-4 z-10 h-2 cursor-ns-resize touch-none"
+		role="separator"
+		aria-label="Resize {def.title} height — drag, or Shift+Alt+arrows"
+		onpointerdown={(e) => resizeStart(e, 's')}
+		onpointermove={resizeMove}
+		onpointerup={resizeEnd}
+		onpointercancel={resizeEnd}
+		ondragstart={killDrag}
+	></div>
+	<div
+		class="absolute right-0 bottom-0 z-10 cursor-nwse-resize touch-none p-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100"
+		role="separator"
+		aria-label="Resize {def.title} — drag the corner, or Shift+Alt+arrows"
+		onpointerdown={(e) => resizeStart(e, 'corner')}
+		onpointermove={resizeMove}
+		onpointerup={resizeEnd}
+		onpointercancel={resizeEnd}
+		ondragstart={killDrag}
+	>
+		<GripHorizontal class="size-3 text-muted-foreground/60" aria-hidden="true" />
+	</div>
 </article>

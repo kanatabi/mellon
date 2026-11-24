@@ -4,6 +4,7 @@ import {
 	clampEntry,
 	collides,
 	compact,
+	firstFit,
 	GRID_COLS,
 	GRID_GAP_PX,
 	columnLeftPx,
@@ -50,8 +51,7 @@ const at = (id: string, x: number, y: number, w = 6, h = 6): WidgetLayoutEntry =
 	x,
 	y,
 	w,
-	h,
-	hidden: false
+	h
 });
 
 describe('collides', () => {
@@ -64,7 +64,7 @@ describe('collides', () => {
 
 describe('clampEntry', () => {
 	it('respects the widget minimum, the canvas width and the row ceiling', () => {
-		const clamped = clampEntry(defOf('a'), { id: 'a', x: 99, y: -5, w: 99, h: 0, hidden: false });
+		const clamped = clampEntry(defOf('a'), { id: 'a', x: 99, y: -5, w: 99, h: 0 });
 		expect(clamped.w).toBe(GRID_COLS); // the canvas ceiling
 		expect(clamped.h).toBe(2); // the widget minimum
 		expect(clamped.x).toBe(0); // a full-width widget starts at 0
@@ -72,7 +72,7 @@ describe('clampEntry', () => {
 	});
 
 	it('x can never push the widget past the right edge', () => {
-		expect(clampEntry(defOf('a'), { id: 'a', x: 20, y: 0, w: 6, h: 6, hidden: false }).x).toBe(18);
+		expect(clampEntry(defOf('a'), { id: 'a', x: 20, y: 0, w: 6, h: 6 }).x).toBe(18);
 	});
 });
 
@@ -132,19 +132,31 @@ describe('nudgeEntry (keyboard)', () => {
 	});
 });
 
-describe('reconcileLayout (v3)', () => {
-	it('appends registry widgets at the first free slot under everything', () => {
-		const out = reconcileLayout({ version: 3, entries: [at('a', 0, 0)] }, defs);
-		const b = out.find((e) => e.id === 'b')!;
-		expect(b.y).toBe(6); // below a, bottom-left
+describe("firstFit (the picker's add verb)", () => {
+	it('fills the FIRST free slot — the hole between two widgets fits first', () => {
+		const canvas = [at('a', 0, 0), at('b', 12, 0)];
+		// cells 6-11 sit between two 6-wide widgets — a free 6-wide hole
+		expect(firstFit(canvas, 6, 6)).toEqual({ x: 6, y: 0 });
+	});
+
+	it('lands bottom-left when the canvas is full', () => {
+		const canvas = [at('a', 0, 0, 24, 4)];
+		expect(firstFit(canvas, 6, 6)).toEqual({ x: 0, y: 4 });
+	});
+});
+
+describe('reconcileLayout (v4 — placed-or-absent)', () => {
+	it('does NOT append unplaced registry widgets — deleted stays deleted', () => {
+		const out = reconcileLayout({ version: 4, entries: [at('a', 0, 0)] }, defs);
+		expect(out.map((e) => e.id)).toEqual(['a']); // b is the picker's to add
 	});
 
 	it('drops unknown ids and clamps positions', () => {
 		const out = reconcileLayout(
-			{ version: 3, entries: [at('a', 20, 0), at('ghost', 0, 0, 6, 6)] },
+			{ version: 4, entries: [at('a', 20, 0), at('ghost', 0, 0, 6, 6)] },
 			defs
 		);
-		expect(out.map((e) => e.id)).toEqual(['a', 'b']);
+		expect(out.map((e) => e.id)).toEqual(['a']);
 		expect(out[0].x).toBe(18);
 	});
 });
@@ -158,7 +170,7 @@ describe('migrateLayout (the v2 order model → coordinates)', () => {
 			]
 		};
 		const migrated = migrateLayout(v2 as never)!;
-		expect(migrated.version).toBe(3);
+		expect(migrated.version).toBe(4);
 		expect(migrated.entries).toEqual([at('a', 0, 0, 12, 6), at('b', 12, 0, 12, 6)]);
 	});
 
@@ -173,11 +185,25 @@ describe('migrateLayout (the v2 order model → coordinates)', () => {
 		expect(migrated.entries.map((e) => e.y)).toEqual([0, 4]);
 	});
 
-	it('a v3 payload passes through untouched; a lying stamp migrates by shape', () => {
-		const v3 = { version: 3, entries: [at('a', 2, 2)] };
-		expect(migrateLayout(v3)).toEqual(v3);
-		const lying = { version: 3, entries: [{ id: 'a', colSpan: 6, rowSpan: 6, hidden: false }] };
+	it('a v4 payload passes through untouched; a lying stamp migrates by shape', () => {
+		const v4 = { version: 4, entries: [at('a', 2, 2)] };
+		expect(migrateLayout(v4)).toEqual(v4);
+		const lying = { version: 4, entries: [{ id: 'a', colSpan: 6, rowSpan: 6, hidden: false }] };
 		expect(migrateLayout(lying as never)!.entries[0]).toHaveProperty('x', 0);
+	});
+
+	it('v3 unpinned entries DELETE in the v4 migration; pinned keep their spot', () => {
+		const v3 = {
+			version: 3,
+			entries: [
+				{ id: 'a', x: 0, y: 0, w: 12, h: 6, hidden: false },
+				{ id: 'b', x: 12, y: 0, w: 12, h: 6, hidden: true }
+			]
+		};
+		const migrated = migrateLayout(v3 as never)!;
+		expect(migrated.version).toBe(4);
+		expect(migrated.entries.map((e) => e.id)).toEqual(['a']); // b deleted
+		expect(migrated.entries[0]).not.toHaveProperty('hidden');
 	});
 
 	it('null stays null', () => {
@@ -186,9 +212,9 @@ describe('migrateLayout (the v2 order model → coordinates)', () => {
 });
 
 describe('sanitizeLayout', () => {
-	it('accepts v3 coordinates and the v2 order shape (the migration reads it)', () => {
-		const v3 = sanitizeLayout({ version: 3, entries: [at('a', 0, 0)] }, defs);
-		expect(v3?.entries).toHaveLength(1);
+	it('accepts v4/v3 coordinates and the v2 order shape (the migration reads it)', () => {
+		const v4 = sanitizeLayout({ version: 4, entries: [at('a', 0, 0)] }, defs);
+		expect(v4?.entries).toHaveLength(1);
 		const v2 = sanitizeLayout(
 			{ entries: [{ id: 'a', colSpan: 6, rowSpan: 6, hidden: false }] },
 			defs
@@ -199,9 +225,7 @@ describe('sanitizeLayout', () => {
 	it('rejects garbage, filters unknown ids, nulls out when nothing survives', () => {
 		expect(sanitizeLayout(null, defs)).toBeNull();
 		expect(sanitizeLayout('x', defs)).toBeNull();
-		expect(
-			sanitizeLayout({ entries: [{ id: 'ghost', x: 0, y: 0, w: 1, h: 1, hidden: false }] }, defs)
-		).toBeNull();
+		expect(sanitizeLayout({ entries: [{ id: 'ghost', x: 0, y: 0, w: 1, h: 1 }] }, defs)).toBeNull();
 	});
 });
 

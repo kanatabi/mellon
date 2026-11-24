@@ -8,6 +8,8 @@
 import { WIDGETS, type WidgetDef as WidgetDefT } from './widgets/registry.ts';
 import {
 	clampEntry,
+	compact,
+	firstFit,
 	LAYOUT_VERSION,
 	migrateLayout,
 	nudgeEntry,
@@ -73,24 +75,47 @@ export class DashboardLayoutStore {
 
 	/** Per-user init: reconcile the stored layout against the registry and
 	 *  clamp every placement (the drift pin — lumen's truth over the
-	 *  browser). Runs ONCE per username: the page's $effect re-fires on
+	 *  browser). FIRST-RUN SEED (the owner call, Round D): no stored
+	 *  payload at all means a brand-new user — every registry widget
+	 *  their scopes allow lands at its default span; ANY existing
+	 *  payload (even an empty canvas — the picker model) is respected
+	 *  literally. Runs ONCE per username: the page's $effect re-fires on
 	 *  every hydration/navigation, and an effect that both writes AND
 	 *  reads `entries` self-triggers to depth-exceeded — so this method
 	 *  never reads `this.entries` (the save captures the local) and
 	 *  no-ops when the user is already loaded. */
 	private loadedKey = '';
 
-	init(username: string, registry: WidgetDefT[]) {
+	init(username: string, registry: WidgetDefT[], held: (scope?: string) => boolean = () => true) {
 		if (typeof window === 'undefined') return;
 		const key = `mellon.dashboard.${username}`;
 		if (key === this.loadedKey) return;
 		this.loadedKey = key;
 		this.key = key;
-		const stored = migrateLayout(sanitizeLayout(this.storage.load(key), registry));
-		const next = reconcileLayout(stored, registry).map((e) => {
+		const raw = this.storage.load(key);
+		const stored = migrateLayout(sanitizeLayout(raw, registry));
+		let next = reconcileLayout(stored, registry).map((e) => {
 			const def = registry.find((d) => d.id === e.id)!;
 			return clampEntry(def, e);
 		});
+		if (raw === null) {
+			// first run ever for this user: seed the scope-held defaults
+			next = [];
+			for (const def of registry) {
+				if (!held(def.scope)) continue;
+				const slot = firstFit(next, def.defaultSpan.col, def.defaultSpan.row);
+				next.push(
+					clampEntry(def, {
+						id: def.id,
+						x: slot.x,
+						y: slot.y,
+						w: def.defaultSpan.col,
+						h: def.defaultSpan.row
+					})
+				);
+			}
+			next = compact(next);
+		}
 		this.entries = next;
 		this.storage.save(key, { entries: next, version: LAYOUT_VERSION });
 	}
@@ -100,12 +125,50 @@ export class DashboardLayoutStore {
 			this.storage.save(this.key, { entries: this.entries, version: LAYOUT_VERSION });
 	}
 
-	visible = () => this.entries.filter((e) => !e.hidden);
+	visible = () => this.entries;
 
-	isHidden = (id: string) => this.entries.find((e) => e.id === id)?.hidden ?? false;
+	/** ADD (the picker's verb): place a registry widget at the first
+	 *  free slot with its default span. Already placed = no-op. */
+	add = (id: string, registry: WidgetDefT[]) => {
+		const def = registry.find((d) => d.id === id);
+		if (!def || this.entries.some((e) => e.id === id)) return false;
+		const slot = firstFit(this.entries, def.defaultSpan.col, def.defaultSpan.row);
+		this.entries = [
+			...this.entries,
+			clampEntry(def, { id, x: slot.x, y: slot.y, w: def.defaultSpan.col, h: def.defaultSpan.row })
+		];
+		this.persist();
+		return true;
+	};
 
-	toggleHidden = (id: string) => {
-		this.entries = this.entries.map((e) => (e.id === id ? { ...e, hidden: !e.hidden } : e));
+	/** ADD MANY: selection order = placement order; persists once. */
+	addMany = (ids: string[], registry: WidgetDefT[]) => {
+		let added = false;
+		for (const id of ids) {
+			const def = registry.find((d) => d.id === id);
+			if (!def || this.entries.some((e) => e.id === id)) continue;
+			const slot = firstFit(this.entries, def.defaultSpan.col, def.defaultSpan.row);
+			this.entries = [
+				...this.entries,
+				clampEntry(def, {
+					id,
+					x: slot.x,
+					y: slot.y,
+					w: def.defaultSpan.col,
+					h: def.defaultSpan.row
+				})
+			];
+			added = true;
+		}
+		if (added) this.persist();
+	};
+
+	/** DELETE (the placed-or-absent model): gone from the canvas AND the
+	 *  stored layout — the picker shows it unselected; re-adding gives
+	 *  the default span at a free slot (the old position is not kept). */
+	delete = (id: string) => {
+		if (!this.entries.some((e) => e.id === id)) return;
+		this.entries = this.entries.filter((e) => e.id !== id);
 		this.persist();
 	};
 
