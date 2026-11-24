@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import type { Principal } from '#lib/api/types.ts';
 
 /**
  * Session plumbing. REAL sessions are minted by lumen (Phase B) — in mock mode
@@ -62,4 +63,17 @@ export function writeVimCookie(on: boolean): void {
 	document.cookie = on
 		? 'mellon_vim=1; path=/; max-age=31536000; samesite=strict'
 		: 'mellon_vim=; path=/; max-age=0; samesite=strict';
+}
+
+/**
+ * The COURTESY gate (the RBAC spine, 2026-11-24): the section's page
+ * server redirects a scope-less principal to their landing page. This is
+ * affordance, NOT enforcement — lumen 403s the API underneath regardless
+ * ("the relay forwards; it never decides" — the honest order of those
+ * two). Server-only: reads the bearer through whoami's fresh row read.
+ */
+export function requireScope(principal: Principal, scope: string, url: URL): void {
+	if (!(principal.scopes?.includes(scope) ?? false)) {
+		redirect(307, '/');
+	}
 }

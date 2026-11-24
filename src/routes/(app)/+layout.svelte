@@ -106,8 +106,11 @@
 			}
 		}),
 		// Context first: the page's verbs (editor save/publish/…) sort into the
-		// 'actions' group, ranked above navigation by the palette order.
-		...pageCommands(),
+		// 'actions' group, ranked above navigation by the palette order. The
+		// rows arrive from the ACTIVE PAGE — a page the principal cannot open
+		// never mounts, so it never contributes rows (the rail's scope map is
+		// the single filter).
+		...(pageCommands() || []),
 		...recentCommands(data.recent)
 	]);
 
@@ -147,9 +150,15 @@
 	// 403 regardless; hiding a door that answers 403 is courtesy). Settings is
 	// NOT a destination group: it lives in the footer with the identity it
 	// edits — the account menu, since S2.8.
-	const navGroups = $derived([
+	// the nav is SCOPE-AWARE (the RBAC spine): each destination declares
+	// its requirement; the rail renders only what the principal holds, and
+	// a group that ends up empty collapses away entirely. The same map
+	// backs the courtesy gates in each section's page server — one truth,
+	// two consumers (the rail + the palette read the same declared table).
+	const SCOPED_NAV = [
 		{
 			label: 'Content',
+			scope: 'content:manage' as const,
 			items: [
 				{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' },
 				{ href: '/posts', icon: FileText, label: 'Posts', hue: 'var(--accent-blue)' },
@@ -159,6 +168,7 @@
 		},
 		{
 			label: 'Control plane',
+			scope: 'secrets:admin' as const,
 			items: [
 				{ href: '/configs', icon: LayoutGrid, label: 'Configs', hue: 'var(--accent-amber)' },
 				{ href: '/configs/vault', icon: KeyRound, label: 'Vault', hue: 'var(--accent-amber)' },
@@ -169,8 +179,12 @@
 					hue: 'var(--accent-amber)'
 				}
 			]
-		},
-		...(data.principal?.scopes?.includes('users:manage')
+		}
+	];
+	const held = (scope: string) => data.principal?.scopes?.includes(scope) ?? false; // degradation rule: quiet, never 500
+	const navGroups = $derived([
+		...SCOPED_NAV.filter((g) => held(g.scope)),
+		...(held('users:manage')
 			? [
 					{
 						label: 'Admin',

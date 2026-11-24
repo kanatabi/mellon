@@ -1,5 +1,5 @@
 import { createApi } from '#lib/api/index.ts';
-import { requireAuthed, SESSION_COOKIE } from '#lib/session.ts';
+import { requireAuthed, requireScope, SESSION_COOKIE } from '#lib/session.ts';
 import type { PageServerLoad } from './$types';
 
 /** 25 rows per page — display trim in browse mode, the engine's page size
@@ -10,6 +10,10 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	// the cheap gate first: a dead session never dials lumen (the
 	// layout's redirect runs in parallel and cannot stop these fetches)
 	requireAuthed(cookies.get(SESSION_COOKIE), url);
+	// the COURTESY gate (the RBAC spine): the nav hides what the principal
+	// cannot open; a bookmarked URL lands on the dashboard instead. lumen
+	// 403s the API underneath regardless — affordance, not enforcement.
+	requireScope(await createApi(cookies.get(SESSION_COOKIE) ?? '').whoami(), 'content:manage', url);
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const q = (url.searchParams.get('q') ?? '').trim();
 	const page = Math.max(1, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1);
