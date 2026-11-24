@@ -13,6 +13,12 @@ Read [`DESIGN.md`](DESIGN.md) first — the doctrine section is
 load-bearing (UI-only, no credentials, relay-forwards-never-decides). The
 working guide for agents is [AGENTS.md](AGENTS.md).
 
+The landing view (`/`) is the **widget home** — a per-user customizable
+canvas (the Grafana custom-grid model). Adding a widget = one folder +
+one registry line: the walkthrough is the omicron runbook's
+[ch. 15](https://github.com/kanatabi/omicron/blob/main/runbook/15-portal-widgets.md),
+the contract is [`DESIGN.md`](DESIGN.md) §11.4.
+
 ## When code lands
 
 Mirror earendil's conventions: SvelteKit 3 + Svelte 5 runes + TS + Tailwind v4 +

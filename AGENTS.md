@@ -44,6 +44,9 @@ workspace-wide non-negotiables.
 4. `lumen/DESIGN.md` §8/§9 — the wire contract this repo mirrors (its own AGENTS.md
    too).
 5. `README.md` is user-facing (routes, how to run).
+6. **The widget home** (`src/lib/dashboard/`): `widgets/registry.ts` is the
+   plugin seam — adding a widget = one folder + one registry line
+   (omicron runbook ch. 15 walks it; DESIGN §11.4 holds the contract).
 
 ## 3. Commands
 

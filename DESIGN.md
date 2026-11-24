@@ -157,7 +157,7 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 | route                | content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/login`             | single-user session start                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `/` (dashboard)      | recent posts (opens-recent lives here too), publish queue, quick actions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/` (dashboard)      | **the widget home** — a per-user customizable coordinate canvas (24 cols × 44px rows, the Grafana custom-grid model): widgets from the registry (`§11.4` "The widget home") placed freely by header-drag, resized by edge grips, keyboard parity, per-user layout behind a storage seam; its server load dials NO scoped API — bodies fetch client-side and only mount for scope-holders                                                                                                                                                                                                                                                                                        |
 | `/posts`             | list (status pills, roving-tabindex rows, `n` = new) + engine search bar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/posts/[slug]`      | editor + preview (split or toggle), save/publish (`Ctrl+Enter`); **streamed load** — the click renders the editor-shaped skeleton immediately, PostEditor mounts when the data lands (the recent-cookie write moved client-side with it); local autosave (the pending buffer, staleness bound `EDITOR_AUTOSAVE_SECONDS`, default 60s, the pill states it: `Unsaved` → `Autosaved locally · HH:MM`) + the save-confirm gate (uniform dialog: the changed attributes as a LIST → `Check diff` / `Save directly`) + the restore banner (recovered unsaved changes); the preview pane skeletons on its FIRST render only — live edits keep the stale render until the new one lands |
 | `/posts/[slug]/diff` | the pending-change review: head (fresh from the server) vs the autosave buffer — tabs **Markdown** (two TEXT PANES, whole file by default, changed lines BLOCK-highlighted `bg-diff-*`; `Changed only` collapses to regions + gap bands) and **Metadata** (the vault's table view: status chips, `Hide unchanged` toggle, body excluded — it once rendered the whole document twice); the action bar is uniform-sized, ordered toggle → Discard (danger red) → Save; a rev mismatch renders the conflict notice (Save anyway / Discard mine — hunk-level parked), and the page saves or discards; create mode has no diff door (nothing saved to diff against)                  |
@@ -530,6 +530,48 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   ThemeForest preview, it is wrong.
 
 ### 11.4 Per-view anatomy
+
+- **The widget home (`/`)** — the user's landing view and the app-center
+  direction's first surface (owner call 2026-11-24, the widget rounds A→C):
+
+  - **The coordinate canvas**: every widget carries
+    `{ id, x, y, w, h, hidden }` on a 24-column canvas of fixed 44px
+    rows — the Grafana classic schema. Left/width are canvas
+    percentages with the gutter in the geometry (cell pitch =
+    `(canvasWidth + 16px) / 24`, each widget one gap narrower —
+    adjacent widgets keep exactly one 16px gap); top/height are px.
+    The canvas grows with its deepest panel; **holes stay holes** — a
+    pure engine (collision, vertical-gravity compaction, drop
+    resolution) keeps the canvas sane without ever packing away a gap
+    someone placed deliberately. Below `md` the canvas stacks.
+  - **The plugin seam**: `src/lib/dashboard/widgets/registry.ts` is the
+    ONLY thing the canvas/card/tray/store/persistence read. A `WidgetDef`
+    is `{ id, title, description, href?, scope?, defaultSpan, minSpan,
+body }` — **adding a widget = one folder + one registry line**
+    (the walkthrough lives in the omicron runbook, ch. 15). `id` is
+    forever (it keys the persisted layout); `scope` gates the MOUNT —
+    an unheld scope means the body never mounts and its calls never
+    fire (lumen's truth over the browser's memory); spans are
+    col = 1/24 canvas, row = 44px units.
+  - **The body contract**: self-contained — fetches its own data
+    through the relay client, renders its own loading/error/empty
+    states, never touches the layout store; content that outgrows the
+    card scrolls inside. The `/` server load dials **no** scoped API —
+    that rule is what keeps a scope-less user's home a quiet empty
+    state instead of a 403→500 cliff.
+  - **The gestures**: drag = the card header (pointer machine, 4px
+    click threshold — HTML5 DnD is retired; one gesture system); other
+    widgets glide out of the way live via the resolved shadow layout;
+    the blue placeholder marks the landing cell; Escape cancels.
+    Resize = the right edge (width), the bottom edge (height), the
+    corner (both) — the card floats pixel-continuously from its own
+    pixel size, the preview clamps to the same bounds the commit
+    enforces, the release applies + persists once. Keyboard parity:
+    Alt+arrows nudge by whole cells, Shift+Alt+arrows resize.
+  - **Persistence**: per-user (`mellon.dashboard.<username>`) behind a
+    `DashboardLayoutStorage` seam — localStorage today, a server-side
+    per-user table is the recorded second implementation (schema
+    version 3; older layouts migrate by simulating the old flow).
 
 - **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
   on row focus** — the AGENTS §10.5 lesson, restated for keyboards: _"no mouse-only
