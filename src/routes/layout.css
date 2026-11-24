@@ -651,35 +651,27 @@
 		2px 2px;
 }
 
-/* The dashboard widget grid (the widget-home round): spans ride the --cs
-   variable per entry, adapted per breakpoint — 12 cols at md (span --cs),
-   24 at xl (span --cs×2, the finer stepping — the ×2 doubling rule kept
-   from the 6/12 shape); mobile stacks full width. The container is
-   relative: the resize placeholder is absolutely positioned over the
-   tracks. */
+/* The dashboard canvas (the coordinate-model round): entries place
+   ABSOLUTELY at {x, y, w, h} — left/width are canvas percentages
+   (responsive at any breakpoint), top/height the fixed 44px rows, all
+   inline from the store. The canvas height is inline too (its deepest
+   panel). Below md the canvas stacks instead of placing absolutely. */
 [data-dashboard-grid] {
 	position: relative;
-	/* FIXED row tracks (the Grafana model): resize math needs a constant
-	   row unit — content that outgrows its span scrolls INSIDE the card */
-	grid-auto-rows: 44px;
 }
 
-[data-widget-entry] {
-	grid-column: 1 / -1;
-	height: 100%;
-}
-
-[data-widget-entry] > [data-widget-card] {
-	height: 100%;
-}
-@media (min-width: 768px) {
-	[data-widget-entry] {
-		grid-column: span min(var(--cs, 1), 12);
+/* Below md: stack the widgets in the stored order — free placement is
+   a pointer/keyboard affordance for real viewports. */
+@media (max-width: 767px) {
+	[data-dashboard-grid] {
+		height: auto !important;
 	}
-}
-@media (min-width: 1280px) {
 	[data-widget-entry] {
-		grid-column: span min(calc(var(--cs, 1) * 2), 24);
+		position: static !important;
+		left: auto;
+		top: auto;
+		width: 100% !important;
+		margin-bottom: 16px;
 	}
 }
 

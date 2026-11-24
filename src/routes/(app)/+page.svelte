@@ -53,12 +53,14 @@
 	{:else}
 		<DashboardGrid
 			registry={WIDGETS}
-			entries={dashboardLayout.entries}
+			entries={dashboardLayout.view}
 			{held}
-			onPlace={(dragId, beforeId) => dashboardLayout.place(dragId, beforeId)}
 			onToggleHidden={(id) => dashboardLayout.toggleHidden(id)}
-			onMove={(id, dir) => dashboardLayout.move(id, dir)}
-			onSpanApply={(id, colSpan, rowSpan) => dashboardLayout.setSpan(id, colSpan, rowSpan, WIDGETS)}
+			onNudge={(id, dx, dy) => dashboardLayout.nudge(id, dx, dy, WIDGETS)}
+			onSpanApply={(id, w, h) => dashboardLayout.setSpan(id, w, h, WIDGETS)}
+			onDragMove={(id, x, y) => dashboardLayout.previewPosition(id, x, y, WIDGETS)}
+			onDragEnd={(id, x, y) => dashboardLayout.setPosition(id, x, y, WIDGETS)}
+			onDragCancel={() => dashboardLayout.clearPreview()}
 		/>
 
 		{#if unhiddenAvailable.length || unplaced.length}
@@ -81,7 +83,7 @@
 	{/if}
 
 	<p class="font-mono text-[10px] text-muted-foreground/70">
-		⌘K opens the command palette from anywhere · drag widgets to rearrange — Alt+arrows on a focused
+		⌘K opens the command palette from anywhere · drag the header to place · Alt+arrows on a focused
 		card
 	</p>
 </section>

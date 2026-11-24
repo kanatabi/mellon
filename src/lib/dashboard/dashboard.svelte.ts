@@ -1,18 +1,18 @@
 /**
  * The dashboard layout store — the RUNES layer over the pure semantics
- * (`layout.ts`, the pane-order.ts pattern) and the STORAGE SEAM (the spine
+ * (`layout.ts`, the coordinate model) and the STORAGE SEAM (the spine
  * ruling: localStorage now, a server impl swaps in without touching the
  * grid/registry/components). Per-USER arrangement: the key carries the
  * username, so family members on one browser each get their own home.
  */
 import { WIDGETS, type WidgetDef as WidgetDefT } from './widgets/registry.ts';
 import {
-	clampSpan,
+	clampEntry,
 	LAYOUT_VERSION,
 	migrateLayout,
-	moveEntry,
-	placeEntry,
+	nudgeEntry,
 	reconcileLayout,
+	resolveDrop,
 	sanitizeLayout,
 	type DashboardLayout,
 	type WidgetLayoutEntry
@@ -48,6 +48,23 @@ export class DashboardLayoutStore {
 	private storage: DashboardLayoutStorage;
 	private key = 'mellon.dashboard';
 
+	/** The live drag preview: the widget being swept and its target cell.
+	 *  While set, `view` renders the RESOLVED shadow layout — other
+	 *  widgets glide out of the way through their position transitions —
+	 *  and nothing persists until the release. */
+	private dragPreview = $state<{ id: string; x: number; y: number } | null>(null);
+
+	/** What the canvas renders: the real entries, or the shadow layout of
+	 *  an in-flight drag. */
+	view = $derived.by(() => {
+		const p = this.dragPreview;
+		if (!p) return this.entries;
+		const e = this.entries.find((x) => x.id === p.id);
+		const def = WIDGETS.find((d) => d.id === p.id);
+		if (!e || !def) return this.entries;
+		return resolveDrop(this.entries, clampEntry(def, { ...e, x: p.x, y: p.y }));
+	});
+
 	constructor(registry: WidgetDefT[], storage: DashboardLayoutStorage) {
 		this.storage = storage;
 		// the registry-validated seed: stored layout reconciled, or defaults
@@ -55,12 +72,12 @@ export class DashboardLayoutStore {
 	}
 
 	/** Per-user init: reconcile the stored layout against the registry and
-	 *  clamp every span (the drift pin — lumen's truth over the browser).
-	 *  Runs ONCE per username: the page's $effect re-fires on every
-	 *  hydration/navigation, and an effect that both writes AND reads
-	 *  `entries` self-triggers to depth-exceeded — so this method never
-	 *  reads `this.entries` (the save captures the local) and no-ops when
-	 *  the user is already loaded. */
+	 *  clamp every placement (the drift pin — lumen's truth over the
+	 *  browser). Runs ONCE per username: the page's $effect re-fires on
+	 *  every hydration/navigation, and an effect that both writes AND
+	 *  reads `entries` self-triggers to depth-exceeded — so this method
+	 *  never reads `this.entries` (the save captures the local) and
+	 *  no-ops when the user is already loaded. */
 	private loadedKey = '';
 
 	init(username: string, registry: WidgetDefT[]) {
@@ -72,7 +89,7 @@ export class DashboardLayoutStore {
 		const stored = migrateLayout(sanitizeLayout(this.storage.load(key), registry));
 		const next = reconcileLayout(stored, registry).map((e) => {
 			const def = registry.find((d) => d.id === e.id)!;
-			return { ...e, ...clampSpan(def, e.colSpan, e.rowSpan) };
+			return clampEntry(def, e);
 		});
 		this.entries = next;
 		this.storage.save(key, { entries: next, version: LAYOUT_VERSION });
@@ -92,31 +109,47 @@ export class DashboardLayoutStore {
 		this.persist();
 	};
 
-	/** the resize verb (the spine's free spans, clamped to min + grid).
-	 *  `persist` = false during a grip DRAG (the live preview); the release
-	 *  calls persist() once. */
-	setSpan = (
-		id: string,
-		colSpan: number,
-		rowSpan: number,
-		registry: WidgetDefT[],
-		persist = true
-	) => {
+	/** The resize verb: set w/h on ONE widget (x/y unchanged). `persist` =
+	 *  false during a grip DRAG (the live preview); the release persists
+	 *  once. A resize into neighbors resolves like a drop (they yield). */
+	setSpan = (id: string, w: number, h: number, registry: WidgetDefT[], persist = true) => {
 		const def = registry.find((d) => d.id === id);
 		if (!def) return;
-		this.entries = this.entries.map((e) =>
-			e.id === id ? { ...e, ...clampSpan(def, colSpan, rowSpan) } : e
-		);
+		const entry = this.entries.find((e) => e.id === id);
+		if (!entry) return;
+		const resized = clampEntry(def, { ...entry, w, h });
+		this.entries = resolveDrop(this.entries, resized);
 		if (persist) this.persist();
 	};
 
-	place = (dragId: string, beforeId: string | null) => {
-		this.entries = placeEntry(this.entries, dragId, beforeId);
+	/** Free placement: put a widget at an absolute cell (the C2 drag's
+	 *  landing; keyboard nudges route through `nudge`). */
+	setPosition = (id: string, x: number, y: number, registry: WidgetDefT[]) => {
+		const def = registry.find((d) => d.id === id);
+		const entry = this.entries.find((e) => e.id === id);
+		if (!def || !entry) return;
+		this.entries = resolveDrop(this.entries, clampEntry(def, { ...entry, x, y }));
+		this.dragPreview = null;
 		this.persist();
 	};
 
-	move = (dragId: string, dir: -1 | 1) => {
-		this.entries = moveEntry(this.entries, dragId, dir);
+	/** The in-flight drag: preview the target cell (no persist). */
+	previewPosition = (id: string, x: number, y: number, registry: WidgetDefT[]) => {
+		const def = registry.find((d) => d.id === id);
+		const entry = this.entries.find((e) => e.id === id);
+		if (!def || !entry) return;
+		const clamped = clampEntry(def, { ...entry, x, y });
+		this.dragPreview = { id, x: clamped.x, y: clamped.y };
+	};
+
+	/** The drag died without a landing (cancel). */
+	clearPreview = () => {
+		this.dragPreview = null;
+	};
+
+	/** Keyboard nudge: whole cells, clamped, collision-resolved. */
+	nudge = (id: string, dx: number, dy: number, registry: WidgetDefT[]) => {
+		this.entries = nudgeEntry(this.entries, id, dx, dy, registry);
 		this.persist();
 	};
 

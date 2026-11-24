@@ -1,41 +1,43 @@
 <script lang="ts">
 	import { GripVertical, Eye, EyeOff, GripHorizontal } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
-	import { GRID_COLS, GRID_GAP_PX, MAX_ROW_SPAN } from './layout.ts';
+	import { GRID_COLS, GRID_GAP_PX, MAX_ROW_SPAN, ROW_UNIT_PX } from './layout.ts';
 	import type { WidgetDef } from './widgets/registry.ts';
 
 	/**
 	 * The widget card — the shared SHELL of the dashboard home: title,
-	 * drag handle, pin/unpin, and the RESIZE machine (corner grip +
-	 * right/bottom edge zones — the Grafana "custom grid" feel).
+	 * pin/unpin, and the RESIZE machine (corner grip + right/bottom edge
+	 * zones — the Grafana "custom grid" feel).
 	 *
-	 * THE GESTURE SPLIT (the 2026-11-24 hijack lesson): the article is
-	 * the REORDER drag source (HTML5 DnD — the grid's machine), so the
-	 * resize zones are DRAG-IMMUNE by three layers: draggable="false"
-	 * keeps them from seeding a native drag, the pointerdown
-	 * preventDefault kills the compat mousedown that seeds one, and the
-	 * dragstart trap (stopPropagation + preventDefault) is the
-	 * belt-and-braces — no grip gesture can ever enter the reorder
-	 * machine.
+	 * THE RESIZE GESTURE: the card FLOATS pixel-continuously while
+	 * dragging (inline size following the pointer), the grid holds the
+	 * provisional span and renders the blue placeholder; the release
+	 * applies + persists once. The float is clamped by the widget's
+	 * minimum AND the canvas's true right edge — measured from the grid
+	 * ancestor, never derived from constants (the breakpoint bug).
 	 *
-	 * onSpanTarget carries ABSOLUTE spans, not deltas: the pointer drag
-	 * computes them from the START geometry (the live-applied spans must
-	 * never compound the delta), keyboard parity adds the delta to the
-	 * LIVE props. The store still clamps to min + grid.
+	 * THE KEYBOARD PARITY (doctrine #4): Alt+arrows nudge by whole cells
+	 * (four directions; the engine resolves collisions), Shift+Alt+arrows
+	 * resize — provisional then immediate commit (no release gesture).
 	 */
 	interface Props {
 		def: WidgetDef;
 		hidden: boolean;
-		colSpan: number;
-		rowSpan: number;
+		w: number;
+		h: number;
 		onToggleHidden: () => void;
-		/** Absolute target spans from a resize drag or Shift+Alt+arrows —
+		/** Absolute target w/h from a resize drag or Shift+Alt+arrows —
 		 *  applied live (no persist); the release persists once. */
-		onSpanTarget: (colSpan: number, rowSpan: number) => void;
+		onSpanTarget: (w: number, h: number) => void;
 		/** The release: the grid persists the applied span. */
 		onSpanCommit: () => void;
-		/** Keyboard move (order neighbor swap). */
-		onMove: (dir: -1 | 1) => void;
+		/** Keyboard nudge by whole cells (four directions). */
+		onNudge: (dx: number, dy: number) => void;
+		/** Free drag (the header is the handle): the in-flight cell target
+		 *  + the wrapper's pointer-follow pixel position. */
+		onDragMove: (x: number, y: number, pxLeft: number, pxTop: number) => void;
+		onDragEnd: (x: number, y: number) => void;
+		onDragCancel: () => void;
 		/** The body snippet — the widget's own component, rendered by the
 		 *  page (which owns the registry lookup). */
 		children: Snippet;
@@ -44,70 +46,61 @@
 	let {
 		def,
 		hidden,
-		colSpan,
-		rowSpan,
+		w,
+		h,
 		onToggleHidden,
 		onSpanTarget,
 		onSpanCommit,
-		onMove,
+		onNudge,
+		onDragMove,
+		onDragEnd,
+		onDragCancel,
 		children
 	}: Props = $props();
 
-	// the resize machine: pointer-captured drags on the corner / edge
-	// zones. While dragging, the card FLOATS — pixel-continuous inline
-	// size following the pointer (the Grafana feel: the panel grows under
-	// your cursor; the grid's blue placeholder shows the snapped target
-	// and the layout holds still until release). The card measures the
-	// grid's COLUMN PITCH at drag start ((width + gap) / span — exact for
-	// any span); the row pitch is the FIXED track + gap. The grid owns
-	// the provisional span, the placeholder, and the persistence.
 	type ResizeMode = 'corner' | 'e' | 's';
 	let resizing = $state(false);
 	let mode: ResizeMode = $state('corner');
 	let start = $state({
 		x: 0,
 		y: 0,
-		colSpan: 0,
-		rowSpan: 0,
-		colPitch: 0,
-		rowPitch: 0,
 		w: 0,
 		h: 0,
+		colPitch: 0,
+		rowPitch: 0,
 		minW: 0,
 		minH: 0,
 		maxW: 0,
 		maxH: 0
 	});
-	/** the pixel-continuous float size (null = no float, grid-tracked). */
+	/** the pixel-continuous float size (null = no float, canvas-tracked). */
 	let float = $state<{ w: number; h: number } | null>(null);
 
 	function resizeStart(e: PointerEvent, m: ResizeMode) {
 		const el = (e.currentTarget as HTMLElement).closest('[data-widget-card]') as HTMLElement;
 		if (!el) return;
 		const rect = el.getBoundingClientRect();
+		const colPitch = (rect.width + GRID_GAP_PX) / w;
+		const rowPitch = (rect.height + GRID_GAP_PX) / h;
+		// the canvas's true right edge — the float's honest ceiling at
+		// every breakpoint (GRID_COLS×pitch broke on the 24-col canvas)
+		const canvas = el.closest('[data-dashboard-grid]') as HTMLElement | null;
+		const canvasRight = canvas ? canvas.getBoundingClientRect().right : rect.right;
 		mode = m;
 		resizing = true;
-		const colPitch = (rect.width + GRID_GAP_PX) / colSpan;
-		const rowPitch = (rect.height + GRID_GAP_PX) / rowSpan;
 		start = {
 			x: e.clientX,
 			y: e.clientY,
-			colSpan,
-			rowSpan,
+			w,
+			h,
 			colPitch,
 			rowPitch,
-			w: rect.width,
-			h: rect.height,
 			minW: Math.max(1, def.minSpan.col * colPitch - GRID_GAP_PX),
 			minH: Math.max(1, def.minSpan.row * rowPitch - GRID_GAP_PX),
-			// the GRID'S bounds — the float and the provisional targets must
-			// never promise more than the store will keep (the snap-back:
-			// an unclamped preview that the release then "corrected")
-			maxW: Math.max(1, GRID_COLS * colPitch - GRID_GAP_PX),
+			maxW: Math.max(1, canvasRight - rect.left),
 			maxH: Math.max(1, MAX_ROW_SPAN * rowPitch - GRID_GAP_PX)
 		};
-		// no compat mousedown → no native drag from the draggable card,
-		// no text selection under the drag
+		// no compat mousedown → no native drag, no text selection
 		e.preventDefault();
 		try {
 			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -123,19 +116,16 @@
 		// 'e' locks to width, 's' locks to height, corner does both
 		const colDelta = mode === 's' ? 0 : Math.round(dx / start.colPitch);
 		const rowDelta = mode === 'e' ? 0 : Math.round(dy / start.rowPitch);
-		// the FLOAT: pixel-continuous, clamped to the widget's minimum AND
-		// the grid's maximum — the preview always matches what release keeps
-		const w = mode === 's' ? start.w : Math.min(start.maxW, Math.max(start.minW, start.w + dx));
-		const h = mode === 'e' ? start.h : Math.min(start.maxH, Math.max(start.minH, start.h + dy));
-		if (colDelta === 0 && rowDelta === 0 && float?.w === w && float.h === h) return;
-		float = { w, h };
+		// the FLOAT: pixel-continuous, clamped to the widget minimum AND
+		// the canvas edge — the preview always matches what release keeps
+		const fw = mode === 's' ? start.w : Math.min(start.maxW, Math.max(start.minW, start.w + dx));
+		const fh = mode === 'e' ? start.h : Math.min(start.maxH, Math.max(start.minH, start.h + dy));
+		if (colDelta === 0 && rowDelta === 0 && float?.w === fw && float.h === fh) return;
+		float = { w: fw, h: fh };
 		if (colDelta !== 0 || rowDelta !== 0) {
-			// ABSOLUTE targets from the START geometry, clamped to the grid
-			// bounds (the compounding bug AND the snap-back both lived in
-			// unclamped arithmetic)
 			onSpanTarget(
-				Math.min(GRID_COLS, Math.max(def.minSpan.col, start.colSpan + colDelta)),
-				Math.min(MAX_ROW_SPAN, Math.max(def.minSpan.row, start.rowSpan + rowDelta))
+				Math.min(GRID_COLS, Math.max(def.minSpan.col, start.w + colDelta)),
+				Math.min(MAX_ROW_SPAN, Math.max(def.minSpan.row, start.h + rowDelta))
 			);
 		}
 	}
@@ -143,29 +133,132 @@
 	function resizeEnd() {
 		if (!resizing) return;
 		resizing = false;
-		float = null; // back to the grid-tracked (snapped) size
+		float = null; // back to the canvas-tracked (snapped) size
 		onSpanCommit(); // the grid applies the provisional span + persists
 	}
 
+	// ── the FREE DRAG machine (the header is the handle) ────────────────
+	// Pointer-based (HTML5 DnD is retired — one gesture system, no native
+	// drag hijacks). Arm on pointerdown; past a 4px threshold the widget
+	// is DRAGGING: the cell target + the wrapper's pixel position emit
+	// live (the grid follows the pointer, the store previews the resolved
+	// shadow layout, nothing persists), and the release lands it. Escape
+	// cancels. Interactive children (links, buttons) never arm.
+	const DRAG_THRESHOLD_PX = 4;
+	let armed = $state(false);
+	let dragging = $state(false);
+	let dragStart = $state({
+		px: 0,
+		py: 0,
+		offCols: 0,
+		offRows: 0,
+		colW: 1,
+		canvasLeft: 0,
+		canvasTop: 0,
+		w: 0
+	});
+	let dragCell = $state<{ x: number; y: number } | null>(null);
+
+	function dragArm(e: PointerEvent) {
+		if (resizing || (e.target as HTMLElement).closest('a,button')) return;
+		const el = (e.currentTarget as HTMLElement).closest('[data-widget-card]') as HTMLElement;
+		if (!el) return;
+		const canvas = el.closest('[data-dashboard-grid]') as HTMLElement | null;
+		if (!canvas) return;
+		const canvasRect = canvas.getBoundingClientRect();
+		const rect = el.getBoundingClientRect();
+		// column pitch is the canvas width over its columns (1px floor
+		// keeps the math finite in non-rendered environments)
+		const colW = Math.max(1, canvasRect.width / GRID_COLS);
+		armed = true;
+		dragStart = {
+			px: e.clientX,
+			py: e.clientY,
+			offCols: Math.round((e.clientX - rect.left) / colW),
+			offRows: Math.round((e.clientY - rect.top) / (ROW_UNIT_PX + GRID_GAP_PX)),
+			colW,
+			canvasLeft: canvasRect.left,
+			canvasTop: canvasRect.top,
+			w
+		};
+		try {
+			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		} catch {
+			/* capture is polish — the header's own listeners keep the drag alive */
+		}
+	}
+
+	function dragSweep(e: PointerEvent) {
+		if (!armed) return;
+		const dx = e.clientX - dragStart.px;
+		const dy = e.clientY - dragStart.py;
+		if (!dragging && Math.abs(dx) < DRAG_THRESHOLD_PX && Math.abs(dy) < DRAG_THRESHOLD_PX) {
+			return; // a click, not a drag
+		}
+		dragging = true;
+		// the cell under the grab point, minus the grab offset, clamped to
+		// the canvas (the engine clamps again — this shapes the preview)
+		const col = (e.clientX - dragStart.canvasLeft) / dragStart.colW - dragStart.offCols;
+		const row = Math.max(
+			0,
+			Math.round((e.clientY - dragStart.canvasTop) / (ROW_UNIT_PX + GRID_GAP_PX)) -
+				dragStart.offRows
+		);
+		dragCell = { x: Math.max(0, Math.round(col)), y: row };
+		// the wrapper follows the pointer (the grab point stays put)
+		onDragMove(
+			dragCell.x,
+			dragCell.y,
+			e.clientX - dragStart.canvasLeft - dragStart.offCols * dragStart.colW,
+			e.clientY - dragStart.canvasTop - dragStart.offRows * (ROW_UNIT_PX + GRID_GAP_PX)
+		);
+	}
+
+	function dragSettle(cancelled = false) {
+		if (!armed) return;
+		armed = false;
+		const wasDragging = dragging;
+		dragging = false;
+		const cell = dragCell;
+		dragCell = null;
+		if (cancelled || !wasDragging || !cell) {
+			if (wasDragging) onDragCancel();
+			return;
+		}
+		onDragEnd(cell.x, cell.y);
+	}
+
+	function dragKey(e: KeyboardEvent) {
+		if (e.key === 'Escape' && dragging) {
+			e.preventDefault();
+			dragSettle(true);
+		}
+	}
+
 	function keydown(e: KeyboardEvent) {
-		// Shift+Alt+arrows = resize — provisional then IMMEDIATE commit
-		// (keyboard has no release gesture); Alt+arrows = move
+		dragKey(e); // Escape cancels an in-flight drag
+		// Shift+Alt+arrows = resize (provisional + IMMEDIATE commit);
+		// Alt+arrows = nudge by whole cells, four directions
 		if (e.shiftKey && e.altKey) {
 			const col = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
 			const row = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
 			if (col !== 0 || row !== 0) {
 				e.preventDefault();
 				onSpanTarget(
-					Math.max(def.minSpan.col, colSpan + col),
-					Math.max(def.minSpan.row, rowSpan + row)
+					Math.min(GRID_COLS, Math.max(def.minSpan.col, w + col)),
+					Math.min(MAX_ROW_SPAN, Math.max(def.minSpan.row, h + row))
 				);
 				onSpanCommit();
 			}
 			return;
 		}
-		if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-			e.preventDefault();
-			onMove(e.key === 'ArrowUp' ? -1 : 1);
+		if (e.altKey) {
+			const dx = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+			const dy = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+			if (dx !== 0 || dy !== 0) {
+				e.preventDefault();
+				onNudge(dx, dy);
+			}
 		}
 	}
 
@@ -179,19 +272,26 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_no_noninteractive_tabindex -->
 <article
 	data-widget-card
-	draggable="true"
 	tabindex="0"
 	onkeydown={keydown}
 	style={float ? `width: ${float.w}px; height: ${float.h}px; z-index: 30;` : undefined}
 	class="group relative flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-3 transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {resizing
 		? 'ring-2 ring-brand/60'
 		: ''}"
-	aria-label="{def.title} widget — Alt+arrows to move, Shift+Alt+arrows to resize, drag to reorder"
+	aria-label="{def.title} widget — Alt+arrows to move, Shift+Alt+arrows to resize"
 >
-	<header class="flex items-center justify-between gap-2">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<header
+		data-drag-handle
+		class="flex cursor-grab touch-none items-center justify-between gap-2 active:cursor-grabbing"
+		onpointerdown={dragArm}
+		onpointermove={dragSweep}
+		onpointerup={() => dragSettle()}
+		onpointercancel={() => dragSettle(true)}
+	>
 		<div class="flex min-w-0 items-center gap-1.5">
 			<GripVertical
-				class="size-3.5 shrink-0 cursor-grab text-muted-foreground/30 transition-colors group-hover:text-muted-foreground"
+				class="size-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground"
 				aria-hidden="true"
 			/>
 			<p class="truncate text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
@@ -231,12 +331,10 @@
 	{#if !hidden}
 		<!-- the resize zones (the Grafana custom-grid feel): the right
 		     edge = width only, the bottom edge = height only, the corner =
-		     both (last in DOM so it wins the overlap). Drag-immune — see
-		     the gesture-split note; touch-none keeps a touch drag from
-		     scrolling the page instead. -->
+		     both (last in DOM so it wins the overlap). touch-none keeps a
+		     touch drag from scrolling the page instead. -->
 		<div
 			class="absolute top-4 -right-1 bottom-4 z-10 w-2 cursor-ew-resize touch-none"
-			draggable="false"
 			role="separator"
 			aria-label="Resize {def.title} width — drag, or Shift+Alt+arrows"
 			onpointerdown={(e) => resizeStart(e, 'e')}
@@ -247,7 +345,6 @@
 		></div>
 		<div
 			class="absolute right-4 -bottom-1 left-4 z-10 h-2 cursor-ns-resize touch-none"
-			draggable="false"
 			role="separator"
 			aria-label="Resize {def.title} height — drag, or Shift+Alt+arrows"
 			onpointerdown={(e) => resizeStart(e, 's')}
@@ -258,7 +355,6 @@
 		></div>
 		<div
 			class="absolute right-0 bottom-0 z-10 cursor-nwse-resize touch-none p-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100"
-			draggable="false"
 			role="separator"
 			aria-label="Resize {def.title} — drag the corner, or Shift+Alt+arrows"
 			onpointerdown={(e) => resizeStart(e, 'corner')}
