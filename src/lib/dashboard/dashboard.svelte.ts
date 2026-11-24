@@ -53,16 +53,27 @@ export class DashboardLayoutStore {
 	}
 
 	/** Per-user init: reconcile the stored layout against the registry and
-	 *  clamp every span (the drift pin — lumen's truth over the browser). */
+	 *  clamp every span (the drift pin — lumen's truth over the browser).
+	 *  Runs ONCE per username: the page's $effect re-fires on every
+	 *  hydration/navigation, and an effect that both writes AND reads
+	 *  `entries` self-triggers to depth-exceeded — so this method never
+	 *  reads `this.entries` (the save captures the local) and no-ops when
+	 *  the user is already loaded. */
+	private loadedKey = '';
+
 	init(username: string, registry: WidgetDefT[]) {
 		if (typeof window === 'undefined') return;
-		this.key = `mellon.dashboard.${username}`;
-		const stored = sanitizeLayout(this.storage.load(this.key), registry);
-		this.entries = reconcileLayout(stored, registry).map((e) => {
+		const key = `mellon.dashboard.${username}`;
+		if (key === this.loadedKey) return;
+		this.loadedKey = key;
+		this.key = key;
+		const stored = sanitizeLayout(this.storage.load(key), registry);
+		const next = reconcileLayout(stored, registry).map((e) => {
 			const def = registry.find((d) => d.id === e.id)!;
 			return { ...e, ...clampSpan(def, e.colSpan, e.rowSpan) };
 		});
-		this.storage.save(this.key, { entries: this.entries });
+		this.entries = next;
+		this.storage.save(key, { entries: next });
 	}
 
 	persist() {
