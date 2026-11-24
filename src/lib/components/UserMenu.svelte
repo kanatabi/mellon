@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Principal } from '#lib/api/types.ts';
 	// The account surface (owner call 2026-11-16), ported onto ui/dropdown-menu
 	// (S2.8): one avatar in the top bar, one menu — GitHub grammar. Identity,
 	// Settings, theme, and sign-out live here. The block brings the contract
@@ -11,7 +12,7 @@
 	import { cn } from '#lib/utils.js';
 
 	interface Props {
-		principal: { username: string; role: 'admin' | 'editor' };
+		principal: Principal;
 	}
 
 	let { principal }: Props = $props();
@@ -41,8 +42,11 @@
 				<span class="block truncate text-sm font-semibold text-foreground">
 					{principal.username}
 				</span>
-				<span class="block font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-					{principal.role}
+				<span
+					class="block truncate font-mono text-[10px] tracking-wide text-muted-foreground uppercase"
+					title={principal.scopes.join(' · ')}
+				>
+					{principal.scopes.join(' · ')}
 				</span>
 			</span>
 		</div>
