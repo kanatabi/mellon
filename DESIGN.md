@@ -556,9 +556,12 @@ body }` — **adding a widget = one folder + one registry line**
   - **The body contract**: self-contained — fetches its own data
     through the relay client, renders its own loading/error/empty
     states, never touches the layout store; content that outgrows the
-    card scrolls inside. The `/` server load dials **no** scoped API —
-    that rule is what keeps a scope-less user's home a quiet empty
-    state instead of a 403→500 cliff.
+    card scrolls inside. Every body honors the optional `preview` prop —
+    the widget's REAL structure with placeholder shapes, never a fetch
+    (the Add-Widget panel mounts bodies in preview mode so the picker
+    shows the shape at zero relay cost). The `/` server load dials
+    **no** scoped API — that rule is what keeps a scope-less user's
+    home a quiet empty state instead of a 403→500 cliff.
   - **The gestures**: drag = the card header (pointer machine, 4px
     click threshold — HTML5 DnD is retired; one gesture system); other
     widgets glide out of the way live via the resolved shadow layout;
