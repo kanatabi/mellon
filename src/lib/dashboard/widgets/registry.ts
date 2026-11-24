@@ -39,7 +39,7 @@ export const WIDGETS: WidgetDef[] = [
 		href: '/posts',
 		scope: 'content:manage',
 		defaultSpan: { col: 6, row: 6 },
-		minSpan: { col: 4, row: 4 },
+		minSpan: { col: 2, row: 2 },
 		body: RecentPostsBody
 	},
 	{
@@ -49,7 +49,7 @@ export const WIDGETS: WidgetDef[] = [
 		href: '/photos',
 		scope: 'content:manage',
 		defaultSpan: { col: 6, row: 6 },
-		minSpan: { col: 4, row: 4 },
+		minSpan: { col: 2, row: 2 },
 		body: RecentPhotosBody
 	},
 	{
@@ -59,7 +59,7 @@ export const WIDGETS: WidgetDef[] = [
 		href: '/tags',
 		scope: 'content:manage',
 		defaultSpan: { col: 6, row: 6 },
-		minSpan: { col: 4, row: 4 },
+		minSpan: { col: 2, row: 2 },
 		body: RecentTagsBody
 	}
 ];

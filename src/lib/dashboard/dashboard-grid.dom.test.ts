@@ -35,7 +35,9 @@ describe('the dashboard grid wiring (Round B3)', () => {
 		const c = render(Fixture);
 		const g = corner(c);
 		fireEvent.pointerDown(g, { clientX: 0, clientY: 0, pointerId: 1 });
-		fireEvent.pointerMove(g, { clientX: 100, clientY: 0, pointerId: 1 });
+		// a WILD drag: the preview must clamp to the grid's own bounds —
+		// release keeps exactly what was previewed (the snap-back bug)
+		fireEvent.pointerMove(g, { clientX: 10000, clientY: 10000, pointerId: 1 });
 		await tick();
 		// the blue container is rendered from the provisional span…
 		expect(c.container.querySelector('[data-resize-placeholder]')).toBeTruthy();
@@ -46,11 +48,12 @@ describe('the dashboard grid wiring (Round B3)', () => {
 		expect(card.style.width).not.toBe('');
 		fireEvent.pointerUp(g);
 		await tick();
-		// release: applied + persisted through onSpanApply, placeholder gone
+		// release: applied + persisted through onSpanApply, placeholder
+		// gone — and the value is the GRID MAXIMUM, never a lie
 		const applied = JSON.parse(captures(c).dataset.applied!);
 		expect(applied.id).toBe('w-a');
-		expect(applied.colSpan).toBeGreaterThan(6); // absolute, past the start
-		expect(applied.rowSpan).toBe(6); // the corner owns both axes
+		expect(applied.colSpan).toBe(12); // GRID_COLS — the true ceiling
+		expect(applied.rowSpan).toBe(8); // MAX_ROW_SPAN — the true ceiling
 		expect(c.container.querySelector('[data-resize-placeholder]')).toBeNull();
 	});
 
@@ -64,7 +67,7 @@ describe('the dashboard grid wiring (Round B3)', () => {
 		fireEvent.pointerUp(w);
 		await tick();
 		const applied = JSON.parse(captures(c).dataset.applied!);
-		expect(applied.colSpan).toBeGreaterThan(6);
+		expect(applied.colSpan).toBe(12);
 		expect(applied.rowSpan).toBe(6); // locked — the dy never counted
 	});
 
@@ -105,14 +108,16 @@ describe('the dashboard grid wiring (Round B3)', () => {
 		expect(JSON.parse(captures(c).dataset.moved!)).toEqual({ id: 'w-a', dir: 1 });
 	});
 
-	it('reorder: the ghost opens the landing slot, the card leaves the flow', async () => {
+	it('reorder: the ghost opens the landing slot, the source stays mounted', async () => {
 		const c = render(Fixture);
 		const a = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
 		const b = c.container.querySelector<HTMLElement>('[data-widget-id="w-b"]')!;
 		a.dispatchEvent(new DragEvent('dragstart', { bubbles: true }));
 		await tick();
-		// the lift: the dragged card leaves the flow (its gap closes)
-		expect(c.container.querySelector('[data-widget-id="w-a"]')).toBeNull();
+		// the lift: the source hides IN PLACE but stays CONNECTED — a
+		// detached source never receives dragend (the vanishing-panel bug)
+		expect(a.isConnected).toBe(true);
+		expect(a.classList.contains('hidden')).toBe(true);
 		// happy-dom drops clientY from DragEvent init (same class as the
 		// KeyboardEvent modifiers) — define it on the instance
 		const over = new DragEvent('dragover', { bubbles: true });
@@ -128,6 +133,21 @@ describe('the dashboard grid wiring (Round B3)', () => {
 		expect(placed.beforeId).toBe('w-b');
 		// the ghost is gone once the real card lands
 		expect(c.container.querySelector('[data-ghost]')).toBeNull();
+	});
+
+	it('a drag that starts and ends without a landing never sticks (the vanishing-panel regression)', async () => {
+		const c = render(Fixture);
+		const a = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
+		a.dispatchEvent(new DragEvent('dragstart', { bubbles: true }));
+		await tick();
+		expect(a.classList.contains('hidden')).toBe(true); // hidden mid-drag
+		// the dragend reaches the document capture net even though the
+		// event does not bubble
+		a.dispatchEvent(new DragEvent('dragend'));
+		await tick();
+		expect(a.classList.contains('hidden')).toBe(false); // restored
+		expect(c.container.querySelector('[data-ghost]')).toBeNull();
+		expect(JSON.parse(captures(c).dataset.placed!)).toBeNull(); // no landing
 	});
 
 	it('hidden reflow: the un-pinned card leaves the grid', async () => {

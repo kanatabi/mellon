@@ -43,12 +43,18 @@
 	let overId = $state<string | null>(null);
 
 	// ── FLIP: the shared animation for every layout change ──────────────
-	const flipFrom = new Map<string, { x: number; y: number }>();
+	// A plain Map on purpose: a measurement cache read only inside event
+	// handlers — never rendered from, so rune reactivity would be cost
+	// with no effect (svelte/prefer-svelte-reactivity).
+	const flipFrom = new Map<string, { x: number; y: number }>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 
 	function flipSnapshot() {
 		flipFrom.clear();
 		gridEl?.querySelectorAll<HTMLElement>('[data-widget-entry]').forEach((el) => {
 			const r = el.getBoundingClientRect();
+			// hidden elements (the drag source mid-drag) measure 0×0 — they
+			// must not FLIP from the top-left corner on restore
+			if (r.width === 0 && r.height === 0) return;
 			flipFrom.set(el.dataset.widgetId ?? '', { x: r.left, y: r.top });
 		});
 	}
@@ -169,14 +175,18 @@
 		return marker.endsWith(':after') ? null : marker;
 	}
 
-	/** the render order during a drag: the dragged card LEAVES the flow
-	 *  (its gap closes), and once the pointer is over a target, the
-	 *  provisional order — placeEntry's shadow copy — opens the ghost
-	 *  slot at the landing position. The real entries stay untouched
-	 *  until the drop. */
+	/** the render order during a drag: the provisional order —
+	 *  placeEntry's shadow copy — opens the ghost slot at the landing
+	 *  position. The dragged card STAYS MOUNTED (hidden in place): the
+	 *  browser fires dragend on the drag SOURCE, and a detached source
+	 *  means the end-handling never runs — dragId would stick and the
+	 *  card would stay gone until a remount (the vanishing-panel bug).
+	 *  display:none keeps it out of the flow (the gap closes) while the
+	 *  element stays connected. The real entries stay untouched until
+	 *  the drop. */
 	const renderList = $derived.by(() => {
 		if (!dragId) return entries;
-		if (!overId) return entries.filter((e) => e.id !== dragId);
+		if (!overId) return entries;
 		return placeEntry(entries, dragId, beforeIdOf(overId));
 	});
 
@@ -217,6 +227,22 @@
 		overId = null;
 		flipPlay();
 	}
+
+	// the SAFETY NET: dragend does not bubble and fires on the drag
+	// source — if anything above still misses it (delegation quirks,
+	// dropped-on-detached edges), a document-capture listener guarantees
+	// dragId can never stick and hide a card past the gesture. It only
+	// listens to dragend (it fires AFTER drop, so it can never pre-empt
+	// onDrop's landing).
+	$effect(() => {
+		if (!dragId) return;
+		const end = () => {
+			dragId = null;
+			overId = null;
+		};
+		document.addEventListener('dragend', end, true);
+		return () => document.removeEventListener('dragend', end, true);
+	});
 </script>
 
 <div
@@ -241,42 +267,48 @@
 	{#each renderList as entry (entry.id)}
 		{@const def = registry.find((d) => d.id === entry.id)}
 		{#if def && (held(def.scope ?? '') ?? true) && !entry.hidden}
-			{#if entry.id === dragId}
+			{#if entry.id === dragId && overId}
 				<!-- the ghost: opens the landing slot BEFORE the drop
-				     (the post-editor sidebar's machine, on the grid) -->
+				     (the post-editor sidebar's machine, on the grid).
+				     No data-widget-id — the hidden source owns that FLIP
+				     key. -->
 				<div
 					data-widget-entry
-					data-widget-id={entry.id}
 					data-ghost
 					aria-hidden="true"
 					style={`--cs: ${entry.colSpan}; grid-row: span ${entry.rowSpan}`}
 					class="rounded-lg border-2 border-dashed border-brand/60 bg-brand/5"
 				></div>
-			{:else}
-				<div
-					data-widget-entry
-					data-widget-id={entry.id}
-					style={`--cs: ${entry.colSpan}; grid-row: span ${entry.rowSpan}`}
-					role="listitem"
-					ondragstart={(e) => onDragStart(e, entry.id)}
-					ondragover={(e) => onDragOver(e, entry.id)}
-					ondrop={onDrop}
-					ondragend={onDragEnd}
-				>
-					<WidgetCard
-						{def}
-						hidden={false}
-						colSpan={entry.colSpan}
-						rowSpan={entry.rowSpan}
-						onToggleHidden={() => onToggleHidden(entry.id)}
-						onSpanCommit={commitSpan}
-						onMove={(dir) => onMove(entry.id, dir)}
-						onSpanTarget={(colSpan, rowSpan) => previewSpan(entry.id, colSpan, rowSpan)}
-					>
-						<def.body />
-					</WidgetCard>
-				</div>
 			{/if}
+			<!-- ONE wrapper per entry, always mounted: dragstart only
+			     hides it in place (the gap closes; the component — and
+			     its body's fetch — survive) and the browser's dragend
+			     always finds a connected source. The ghost above opens
+			     the landing slot. -->
+			<div
+				data-widget-entry
+				data-widget-id={entry.id}
+				style={`--cs: ${entry.colSpan}; grid-row: span ${entry.rowSpan}`}
+				role="listitem"
+				class:hidden={entry.id === dragId}
+				ondragstart={(e) => onDragStart(e, entry.id)}
+				ondragover={(e) => onDragOver(e, entry.id)}
+				ondrop={onDrop}
+				ondragend={onDragEnd}
+			>
+				<WidgetCard
+					{def}
+					hidden={false}
+					colSpan={entry.colSpan}
+					rowSpan={entry.rowSpan}
+					onToggleHidden={() => onToggleHidden(entry.id)}
+					onSpanCommit={commitSpan}
+					onMove={(dir) => onMove(entry.id, dir)}
+					onSpanTarget={(colSpan, rowSpan) => previewSpan(entry.id, colSpan, rowSpan)}
+				>
+					<def.body />
+				</WidgetCard>
+			</div>
 		{/if}
 	{/each}
 </div>

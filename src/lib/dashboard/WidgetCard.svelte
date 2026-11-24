@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { GripVertical, Eye, EyeOff, GripHorizontal } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
-	import { GRID_GAP_PX, ROW_UNIT_PX } from './layout.ts';
+	import { GRID_COLS, GRID_GAP_PX, MAX_ROW_SPAN } from './layout.ts';
 	import type { WidgetDef } from './widgets/registry.ts';
 
 	/**
@@ -70,10 +70,13 @@
 		colSpan: 0,
 		rowSpan: 0,
 		colPitch: 0,
+		rowPitch: 0,
 		w: 0,
 		h: 0,
 		minW: 0,
-		minH: 0
+		minH: 0,
+		maxW: 0,
+		maxH: 0
 	});
 	/** the pixel-continuous float size (null = no float, grid-tracked). */
 	let float = $state<{ w: number; h: number } | null>(null);
@@ -92,10 +95,16 @@
 			colSpan,
 			rowSpan,
 			colPitch,
+			rowPitch,
 			w: rect.width,
 			h: rect.height,
 			minW: Math.max(1, def.minSpan.col * colPitch - GRID_GAP_PX),
-			minH: Math.max(1, def.minSpan.row * rowPitch - GRID_GAP_PX)
+			minH: Math.max(1, def.minSpan.row * rowPitch - GRID_GAP_PX),
+			// the GRID'S bounds — the float and the provisional targets must
+			// never promise more than the store will keep (the snap-back:
+			// an unclamped preview that the release then "corrected")
+			maxW: Math.max(1, GRID_COLS * colPitch - GRID_GAP_PX),
+			maxH: Math.max(1, MAX_ROW_SPAN * rowPitch - GRID_GAP_PX)
 		};
 		// no compat mousedown → no native drag from the draggable card,
 		// no text selection under the drag
@@ -113,18 +122,20 @@
 		const dy = e.clientY - start.y;
 		// 'e' locks to width, 's' locks to height, corner does both
 		const colDelta = mode === 's' ? 0 : Math.round(dx / start.colPitch);
-		const rowDelta = mode === 'e' ? 0 : Math.round(dy / (ROW_UNIT_PX + GRID_GAP_PX));
-		// the FLOAT: pixel-continuous, clamped only by the widget minimum
-		const w = mode === 's' ? start.w : Math.max(start.minW, start.w + dx);
-		const h = mode === 'e' ? start.h : Math.max(start.minH, start.h + dy);
+		const rowDelta = mode === 'e' ? 0 : Math.round(dy / start.rowPitch);
+		// the FLOAT: pixel-continuous, clamped to the widget's minimum AND
+		// the grid's maximum — the preview always matches what release keeps
+		const w = mode === 's' ? start.w : Math.min(start.maxW, Math.max(start.minW, start.w + dx));
+		const h = mode === 'e' ? start.h : Math.min(start.maxH, Math.max(start.minH, start.h + dy));
 		if (colDelta === 0 && rowDelta === 0 && float?.w === w && float.h === h) return;
 		float = { w, h };
 		if (colDelta !== 0 || rowDelta !== 0) {
-			// ABSOLUTE targets from the START geometry — the live-applied
-			// spans are never the reference (the compounding bug)
+			// ABSOLUTE targets from the START geometry, clamped to the grid
+			// bounds (the compounding bug AND the snap-back both lived in
+			// unclamped arithmetic)
 			onSpanTarget(
-				Math.max(def.minSpan.col, start.colSpan + colDelta),
-				Math.max(def.minSpan.row, start.rowSpan + rowDelta)
+				Math.min(GRID_COLS, Math.max(def.minSpan.col, start.colSpan + colDelta)),
+				Math.min(MAX_ROW_SPAN, Math.max(def.minSpan.row, start.rowSpan + rowDelta))
 			);
 		}
 	}
