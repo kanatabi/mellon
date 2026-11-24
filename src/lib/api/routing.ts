@@ -49,6 +49,16 @@ export const ROUTE_TABLE: RouteClass[] = [
 		note: 'user list/create, server-generated temp passwords'
 	},
 	{
+		prefix: '/admin/users/{username}/scopes',
+		upstream: 'admin',
+		note: 'the RBAC write: replace the user\u2019s scope set (tv bumps)'
+	},
+	{
+		prefix: '/admin/scopes',
+		upstream: 'admin',
+		note: 'the PORTAL-MANAGED scope catalog (list/add/delete)'
+	},
+	{
 		prefix: '/admin/setup',
 		upstream: 'admin',
 		note: 'TOFU wizard: unclaimed probe + first-admin register'

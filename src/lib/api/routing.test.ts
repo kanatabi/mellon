@@ -31,6 +31,9 @@ describe('route-class table — control plane (ADMIN_URL)', () => {
 		['logout', '/admin/session'],
 		['users list', '/admin/users'],
 		['user create', '/admin/users'],
+		['user scopes set', '/admin/users/u/scopes'],
+		['scope catalog list', '/admin/scopes'],
+		['scope catalog add', '/admin/scopes'],
 		['temp password reset', '/admin/users/helper/reset-password'],
 		['setup TOFU probe', '/admin/setup'],
 		['setup TOFU register', '/admin/setup/register'],
@@ -166,7 +169,7 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		await a.changePassword('a', 'b');
 		await a.logout();
 		await a.listUsers();
-		await a.createUser('helper', 'editor');
+		await a.createUser('helper', ['content:manage']);
 		await a.resetUserPassword('helper');
 		await a.setupStatus();
 		await a.registerFirstAdmin('owner', 'chosen-password-1');

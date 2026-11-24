@@ -279,7 +279,12 @@ describe('mock AdminApi contract', () => {
 		const api = createMockApi();
 		expect((await api.setupStatus()).unclaimed).toBe(true);
 		const reg = await api.registerFirstAdmin('owner', 'chosen-password-1');
-		expect(reg.role).toBe('admin');
+		expect(reg.scopes).toEqual([
+			'content:manage',
+			'secrets:admin',
+			'users:manage',
+			'settings:manage'
+		]); // the TOFU grant IS the full catalog
 		expect(reg.mustChange).toBe(false);
 		expect((await api.setupStatus()).unclaimed).toBe(false);
 		await expect(api.registerFirstAdmin('squatter', 'not-happening-1')).rejects.toMatchObject({
@@ -288,7 +293,8 @@ describe('mock AdminApi contract', () => {
 		await expect(api.registerFirstAdmin('A BAD NAME', 'x'.repeat(11))).rejects.toMatchObject({
 			status: 400
 		});
-		const created = await api.createUser('helper', 'editor');
+		const created = await api.createUser('helper', ['content:manage']);
+		expect(created.scopes).toEqual(['content:manage']);
 		expect(created.tempPassword).toMatch(/^(?:[a-z]{4}-){4}[0-9]{4}$/);
 		const login = await api.login('helper', created.tempPassword);
 		expect(login.mustChange).toBe(true); // lumen answers the same; 428 gates the rest

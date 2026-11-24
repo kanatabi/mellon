@@ -214,32 +214,55 @@ export class AdminApiError extends Error {
 	}
 }
 
-/** The identity a live bearer resolves to (lumen reads role + must_change
- *  from the user row PER REQUEST — the JWT carries identity, never privileges,
- *  so resets and demotions bite on the next call, not the next login). */
+/** The identity a live bearer resolves to (lumen reads id + scopes +
+ *  must_change from the user row PER REQUEST — the JWT carries identity and
+ *  the grants STAMPED AT MINT, and every scope mutation bumps
+ *  token_version, so a demotion bites within the request, not the next
+ *  login). `scopes` is lumen's truth: the portal renders it as
+ *  affordances and never enforces. */
 export interface Principal {
 	username: string;
-	role: 'admin' | 'editor';
+	id: string;
+	scopes: string[];
 	mustChange: boolean;
 }
 
-/** Login/register wire shape (lumen answers exactly these four fields —
+/** Login/register wire shape (lumen answers exactly these fields —
  *  identity comes from whoami, not from guessing the login subject): the
  *  session plus what the portal ROUTES on — mustChange sends the fresh/temp
- *  user straight to /setup?change instead of the desk. */
+ *  user straight to /setup?change instead of the desk; scopes is the grant
+ *  set stamped at mint (refreshed by the next login). */
 export interface LoginResponse {
 	token: string;
 	expiresIn: number;
-	role: 'admin' | 'editor';
+	scopes: string[];
 	mustChange: boolean;
 }
 
 /** One line of the admin user list (lumen GET /admin/users). */
 export interface AdminUserRow {
+	id: string;
 	username: string;
-	role: 'admin' | 'editor';
+	scopes: string[];
 	mustChange: boolean;
 	createdAt: string;
+}
+
+/** One line of the PORTAL-MANAGED scope catalog (the RBAC spine): the
+ *  assignable vocabulary — onboarding a scope is a portal action, never
+ *  manual SQL. */
+export interface CatalogEntry {
+	scope: string;
+	description: string;
+}
+
+/** The scope-assignment write (lumen PATCH /admin/users/:u/scopes): the
+ *  assignment replaces the set and BUMPS token_version — the user's other
+ *  sessions die (re-login). */
+export interface ScopeAssignment {
+	username: string;
+	scopes: string[];
+	tokenVersion: number;
 }
 
 export interface AdminApi {
@@ -274,10 +297,18 @@ export interface AdminApi {
 	/** lumen generates the temp server-side (syllable form ~50 bits);
 	 *  tempPassword appears in THIS response exactly once — never logged,
 	 *  never stored unhashed, never re-readable. */
-	createUser(
-		username: string,
-		role: 'admin' | 'editor'
-	): Promise<AdminUserRow & { tempPassword: string }>;
+	createUser(username: string, scopes: string[]): Promise<AdminUserRow & { tempPassword: string }>;
+	/** Replace the user's scope set (lumen PATCH /admin/users/:u/scopes):
+	 *  the RBAC spine — a demotion is immediate (token_version bumps). */
+	updateUserScopes(username: string, scopes: string[]): Promise<ScopeAssignment>;
+	/** The PORTAL-MANAGED catalog (the assignable vocabulary). */
+	listScopes(): Promise<CatalogEntry[]>;
+	/** Onboard a scope (grammar-checked server-side; duplicates are
+	 *  idempotent). */
+	addScope(scope: string, description: string): Promise<CatalogEntry>;
+	/** Remove a catalog scope; lumen REFUSES while any user holds it —
+	 *  the 409 copy carries the counts, rendered verbatim. */
+	deleteScope(scope: string): Promise<void>;
 	/** New temp, must_change rearms, token_version bumps (their live sessions
 	 *  die immediately). Once-only reveal like create. */
 	resetUserPassword(username: string): Promise<{ tempPassword: string }>;

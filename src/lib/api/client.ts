@@ -6,7 +6,9 @@
  */
 import type {
 	AdminUserRow,
+	CatalogEntry,
 	Principal,
+	ScopeAssignment,
 	AdminApi,
 	AdminPhoto,
 	CollectionCount,
@@ -78,11 +80,23 @@ export const client: AdminApi = {
 		throw new ApiError(500, 'password change is served by the /setup form action');
 	},
 	listUsers: () => call<AdminUserRow[]>('/users'),
-	createUser: (username, role) =>
+	createUser: (username, scopes) =>
 		call<AdminUserRow & { tempPassword: string }>('/users', {
 			method: 'POST',
-			body: JSON.stringify({ username, role })
+			body: JSON.stringify({ username, scopes })
 		}),
+	updateUserScopes: (username, scopes) =>
+		call<ScopeAssignment>(`/users/${encodeURIComponent(username)}/scopes`, {
+			method: 'PATCH',
+			body: JSON.stringify({ scopes })
+		}),
+	listScopes: () => call<CatalogEntry[]>('/scopes'),
+	addScope: (scope, description) =>
+		call<CatalogEntry>('/scopes', {
+			method: 'POST',
+			body: JSON.stringify({ scope, description })
+		}),
+	deleteScope: (scope) => call<void>(`/scopes/${encodeURIComponent(scope)}`, { method: 'DELETE' }),
 	resetUserPassword: (username) =>
 		call<{ tempPassword: string }>(`/users/${encodeURIComponent(username)}/reset-password`, {
 			method: 'POST',

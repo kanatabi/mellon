@@ -25,6 +25,8 @@ import { baseFor, upstreamFor } from './routing.ts';
 import { DEP, outbound, type OpName } from '#lib/server/metrics.js';
 import type {
 	AdminUserRow,
+	CatalogEntry,
+	ScopeAssignment,
 	LoginResponse,
 	Principal,
 	AdminApi,
@@ -150,11 +152,24 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				body: { current, next }
 			}),
 		listUsers: () => call<AdminUserRow[]>('GET', '/admin/users', { op: 'users.list' }),
-		createUser: (username, role) =>
+		createUser: (username, scopes) =>
 			call<AdminUserRow & { tempPassword: string }>('POST', '/admin/users', {
 				op: 'users.create',
-				body: { username, role }
+				body: { username, scopes }
 			}),
+		updateUserScopes: (username, scopes) =>
+			call<ScopeAssignment>('PATCH', `/admin/users/${encodeURIComponent(username)}/scopes`, {
+				op: 'users.scopes.set',
+				body: { scopes }
+			}),
+		listScopes: () => call<CatalogEntry[]>('GET', '/admin/scopes', { op: 'scopes.list' }),
+		addScope: (scope, description) =>
+			call<CatalogEntry>('POST', '/admin/scopes', {
+				op: 'scopes.add',
+				body: { scope, description }
+			}),
+		deleteScope: (scope) =>
+			call<void>('DELETE', `/admin/scopes/${encodeURIComponent(scope)}`, { op: 'scopes.delete' }),
 		resetUserPassword: (username) =>
 			call<{ tempPassword: string }>(
 				'POST',

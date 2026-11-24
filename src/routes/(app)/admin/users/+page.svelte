@@ -2,7 +2,6 @@
 	import { UserPlus, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -14,10 +13,10 @@
 
 	let { data, form }: Props = $props();
 
-	// the role picker rides the form POST via Select's hidden input — the
-	// action's formData.get('role') reads the same field as the native
-	// select it replaced (the wire is untouched)
-	let newRole = $state('editor');
+	// the picker IS the grant (roles are gone — the spine ruling): the
+	// checkboxes ride the form POST as repeated `scopes` fields, the
+	// action's formData.getAll('scopes') reads exactly those
+	let newScopes = $state<string[]>(['content:manage']);
 
 	// The creation form lives in a dialog (owner ask 2026-11-21): the page
 	// keeps a `Create New User` door above the table. The dialog closes
@@ -46,7 +45,7 @@
 					Users
 				</h1>
 				<p class="font-mono text-xs text-muted-foreground">
-					roles are per-request facts (lumen reads the row every call) — a reset, a demotion, a
+					scopes are per-request facts (lumen reads the row every call) — a reset, a demotion, a
 					completed password change all bite on the NEXT request
 				</p>
 			</div>
@@ -114,24 +113,36 @@
 						title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
 					/>
 				</label>
-				<label class="flex flex-col gap-1.5">
-					<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
-						>role</span
-					>
-					<!-- the wire contract: the action reads formData.get('role') — the
-					     hidden input carries the value the hand-rolled Select's name
-					     prop used to carry -->
-					<input type="hidden" name="role" value={newRole} />
-					<Select.Root type="single" bind:value={newRole}>
-						<Select.Trigger class="w-36" aria-label="Role">
-							<Select.Value />
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="editor">editor</Select.Item>
-							<Select.Item value="admin">admin</Select.Item>
-						</Select.Content>
-					</Select.Root>
-				</label>
+				<!-- the grant: one checkbox per catalog scope, grouped by the
+				     namespace the grammar's left half names -->
+				<fieldset class="flex flex-col gap-1.5">
+					<legend class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						scopes — the exact grant
+					</legend>
+					{#each data.catalog as c (c.scope)}
+						<label
+							class="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60"
+						>
+							<input
+								type="checkbox"
+								name="scopes"
+								value={c.scope}
+								checked={newScopes.includes(c.scope)}
+								onchange={(e) => {
+									newScopes = e.currentTarget.checked
+										? [...newScopes, c.scope]
+										: newScopes.filter((s) => s !== c.scope);
+								}}
+								class="size-4 accent-brand"
+							/>
+							<span class="min-w-0">
+								<span class="block font-mono text-xs text-foreground">{c.scope}</span>
+								<span class="block truncate text-[10px] text-muted-foreground">{c.description}</span
+								>
+							</span>
+						</label>
+					{/each}
+				</fieldset>
 				{#if form?.error}
 					<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
 				{/if}
@@ -152,7 +163,7 @@
 					class="border-b border-border text-left text-[10px] tracking-widest text-muted-foreground uppercase"
 				>
 					<th class="px-4 py-2 font-medium">username</th>
-					<th class="px-4 py-2 font-medium">role</th>
+					<th class="px-4 py-2 font-medium">scopes</th>
 					<th class="px-4 py-2 font-medium">state</th>
 					<th class="px-4 py-2 font-medium">since</th>
 					<th class="px-4 py-2 text-right font-medium">reset</th>
@@ -160,9 +171,17 @@
 			</thead>
 			<tbody>
 				{#each data.users as u (u.username)}
-					<tr class="border-b border-border/50 last:border-0">
+					<tr class="border-b border-border/50 align-top last:border-0">
 						<td class="px-4 py-2 text-foreground">{u.username}</td>
-						<td class="px-4 py-2">{u.role}</td>
+						<td class="px-4 py-2">
+							<span class="flex flex-wrap gap-1">
+								{#each u.scopes as sc (sc)}
+									<span class="rounded-full bg-muted px-2 py-0.5 text-[10px]">{sc}</span>
+								{:else}
+									<span class="text-muted-foreground/50">none</span>
+								{/each}
+							</span>
+						</td>
 						<td class="px-4 py-2">
 							{#if u.mustChange}
 								<span class="text-accent-amber" title="temp password — guided change on next login"
@@ -189,6 +208,37 @@
 								>
 									Issue new temp
 								</Button>
+							</form>
+						</td>
+					</tr>
+					<!-- the scope editor: the assignment REPLACES the set and
+					     bumps token_version — the copy says what the user loses -->
+					<tr class="border-b border-border/50 last:border-0">
+						<td colspan="5" class="bg-background/40 px-4 py-2">
+							<form
+								method="POST"
+								action="?/scopes"
+								class="flex flex-wrap items-center gap-2"
+								use:enhance
+							>
+								<input type="hidden" name="username" value={u.username} />
+								{#each data.catalog as c (c.scope)}
+									<label
+										class="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[11px] transition-colors hover:bg-muted/60"
+									>
+										<input
+											type="checkbox"
+											name="scopes"
+											value={c.scope}
+											checked={u.scopes.includes(c.scope)}
+											class="size-3.5 accent-brand"
+										/>
+										{c.scope}
+									</label>
+								{/each}
+								<Button type="submit" variant="quiet" class="ml-auto py-1 text-inherit"
+									>Set scopes</Button
+								>
 							</form>
 						</td>
 					</tr>

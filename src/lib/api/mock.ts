@@ -315,8 +315,19 @@ export function createMockApi(): AdminApi {
 	// schema runs in TestSetupWizardE2E (per-instance state IS the reset button)
 	const users = new Map<
 		string,
-		{ role: 'admin' | 'editor'; mustChange: boolean; createdAt: string }
+		{ id: string; scopes: string[]; mustChange: boolean; createdAt: string }
 	>();
+	// the PORTAL-MANAGED catalog (the spine ruling: onboarding a scope is a
+	// portal action) — seeded exactly like lumen's migration
+	const catalog = new Map<string, string>([
+		['content:manage', 'the content desks: posts, photos, tags, collections, media'],
+		['secrets:admin', 'the whole Bao cockpit: values, pins, app onboarding, the estate matrix'],
+		['users:manage', 'user creation, scope assignment, the scope catalog, password resets'],
+		['settings:manage', 'portal-level settings (reserved; gated when settings grow)']
+	]);
+	const uid = () => `u-${(seq++).toString(36)}-${btoa(usernameSeed()).slice(0, 6)}`;
+	let userSeq = 0;
+	const usernameSeed = () => `user-${userSeq++}`;
 	const today = () => new Date().toISOString().slice(0, 10);
 	const TW = ['malu', 'rore', 'tade', 'pagi', 'kino', 'vela', 'dumi', 'saro'];
 
@@ -364,15 +375,15 @@ export function createMockApi(): AdminApi {
 	return {
 		async login(username, password) {
 			if (!username || !password) throw new AdminApiError(401, 'credentials required');
-			// mock accepts anything non-empty; lumen actually checks. role +
-			// mustChange mirror the multi-user row semantics (wizard users carry
-			// their real flags; the legacy permissive login reads as a
-			// comfortable admin, as it has since before users existed)
+			// mock accepts anything non-empty; lumen actually checks. scopes +
+			// mustChange mirror the multi-user row semantics (the legacy
+			// permissive login reads as a comfortable admin, as it has since
+			// before users existed)
 			const u = users.get(username);
 			return {
 				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
 				expiresIn: 60 * 60 * 12,
-				role: u?.role ?? 'admin',
+				scopes: u ? [...u.scopes] : [...catalog.keys()],
 				mustChange: u?.mustChange ?? false
 			};
 		},
@@ -390,11 +401,17 @@ export function createMockApi(): AdminApi {
 			if (password.length < 10)
 				throw new AdminApiError(400, 'password must be at least 10 characters');
 			if (users.size > 0) throw new AdminApiError(410, 'setup already completed');
-			users.set(username, { role: 'admin', mustChange: false, createdAt: today() });
+			const id = uid();
+			users.set(username, {
+				id,
+				scopes: [...catalog.keys()],
+				mustChange: false,
+				createdAt: today()
+			});
 			return {
 				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
 				expiresIn: 60 * 60 * 12,
-				role: 'admin',
+				scopes: [...catalog.keys()],
 				mustChange: false
 			};
 		},
@@ -403,7 +420,7 @@ export function createMockApi(): AdminApi {
 			// server would for the account the wizard just minted for
 			const [username, u] = [...users.entries()][0] ?? [];
 			if (!username) throw new AdminApiError(401, 'unauthorized');
-			return { username, role: u.role, mustChange: u.mustChange };
+			return { username, id: u.id, scopes: [...u.scopes], mustChange: u.mustChange };
 		},
 		async changePassword(current, next) {
 			if (!current) throw new AdminApiError(401, 'invalid credentials');
@@ -415,16 +432,23 @@ export function createMockApi(): AdminApi {
 			if (u) u.mustChange = false;
 		},
 		async listUsers() {
-			return [...users.entries()].map(([username, u]) => ({ ...u, username }));
+			return [...users.entries()].map(([username, u]) => ({
+				...u,
+				username,
+				scopes: [...u.scopes]
+			}));
 		},
-		async createUser(username, role) {
+		async createUser(username, granted) {
 			if (users.has(username)) throw new AdminApiError(409, 'username taken');
 			if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username))
 				throw new AdminApiError(
 					400,
 					'username must be 2-32 chars: lowercase letters, digits, dot, dash, underscore'
 				);
-			if (role !== 'admin' && role !== 'editor') throw new AdminApiError(400, 'bad role');
+			// the catalog is the assignable vocabulary — the FK's twin
+			for (const sc of granted) {
+				if (!catalog.has(sc)) throw new AdminApiError(400, `unknown scope: ${sc}`);
+			}
 			// lumen GENERATES the temp server-side (syllable form, once in the
 			// response); the twin forges the same shape without pretending to
 			// the crypto entropy — what matters to callers is the contract
@@ -432,8 +456,42 @@ export function createMockApi(): AdminApi {
 				Array.from({ length: 4 }, (_, i) => TW[(seq + i * 3) % TW.length]).join('-') +
 				'-' +
 				String(1000 + ((seq * 7919) % 9000));
-			users.set(username, { role, mustChange: true, createdAt: today() });
-			return { username, role, mustChange: true, createdAt: today(), tempPassword: temp };
+			const id = uid();
+			users.set(username, { id, scopes: [...granted], mustChange: true, createdAt: today() });
+			return {
+				username,
+				id,
+				scopes: [...granted],
+				mustChange: true,
+				createdAt: today(),
+				tempPassword: temp
+			};
+		},
+		async updateUserScopes(username, granted) {
+			const u = users.get(username);
+			if (!u) throw new AdminApiError(404, 'no such user');
+			for (const sc of granted) {
+				if (!catalog.has(sc)) throw new AdminApiError(400, `unknown scope: ${sc}`);
+			}
+			u.scopes = [...granted];
+			return { username, scopes: [...u.scopes], tokenVersion: seq++ };
+		},
+		async listScopes() {
+			return [...catalog.entries()].map(([scope, description]) => ({ scope, description }));
+		},
+		async addScope(scope, description) {
+			if (!/^[a-z]+:[a-z]+$/.test(scope))
+				throw new AdminApiError(400, 'scope must be <domain>:<verb>, lowercase');
+			if (!description.trim())
+				throw new AdminApiError(400, 'scope must be <domain>:<verb>, lowercase');
+			catalog.set(scope, description);
+			return { scope, description };
+		},
+		async deleteScope(scope) {
+			const holders = [...users.values()].filter((u) => u.scopes.includes(scope)).length;
+			if (holders > 0)
+				throw new AdminApiError(409, `scope still assigned to ${holders} user(s) — unassign first`);
+			if (!catalog.delete(scope)) throw new AdminApiError(404, 'no such scope');
 		},
 		async resetUserPassword(username) {
 			const u = users.get(username);

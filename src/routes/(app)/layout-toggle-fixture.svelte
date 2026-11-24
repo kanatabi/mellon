@@ -10,7 +10,12 @@
 
 	const data = {
 		theme: { theme: 'portal', mode: 'light' } as const,
-		principal: { username: 'probe', role: 'admin' as const, mustChange: false },
+		principal: {
+			username: 'probe',
+			id: 'u-probe',
+			scopes: ['content:manage', 'secrets:admin', 'users:manage', 'settings:manage'],
+			mustChange: false
+		},
 		recent: [],
 		vim: false,
 		autosaveSeconds: 60

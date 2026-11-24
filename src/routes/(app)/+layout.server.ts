@@ -1,5 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import { createApi, isUpstreamConfigured, AdminApiError } from '#lib/api/index.ts';
+import type { Principal } from '#lib/api/types.ts';
 import {
 	cookieTrust,
 	isAuthed,
@@ -27,7 +28,7 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 	// DUAL UPSTREAMS: /admin/session is a CONTROL-PLANE path (routing.ts), so
 	// this ONE call rides ADMIN_URL wherever it lands — identity truth lives
 	// with the users, and the users live with lumen-admin. No fan-out.
-	let principal: { username: string; role: 'admin' | 'editor'; mustChange: boolean } | null = null;
+	let principal: Principal | null = null;
 	if (isUpstreamConfigured() && bearer) {
 		try {
 			principal = await createApi(bearer).whoami();

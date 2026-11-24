@@ -170,7 +170,7 @@
 				}
 			]
 		},
-		...(data.principal?.role === 'admin'
+		...(data.principal?.scopes.includes('users:manage')
 			? [
 					{
 						label: 'Admin',
