@@ -57,10 +57,8 @@
 			{held}
 			onPlace={(dragId, beforeId) => dashboardLayout.place(dragId, beforeId)}
 			onToggleHidden={(id) => dashboardLayout.toggleHidden(id)}
-			onSpanCommit={() => dashboardLayout.persist()}
 			onMove={(id, dir) => dashboardLayout.move(id, dir)}
-			onSpanTarget={(id, colSpan, rowSpan) =>
-				dashboardLayout.setSpan(id, colSpan, rowSpan, WIDGETS, false)}
+			onSpanApply={(id, colSpan, rowSpan) => dashboardLayout.setSpan(id, colSpan, rowSpan, WIDGETS)}
 		/>
 
 		{#if unhiddenAvailable.length || unplaced.length}

@@ -1,8 +1,9 @@
-// The dashboard grid's dom wiring (Round B/B2): the RESIZE zones emit
-// ABSOLUTE span targets (preview live, commit on release), a grip
-// gesture NEVER enters the reorder machine (the gesture split), drag
-// events land through place(), and hidden toggles reflow. happy-dom
-// realities pinned below (dispatch targets, modifier getters).
+// The dashboard grid's dom wiring (Round B3): resize drags render the
+// blue PLACEHOLDER (provisional span, layout holds still) and apply +
+// persist once on release; reorder drags render the GHOST at the
+// landing slot (the sidebar machine); FLIP animates every layout
+// change. happy-dom realities pinned below (dispatch targets, modifier
+// getters, non-rendered grid → the geometry fallback path).
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { describe, expect, it } from 'vitest';
@@ -10,63 +11,66 @@ import Fixture from './grid-fixture.svelte';
 
 /** the corner grip of a card (its aria-label distinguishes it from the
  *  edge zones). */
-function corner(card: HTMLElement): HTMLElement {
+function corner(c: { container: HTMLElement }): HTMLElement {
+	const card = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
 	return card.querySelector('[aria-label^="Resize Widget A — drag"]') as HTMLElement;
+}
+
+function edge(c: { container: HTMLElement }, label: string): HTMLElement {
+	const card = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
+	return card.querySelector(`[aria-label="${label}"]`) as HTMLElement;
 }
 
 function captures(c: { getByTestId(id: string): HTMLElement }): HTMLElement {
 	return c.getByTestId('captures') as HTMLElement;
 }
 
-describe('the dashboard grid wiring (Round B2)', () => {
+describe('the dashboard grid wiring (Round B3)', () => {
 	it('renders one entry per layout card, both present', () => {
 		const c = render(Fixture);
 		expect(c.getAllByLabelText(/widget — Alt\+arrows/)).toHaveLength(2);
 	});
 
-	it('the corner grip: absolute span targets live, commit on release', async () => {
+	it('resize: the placeholder appears mid-drag, the layout holds, apply lands on release', async () => {
 		const c = render(Fixture);
-		const card = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
-		const g = corner(card);
+		const g = corner(c);
 		fireEvent.pointerDown(g, { clientX: 0, clientY: 0, pointerId: 1 });
-		// 100px right of the start: the card's happy-dom rect is zero-width,
-		// so the pitch math rounds large — the WIRING is the assert
 		fireEvent.pointerMove(g, { clientX: 100, clientY: 0, pointerId: 1 });
 		await tick();
-		const target = JSON.parse(captures(c).dataset.spanTarget!);
-		expect(target.id).toBe('w-a');
-		expect(target.colSpan).toBeGreaterThan(3); // absolute, past the start
-		expect(target.rowSpan).toBe(3); // the corner also owns the row axis
+		// the blue container is rendered from the provisional span…
+		expect(c.container.querySelector('[data-resize-placeholder]')).toBeTruthy();
+		// …and NO apply has landed yet (the layout holds still)
+		expect(captures(c).dataset.applied).toBe('null');
+		// the card FLOATS: inline pixel size on the article
+		const card = c.container.querySelector<HTMLElement>('[data-widget-card]')!;
+		expect(card.style.width).not.toBe('');
 		fireEvent.pointerUp(g);
 		await tick();
-		expect(captures(c).dataset.committed).toBe('true');
+		// release: applied + persisted through onSpanApply, placeholder gone
+		const applied = JSON.parse(captures(c).dataset.applied!);
+		expect(applied.id).toBe('w-a');
+		expect(applied.colSpan).toBeGreaterThan(6); // absolute, past the start
+		expect(applied.rowSpan).toBe(6); // the corner owns both axes
+		expect(c.container.querySelector('[data-resize-placeholder]')).toBeNull();
 	});
 
 	it('the right edge locks to width, the bottom edge to height', async () => {
 		const c = render(Fixture);
-		const card = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
-		const edge = (label: string) => card.querySelector<HTMLElement>(`[aria-label="${label}"]`)!;
-		fireEvent.pointerDown(edge('Resize Widget A width — drag, or Shift+Alt+arrows'), {
-			clientX: 0,
-			clientY: 0,
-			pointerId: 1
-		});
-		fireEvent.pointerMove(edge('Resize Widget A width — drag, or Shift+Alt+arrows'), {
-			clientX: 50,
-			clientY: 90,
-			pointerId: 1
-		});
+		const w = edge(c, 'Resize Widget A width — drag, or Shift+Alt+arrows');
+		fireEvent.pointerDown(w, { clientX: 0, clientY: 0, pointerId: 1 });
+		fireEvent.pointerMove(w, { clientX: 60, clientY: 90, pointerId: 1 });
 		await tick();
-		const width = JSON.parse(captures(c).dataset.spanTarget!);
-		expect(width.colSpan).toBeGreaterThan(3);
-		expect(width.rowSpan).toBe(3); // locked
-		fireEvent.pointerUp(edge('Resize Widget A width — drag, or Shift+Alt+arrows'));
+		expect(c.container.querySelector('[data-resize-placeholder]')).toBeTruthy();
+		fireEvent.pointerUp(w);
+		await tick();
+		const applied = JSON.parse(captures(c).dataset.applied!);
+		expect(applied.colSpan).toBeGreaterThan(6);
+		expect(applied.rowSpan).toBe(6); // locked — the dy never counted
 	});
 
 	it('a grip gesture never enters the reorder machine (the gesture split)', async () => {
 		const c = render(Fixture);
-		const card = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
-		const g = corner(card);
+		const g = corner(c);
 		// even if the browser starts a native drag from the grip, the trap
 		// kills it before the grid's reorder handler sees it
 		const ev = new Event('dragstart', { bubbles: true, cancelable: true });
@@ -75,7 +79,7 @@ describe('the dashboard grid wiring (Round B2)', () => {
 		expect(captures(c).dataset.placed).toBe('null'); // no reorder landed
 	});
 
-	it('keyboard parity: Shift+Alt+arrows resize (absolute), Alt+arrows move', async () => {
+	it('keyboard parity: Shift+Alt+arrows apply immediately, Alt+arrows move', async () => {
 		const c = render(Fixture);
 		// the keydown handler lives on the ARTICLE — dispatching on the
 		// wrapper can never reach it (events propagate up, never down)
@@ -88,28 +92,42 @@ describe('the dashboard grid wiring (Round B2)', () => {
 		Object.defineProperty(resizeEv, 'altKey', { get: () => true });
 		article.dispatchEvent(resizeEv);
 		await tick();
-		const target = JSON.parse(captures(c).dataset.spanTarget!);
-		expect(target).toEqual({ id: 'w-a', colSpan: 4, rowSpan: 3 }); // 3 + 1
+		expect(JSON.parse(captures(c).dataset.applied!)).toEqual({
+			id: 'w-a',
+			colSpan: 7,
+			rowSpan: 6
+		}); // 6 + 1, applied immediately (keyboard has no release gesture)
 		const moveEv = new Event('keydown', { bubbles: true });
 		Object.defineProperty(moveEv, 'key', { get: () => 'ArrowDown' });
 		Object.defineProperty(moveEv, 'altKey', { get: () => true });
 		article.dispatchEvent(moveEv);
 		await tick();
-		const moved = JSON.parse(captures(c).dataset.moved!);
-		expect(moved).toEqual({ id: 'w-a', dir: 1 });
+		expect(JSON.parse(captures(c).dataset.moved!)).toEqual({ id: 'w-a', dir: 1 });
 	});
 
-	it('drag landing: dragstart → dragover → drop lands through place()', async () => {
+	it('reorder: the ghost opens the landing slot, the card leaves the flow', async () => {
 		const c = render(Fixture);
 		const a = c.container.querySelector<HTMLElement>('[data-widget-id="w-a"]')!;
 		const b = c.container.querySelector<HTMLElement>('[data-widget-id="w-b"]')!;
 		a.dispatchEvent(new DragEvent('dragstart', { bubbles: true }));
-		b.dispatchEvent(new DragEvent('dragover', { bubbles: true }));
+		await tick();
+		// the lift: the dragged card leaves the flow (its gap closes)
+		expect(c.container.querySelector('[data-widget-id="w-a"]')).toBeNull();
+		// happy-dom drops clientY from DragEvent init (same class as the
+		// KeyboardEvent modifiers) — define it on the instance
+		const over = new DragEvent('dragover', { bubbles: true });
+		Object.defineProperty(over, 'clientY', { get: () => -1 }); // before
+		b.dispatchEvent(over);
+		await tick();
+		// the ghost opens the landing slot before the drop
+		expect(c.container.querySelector('[data-ghost]')).toBeTruthy();
 		b.dispatchEvent(new DragEvent('drop', { bubbles: true }));
 		await tick();
 		const placed = JSON.parse(captures(c).dataset.placed!);
 		expect(placed.dragId).toBe('w-a');
 		expect(placed.beforeId).toBe('w-b');
+		// the ghost is gone once the real card lands
+		expect(c.container.querySelector('[data-ghost]')).toBeNull();
 	});
 
 	it('hidden reflow: the un-pinned card leaves the grid', async () => {

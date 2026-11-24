@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { clampSpan, moveEntry, placeEntry, reconcileLayout, sanitizeLayout } from './layout.ts';
+import {
+	clampSpan,
+	migrateLayout,
+	moveEntry,
+	placeEntry,
+	reconcileLayout,
+	sanitizeLayout,
+	spanHeightPx
+} from './layout.ts';
 import type { WidgetDef } from './widgets/registry.ts';
 
 /**
@@ -47,12 +55,12 @@ describe('reconcileLayout', () => {
 		expect(out.map((e) => e.id)).toEqual(['a', 'b']);
 	});
 
-	it('clamps spans to the grid (6) and the widget minimum', () => {
+	it('clamps spans to the grid (12) and the widget minimum', () => {
 		const out = reconcileLayout(
 			{ entries: [{ id: 'a', colSpan: 99, rowSpan: 0, hidden: false }] },
 			defs
 		);
-		expect(out[0].colSpan).toBe(6);
+		expect(out[0].colSpan).toBe(12);
 		expect(out[0].rowSpan).toBe(1); // minSpan.row
 	});
 });
@@ -106,7 +114,42 @@ describe('sanitizeLayout', () => {
 
 describe('clampSpan', () => {
 	it('respects the grid width and the widget minimum', () => {
-		expect(clampSpan(defs[0], 99, 99)).toEqual({ colSpan: 6, rowSpan: 4 });
+		expect(clampSpan(defs[0], 99, 99)).toEqual({ colSpan: 12, rowSpan: 8 });
 		expect(clampSpan(defs[0], 1, 1)).toEqual({ colSpan: 2, rowSpan: 1 });
+	});
+});
+
+describe('migrateLayout (the B3 ×2 schema bump)', () => {
+	it('unversioned layouts scale colSpan and rowSpan ×2 — same visual size', () => {
+		const old = {
+			entries: [
+				{ id: 'a', colSpan: 3, rowSpan: 2, hidden: false },
+				{ id: 'b', colSpan: 6, rowSpan: 4, hidden: true }
+			]
+		};
+		const migrated = migrateLayout(old)!;
+		expect(migrated.version).toBe(2); // stamped: migrates exactly once
+		expect(migrated.entries[0]).toEqual({ id: 'a', colSpan: 6, rowSpan: 4, hidden: false });
+		expect(migrated.entries[1]).toEqual({ id: 'b', colSpan: 12, rowSpan: 8, hidden: true });
+	});
+
+	it('version-2 layouts pass through untouched — no double scaling', () => {
+		const current = {
+			version: 2,
+			entries: [{ id: 'a', colSpan: 6, rowSpan: 4, hidden: false }]
+		};
+		expect(migrateLayout(current)).toEqual(current);
+	});
+
+	it('null stays null', () => {
+		expect(migrateLayout(null)).toBeNull();
+	});
+});
+
+describe('the finer grid constants', () => {
+	it('a 2-unit rowSpan on the 44px unit = the old single 88px track + gap', () => {
+		// the visual continuity of the ×2: two 44px tracks + one 16px gap
+		// equals the old 88px track + 16px gap footprint
+		expect(spanHeightPx(2)).toBe(104); // 2×44 + 16
 	});
 });

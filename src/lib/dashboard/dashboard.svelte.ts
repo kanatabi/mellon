@@ -8,6 +8,8 @@
 import { WIDGETS, type WidgetDef as WidgetDefT } from './widgets/registry.ts';
 import {
 	clampSpan,
+	LAYOUT_VERSION,
+	migrateLayout,
 	moveEntry,
 	placeEntry,
 	reconcileLayout,
@@ -67,17 +69,18 @@ export class DashboardLayoutStore {
 		if (key === this.loadedKey) return;
 		this.loadedKey = key;
 		this.key = key;
-		const stored = sanitizeLayout(this.storage.load(key), registry);
+		const stored = migrateLayout(sanitizeLayout(this.storage.load(key), registry));
 		const next = reconcileLayout(stored, registry).map((e) => {
 			const def = registry.find((d) => d.id === e.id)!;
 			return { ...e, ...clampSpan(def, e.colSpan, e.rowSpan) };
 		});
 		this.entries = next;
-		this.storage.save(key, { entries: next });
+		this.storage.save(key, { entries: next, version: LAYOUT_VERSION });
 	}
 
 	persist() {
-		if (typeof window !== 'undefined') this.storage.save(this.key, { entries: this.entries });
+		if (typeof window !== 'undefined')
+			this.storage.save(this.key, { entries: this.entries, version: LAYOUT_VERSION });
 	}
 
 	visible = () => this.entries.filter((e) => !e.hidden);

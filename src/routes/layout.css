@@ -652,12 +652,16 @@
 }
 
 /* The dashboard widget grid (the widget-home round): spans ride the --cs
-   variable per entry, adapted per breakpoint — 6 cols at md (span --cs),
-   12 at xl (span --cs×2, the finer stepping); mobile stacks full width. */
+   variable per entry, adapted per breakpoint — 12 cols at md (span --cs),
+   24 at xl (span --cs×2, the finer stepping — the ×2 doubling rule kept
+   from the 6/12 shape); mobile stacks full width. The container is
+   relative: the resize placeholder is absolutely positioned over the
+   tracks. */
 [data-dashboard-grid] {
+	position: relative;
 	/* FIXED row tracks (the Grafana model): resize math needs a constant
 	   row unit — content that outgrows its span scrolls INSIDE the card */
-	grid-auto-rows: 88px;
+	grid-auto-rows: 44px;
 }
 
 [data-widget-entry] {
@@ -670,12 +674,12 @@
 }
 @media (min-width: 768px) {
 	[data-widget-entry] {
-		grid-column: span min(var(--cs, 1), 6);
+		grid-column: span min(var(--cs, 1), 12);
 	}
 }
 @media (min-width: 1280px) {
 	[data-widget-entry] {
-		grid-column: span min(calc(var(--cs, 1) * 2), 12);
+		grid-column: span min(calc(var(--cs, 1) * 2), 24);
 	}
 }
 

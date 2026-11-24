@@ -16,19 +16,45 @@ export interface WidgetLayoutEntry {
 
 export interface DashboardLayout {
 	entries: WidgetLayoutEntry[];
+	/** The storage schema version (2 = the 12-col grid, 44px rows).
+	 *  Unversioned layouts are the original 6-col/88px schema. */
+	version?: number;
 }
 
-export const GRID_COLS = 6; // md+; 12 on xl (the same grid, finer stepping)
-export const MAX_ROW_SPAN = 4;
+export const GRID_COLS = 12; // md+; 24 on xl (the same grid, finer stepping)
+export const MAX_ROW_SPAN = 8;
 /** The row unit is FIXED (unlike the content-sized rows of a plain grid):
- *  every widget row track is 88px tall + the 16px gap — resize math and
+ *  every widget row track is 44px tall + the 16px gap — resize math and
  *  span previews both divide by this constant (the Grafana model: fixed
- *  pixel rows, content scrolls inside the card). */
-export const ROW_UNIT_PX = 88;
+ *  pixel rows, content scrolls inside the card; 44px tracks give the
+ *  30px-Grafana fineness of height steps). */
+export const ROW_UNIT_PX = 44;
 export const GRID_GAP_PX = 16;
+/** The storage schema this code writes — older layouts migrate ×2. */
+export const LAYOUT_VERSION = 2;
 /** The height a widget occupies for a given rowSpan (tracks + inner gaps). */
 export function spanHeightPx(rowSpan: number): number {
 	return rowSpan * ROW_UNIT_PX + (rowSpan - 1) * GRID_GAP_PX;
+}
+
+/**
+ * The schema migration (B3 doubled the grid resolution): a layout saved
+ * before the ×2 (no version stamp) carries 6-grid colSpans and 88px-unit
+ * rowSpans — scale BOTH ×2 so every stored arrangement renders the same
+ * visual size on the finer grid, and stamp it so it migrates exactly
+ * once. Version-2 layouts pass through untouched; garbage stays null.
+ */
+export function migrateLayout(stored: DashboardLayout | null): DashboardLayout | null {
+	if (!stored) return null;
+	if (stored.version === LAYOUT_VERSION) return stored;
+	return {
+		version: LAYOUT_VERSION,
+		entries: stored.entries.map((e) => ({
+			...e,
+			colSpan: e.colSpan * 2,
+			rowSpan: e.rowSpan * 2
+		}))
+	};
 }
 
 /** Clamp a layout entry to the grid's bounds and the widget's own minimum. */
@@ -113,7 +139,8 @@ export function moveEntry(
 }
 
 /** sanitize a persisted layout: entries must reference KNOWN widgets and
- *  carry number spans — anything else is rejected wholesale (defaults). */
+ *  carry number spans — anything else is rejected wholesale (defaults).
+ *  The version stamp passes through (the migration reads it). */
 export function sanitizeLayout(stored: unknown, registry: WidgetDef[]): DashboardLayout | null {
 	if (!stored || typeof stored !== 'object') return null;
 	const raw = (stored as { entries?: unknown }).entries;
@@ -127,5 +154,6 @@ export function sanitizeLayout(stored: unknown, registry: WidgetDef[]): Dashboar
 			typeof (e as WidgetLayoutEntry).colSpan === 'number' &&
 			typeof (e as WidgetLayoutEntry).rowSpan === 'number'
 	) as WidgetLayoutEntry[];
-	return { entries };
+	const version = (stored as { version?: unknown }).version;
+	return { entries, ...(typeof version === 'number' ? { version } : {}) };
 }

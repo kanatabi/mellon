@@ -38,8 +38,8 @@ export const WIDGETS: WidgetDef[] = [
 		description: 'the freshest posts, newest first',
 		href: '/posts',
 		scope: 'content:manage',
-		defaultSpan: { col: 3, row: 3 },
-		minSpan: { col: 2, row: 2 },
+		defaultSpan: { col: 6, row: 6 },
+		minSpan: { col: 4, row: 4 },
 		body: RecentPostsBody
 	},
 	{
@@ -48,8 +48,8 @@ export const WIDGETS: WidgetDef[] = [
 		description: 'the latest additions to the library',
 		href: '/photos',
 		scope: 'content:manage',
-		defaultSpan: { col: 3, row: 3 },
-		minSpan: { col: 2, row: 2 },
+		defaultSpan: { col: 6, row: 6 },
+		minSpan: { col: 4, row: 4 },
 		body: RecentPhotosBody
 	},
 	{
@@ -58,8 +58,8 @@ export const WIDGETS: WidgetDef[] = [
 		description: "the tag desk's newest vocabulary",
 		href: '/tags',
 		scope: 'content:manage',
-		defaultSpan: { col: 3, row: 3 },
-		minSpan: { col: 2, row: 2 },
+		defaultSpan: { col: 6, row: 6 },
+		minSpan: { col: 4, row: 4 },
 		body: RecentTagsBody
 	}
 ];

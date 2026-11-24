@@ -54,13 +54,29 @@
 	}: Props = $props();
 
 	// the resize machine: pointer-captured drags on the corner / edge
-	// zones. The card measures the grid's COLUMN PITCH at drag start
-	// ((width + gap) / span — exact for any span); the row pitch is the
-	// FIXED track + gap. The store owns clamping and persistence.
+	// zones. While dragging, the card FLOATS — pixel-continuous inline
+	// size following the pointer (the Grafana feel: the panel grows under
+	// your cursor; the grid's blue placeholder shows the snapped target
+	// and the layout holds still until release). The card measures the
+	// grid's COLUMN PITCH at drag start ((width + gap) / span — exact for
+	// any span); the row pitch is the FIXED track + gap. The grid owns
+	// the provisional span, the placeholder, and the persistence.
 	type ResizeMode = 'corner' | 'e' | 's';
 	let resizing = $state(false);
 	let mode: ResizeMode = $state('corner');
-	let start = $state({ x: 0, y: 0, colSpan: 0, rowSpan: 0, colPitch: 0 });
+	let start = $state({
+		x: 0,
+		y: 0,
+		colSpan: 0,
+		rowSpan: 0,
+		colPitch: 0,
+		w: 0,
+		h: 0,
+		minW: 0,
+		minH: 0
+	});
+	/** the pixel-continuous float size (null = no float, grid-tracked). */
+	let float = $state<{ w: number; h: number } | null>(null);
 
 	function resizeStart(e: PointerEvent, m: ResizeMode) {
 		const el = (e.currentTarget as HTMLElement).closest('[data-widget-card]') as HTMLElement;
@@ -68,12 +84,18 @@
 		const rect = el.getBoundingClientRect();
 		mode = m;
 		resizing = true;
+		const colPitch = (rect.width + GRID_GAP_PX) / colSpan;
+		const rowPitch = (rect.height + GRID_GAP_PX) / rowSpan;
 		start = {
 			x: e.clientX,
 			y: e.clientY,
 			colSpan,
 			rowSpan,
-			colPitch: (rect.width + GRID_GAP_PX) / colSpan
+			colPitch,
+			w: rect.width,
+			h: rect.height,
+			minW: Math.max(1, def.minSpan.col * colPitch - GRID_GAP_PX),
+			minH: Math.max(1, def.minSpan.row * rowPitch - GRID_GAP_PX)
 		};
 		// no compat mousedown → no native drag from the draggable card,
 		// no text selection under the drag
@@ -87,28 +109,36 @@
 
 	function resizeMove(e: PointerEvent) {
 		if (!resizing) return;
+		const dx = e.clientX - start.x;
+		const dy = e.clientY - start.y;
 		// 'e' locks to width, 's' locks to height, corner does both
-		const colDelta = mode === 's' ? 0 : Math.round((e.clientX - start.x) / start.colPitch);
-		const rowDelta =
-			mode === 'e' ? 0 : Math.round((e.clientY - start.y) / (ROW_UNIT_PX + GRID_GAP_PX));
-		if (colDelta === 0 && rowDelta === 0) return;
-		// ABSOLUTE targets from the START geometry — the live-applied
-		// spans are never the reference (the compounding bug)
-		onSpanTarget(
-			Math.max(def.minSpan.col, start.colSpan + colDelta),
-			Math.max(def.minSpan.row, start.rowSpan + rowDelta)
-		);
+		const colDelta = mode === 's' ? 0 : Math.round(dx / start.colPitch);
+		const rowDelta = mode === 'e' ? 0 : Math.round(dy / (ROW_UNIT_PX + GRID_GAP_PX));
+		// the FLOAT: pixel-continuous, clamped only by the widget minimum
+		const w = mode === 's' ? start.w : Math.max(start.minW, start.w + dx);
+		const h = mode === 'e' ? start.h : Math.max(start.minH, start.h + dy);
+		if (colDelta === 0 && rowDelta === 0 && float?.w === w && float.h === h) return;
+		float = { w, h };
+		if (colDelta !== 0 || rowDelta !== 0) {
+			// ABSOLUTE targets from the START geometry — the live-applied
+			// spans are never the reference (the compounding bug)
+			onSpanTarget(
+				Math.max(def.minSpan.col, start.colSpan + colDelta),
+				Math.max(def.minSpan.row, start.rowSpan + rowDelta)
+			);
+		}
 	}
 
 	function resizeEnd() {
 		if (!resizing) return;
 		resizing = false;
-		onSpanCommit(); // the store persists on release, never per move
+		float = null; // back to the grid-tracked (snapped) size
+		onSpanCommit(); // the grid applies the provisional span + persists
 	}
 
 	function keydown(e: KeyboardEvent) {
-		// Shift+Alt+arrows = resize (absolute target from the LIVE props);
-		// Alt+arrows = move
+		// Shift+Alt+arrows = resize — provisional then IMMEDIATE commit
+		// (keyboard has no release gesture); Alt+arrows = move
 		if (e.shiftKey && e.altKey) {
 			const col = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
 			const row = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
@@ -118,6 +148,7 @@
 					Math.max(def.minSpan.col, colSpan + col),
 					Math.max(def.minSpan.row, rowSpan + row)
 				);
+				onSpanCommit();
 			}
 			return;
 		}
@@ -140,6 +171,7 @@
 	draggable="true"
 	tabindex="0"
 	onkeydown={keydown}
+	style={float ? `width: ${float.w}px; height: ${float.h}px; z-index: 30;` : undefined}
 	class="group relative flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-3 transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {resizing
 		? 'ring-2 ring-brand/60'
 		: ''}"
