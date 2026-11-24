@@ -5,7 +5,7 @@
 // Esc/backdrop dismiss.
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import Picker from './WidgetPicker.svelte';
 import { WIDGETS } from './widgets/registry.ts';
 
@@ -30,9 +30,27 @@ describe('the widget picker (Round D)', () => {
 			}
 		});
 		expect(open(c)).toBeTruthy();
-		// three rows, zero widget bodies — the preview is icon + skeleton bars
+		// three rows, zero canvas bodies — the previews mount the REAL
+		// bodies in preview mode (placeholder content, no fetch)
 		expect(c.getAllByLabelText(/widget row/)).toHaveLength(3);
-		expect(c.container.querySelector('[data-widget-card]')).toBeNull();
+		// the posts preview shows the real row shape: status pill chrome
+		expect(c.container.textContent?.toLowerCase()).toContain('draft');
+	});
+
+	it('opening the panel fires ZERO relay calls — bodies never fetch in preview mode', () => {
+		const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(new Response('{}'));
+		render(Picker, {
+			props: {
+				registry: WIDGETS,
+				placedIds: [],
+				held: () => true,
+				open: true,
+				onAdd: () => {},
+				onClose: () => {}
+			}
+		});
+		expect(fetchSpy).not.toHaveBeenCalled();
+		fetchSpy.mockRestore();
 	});
 
 	it('multi-select: toggling two rows then Add commits BOTH ids in order', async () => {

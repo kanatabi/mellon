@@ -128,10 +128,12 @@
 										></span>
 									{/if}
 								</div>
-								<div class="flex flex-col gap-1.5 p-3" aria-hidden="true">
-									<span class="h-2 w-1/2 rounded bg-muted/70"></span>
-									<span class="h-2 w-3/4 rounded bg-muted/50"></span>
-									<span class="h-2 w-2/3 rounded bg-muted/40"></span>
+								<!-- the STATIC-STRUCTURE preview: the REAL body in
+								     preview mode — the user sees the shape they'll
+								     get, with placeholder content and ZERO relay
+								     calls (bodies never fetch in preview mode) -->
+								<div class="pointer-events-none overflow-hidden p-2" aria-hidden="true">
+									<w.body preview={true} />
 								</div>
 								<p class="px-3 pb-3 font-mono text-[10px] text-muted-foreground/70">
 									{w.description}

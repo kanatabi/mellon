@@ -27,8 +27,11 @@ export interface WidgetDef {
 	/** The picker's STATIC preview icon (no fetches — the real body never
 	 *  mounts in the panel). */
 	icon?: typeof import('lucide-svelte').FileText;
-	/** The card's inner component — self-contained, fetches its own data. */
-	body: Component<Record<string, never>>;
+	/** The card's inner component — self-contained, fetches its own data.
+	 *  `preview` renders the REAL structure with placeholder content and
+	 *  never fetches (the picker's rows — the contract: every body
+	 *  honors it). */
+	body: Component<{ preview?: boolean }>;
 }
 
 import RecentPostsBody from './recent-posts/body.svelte';
