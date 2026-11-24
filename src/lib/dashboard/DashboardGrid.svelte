@@ -6,8 +6,9 @@
 	 * The dashboard grid — 6 columns (md+; 12 on xl, the finer stepping),
 	 * dense flow: holes fill after moves/unpins. Each card renders its
 	 * registry body. Drag-to-reorder rides HTML5 DnD on the data-widget
-	 * cards and lands through the store's place(); resize arrives in
-	 * Round B. Spans ride a CSS VARIABLE (--cs) so layout.css can adapt
+	 * cards and lands through the store's place(). Resize rides the
+	 * card's corner/edge zones — absolute span targets, applied live.
+	 * Spans ride a CSS VARIABLE (--cs) so layout.css can adapt
 	 * them per breakpoint — a span of 3/6 at md becomes 6/12 at xl.
 	 */
 	interface Props {
@@ -18,11 +19,21 @@
 		onToggleHidden: (id: string) => void;
 		onSpanCommit: () => void;
 		onMove: (id: string, dir: -1 | 1) => void;
-		onResize: (id: string, colDelta: number, rowDelta: number) => void;
+		/** ABSOLUTE span targets (the card computes them from its start
+		 *  geometry) — applied live without persist. */
+		onSpanTarget: (id: string, colSpan: number, rowSpan: number) => void;
 	}
 
-	let { registry, entries, held, onPlace, onToggleHidden, onSpanCommit, onMove, onResize }: Props =
-		$props();
+	let {
+		registry,
+		entries,
+		held,
+		onPlace,
+		onToggleHidden,
+		onSpanCommit,
+		onMove,
+		onSpanTarget
+	}: Props = $props();
 
 	let dragId = $state<string | null>(null);
 	let overId = $state<string | null>(null);
@@ -84,7 +95,7 @@
 					onToggleHidden={() => onToggleHidden(entry.id)}
 					{onSpanCommit}
 					onMove={(dir) => onMove(entry.id, dir)}
-					onResize={(colDelta, rowDelta) => onResize(entry.id, colDelta, rowDelta)}
+					onSpanTarget={(colSpan, rowSpan) => onSpanTarget(entry.id, colSpan, rowSpan)}
 				>
 					<def.body />
 				</WidgetCard>

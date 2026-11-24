@@ -1,17 +1,27 @@
 <script lang="ts">
 	import { GripVertical, Eye, EyeOff, GripHorizontal } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
-	import { GRID_GAP_PX } from './layout.ts';
+	import { GRID_GAP_PX, ROW_UNIT_PX } from './layout.ts';
 	import type { WidgetDef } from './widgets/registry.ts';
 
 	/**
 	 * The widget card — the shared SHELL of the dashboard home: title,
-	 * drag handle (the grid-reorder action reads it), pin/unpin, and the
-	 * RESIZE grip (bottom-right corner: pointer-captured edge-drag whose
-	 * pixel deltas the GRID converts to span changes — Round B). Knows
-	 * nothing about widget content — bodies are self-contained components.
-	 * Keyboard parity (doctrine #4): Alt+arrows move (the grid wires it);
-	 * Shift+Alt+arrows resize.
+	 * drag handle, pin/unpin, and the RESIZE machine (corner grip +
+	 * right/bottom edge zones — the Grafana "custom grid" feel).
+	 *
+	 * THE GESTURE SPLIT (the 2026-11-24 hijack lesson): the article is
+	 * the REORDER drag source (HTML5 DnD — the grid's machine), so the
+	 * resize zones are DRAG-IMMUNE by three layers: draggable="false"
+	 * keeps them from seeding a native drag, the pointerdown
+	 * preventDefault kills the compat mousedown that seeds one, and the
+	 * dragstart trap (stopPropagation + preventDefault) is the
+	 * belt-and-braces — no grip gesture can ever enter the reorder
+	 * machine.
+	 *
+	 * onSpanTarget carries ABSOLUTE spans, not deltas: the pointer drag
+	 * computes them from the START geometry (the live-applied spans must
+	 * never compound the delta), keyboard parity adds the delta to the
+	 * LIVE props. The store still clamps to min + grid.
 	 */
 	interface Props {
 		def: WidgetDef;
@@ -19,9 +29,9 @@
 		colSpan: number;
 		rowSpan: number;
 		onToggleHidden: () => void;
-		/** Span deltas from a grip drag or Shift+Alt+arrows: the grid clamps
-		 *  and applies them live (no persist) — the release persists once. */
-		onResize: (colDelta: number, rowDelta: number) => void;
+		/** Absolute target spans from a resize drag or Shift+Alt+arrows —
+		 *  applied live (no persist); the release persists once. */
+		onSpanTarget: (colSpan: number, rowSpan: number) => void;
 		/** The release: the grid persists the applied span. */
 		onSpanCommit: () => void;
 		/** Keyboard move (order neighbor swap). */
@@ -37,43 +47,57 @@
 		colSpan,
 		rowSpan,
 		onToggleHidden,
+		onSpanTarget,
 		onSpanCommit,
 		onMove,
-		onResize,
 		children
 	}: Props = $props();
 
-	// the resize machine: pointer-captured corner-drag. The card holds the
-	// START geometry and emits PIXEL-DELTA-derived span deltas; the grid
-	// owns the clamping (minSpan) and the persistence (release only).
+	// the resize machine: pointer-captured drags on the corner / edge
+	// zones. The card measures the grid's COLUMN PITCH at drag start
+	// ((width + gap) / span — exact for any span); the row pitch is the
+	// FIXED track + gap. The store owns clamping and persistence.
+	type ResizeMode = 'corner' | 'e' | 's';
 	let resizing = $state(false);
-	let start = $state({ x: 0, y: 0, colSpan: 0, rowSpan: 0, colW: 0 });
+	let mode: ResizeMode = $state('corner');
+	let start = $state({ x: 0, y: 0, colSpan: 0, rowSpan: 0, colPitch: 0 });
 
-	function resizeStart(e: PointerEvent) {
+	function resizeStart(e: PointerEvent, m: ResizeMode) {
 		const el = (e.currentTarget as HTMLElement).closest('[data-widget-card]') as HTMLElement;
 		if (!el) return;
 		const rect = el.getBoundingClientRect();
+		mode = m;
 		resizing = true;
 		start = {
 			x: e.clientX,
 			y: e.clientY,
 			colSpan,
 			rowSpan,
-			colW: (rect.width + GRID_GAP_PX) / colSpan
+			colPitch: (rect.width + GRID_GAP_PX) / colSpan
 		};
+		// no compat mousedown → no native drag from the draggable card,
+		// no text selection under the drag
+		e.preventDefault();
 		try {
 			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		} catch {
-			/* capture is polish — the grip's own listeners keep the drag alive */
+			/* capture is polish — the zone's own listeners keep the drag alive */
 		}
 	}
 
 	function resizeMove(e: PointerEvent) {
 		if (!resizing) return;
-		const colDelta = Math.round((e.clientX - start.x) / (start.colW + GRID_GAP_PX));
-		const rowDelta = Math.round((e.clientY - start.y) / (88 + GRID_GAP_PX));
+		// 'e' locks to width, 's' locks to height, corner does both
+		const colDelta = mode === 's' ? 0 : Math.round((e.clientX - start.x) / start.colPitch);
+		const rowDelta =
+			mode === 'e' ? 0 : Math.round((e.clientY - start.y) / (ROW_UNIT_PX + GRID_GAP_PX));
 		if (colDelta === 0 && rowDelta === 0) return;
-		onResize(colDelta, rowDelta);
+		// ABSOLUTE targets from the START geometry — the live-applied
+		// spans are never the reference (the compounding bug)
+		onSpanTarget(
+			Math.max(def.minSpan.col, start.colSpan + colDelta),
+			Math.max(def.minSpan.row, start.rowSpan + rowDelta)
+		);
 	}
 
 	function resizeEnd() {
@@ -83,13 +107,17 @@
 	}
 
 	function keydown(e: KeyboardEvent) {
-		// Shift+Alt+arrows = resize (the grid clamps); Alt+arrows = move
+		// Shift+Alt+arrows = resize (absolute target from the LIVE props);
+		// Alt+arrows = move
 		if (e.shiftKey && e.altKey) {
 			const col = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
 			const row = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
 			if (col !== 0 || row !== 0) {
 				e.preventDefault();
-				onResize(col, row);
+				onSpanTarget(
+					Math.max(def.minSpan.col, colSpan + col),
+					Math.max(def.minSpan.row, rowSpan + row)
+				);
 			}
 			return;
 		}
@@ -97,6 +125,12 @@
 			e.preventDefault();
 			onMove(e.key === 'ArrowUp' ? -1 : 1);
 		}
+	}
+
+	/** the dragstart trap shared by every resize zone. */
+	function killDrag(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
 	}
 </script>
 
@@ -106,7 +140,9 @@
 	draggable="true"
 	tabindex="0"
 	onkeydown={keydown}
-	class="group relative flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-3 outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+	class="group relative flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-3 transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {resizing
+		? 'ring-2 ring-brand/60'
+		: ''}"
 	aria-label="{def.title} widget — Alt+arrows to move, Shift+Alt+arrows to resize, drag to reorder"
 >
 	<header class="flex items-center justify-between gap-2">
@@ -150,16 +186,43 @@
 		<div class="min-h-0 min-w-0 flex-1 overflow-y-auto">{@render children()}</div>
 	{/if}
 	{#if !hidden}
-		<!-- the resize grip: the corner — pointer-captured, snapped to
-		     spans by the grid's handlers; visible on card hover/focus -->
+		<!-- the resize zones (the Grafana custom-grid feel): the right
+		     edge = width only, the bottom edge = height only, the corner =
+		     both (last in DOM so it wins the overlap). Drag-immune — see
+		     the gesture-split note; touch-none keeps a touch drag from
+		     scrolling the page instead. -->
 		<div
-			class="absolute right-0 bottom-0 cursor-nwse-resize p-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100"
+			class="absolute top-4 -right-1 bottom-4 z-10 w-2 cursor-ew-resize touch-none"
+			draggable="false"
 			role="separator"
-			aria-label="Resize {def.title} — drag, or Shift+Alt+arrows"
-			onpointerdown={resizeStart}
+			aria-label="Resize {def.title} width — drag, or Shift+Alt+arrows"
+			onpointerdown={(e) => resizeStart(e, 'e')}
 			onpointermove={resizeMove}
 			onpointerup={resizeEnd}
 			onpointercancel={resizeEnd}
+			ondragstart={killDrag}
+		></div>
+		<div
+			class="absolute right-4 -bottom-1 left-4 z-10 h-2 cursor-ns-resize touch-none"
+			draggable="false"
+			role="separator"
+			aria-label="Resize {def.title} height — drag, or Shift+Alt+arrows"
+			onpointerdown={(e) => resizeStart(e, 's')}
+			onpointermove={resizeMove}
+			onpointerup={resizeEnd}
+			onpointercancel={resizeEnd}
+			ondragstart={killDrag}
+		></div>
+		<div
+			class="absolute right-0 bottom-0 z-10 cursor-nwse-resize touch-none p-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100"
+			draggable="false"
+			role="separator"
+			aria-label="Resize {def.title} — drag the corner, or Shift+Alt+arrows"
+			onpointerdown={(e) => resizeStart(e, 'corner')}
+			onpointermove={resizeMove}
+			onpointerup={resizeEnd}
+			onpointercancel={resizeEnd}
+			ondragstart={killDrag}
 		>
 			<GripHorizontal class="size-3 text-muted-foreground/60" aria-hidden="true" />
 		</div>
