@@ -7,10 +7,14 @@ workspace-wide non-negotiables.
 
 ## 1. What this repo is (60 seconds)
 
-- The **private admin portal** of the `omicron` workspace: content management for
-  [earendil](https://github.com/kanatabi/earendil) and env/secret management for the
-  cluster — one keyboard-first web app, talking ONLY to
-  [lumen](https://github.com/kanatabi/lumen).
+- The **private admin portal** of the `omicron` workspace — becoming the
+  owner's personal/family app center (the RBAC spine, 2026-11-24):
+  content management for [earendil](https://github.com/kanatabi/earendil),
+  env/secret management for the cluster, and the UI surface for every
+  app that lands later — one keyboard-first web app, talking ONLY to
+  the estate's backend services (lumen for identity + content; future
+  app BEs verify lumen tokens and enforce their own scopes — the RBAC
+  ADR in the omicron vault's decisions tier).
 - **UI-only by doctrine:** the relay forwards, it never decides (§2.2). All logic,
   auth, credentials, and policy live in lumen. Mellon holds **no secrets** — no Bao
   tokens, no GitHub tokens, no DB creds, in any layer, any era.

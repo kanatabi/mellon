@@ -25,6 +25,10 @@ branch-per-milestone, pinned versions) are inherited from `earendil`.
 
 - **Content management**: posts (raw-markdown editor + true-to-prod preview, drafts,
   publish), photos (upload → lumen), tags (BE-curated cloud, read + assign).
+  **RBAC (2026-11-24):** user ROLES are gone — users carry explicit scopes
+  (the catalog is portal-managed; enforcement is lumen's, the portal
+  renders lumen's truth as affordances — the ADR in the omicron vault's
+  decisions tier).
 - **Basic env/secret management**: browse app/env secrets through lumen's Bao passthrough
   (read, edit with CAS, version history, diff, rollback-by-pin) — the surface §5.5 of
   `INFRA_ARCHITECTURE.md` already specifies.
@@ -432,12 +436,14 @@ renders the OS's own popup — off-theme by construction. The house `Select`
 (trigger + fixed-anchored popover: the Combobox's viewport-fit grammar without
 the search box — these are small fixed lists) replaced every native select: the
 vault app picker, compare's four (app / env / from / to — long version labels
-show whole in the list, truncated on the trigger), and the users-page role
-field, which rides the form POST through a hidden input. The keyboard contract
+show whole in the list, truncated on the trigger). The keyboard contract
 holds: arrows rove, Enter selects, Esc closes, focus returns to the trigger.
+(The users-page ROLE field died with the RBAC spine — the grant is a
+checkbox fieldset now, 2026-11-24.)
 
 - **Left nav**: grouped sections — Content (dashboard · posts · photos · tags),
-  Control plane (configs · vault · compare), Admin (users, admins only). Section
+  Control plane (configs · vault · compare), Admin (users, users:manage
+  scope-holders — the RBAC spine). Section
   labels are mono, uppercase, `text-xs tracking-widest`, one hue per destination
   (§11.3). At `lg+` a persistent rail (collapsible to icons); **below `lg` the strip
   is gone — a hamburger in the topbar slides the same menu in as a left drawer**
@@ -698,7 +704,9 @@ doors: the wizard's forced mode and the Settings security card.
 register mode while lumen reports the estate unclaimed (TOFU, dies on first
 claim), change mode for must_change arrivals (admin temps and resets) —
 login and the layout's whoami probe route into it; the 428 lock is honored
-server-side, never merely styled. `/settings/users` (admin card + desk)
-mints users and re-issues temps; the one-time reveal is exactly that — once.
+server-side, never merely styled. `/admin/users` (the users:manage surface — creation's scope picker, the
+per-user scope editor, and the PORTAL-MANAGED scope catalog) mints users,
+re-issues temps and grants scopes; the one-time reveal is exactly that —
+once.
 Doctrine intact: the portal holds no credentials and decides nothing — every
 rule the wizard renders is lumen's.
