@@ -78,14 +78,22 @@ export class DashboardLayoutStore {
 		this.persist();
 	};
 
-	/** the resize verb (the spine's free spans, clamped to min + grid). */
-	setSpan = (id: string, colSpan: number, rowSpan: number, registry: WidgetDefT[]) => {
+	/** the resize verb (the spine's free spans, clamped to min + grid).
+	 *  `persist` = false during a grip DRAG (the live preview); the release
+	 *  calls persist() once. */
+	setSpan = (
+		id: string,
+		colSpan: number,
+		rowSpan: number,
+		registry: WidgetDefT[],
+		persist = true
+	) => {
 		const def = registry.find((d) => d.id === id);
 		if (!def) return;
 		this.entries = this.entries.map((e) =>
 			e.id === id ? { ...e, ...clampSpan(def, colSpan, rowSpan) } : e
 		);
-		this.persist();
+		if (persist) this.persist();
 	};
 
 	place = (dragId: string, beforeId: string | null) => {

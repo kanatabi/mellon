@@ -654,8 +654,19 @@
 /* The dashboard widget grid (the widget-home round): spans ride the --cs
    variable per entry, adapted per breakpoint — 6 cols at md (span --cs),
    12 at xl (span --cs×2, the finer stepping); mobile stacks full width. */
+[data-dashboard-grid] {
+	/* FIXED row tracks (the Grafana model): resize math needs a constant
+	   row unit — content that outgrows its span scrolls INSIDE the card */
+	grid-auto-rows: 88px;
+}
+
 [data-widget-entry] {
 	grid-column: 1 / -1;
+	height: 100%;
+}
+
+[data-widget-entry] > [data-widget-card] {
+	height: 100%;
 }
 @media (min-width: 768px) {
 	[data-widget-entry] {

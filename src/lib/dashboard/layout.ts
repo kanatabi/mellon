@@ -20,6 +20,16 @@ export interface DashboardLayout {
 
 export const GRID_COLS = 6; // md+; 12 on xl (the same grid, finer stepping)
 export const MAX_ROW_SPAN = 4;
+/** The row unit is FIXED (unlike the content-sized rows of a plain grid):
+ *  every widget row track is 88px tall + the 16px gap — resize math and
+ *  span previews both divide by this constant (the Grafana model: fixed
+ *  pixel rows, content scrolls inside the card). */
+export const ROW_UNIT_PX = 88;
+export const GRID_GAP_PX = 16;
+/** The height a widget occupies for a given rowSpan (tracks + inner gaps). */
+export function spanHeightPx(rowSpan: number): number {
+	return rowSpan * ROW_UNIT_PX + (rowSpan - 1) * GRID_GAP_PX;
+}
 
 /** Clamp a layout entry to the grid's bounds and the widget's own minimum. */
 export function clampSpan(

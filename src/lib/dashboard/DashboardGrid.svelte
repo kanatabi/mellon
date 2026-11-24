@@ -16,9 +16,13 @@
 		held: (scope: string) => boolean;
 		onPlace: (dragId: string, beforeId: string | null) => void;
 		onToggleHidden: (id: string) => void;
+		onSpanCommit: () => void;
+		onMove: (id: string, dir: -1 | 1) => void;
+		onResize: (id: string, colDelta: number, rowDelta: number) => void;
 	}
 
-	let { registry, entries, held, onPlace, onToggleHidden }: Props = $props();
+	let { registry, entries, held, onPlace, onToggleHidden, onSpanCommit, onMove, onResize }: Props =
+		$props();
 
 	let dragId = $state<string | null>(null);
 	let overId = $state<string | null>(null);
@@ -60,6 +64,7 @@
 		{#if def && (held(def.scope ?? '') ?? true) && !entry.hidden}
 			<div
 				data-widget-entry
+				data-widget-id={entry.id}
 				style={`--cs: ${entry.colSpan}; grid-row: span ${entry.rowSpan}`}
 				class:opacity-40={dragId === entry.id}
 				role="listitem"
@@ -71,7 +76,16 @@
 					overId = null;
 				}}
 			>
-				<WidgetCard {def} hidden={false} onToggleHidden={() => onToggleHidden(entry.id)}>
+				<WidgetCard
+					{def}
+					hidden={false}
+					colSpan={entry.colSpan}
+					rowSpan={entry.rowSpan}
+					onToggleHidden={() => onToggleHidden(entry.id)}
+					{onSpanCommit}
+					onMove={(dir) => onMove(entry.id, dir)}
+					onResize={(colDelta, rowDelta) => onResize(entry.id, colDelta, rowDelta)}
+				>
 					<def.body />
 				</WidgetCard>
 			</div>
