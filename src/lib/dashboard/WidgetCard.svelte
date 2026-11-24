@@ -66,6 +66,8 @@
 		y: 0,
 		w: 0,
 		h: 0,
+		pxW: 0,
+		pxH: 0,
 		colPitch: 0,
 		rowPitch: 0,
 		minW: 0,
@@ -91,8 +93,10 @@
 		start = {
 			x: e.clientX,
 			y: e.clientY,
-			w,
+			w, // grid units — the TARGET arithmetic lives here
 			h,
+			pxW: rect.width, // pixels at drag start — the FLOAT's reference
+			pxH: rect.height,
 			colPitch,
 			rowPitch,
 			minW: Math.max(1, def.minSpan.col * colPitch - GRID_GAP_PX),
@@ -116,10 +120,14 @@
 		// 'e' locks to width, 's' locks to height, corner does both
 		const colDelta = mode === 's' ? 0 : Math.round(dx / start.colPitch);
 		const rowDelta = mode === 'e' ? 0 : Math.round(dy / start.rowPitch);
-		// the FLOAT: pixel-continuous, clamped to the widget minimum AND
-		// the canvas edge — the preview always matches what release keeps
-		const fw = mode === 's' ? start.w : Math.min(start.maxW, Math.max(start.minW, start.w + dx));
-		const fh = mode === 'e' ? start.h : Math.min(start.maxH, Math.max(start.minH, start.h + dy));
+		// the FLOAT: pixel-continuous from the PIXEL start size (mixing
+		// the unit counts in here collapsed the card to ~minWpx — the
+		// minimum-size-on-grab bug), clamped to the widget minimum AND
+		// the canvas edge; 'e' locks height, 's' locks width
+		const fw =
+			mode === 's' ? start.pxW : Math.min(start.maxW, Math.max(start.minW, start.pxW + dx));
+		const fh =
+			mode === 'e' ? start.pxH : Math.min(start.maxH, Math.max(start.minH, start.pxH + dy));
 		if (colDelta === 0 && rowDelta === 0 && float?.w === fw && float.h === fh) return;
 		float = { w: fw, h: fh };
 		if (colDelta !== 0 || rowDelta !== 0) {
