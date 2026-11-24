@@ -90,6 +90,26 @@ export const client: AdminApi = {
 			method: 'PATCH',
 			body: JSON.stringify({ scopes })
 		}),
+	revokeSessions: (username) =>
+		call<ScopeAssignment>(`/users/${encodeURIComponent(username)}/revoke-sessions`, {
+			method: 'POST',
+			body: '{}'
+		}),
+	forcePasswordChange: (username) =>
+		call<{ username: string; mustChange: boolean }>(
+			`/users/${encodeURIComponent(username)}/force-change`,
+			{ method: 'POST', body: '{}' }
+		),
+	setUserDisabled: (username, disabled) =>
+		call<ScopeAssignment>(
+			`/users/${encodeURIComponent(username)}/${disabled ? 'disable' : 'enable'}`,
+			{
+				method: 'POST',
+				body: '{}'
+			}
+		),
+	deleteUser: (username) =>
+		call<void>(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
 	listScopes: () => call<CatalogEntry[]>('/scopes'),
 	addScope: (scope, description) =>
 		call<CatalogEntry>('/scopes', {

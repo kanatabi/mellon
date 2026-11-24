@@ -162,6 +162,29 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				op: 'users.scopes.set',
 				body: { scopes }
 			}),
+		revokeSessions: (username) =>
+			call<ScopeAssignment>(
+				'POST',
+				`/admin/users/${encodeURIComponent(username)}/revoke-sessions`,
+				{
+					op: 'users.revoke',
+					body: {}
+				}
+			),
+		forcePasswordChange: (username) =>
+			call<{ username: string; mustChange: boolean }>(
+				'POST',
+				`/admin/users/${encodeURIComponent(username)}/force-change`,
+				{ op: 'users.force', body: {} }
+			),
+		setUserDisabled: (username, disabled) =>
+			call<ScopeAssignment>(
+				'POST',
+				`/admin/users/${encodeURIComponent(username)}/${disabled ? 'disable' : 'enable'}`,
+				{ op: disabled ? 'users.disable' : 'users.enable', body: {} }
+			),
+		deleteUser: (username) =>
+			call<void>('DELETE', `/admin/users/${encodeURIComponent(username)}`, { op: 'users.delete' }),
 		listScopes: () => call<CatalogEntry[]>('GET', '/admin/scopes', { op: 'scopes.list' }),
 		addScope: (scope, description) =>
 			call<CatalogEntry>('POST', '/admin/scopes', {

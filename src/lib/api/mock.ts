@@ -315,7 +315,7 @@ export function createMockApi(): AdminApi {
 	// schema runs in TestSetupWizardE2E (per-instance state IS the reset button)
 	const users = new Map<
 		string,
-		{ id: string; scopes: string[]; mustChange: boolean; createdAt: string }
+		{ id: string; scopes: string[]; mustChange: boolean; disabled: boolean; createdAt: string }
 	>();
 	// the PORTAL-MANAGED catalog (the spine ruling: onboarding a scope is a
 	// portal action) — seeded exactly like lumen's migration
@@ -384,7 +384,8 @@ export function createMockApi(): AdminApi {
 				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
 				expiresIn: 60 * 60 * 12,
 				scopes: u ? [...u.scopes] : [...catalog.keys()],
-				mustChange: u?.mustChange ?? false
+				mustChange: u?.mustChange ?? false,
+				disabled: u?.disabled ?? false
 			};
 		},
 
@@ -406,13 +407,15 @@ export function createMockApi(): AdminApi {
 				id,
 				scopes: [...catalog.keys()],
 				mustChange: false,
+				disabled: false,
 				createdAt: today()
 			});
 			return {
 				token: `mock.${seq++}.${btoa(username).slice(0, 8)}`,
 				expiresIn: 60 * 60 * 12,
 				scopes: [...catalog.keys()],
-				mustChange: false
+				mustChange: false,
+				disabled: false
 			};
 		},
 		async whoami() {
@@ -420,7 +423,13 @@ export function createMockApi(): AdminApi {
 			// server would for the account the wizard just minted for
 			const [username, u] = [...users.entries()][0] ?? [];
 			if (!username) throw new AdminApiError(401, 'unauthorized');
-			return { username, id: u.id, scopes: [...u.scopes], mustChange: u.mustChange };
+			return {
+				username,
+				id: u.id,
+				scopes: [...u.scopes],
+				mustChange: u.mustChange,
+				disabled: u.disabled
+			};
 		},
 		async changePassword(current, next) {
 			if (!current) throw new AdminApiError(401, 'invalid credentials');
@@ -457,12 +466,19 @@ export function createMockApi(): AdminApi {
 				'-' +
 				String(1000 + ((seq * 7919) % 9000));
 			const id = uid();
-			users.set(username, { id, scopes: [...granted], mustChange: true, createdAt: today() });
+			users.set(username, {
+				id,
+				scopes: [...granted],
+				mustChange: true,
+				disabled: false,
+				createdAt: today()
+			});
 			return {
 				username,
 				id,
 				scopes: [...granted],
 				mustChange: true,
+				disabled: false,
 				createdAt: today(),
 				tempPassword: temp
 			};
@@ -475,6 +491,28 @@ export function createMockApi(): AdminApi {
 			}
 			u.scopes = [...granted];
 			return { username, scopes: [...u.scopes], tokenVersion: seq++ };
+		},
+		async revokeSessions(username) {
+			const u = users.get(username);
+			if (!u) throw new AdminApiError(404, 'no such user');
+			// the revocation lever, mirrored (the twin has no real tokens to
+			// kill — the bump is the contract, not the mechanism)
+			return { username, scopes: [...u.scopes], tokenVersion: seq++ };
+		},
+		async forcePasswordChange(username) {
+			const u = users.get(username);
+			if (!u) throw new AdminApiError(404, 'no such user');
+			u.mustChange = true;
+			return { username, mustChange: true };
+		},
+		async setUserDisabled(username, disabled) {
+			const u = users.get(username);
+			if (!u) throw new AdminApiError(404, 'no such user');
+			u.disabled = disabled;
+			return { username, scopes: [...u.scopes], tokenVersion: disabled ? seq++ : 0 };
+		},
+		async deleteUser(username) {
+			if (!users.delete(username)) throw new AdminApiError(404, 'no such user');
 		},
 		async listScopes() {
 			return [...catalog.entries()].map(([scope, description]) => ({ scope, description }));

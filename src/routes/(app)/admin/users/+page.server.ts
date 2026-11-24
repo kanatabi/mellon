@@ -58,32 +58,7 @@ export const actions: Actions = {
 			return { error: e instanceof AdminApiError ? e.message : 'could not set scopes' };
 		}
 	},
-	scopeAdd: async ({ cookies, request }) => {
-		const form = await request.formData();
-		const bearer = cookies.get(SESSION_COOKIE) ?? '';
-		try {
-			const entry = await createApi(bearer).addScope(
-				String(form.get('scope') ?? '').trim(),
-				String(form.get('description') ?? '').trim()
-			);
-			return { scopeAdded: entry };
-		} catch (e) {
-			return { scopeError: e instanceof AdminApiError ? e.message : 'could not add the scope' };
-		}
-	},
-	scopeDelete: async ({ cookies, request }) => {
-		const form = await request.formData();
-		const bearer = cookies.get(SESSION_COOKIE) ?? '';
-		const scope = String(form.get('scope') ?? '');
-		try {
-			await createApi(bearer).deleteScope(scope);
-			return { scopeDeleted: scope };
-		} catch (e) {
-			// lumen's refusal renders VERBATIM (ghost-field): the 409 copy
-			// carries the holder counts — never paraphrased
-			return { scopeError: e instanceof AdminApiError ? e.message : 'could not delete the scope' };
-		}
-	},
+
 	reset: async ({ cookies, request }) => {
 		const form = await request.formData();
 		const bearer = cookies.get(SESSION_COOKIE) ?? '';
@@ -93,6 +68,69 @@ export const actions: Actions = {
 			return { resetFor: username, tempPassword };
 		} catch (e) {
 			return { error: e instanceof AdminApiError ? e.message : 'could not reset' };
+		}
+	},
+	// the user-LIFECYCLE verbs (the RBAC round's second cut): every one
+	// is a lumen verb wearing the users:manage gate; lumen's copies
+	// render verbatim (the ghost-field doctrine — a permission refusal
+	// is copy).
+	revoke: async ({ cookies, request }) => {
+		const form = await request.formData();
+		const bearer = cookies.get(SESSION_COOKIE) ?? '';
+		const username = String(form.get('username') ?? '');
+		try {
+			const result = await createApi(bearer).revokeSessions(username);
+			return { revoked: result };
+		} catch (e) {
+			return {
+				manageError: e instanceof AdminApiError ? e.message : 'could not revoke sessions'
+			};
+		}
+	},
+	forceChange: async ({ cookies, request }) => {
+		const form = await request.formData();
+		const bearer = cookies.get(SESSION_COOKIE) ?? '';
+		const username = String(form.get('username') ?? '');
+		try {
+			await createApi(bearer).forcePasswordChange(username);
+			return { forced: username };
+		} catch (e) {
+			return { manageError: e instanceof AdminApiError ? e.message : 'could not force the change' };
+		}
+	},
+	disable: async ({ cookies, request }) => {
+		const form = await request.formData();
+		const bearer = cookies.get(SESSION_COOKIE) ?? '';
+		const username = String(form.get('username') ?? '');
+		try {
+			const result = await createApi(bearer).setUserDisabled(username, true);
+			return { disabled: result };
+		} catch (e) {
+			return { manageError: e instanceof AdminApiError ? e.message : 'could not disable' };
+		}
+	},
+	enable: async ({ cookies, request }) => {
+		const form = await request.formData();
+		const bearer = cookies.get(SESSION_COOKIE) ?? '';
+		const username = String(form.get('username') ?? '');
+		try {
+			const result = await createApi(bearer).setUserDisabled(username, false);
+			return { enabled: result };
+		} catch (e) {
+			return { manageError: e instanceof AdminApiError ? e.message : 'could not enable' };
+		}
+	},
+	delete: async ({ cookies, request }) => {
+		const form = await request.formData();
+		const bearer = cookies.get(SESSION_COOKIE) ?? '';
+		const username = String(form.get('username') ?? '');
+		try {
+			await createApi(bearer).deleteUser(username);
+			return { deleted: username };
+		} catch (e) {
+			// the guards' copies (self-delete 400, the last users:manage
+			// holder 409) render verbatim
+			return { deleteError: e instanceof AdminApiError ? e.message : 'could not delete' };
 		}
 	}
 };

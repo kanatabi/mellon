@@ -225,6 +225,7 @@ export interface Principal {
 	id: string;
 	scopes: string[];
 	mustChange: boolean;
+	disabled: boolean;
 }
 
 /** Login/register wire shape (lumen answers exactly these fields —
@@ -237,6 +238,7 @@ export interface LoginResponse {
 	expiresIn: number;
 	scopes: string[];
 	mustChange: boolean;
+	disabled: boolean;
 }
 
 /** One line of the admin user list (lumen GET /admin/users). */
@@ -245,6 +247,7 @@ export interface AdminUserRow {
 	username: string;
 	scopes: string[];
 	mustChange: boolean;
+	disabled: boolean;
 	createdAt: string;
 }
 
@@ -301,6 +304,16 @@ export interface AdminApi {
 	/** Replace the user's scope set (lumen PATCH /admin/users/:u/scopes):
 	 *  the RBAC spine — a demotion is immediate (token_version bumps). */
 	updateUserScopes(username: string, scopes: string[]): Promise<ScopeAssignment>;
+	/** The user-LIFECYCLE verbs (lumen, users:manage-gated): revoke kicks
+	 *  live sessions (tv bump, password untouched); force-change arms
+	 *  must_change (the NEXT request 428s); disable denies login AND
+	 *  kills live sessions (tv bump); enable re-admits; delete removes
+	 *  the account (the guards — self-delete + the last users:manage
+	 *  holder — are lumen's 400/409). */
+	revokeSessions(username: string): Promise<ScopeAssignment>;
+	forcePasswordChange(username: string): Promise<{ username: string; mustChange: boolean }>;
+	setUserDisabled(username: string, disabled: boolean): Promise<ScopeAssignment>;
+	deleteUser(username: string): Promise<void>;
 	/** The PORTAL-MANAGED catalog (the assignable vocabulary). */
 	listScopes(): Promise<CatalogEntry[]>;
 	/** Onboard a scope (grammar-checked server-side; duplicates are

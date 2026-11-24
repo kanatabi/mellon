@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { UserPlus, Users } from 'lucide-svelte';
+	import { KeyRound, Plus, UserPlus, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
+	import DeleteDialog from '#lib/components/DeleteDialog.svelte';
+	import { client } from '#lib/api/client.ts';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -13,16 +16,18 @@
 
 	let { data, form }: Props = $props();
 
-	// the picker IS the grant (roles are gone — the spine ruling): the
-	// checkboxes ride the form POST as repeated `scopes` fields, the
-	// action's formData.getAll('scopes') reads exactly those
-	let newScopes = $state<string[]>(['content:manage']);
-
-	// The creation form lives in a dialog (owner ask 2026-11-21): the page
-	// keeps a `Create New User` door above the table. The dialog closes
-	// itself on SUCCESS so the one-time temp-password reveal (page-level,
-	// below) is what the user reads next; a failed submit keeps it open.
+	// The users page is QUIET on purpose (owner call 2026-11-24): the table
+	// reads username · scopes · state · since · Manage, and every lifecycle
+	// verb lives in the PER-USER dialog — one user at a time, the list
+	// visible behind it. Scope VOCABULARY management is the dedicated
+	// settings/scopes section, not this page.
 	let createOpen = $state(false);
+	let manageTarget = $state<string | null>(null);
+	let deleteTarget = $state<string | null>(null);
+	const manageUser = $derived(data.users.find((u) => u.username === manageTarget) ?? null);
+
+	// the grant: the picker IS the grant (roles are gone — the spine ruling)
+	let newScopes = $state<string[]>(['content:manage']);
 
 	// the one-time truth: temps exist in THIS render only — navigating away
 	// (or any next action) drops them, exactly like lumen's response does.
@@ -76,6 +81,9 @@
 		{#if form?.error}
 			<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
 		{/if}
+		{#if form?.deleteError}
+			<p class="font-mono text-xs text-danger" role="alert">{form.deleteError}</p>
+		{/if}
 
 		<!-- Closes on SUCCESS: the one-time temp-password reveal below is what
 		     the user reads next; a failed submit keeps the dialog open with the
@@ -113,8 +121,8 @@
 						title="lowercase letters, digits, dot, dash, underscore — 2 to 32 chars"
 					/>
 				</label>
-				<!-- the grant: one checkbox per catalog scope, grouped by the
-				     namespace the grammar's left half names -->
+				<!-- the grant: one checkbox per catalog scope — the picker IS the
+				     grant (roles are gone, the spine ruling) -->
 				<fieldset class="flex flex-col gap-1.5">
 					<legend class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
 						scopes — the exact grant
@@ -166,12 +174,12 @@
 					<th class="px-4 py-2 font-medium">scopes</th>
 					<th class="px-4 py-2 font-medium">state</th>
 					<th class="px-4 py-2 font-medium">since</th>
-					<th class="px-4 py-2 text-right font-medium">reset</th>
+					<th class="px-4 py-2 text-right font-medium">manage</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each data.users as u (u.username)}
-					<tr class="border-b border-border/50 align-top last:border-0">
+					<tr class="border-b border-border/50 last:border-0">
 						<td class="px-4 py-2 text-foreground">{u.username}</td>
 						<td class="px-4 py-2">
 							<span class="flex flex-wrap gap-1">
@@ -183,7 +191,9 @@
 							</span>
 						</td>
 						<td class="px-4 py-2">
-							{#if u.mustChange}
+							{#if u.disabled}
+								<span class="text-danger" title="login denied — re-enable to undo">Disabled</span>
+							{:else if u.mustChange}
 								<span class="text-accent-amber" title="temp password — guided change on next login"
 									>Temp</span
 								>
@@ -193,53 +203,14 @@
 						</td>
 						<td class="px-4 py-2 text-muted-foreground">{u.createdAt}</td>
 						<td class="px-4 py-2 text-right">
-							<form
-								method="POST"
-								action="?/reset"
-								use:enhance={() => {
-									return ({ update }) => update();
-								}}
+							<Button
+								type="button"
+								variant="quiet"
+								class="py-1 text-inherit"
+								onclick={() => (manageTarget = u.username)}
 							>
-								<input type="hidden" name="username" value={u.username} />
-								<Button
-									type="submit"
-									variant="quiet"
-									class="py-1 text-inherit hover:border-accent-amber/60 hover:text-accent-amber"
-								>
-									Issue new temp
-								</Button>
-							</form>
-						</td>
-					</tr>
-					<!-- the scope editor: the assignment REPLACES the set and
-					     bumps token_version — the copy says what the user loses -->
-					<tr class="border-b border-border/50 last:border-0">
-						<td colspan="5" class="bg-background/40 px-4 py-2">
-							<form
-								method="POST"
-								action="?/scopes"
-								class="flex flex-wrap items-center gap-2"
-								use:enhance
-							>
-								<input type="hidden" name="username" value={u.username} />
-								{#each data.catalog as c (c.scope)}
-									<label
-										class="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[11px] transition-colors hover:bg-muted/60"
-									>
-										<input
-											type="checkbox"
-											name="scopes"
-											value={c.scope}
-											checked={u.scopes.includes(c.scope)}
-											class="size-3.5 accent-brand"
-										/>
-										{c.scope}
-									</label>
-								{/each}
-								<Button type="submit" variant="quiet" class="ml-auto py-1 text-inherit"
-									>Set scopes</Button
-								>
-							</form>
+								Manage
+							</Button>
 						</td>
 					</tr>
 				{/each}
@@ -247,10 +218,137 @@
 		</table>
 	</div>
 
-	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-		creating or resetting issues a SERVER-GENERATED temporary password (syllable form, ~50 bits): it
-		appears once in this page's response, is never logged, never stored in plaintext, and the new
-		user must replace it at /setup before the portal does anything else (lumen answers 428 until
-		they do).
-	</p>
+	{#if manageTarget && manageUser}
+		<Dialog.Root
+			open={manageTarget !== null}
+			onOpenChange={(o) => {
+				if (!o) manageTarget = null;
+			}}
+		>
+			<Dialog.Content class="flex max-h-[85svh] flex-col gap-4 overflow-y-auto sm:max-w-lg">
+				<Dialog.Header>
+					<Dialog.Title class="font-brand text-lg font-semibold"
+						>Manage {manageUser.username}</Dialog.Title
+					>
+					<Dialog.Description class="font-mono text-[10px] text-muted-foreground">
+						set · {manageUser.createdAt} · every verb here is lumen's — the portal renders, never decides
+					</Dialog.Description>
+				</Dialog.Header>
+
+				{#if form?.manageError}
+					<p class="font-mono text-xs text-danger" role="alert">{form.manageError}</p>
+				{/if}
+				{#if form?.revoked}
+					<p class="font-mono text-xs text-brand" role="status">
+						{form.revoked.username}'s sessions revoked — they sign in again.
+					</p>
+				{/if}
+				{#if form?.forced}
+					<p class="font-mono text-xs text-brand" role="status">
+						{form.forced} must complete a password change on next use.
+					</p>
+				{/if}
+
+				<!-- SCOPES: the assignment REPLACES the set and bumps
+				     token_version — the user's other sessions die (the copy says
+				     what they lose) -->
+				<form method="POST" action="?/scopes" class="flex flex-col gap-2" use:enhance>
+					<input type="hidden" name="username" value={manageUser.username} />
+					<fieldset class="flex flex-col gap-1.5">
+						<legend class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+							scopes — saving REPLACES the set
+						</legend>
+						{#each data.catalog as c (c.scope)}
+							<label
+								class="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60"
+							>
+								<input
+									type="checkbox"
+									name="scopes"
+									value={c.scope}
+									checked={manageUser.scopes.includes(c.scope)}
+									class="size-4 accent-brand"
+								/>
+								<span class="min-w-0">
+									<span class="block font-mono text-xs text-foreground">{c.scope}</span>
+									<span class="block truncate text-[10px] text-muted-foreground"
+										>{c.description}</span
+									>
+								</span>
+							</label>
+						{/each}
+					</fieldset>
+					<Button type="submit" variant="primary" class="w-fit">Save scopes</Button>
+				</form>
+
+				<!-- SESSIONS & PASSWORD -->
+				<div class="flex flex-col gap-2 border-t border-border pt-3">
+					<p class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+						sessions &amp; password
+					</p>
+					<div class="flex flex-wrap items-center gap-2">
+						<form method="POST" action="?/reset" use:enhance>
+							<input type="hidden" name="username" value={manageUser.username} />
+							<Button type="submit" variant="quiet" class="py-1.5 text-inherit">
+								Issue new temp
+							</Button>
+						</form>
+						<form method="POST" action="?/forceChange" use:enhance>
+							<input type="hidden" name="username" value={manageUser.username} />
+							<Button type="submit" variant="quiet" class="py-1.5 text-inherit">
+								Force change on next login
+							</Button>
+						</form>
+						<form method="POST" action="?/revoke" use:enhance>
+							<input type="hidden" name="username" value={manageUser.username} />
+							<Button type="submit" variant="quiet" class="py-1.5 text-inherit">
+								Revoke all sessions
+							</Button>
+						</form>
+					</div>
+				</div>
+
+				<!-- DANGER ZONE: destructive verbs wear danger red at rest -->
+				<div class="flex flex-col gap-2 border-t border-border pt-3">
+					<p class="text-[10px] font-medium tracking-widest text-danger uppercase">danger zone</p>
+					<div class="flex flex-wrap items-center gap-2">
+						{#if manageUser.disabled}
+							<form method="POST" action="?/enable" use:enhance>
+								<input type="hidden" name="username" value={manageUser.username} />
+								<Button type="submit" variant="danger">Enable account</Button>
+							</form>
+						{:else}
+							<form method="POST" action="?/disable" use:enhance>
+								<input type="hidden" name="username" value={manageUser.username} />
+								<Button type="submit" variant="danger">Disable account</Button>
+							</form>
+						{/if}
+						<Button
+							type="button"
+							variant="danger"
+							onclick={() => (deleteTarget = manageUser.username)}
+						>
+							Delete user…
+						</Button>
+					</div>
+				</div>
+			</Dialog.Content>
+		</Dialog.Root>
+	{/if}
+
+	{#if deleteTarget}
+		<DeleteDialog
+			heading={'Delete the user "' + deleteTarget + '"?'}
+			description="the account and its scope grants are removed — the estate's content is NOT theirs, it survives — their sessions die immediately"
+			confirmText={deleteTarget}
+			confirmLabel="Delete user"
+			onConfirm={async () => {
+				// the browser client relays to lumen (the RBAC guards' 400/409
+				// copies land in the dialog's inline failure — verbatim)
+				await client.deleteUser(deleteTarget ?? '');
+				await invalidateAll();
+			}}
+			onClose={() => (deleteTarget = null)}
+		/>
+	{/if}
 </section>
