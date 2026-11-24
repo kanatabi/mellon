@@ -51,7 +51,10 @@
 				</h1>
 				<p class="font-mono text-xs text-muted-foreground">
 					scopes are per-request facts (lumen reads the row every call) — a reset, a demotion, a
-					completed password change all bite on the NEXT request
+					completed password change all bite on the NEXT request ·
+					<a href="/settings/scopes" class="underline underline-offset-2 hover:text-foreground"
+						>the scope catalog</a
+					>
 				</p>
 			</div>
 			<!-- the door sits above the table, in the header row (owner call) -->

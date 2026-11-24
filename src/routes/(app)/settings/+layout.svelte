@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { Keyboard, Palette, ShieldCheck, Users } from 'lucide-svelte';
+	import { KeyRound, Keyboard, Palette, ShieldCheck, Users } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	/**
@@ -26,7 +26,8 @@
 	const sections: Section[] = [
 		{ href: '/settings/appearance', label: 'Appearance', icon: Palette },
 		{ href: '/settings/editor', label: 'Editor', icon: Keyboard },
-		{ href: '/settings/security', label: 'Security', icon: ShieldCheck }
+		{ href: '/settings/security', label: 'Security', icon: ShieldCheck },
+		{ href: '/settings/scopes', label: 'Scopes', icon: KeyRound }
 	];
 	// the USERS door is the users:manage surface (the RBAC spine): the nav
 	// renders lumen's truth as affordance — lumen enforces regardless
