@@ -1,4 +1,3 @@
-import { redirect } from '@sveltejs/kit';
 import { AdminApiError, createApi } from '#lib/api/index.ts';
 import { SESSION_COOKIE, requireAuthed, requireScope } from '#lib/session.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -14,7 +13,10 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	requireAuthed(cookies.get(SESSION_COOKIE), url);
 	const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
 	const principal = await api.whoami();
-	if (!(principal.scopes?.includes('users:manage') ?? false)) redirect(307, '/settings');
+	// the COURTESY gate (the RBAC spine): the nav hides what the principal
+	// cannot open; a bookmarked URL lands on settings instead. lumen 403s
+	// the API underneath regardless — affordance, not enforcement.
+	requireScope(principal, 'users:manage');
 	return { catalog: await api.listScopes() };
 };
 

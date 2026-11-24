@@ -88,7 +88,7 @@
 			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
 				>scope</span
 			>
-			<Input name="scope" required pattern={'^[a-z]+:[a-z]+$'} title="<domain>:<verb>, lowercase" />
+			<Input name="scope" required pattern="^[a-z]+:[a-z]+$" title="<domain>:<verb>, lowercase" />
 		</label>
 		<label class="flex min-w-0 flex-1 flex-col gap-1">
 			<span class="text-[10px] font-medium tracking-widest text-muted-foreground uppercase"
