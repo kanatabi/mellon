@@ -355,21 +355,25 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   leaves the authenticator — Bitwarden/iCloud/a key; lumen stores only the public half
   in `webauthn_credentials`); **oauth:github/google later adds a sibling method file,
   not a second mint**. The transport: `/admin/session/auth/methods` (the capability
-  probe — the login UI renders a button per enabled method), `webauthn/login/begin|
-finish` (PUBLIC — the mint happens inside finish), `webauthn/register/begin|finish`
-  - roster/delete (authenticated setup). Env: `LUMEN_WEBAUTHN_RP_ID` (the
-    REGISTRABLE DOMAIN — `gofar.id`, not the console host: one shared
-    lumen-admin serves every environment's mellon, and the registrable-domain
-    rp-id lets console AND staging-console run the ceremony against the same
-    credentials — identity is shared across envs by the role-split design;
-    the recorded trade-off: a staging-registered passkey is offered on
-    production too) and `LUMEN_WEBAUTHN_ORIGINS` (the comma-separated browser
-    origins; default https:// + rp-id). Optional — unset = the feature is off
-    and the methods endpoint omits it. The browser half:
-    `#lib/webauthn.client.ts` (base64url ↔ ArrayBuffers + the two navigator.credentials
-    ceremonies); the private key never leaves home. Registering never bumps
-    `token_version` — it changes what can AUTHENTICATE, not what the session may do;
-    disable/revoke kills passkey sessions identically.
+  probe — the login load renders the passkey button only when it lists `passkey`;
+  a probe failure keeps the password door), `webauthn/login/begin|finish` (PUBLIC —
+  the mint happens inside finish), `webauthn/register/begin|finish` + roster/delete
+  (authenticated setup; must-change users are 428-gated). Env: `LUMEN_WEBAUTHN_RP_ID`
+  (the REGISTRABLE DOMAIN — `gofar.id`, not the console host: one shared lumen-admin
+  serves every environment's mellon, and the registrable-domain rp-id lets console AND
+  staging-console run the ceremony against the same credentials — identity is shared
+  across envs by the role-split design; the recorded trade-off: a staging-registered
+  passkey is offered on production too) and `LUMEN_WEBAUTHN_ORIGINS` (the
+  comma-separated browser origins; default https:// + rp-id). Optional — unset = the
+  feature is off and the methods endpoint omits it. The browser half:
+  `#lib/webauthn.client.ts` (base64url ↔ ArrayBuffers + the two
+  navigator.credentials ceremonies); the private key never leaves home. The ACTION
+  transport is `#lib/action-post.ts`: `fetch('?/action')` answers a JSON envelope
+  whose `data` is a **devalue STRING** — success decodes to `data`, `redirect()`
+  yields the server's location (cookies already set), `fail()` throws the decoded
+  payload. A plain-object fixture is a lie (the two-layer wire crashed the portal
+  twice). Registering never bumps `token_version` — it changes what can AUTHENTICATE,
+  not what the session may do; disable/revoke kills passkey sessions identically.
 - **Session (JWT, 2026-11-08):** lumen mints an HS256 token (`sub/iat/exp/tv/jti`,
   12h TTL, **no refresh tokens** — re-login is the design; lumen §8). mellon carries
   exactly one `HttpOnly` cookie, sized from the server's `expiresIn`; the browser NEVER
