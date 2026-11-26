@@ -349,6 +349,21 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   key). The portal's own logs: operations, never payloads.
 - Values never round-trip to git, never appear in mellon's SSR payloads, and are masked in
   the UI by default.
+- **The auth-method seam (the passkey round, C1, 2026-11-25):** login methods
+  normalize to **begin → finish → the ONE mint** — what varies is how the user proves
+  who they are. `passkey` is the first implementation (WebAuthn: the private key NEVER
+  leaves the authenticator — Bitwarden/iCloud/a key; lumen stores only the public half
+  in `webauthn_credentials`); **oauth:github/google later adds a sibling method file,
+  not a second mint**. The transport: `/admin/session/auth/methods` (the capability
+  probe — the login UI renders a button per enabled method), `webauthn/login/begin|
+finish` (PUBLIC — the mint happens inside finish), `webauthn/register/begin|finish`
+  - roster/delete (authenticated setup). Env: `LUMEN_WEBAUTHN_RP_ID`/`_ORIGIN`
+    (optional — unset = the feature is off and the methods endpoint omits it; staging's
+    different rp-id is correct — separate credentials). The browser half:
+    `#lib/webauthn.client.ts` (base64url ↔ ArrayBuffers + the two navigator.credentials
+    ceremonies); the private key never leaves home. Registering never bumps
+    `token_version` — it changes what can AUTHENTICATE, not what the session may do;
+    disable/revoke kills passkey sessions identically.
 - **Session (JWT, 2026-11-08):** lumen mints an HS256 token (`sub/iat/exp/tv/jti`,
   12h TTL, **no refresh tokens** — re-login is the design; lumen §8). mellon carries
   exactly one `HttpOnly` cookie, sized from the server's `expiresIn`; the browser NEVER
