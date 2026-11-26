@@ -61,7 +61,10 @@ export const actions: Actions = {
 		const next = String(url.searchParams.get('next') ?? '/');
 		redirect(303, next.startsWith('/') && !next.startsWith('//') ? next : '/');
 	},
-	default: async ({ cookies, request, url }) => {
+	// NAMED (the auth-method seam): with named actions present, Kit's
+	// default action is UNREACHABLE (action_default_with_named) — every
+	// login method is a named action: password, passkey, oauth later.
+	password: async ({ cookies, request, url }) => {
 		const form = await request.formData();
 		const username = String(form.get('username') ?? '').trim();
 		const password = String(form.get('password') ?? '');
