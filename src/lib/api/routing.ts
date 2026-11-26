@@ -58,6 +58,19 @@ export const ROUTE_TABLE: RouteClass[] = [
 		upstream: 'admin',
 		note: 'the PORTAL-MANAGED scope catalog (list/add/delete)'
 	},
+	// the passkey round (C1): the auth-method seam — the methods
+	// capability probe + the webauthn machine (login begin/finish is
+	// PUBLIC on lumen; register/roster/delete are authed)
+	{
+		prefix: '/admin/session/auth',
+		upstream: 'admin',
+		note: 'the login-method capability probe (methods + begin/finish)'
+	},
+	{
+		prefix: '/admin/session/webauthn',
+		upstream: 'admin',
+		note: 'the passkey machine: register begin/finish, roster, delete'
+	},
 	{
 		prefix: '/admin/setup',
 		upstream: 'admin',

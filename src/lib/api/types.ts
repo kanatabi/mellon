@@ -295,6 +295,45 @@ export interface AdminApi {
 	 *  clears must_change and REVOKES old sessions — the caller re-mints via
 	 *  login(next) to keep the visitor comfortably logged in. */
 	changePassword(current: string, next: string): Promise<void>;
+
+	// ---- the passkey round (C1): the auth-method seam ----
+	// lumen's normalized shape: every login method is begin -> finish ->
+	// the ONE mint. The BROWSER owns the WebAuthn dance (the private key
+	// never leaves the authenticator); the server relays and mints.
+
+	/** The capability probe (lumen GET /admin/session/auth/methods —
+	 *  PUBLIC): the login UI renders a button per enabled method. New
+	 *  methods (oauth) join without a UI rewrite. */
+	authMethods(): Promise<{ methods: string[] }>;
+	/** Passkey LOGIN begin (lumen POST /admin/session/webauthn/login/begin —
+	 *  PUBLIC): the WebAuthn credential options + the signed state the
+	 *  client carries to finish. Options are the browser's shape (the
+	 *  challenge is base64url; `#lib/webauthn.client.ts` decodes). */
+	passkeyLoginBegin(): Promise<{ state: string; options: unknown }>;
+	/** Passkey LOGIN finish (lumen POST .../login/finish — PUBLIC): the
+	 *  assertion is verified, the user resolved THROUGH the credential,
+	 *  and THE MINT happens here. Full LoginResponse (the cookie path is
+	 *  identical to the password login's). */
+	passkeyLoginFinish(state: string, response: unknown): Promise<LoginResponse>;
+	/** Passkey REGISTER begin (authenticated): the creation options +
+	 *  state; existing credentials ride the exclude list. */
+	passkeyRegisterBegin(): Promise<{ state: string; options: unknown }>;
+	/** Passkey REGISTER finish (authenticated): the attestation is
+	 *  verified and stored with the user's label. Registering does NOT
+	 *  bump token_version — it changes what can AUTHENTICATE, not what
+	 *  the session may do. */
+	passkeyRegisterFinish(
+		state: string,
+		label: string,
+		response: unknown
+	): Promise<{ passkey: { id: string; label: string; createdAt: string } }>;
+	/** The settings roster (the user's own registered passkeys). */
+	passkeys(): Promise<{
+		passkeys: { id: string; label: string; createdAt: string; lastUsedAt: string }[];
+	}>;
+	/** Delete one of the user's own passkeys. Never a lockout: every
+	 *  account holds a password by construction. */
+	passkeyDelete(id: string): Promise<void>;
 	/** Admin-eyes-only (lumen enforces 403; the portal hides the door too). */
 	listUsers(): Promise<AdminUserRow[]>;
 	/** lumen generates the temp server-side (syllable form ~50 bits);

@@ -542,6 +542,58 @@ export function createMockApi(): AdminApi {
 			// resolves; Phase B this bumps lumen's token_version for real
 		},
 
+		// ---- the passkey round (C1): the mock's in-memory passkey ----
+		async authMethods() {
+			return { methods: ['password', 'passkey'] };
+		},
+		async passkeyLoginBegin() {
+			// a mock "challenge": the browser never parses it for truth —
+			// the real ceremony is lumen's; the mock returns a stable shape
+			return {
+				state: 'mock-passkey-login-state',
+				options: { publicKey: { challenge: 'bW9jaw', rpId: 'mock' } }
+			};
+		},
+		async passkeyLoginFinish() {
+			// the mock's roster has no WebAuthn rows — the ceremony is
+			// lumen's; the mock grants the FIRST mock user if one exists
+			const first = users.entries().next();
+			if (first.done) throw new AdminApiError(401, 'invalid credentials');
+			const [username, row] = first.value;
+			return {
+				token: `mock-passkey-token-${username}`,
+				expiresIn: 3600,
+				scopes: row.scopes,
+				mustChange: row.mustChange,
+				disabled: row.disabled
+			};
+		},
+		async passkeyRegisterBegin() {
+			return {
+				state: 'mock-passkey-register-state',
+				options: { publicKey: { challenge: 'bW9jaw', rpId: 'mock' } }
+			};
+		},
+		async passkeyRegisterFinish(_state, label) {
+			return {
+				passkey: {
+					id: `mock-passkey-${label || 'default'}`,
+					label: label || 'passkey',
+					createdAt: 'mock'
+				}
+			};
+		},
+		async passkeys() {
+			return {
+				passkeys: [
+					{ id: 'mock-passkey-1', label: 'mock passkey', createdAt: 'mock', lastUsedAt: '' }
+				]
+			};
+		},
+		async passkeyDelete() {
+			// the mock's roster is static; the real verb hits lumen's row
+		},
+
 		async listPosts({ status, tag, from, to, sort = 'updated', dir = 'desc', page } = {}) {
 			const sum = (p: PostDetailAdmin): PostSummaryAdmin => ({
 				slug: p.slug,

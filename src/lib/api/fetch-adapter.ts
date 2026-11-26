@@ -146,6 +146,38 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				body: { username, password }
 			}),
 		whoami: () => call<Principal>('GET', '/admin/session', { op: 'session.read' }),
+		// ---- the passkey round (C1): the auth-method seam ----
+		authMethods: () =>
+			call<{ methods: string[] }>('GET', '/admin/session/auth/methods', { op: 'session.methods' }),
+		passkeyLoginBegin: () =>
+			call<{ state: string; options: unknown }>('POST', '/admin/session/webauthn/login/begin', {
+				op: 'session.passkey.begin'
+			}),
+		passkeyLoginFinish: (state, response) =>
+			call<LoginResponse>('POST', '/admin/session/webauthn/login/finish', {
+				op: 'session.passkey.finish',
+				body: { state, response }
+			}),
+		passkeyRegisterBegin: () =>
+			call<{ state: string; options: unknown }>('POST', '/admin/session/webauthn/register/begin', {
+				op: 'session.passkey.begin'
+			}),
+		passkeyRegisterFinish: (state, label, response) =>
+			call<{ passkey: { id: string; label: string; createdAt: string } }>(
+				'POST',
+				'/admin/session/webauthn/register/finish',
+				{ op: 'session.passkey.register', body: { state, label, response } }
+			),
+		passkeys: () =>
+			call<{ passkeys: { id: string; label: string; createdAt: string; lastUsedAt: string }[] }>(
+				'GET',
+				'/admin/session/webauthn',
+				{ op: 'session.passkey.roster' }
+			),
+		passkeyDelete: (id) =>
+			call<void>('DELETE', `/admin/session/webauthn/${encodeURIComponent(id)}`, {
+				op: 'session.passkey.delete'
+			}),
 		changePassword: (current, next) =>
 			call<void>('POST', '/admin/session/password', {
 				op: 'session.password',

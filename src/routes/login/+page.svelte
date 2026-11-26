@@ -5,6 +5,8 @@
 	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
+	import { webauthnGet } from '#lib/webauthn.client.ts';
+	import { KeyRound } from 'lucide-svelte';
 	import type { ActionData } from './$types';
 
 	interface Props {
@@ -18,6 +20,43 @@
 	// rides the enhance lifecycle; the button disables so a second Enter
 	// can't double-mint.
 	let pending = $state(false);
+	// the PASSKEY login (the auth-method seam): begin -> the browser's
+	// WebAuthn ceremony -> finish. The server relays and mints; the
+	// private key never leaves the authenticator (Bitwarden/iCloud/a key).
+	let passkeyBusy = $state(false);
+	let passkeyMessage = $state('');
+
+	async function loginWithPasskey() {
+		if (passkeyBusy) return;
+		passkeyBusy = true;
+		passkeyMessage = '';
+		try {
+			const beginRes = await fetch('?/passkeyBegin', { method: 'POST' });
+			if (!beginRes.ok) {
+				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
+				throw new Error(err.message ?? 'passkeys unavailable');
+			}
+			const begin = await beginRes.json();
+			const assertion = await webauthnGet(begin.options);
+			const finishRes = await fetch('?/passkeyFinish', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ state: begin.state, response: assertion })
+			});
+			if (!finishRes.ok) {
+				const err = await finishRes.json().catch(() => ({ message: 'passkey login failed' }));
+				throw new Error(err.message ?? 'passkey login failed');
+			}
+			const out = await finishRes.json();
+			// the cookie is already set server-side; the destination mirrors
+			// the password login's (must_change goes to the guided change)
+			window.location.assign(out.mustChange ? '/setup?change=1' : '/');
+		} catch (err) {
+			passkeyMessage = err instanceof Error && err.message ? err.message : 'passkey login failed';
+		} finally {
+			passkeyBusy = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -76,4 +115,25 @@
 			sessions are minted by lumen — the portal only carries the cookie
 		</p>
 	</form>
+	<!-- the passkey door: begin/finish through the form actions, the
+	     ceremony in the browser — the private key never leaves home -->
+	<div class="relative flex w-full max-w-sm flex-col gap-2">
+		<Button
+			type="button"
+			variant="outline"
+			disabled={passkeyBusy}
+			onclick={() => void loginWithPasskey()}
+		>
+			{#if passkeyBusy}
+				<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+				<span>Waiting for the authenticator…</span>
+			{:else}
+				<KeyRound class="size-4" aria-hidden="true" />
+				Login with passkey
+			{/if}
+		</Button>
+		{#if passkeyMessage}
+			<p class="font-mono text-xs text-danger" role="alert">{passkeyMessage}</p>
+		{/if}
+	</div>
 </section>

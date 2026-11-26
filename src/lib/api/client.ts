@@ -10,6 +10,7 @@ import type {
 	Principal,
 	ScopeAssignment,
 	AdminApi,
+	LoginResponse,
 	AdminPhoto,
 	CollectionCount,
 	EstateRow,
@@ -71,6 +72,30 @@ export const client: AdminApi = {
 		// only to satisfy the interface; never callable meaningfully here.
 		throw new ApiError(500, 'login is served by the form action, not the browser client');
 	},
+	// ---- the passkey round (C1): the FIRST browser-callable methods —
+	// the same-origin relay carries the session cookie for the authed
+	// surfaces; the WebAuthn dance stays in #lib/webauthn.client.ts ----
+	authMethods: () => call<{ methods: string[] }>('/admin/session/auth/methods'),
+	passkeyLoginBegin: () =>
+		call<{ state: string; options: unknown }>('/admin/session/webauthn/login/begin'),
+	passkeyLoginFinish: (state, response) =>
+		call<LoginResponse>('/admin/session/webauthn/login/finish', {
+			method: 'POST',
+			body: JSON.stringify({ state, response })
+		}),
+	passkeyRegisterBegin: () =>
+		call<{ state: string; options: unknown }>('/admin/session/webauthn/register/begin'),
+	passkeyRegisterFinish: (state, label, response) =>
+		call<{ passkey: { id: string; label: string; createdAt: string } }>(
+			'/admin/session/webauthn/register/finish',
+			{ method: 'POST', body: JSON.stringify({ state, label, response }) }
+		),
+	passkeys: () =>
+		call<{ passkeys: { id: string; label: string; createdAt: string; lastUsedAt: string }[] }>(
+			'/admin/session/webauthn'
+		),
+	passkeyDelete: (id) =>
+		call<void>(`/admin/session/webauthn/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 	setupStatus: () => call<{ unclaimed: boolean }>('/setup'),
 	registerFirstAdmin: () => {
 		throw new ApiError(500, 'setup registration is served by the /setup form action');

@@ -20,6 +20,47 @@ export const load = async ({ cookies }: { cookies: import('@sveltejs/kit').Cooki
 };
 
 export const actions: Actions = {
+	// the PASSKEY LOGIN (the auth-method seam, C1): begin returns the
+	// WebAuthn options (the browser owns the ceremony); finish relays the
+	// assertion to lumen and sets the SAME cookie the password login
+	// sets — one mint, one cookie path, two authenticator kinds.
+	passkeyBegin: async () => {
+		try {
+			return await createApi().passkeyLoginBegin();
+		} catch (e) {
+			return fail(400, {
+				message: e instanceof AdminApiError ? e.message : 'passkeys unavailable'
+			});
+		}
+	},
+	passkeyFinish: async ({ cookies, request, url }) => {
+		const body = await request.json().catch(() => null);
+		if (!body?.state || !body?.response)
+			return fail(400, { message: 'passkey ceremony incomplete' });
+		let mustChange: boolean;
+		try {
+			const {
+				token,
+				expiresIn,
+				mustChange: mc
+			} = await createApi().passkeyLoginFinish(String(body.state), body.response);
+			mustChange = mc;
+			cookies.set(SESSION_COOKIE, token, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'strict',
+				...cookieTrust(url),
+				maxAge: expiresIn
+			});
+		} catch (e) {
+			return fail(e instanceof AdminApiError ? e.status : 500, {
+				message: e instanceof AdminApiError ? e.message : 'passkey login failed'
+			});
+		}
+		if (mustChange) redirect(303, '/setup?change=1');
+		const next = String(url.searchParams.get('next') ?? '/');
+		redirect(303, next.startsWith('/') && !next.startsWith('//') ? next : '/');
+	},
 	default: async ({ cookies, request, url }) => {
 		const form = await request.formData();
 		const username = String(form.get('username') ?? '').trim();
