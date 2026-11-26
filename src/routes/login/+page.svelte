@@ -31,10 +31,13 @@
 		passkeyBusy = true;
 		passkeyMessage = '';
 		try {
+			// Kit v3 actions speak FORM content types only (application/json
+			// is 415-refused) — the ceremony's payload rides urlencoded
+			// fields (the response JSON stringified inside its field)
 			const beginRes = await fetch('?/passkeyBegin', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({})
+				headers: { 'content-type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({ ready: '1' })
 			});
 			if (!beginRes.ok) {
 				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
@@ -44,8 +47,11 @@
 			const assertion = await webauthnGet(begin.options);
 			const finishRes = await fetch('?/passkeyFinish', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ state: begin.state, response: assertion })
+				headers: { 'content-type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({
+					state: begin.state,
+					response: JSON.stringify(assertion)
+				})
 			});
 			if (!finishRes.ok) {
 				const err = await finishRes.json().catch(() => ({ message: 'passkey login failed' }));

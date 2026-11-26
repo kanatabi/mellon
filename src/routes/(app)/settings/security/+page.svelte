@@ -31,10 +31,12 @@
 		pkMessage = '';
 		const label = pkLabel.trim() || 'passkey';
 		try {
+			// Kit v3 actions speak FORM content types only (application/json
+			// is 415-refused)
 			const beginRes = await fetch('?/passkeyRegisterBegin', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({})
+				headers: { 'content-type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({ ready: '1' })
 			});
 			if (!beginRes.ok) {
 				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
@@ -44,8 +46,12 @@
 			const attestation = await webauthnCreate(begin.options);
 			const finishRes = await fetch('?/passkeyRegisterFinish', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ state: begin.state, label, response: attestation })
+				headers: { 'content-type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({
+					state: begin.state,
+					label,
+					response: JSON.stringify(attestation)
+				})
 			});
 			if (!finishRes.ok) {
 				const err = await finishRes

@@ -34,16 +34,22 @@ export const actions: Actions = {
 		}
 	},
 	passkeyFinish: async ({ cookies, request, url }) => {
-		const body = await request.json().catch(() => null);
-		if (!body?.state || !body?.response)
-			return fail(400, { message: 'passkey ceremony incomplete' });
+		const form = await request.formData();
+		const state = String(form.get('state') ?? '');
+		let response: unknown;
+		try {
+			response = JSON.parse(String(form.get('response') ?? ''));
+		} catch {
+			response = null;
+		}
+		if (!state || !response) return fail(400, { message: 'passkey ceremony incomplete' });
 		let mustChange: boolean;
 		try {
 			const {
 				token,
 				expiresIn,
 				mustChange: mc
-			} = await createApi().passkeyLoginFinish(String(body.state), body.response);
+			} = await createApi().passkeyLoginFinish(state, response);
 			mustChange = mc;
 			cookies.set(SESSION_COOKIE, token, {
 				path: '/',
