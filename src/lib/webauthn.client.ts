@@ -39,6 +39,31 @@ export interface SerializedAssertion {
 	};
 }
 
+/** The assertion options as lumen JSON-serializes them (base64url strings). */
+export interface SerializedRequestOptions {
+	publicKey: {
+		challenge: string;
+		rpId?: string;
+		timeout?: number;
+		userVerification?: string;
+		allowCredentials?: { id: string; transports?: string[] }[];
+	};
+}
+
+/** The creation options as lumen JSON-serializes them (same base64url). */
+export interface SerializedCreationOptions {
+	publicKey: {
+		challenge: string;
+		rp: { id?: string; name: string };
+		user: { id: string; name: string; displayName: string };
+		pubKeyCredParams?: { alg: number; type: string }[];
+		excludeCredentials?: { id: string; transports?: string[] }[];
+		authenticatorSelection?: Record<string, unknown>;
+		timeout?: number;
+		attestation?: string;
+	};
+}
+
 /** The serialized attestation (registration) — same honesty. */
 export interface SerializedAttestation {
 	id: string;
@@ -53,10 +78,8 @@ export interface SerializedAttestation {
 
 /** webauthn.login's browser half: the options FROM lumen, the assertion
  *  BACK to lumen. `userHandle` may be null (discoverable login). */
-export async function webauthnGet(options: unknown): Promise<SerializedAssertion> {
-	const opts = options as {
-		publicKey: { challenge: string; rpId?: string; timeout?: number; userVerification?: string };
-	};
+export async function webauthnGet(options: SerializedRequestOptions): Promise<SerializedAssertion> {
+	const opts = options;
 	const assertion = (await navigator.credentials.get({
 		publicKey: {
 			challenge: b64uToBytes(opts.publicKey.challenge),
@@ -83,19 +106,10 @@ export async function webauthnGet(options: unknown): Promise<SerializedAssertion
 
 /** webauthn.register's browser half: the creation options FROM lumen,
  *  the attestation BACK to lumen. */
-export async function webauthnCreate(options: unknown): Promise<SerializedAttestation> {
-	const opts = options as {
-		publicKey: {
-			challenge: string;
-			rp: { id?: string; name: string };
-			user: { id: string; name: string; displayName: string };
-			pubKeyCredParams?: { alg: number; type: string }[];
-			excludeCredentials?: { id: string; transports?: string[] }[];
-			authenticatorSelection?: Record<string, unknown>;
-			timeout?: number;
-			attestation?: string;
-		};
-	};
+export async function webauthnCreate(
+	options: SerializedCreationOptions
+): Promise<SerializedAttestation> {
+	const opts = options;
 	const creation = (await navigator.credentials.create({
 		publicKey: {
 			challenge: b64uToBytes(opts.publicKey.challenge),

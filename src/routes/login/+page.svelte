@@ -5,7 +5,8 @@
 	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
-	import { webauthnGet } from '#lib/webauthn.client.ts';
+	import { webauthnGet, type SerializedRequestOptions } from '#lib/webauthn.client.ts';
+	import { ActionFailure, submitAction } from '#lib/action-post.ts';
 	import { KeyRound } from 'lucide-svelte';
 	import type { ActionData } from './$types';
 
@@ -31,38 +32,32 @@
 		passkeyBusy = true;
 		passkeyMessage = '';
 		try {
-			// Kit v3 actions speak FORM content types only (application/json
-			// is 415-refused) — the ceremony's payload rides urlencoded
-			// fields (the response JSON stringified inside its field)
-			const beginRes = await fetch('?/passkeyBegin', {
-				method: 'POST',
-				headers: { 'content-type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams({ ready: '1' })
-			});
-			if (!beginRes.ok) {
-				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
-				throw new Error(err.message ?? 'passkeys unavailable');
+			// the action envelope is NOT the action's return value — unwrap it
+			// in ONE place (src/lib/action-post.ts); reading `begin.options`
+			// off the envelope crashed the register twin the same way
+			const begin = await submitAction<{ state: string; options: SerializedRequestOptions }>(
+				'passkeyBegin',
+				{ ready: '1' }
+			);
+			if (begin.kind !== 'data') {
+				window.location.assign(begin.location);
+				return;
 			}
-			const begin = await beginRes.json();
-			const assertion = await webauthnGet(begin.options);
-			const finishRes = await fetch('?/passkeyFinish', {
-				method: 'POST',
-				headers: { 'content-type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams({
-					state: begin.state,
-					response: JSON.stringify(assertion)
-				})
+			const assertion = await webauthnGet(begin.data.options);
+			// the cookie is already set server-side; the destination is the
+			// SERVER's call (must_change goes to the guided change, `next`
+			// returns where the session bounced from) — a redirect envelope
+			// carries it, never a guessed '/'
+			const done = await submitAction<never>('passkeyFinish', {
+				state: begin.data.state,
+				response: JSON.stringify(assertion)
 			});
-			if (!finishRes.ok) {
-				const err = await finishRes.json().catch(() => ({ message: 'passkey login failed' }));
-				throw new Error(err.message ?? 'passkey login failed');
-			}
-			const out = await finishRes.json();
-			// the cookie is already set server-side; the destination mirrors
-			// the password login's (must_change goes to the guided change)
-			window.location.assign(out.mustChange ? '/setup?change=1' : '/');
+			window.location.assign(done.kind === 'redirect' ? done.location : '/');
 		} catch (err) {
-			passkeyMessage = err instanceof Error && err.message ? err.message : 'passkey login failed';
+			const fail = err instanceof ActionFailure ? (err.data as { message?: string }) : null;
+			passkeyMessage =
+				fail?.message ??
+				(err instanceof Error && err.message ? err.message : 'passkey login failed');
 		} finally {
 			passkeyBusy = false;
 		}

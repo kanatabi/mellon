@@ -5,8 +5,8 @@
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { webauthnCreate } from '#lib/webauthn.client.ts';
-	import { AdminApiError } from '#lib/api/types.ts';
+	import { webauthnCreate, type SerializedCreationOptions } from '#lib/webauthn.client.ts';
+	import { ActionFailure, submitAction } from '#lib/action-post.ts';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -31,45 +31,33 @@
 		pkMessage = '';
 		const label = pkLabel.trim() || 'passkey';
 		try {
-			// Kit v3 actions speak FORM content types only (application/json
-			// is 415-refused)
-			const beginRes = await fetch('?/passkeyRegisterBegin', {
-				method: 'POST',
-				headers: { 'content-type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams({ ready: '1' })
-			});
-			if (!beginRes.ok) {
-				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
-				throw new Error(err.pk?.message ?? 'passkeys unavailable');
-			}
-			const begin = await beginRes.json();
-			const attestation = await webauthnCreate(begin.options);
-			const finishRes = await fetch('?/passkeyRegisterFinish', {
-				method: 'POST',
-				headers: { 'content-type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams({
-					state: begin.state,
+			// the action envelope is NOT the action's return value: unwrap it
+			// in ONE place (src/lib/action-post.ts) — reading `begin.options`
+			// off the envelope is the bug that crashed this button
+			const begin = await submitAction<{ state: string; options: SerializedCreationOptions }>(
+				'passkeyRegisterBegin',
+				{ ready: '1' }
+			);
+			if (begin.kind !== 'data') throw new Error('session expired — sign in again');
+			const attestation = await webauthnCreate(begin.data.options);
+			const done = await submitAction<{ pk: { passkey: { label: string } } }>(
+				'passkeyRegisterFinish',
+				{
+					state: begin.data.state,
 					label,
 					response: JSON.stringify(attestation)
-				})
-			});
-			if (!finishRes.ok) {
-				const err = await finishRes
-					.json()
-					.catch(() => ({ message: 'passkey registration failed' }));
-				throw new Error(err.pk?.message ?? 'passkey registration failed');
-			}
-			const out = await finishRes.json();
-			pkOk = out.pk.passkey.label;
+				}
+			);
+			if (done.kind !== 'data') throw new Error('session expired — sign in again');
+			pkOk = done.data.pk.passkey.label;
 			pkLabel = '';
 			await invalidateAll();
 		} catch (err) {
+			const fail =
+				err instanceof ActionFailure ? (err.data as { pk?: { message?: string } }) : null;
 			pkMessage =
-				err instanceof AdminApiError && err.message
-					? err.message
-					: err instanceof Error
-						? err.message
-						: 'passkey registration failed';
+				fail?.pk?.message ??
+				(err instanceof Error && err.message ? err.message : 'passkey registration failed');
 		} finally {
 			registering = false;
 		}

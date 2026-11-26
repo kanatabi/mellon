@@ -42,16 +42,25 @@ export const actions: Actions = {
 	},
 	passkeyRegisterFinish: async ({ cookies, request }) => {
 		const api = createApi(cookies.get(SESSION_COOKIE) ?? '');
-		const body = await request.json().catch(() => null);
-		if (!body?.state || !body?.response || !body?.label) {
+		// FORM fields, not JSON: Kit v3 refuses non-form action bodies (415)
+		// before the action runs, so the ceremony payload arrives as a
+		// urlencoded field with the attestation JSON stringified inside it.
+		// The login twin already parsed this way — this action kept
+		// `request.json()` and would have failed the very next step.
+		const form = await request.formData();
+		const state = String(form.get('state') ?? '');
+		const label = String(form.get('label') ?? '').trim() || 'passkey';
+		let response: unknown;
+		try {
+			response = JSON.parse(String(form.get('response') ?? ''));
+		} catch {
+			response = null;
+		}
+		if (!state || !response) {
 			return fail(400, { pk: { message: 'passkey ceremony incomplete' } });
 		}
 		try {
-			const { passkey } = await api.passkeyRegisterFinish(
-				String(body.state),
-				String(body.label),
-				body.response
-			);
+			const { passkey } = await api.passkeyRegisterFinish(state, label, response);
 			return { pk: { ok: true as const, passkey } };
 		} catch (e) {
 			return fail(e instanceof AdminApiError ? e.status : 500, {
