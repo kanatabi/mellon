@@ -76,8 +76,14 @@
 	<h1 class="relative font-brand text-4xl font-semibold tracking-tight">
 		Speak, friend, and enter
 	</h1>
+	<!-- action="?/default" is REQUIRED once named actions exist on this
+	     page (the passkey round's begin/finish): SvelteKit refuses an
+	     un-named form POST when named actions are exported
+	     (action_default_with_named) — the staging login 500 was exactly
+	     that, hit before the relay ever fired. -->
 	<form
 		method="POST"
+		action="?/default"
 		class="relative flex w-full max-w-sm flex-col gap-4"
 		use:enhance={() => {
 			pending = true;
