@@ -31,7 +31,11 @@
 		passkeyBusy = true;
 		passkeyMessage = '';
 		try {
-			const beginRes = await fetch('?/passkeyBegin', { method: 'POST' });
+			const beginRes = await fetch('?/passkeyBegin', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({})
+			});
 			if (!beginRes.ok) {
 				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
 				throw new Error(err.message ?? 'passkeys unavailable');

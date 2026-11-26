@@ -31,7 +31,11 @@
 		pkMessage = '';
 		const label = pkLabel.trim() || 'passkey';
 		try {
-			const beginRes = await fetch('?/passkeyRegisterBegin', { method: 'POST' });
+			const beginRes = await fetch('?/passkeyRegisterBegin', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({})
+			});
 			if (!beginRes.ok) {
 				const err = await beginRes.json().catch(() => ({ message: 'passkeys unavailable' }));
 				throw new Error(err.pk?.message ?? 'passkeys unavailable');
