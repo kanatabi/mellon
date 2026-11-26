@@ -357,9 +357,15 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   not a second mint**. The transport: `/admin/session/auth/methods` (the capability
   probe — the login UI renders a button per enabled method), `webauthn/login/begin|
 finish` (PUBLIC — the mint happens inside finish), `webauthn/register/begin|finish`
-  - roster/delete (authenticated setup). Env: `LUMEN_WEBAUTHN_RP_ID`/`_ORIGIN`
-    (optional — unset = the feature is off and the methods endpoint omits it; staging's
-    different rp-id is correct — separate credentials). The browser half:
+  - roster/delete (authenticated setup). Env: `LUMEN_WEBAUTHN_RP_ID` (the
+    REGISTRABLE DOMAIN — `gofar.id`, not the console host: one shared
+    lumen-admin serves every environment's mellon, and the registrable-domain
+    rp-id lets console AND staging-console run the ceremony against the same
+    credentials — identity is shared across envs by the role-split design;
+    the recorded trade-off: a staging-registered passkey is offered on
+    production too) and `LUMEN_WEBAUTHN_ORIGINS` (the comma-separated browser
+    origins; default https:// + rp-id). Optional — unset = the feature is off
+    and the methods endpoint omits it. The browser half:
     `#lib/webauthn.client.ts` (base64url ↔ ArrayBuffers + the two navigator.credentials
     ceremonies); the private key never leaves home. Registering never bumps
     `token_version` — it changes what can AUTHENTICATE, not what the session may do;
