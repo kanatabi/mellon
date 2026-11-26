@@ -202,6 +202,10 @@
 			</p>
 		{:else if form?.pk && 'message' in form.pk}
 			<p class="font-mono text-xs text-danger" role="alert">{form.pk.message}</p>
+		{:else if form?.pkDelete && 'message' in form.pkDelete}
+			<p class="font-mono text-xs text-danger" role="alert">{form.pkDelete.message}</p>
+		{:else if form?.pkDelete && 'id' in form.pkDelete}
+			<p class="font-mono text-xs text-brand" role="status">passkey removed</p>
 		{/if}
 	</div>
 </section>

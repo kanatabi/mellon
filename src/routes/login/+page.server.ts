@@ -6,7 +6,19 @@ import type { Actions } from './$types';
 
 // The gate checks the door state BEFORE asking for credentials: an UNCLAIMED
 // estate has no login story — /setup is the front door until it self-disables.
-export const load = async ({ cookies }: { cookies: import('@sveltejs/kit').Cookies }) => {
+// It also answers the LOGIN UI's data: the enabled methods (a button per
+// method — lumen omits `passkey` when its env is unset) and the sanitized
+// `?next=` hop (forms POST to `?/action`, which REPLACES the page query, so
+// the destination must ride the form as a field).
+const nextHop = (raw: string) => (raw.startsWith('/') && !raw.startsWith('//') ? raw : '/');
+
+export const load = async ({
+	cookies,
+	url
+}: {
+	cookies: import('@sveltejs/kit').Cookies;
+	url: URL;
+}) => {
 	if (cookies.get(SESSION_COOKIE)) redirect(303, '/');
 	try {
 		const { unclaimed } = await createApi().setupStatus();
@@ -17,7 +29,20 @@ export const load = async ({ cookies }: { cookies: import('@sveltejs/kit').Cooki
 		// lumen WITHOUT the endpoint (pre-wizard image) is honest absence too
 		if (!(e instanceof AdminApiError && (e.status === 404 || e.status >= 500))) throw e;
 	}
+	// the capability probe: the ONE source of the passkey button. An outage
+	// keeps the password door — a probe must never eat the page.
+	let methods: string[] = ['password'];
+	try {
+		methods = (await createApi().authMethods()).methods;
+	} catch {
+		/* honest fallback: password still renders */
+	}
+	return { methods, next: nextHop(String(url.searchParams.get('next') ?? '/')) };
 };
+
+// the hop rides the form (the action URL replaces the page query)
+const nextFrom = (form: FormData, url: URL) =>
+	nextHop(String(form.get('next') ?? url.searchParams.get('next') ?? '/'));
 
 export const actions: Actions = {
 	// the PASSKEY LOGIN (the auth-method seam, C1): begin returns the
@@ -64,8 +89,7 @@ export const actions: Actions = {
 			});
 		}
 		if (mustChange) redirect(303, '/setup?change=1');
-		const next = String(url.searchParams.get('next') ?? '/');
-		redirect(303, next.startsWith('/') && !next.startsWith('//') ? next : '/');
+		redirect(303, nextFrom(form, url));
 	},
 	// NAMED (the auth-method seam): with named actions present, Kit's
 	// default action is UNREACHABLE (action_default_with_named) — every
@@ -99,7 +123,6 @@ export const actions: Actions = {
 		// session's destination is the page that bounced to login (same-origin
 		// paths only: `//host` and absolute URLs are NOT next-hop material)
 		if (mustChange) redirect(303, '/setup?change=1');
-		const next = String(url.searchParams.get('next') ?? '/');
-		redirect(303, next.startsWith('/') && !next.startsWith('//') ? next : '/');
+		redirect(303, nextFrom(form, url));
 	}
 };

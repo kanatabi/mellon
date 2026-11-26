@@ -59,11 +59,19 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 				? { 'content-type': 'application/json' }
 				: undefined
 	});
+	const text = await res.text();
 	if (!res.ok) {
-		const body = (await res.json().catch(() => ({}))) as { error?: string };
-		throw new ApiError(res.status, body.error ?? `request failed (${res.status})`);
+		let message = `request failed (${res.status})`;
+		try {
+			const body = JSON.parse(text) as { error?: string };
+			if (body.error) message = body.error;
+		} catch {
+			/* non-JSON error body: the status line is the message */
+		}
+		throw new ApiError(res.status, message);
 	}
-	return res.json() as Promise<T>;
+	// 204 No Content (the delete verbs) carries no body — res.json() would throw
+	return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const client: AdminApi = {

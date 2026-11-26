@@ -76,20 +76,40 @@ export interface SerializedAttestation {
 	};
 }
 
+/** The browser REJECTS a cancelled/refused ceremony (NotAllowed/Abort) —
+ *  surface it as copy a human can read, keeping the platform's name. */
+function ceremonyError(e: unknown): never {
+	if (e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'AbortError')) {
+		throw new Error(`passkey ceremony cancelled (${e.name})`);
+	}
+	throw e;
+}
+
 /** webauthn.login's browser half: the options FROM lumen, the assertion
  *  BACK to lumen. `userHandle` may be null (discoverable login). */
 export async function webauthnGet(options: SerializedRequestOptions): Promise<SerializedAssertion> {
 	const opts = options;
-	const assertion = (await navigator.credentials.get({
-		publicKey: {
-			challenge: b64uToBytes(opts.publicKey.challenge),
-			rpId: opts.publicKey.rpId,
-			timeout: opts.publicKey.timeout ?? 60_000,
-			userVerification: (opts.publicKey.userVerification ??
-				'preferred') as UserVerificationRequirement
-		},
-		mediation: 'optional'
-	})) as PublicKeyCredential & { response: AuthenticatorAssertionResponse };
+	let assertion: PublicKeyCredential & { response: AuthenticatorAssertionResponse };
+	try {
+		assertion = (await navigator.credentials.get({
+			publicKey: {
+				challenge: b64uToBytes(opts.publicKey.challenge),
+				rpId: opts.publicKey.rpId,
+				timeout: opts.publicKey.timeout ?? 60_000,
+				userVerification: (opts.publicKey.userVerification ??
+					'preferred') as UserVerificationRequirement,
+				// discoverable login omits this (the authenticator offers what it
+				// holds); a future allow-list flow carries it
+				allowCredentials: opts.publicKey.allowCredentials?.map((c) => ({
+					id: b64uToBytes(c.id),
+					transports: c.transports as AuthenticatorTransport[] | undefined
+				})) as PublicKeyCredentialDescriptor[] | undefined
+			},
+			mediation: 'optional'
+		})) as PublicKeyCredential & { response: AuthenticatorAssertionResponse };
+	} catch (e) {
+		ceremonyError(e);
+	}
 	if (!assertion) throw new Error('passkey ceremony cancelled');
 	return {
 		id: assertion.id,
@@ -110,29 +130,34 @@ export async function webauthnCreate(
 	options: SerializedCreationOptions
 ): Promise<SerializedAttestation> {
 	const opts = options;
-	const creation = (await navigator.credentials.create({
-		publicKey: {
-			challenge: b64uToBytes(opts.publicKey.challenge),
-			rp: opts.publicKey.rp,
-			user: {
-				id: b64uToBytes(opts.publicKey.user.id),
-				name: opts.publicKey.user.name,
-				displayName: opts.publicKey.user.displayName
-			},
-			pubKeyCredParams: (opts.publicKey.pubKeyCredParams ?? [
-				{ alg: -7, type: 'public-key' },
-				{ alg: -257, type: 'public-key' }
-			]) as PublicKeyCredentialParameters[],
-			excludeCredentials: opts.publicKey.excludeCredentials?.map((c) => ({
-				id: b64uToBytes(c.id),
-				transports: c.transports as AuthenticatorTransport[]
-			})) as unknown as PublicKeyCredentialDescriptor[],
-			authenticatorSelection: opts.publicKey
-				.authenticatorSelection as AuthenticatorSelectionCriteria,
-			timeout: opts.publicKey.timeout ?? 60_000,
-			attestation: (opts.publicKey.attestation ?? 'none') as AttestationConveyancePreference
-		}
-	})) as PublicKeyCredential & { response: AuthenticatorAttestationResponse };
+	let creation: PublicKeyCredential & { response: AuthenticatorAttestationResponse };
+	try {
+		creation = (await navigator.credentials.create({
+			publicKey: {
+				challenge: b64uToBytes(opts.publicKey.challenge),
+				rp: opts.publicKey.rp,
+				user: {
+					id: b64uToBytes(opts.publicKey.user.id),
+					name: opts.publicKey.user.name,
+					displayName: opts.publicKey.user.displayName
+				},
+				pubKeyCredParams: (opts.publicKey.pubKeyCredParams ?? [
+					{ alg: -7, type: 'public-key' },
+					{ alg: -257, type: 'public-key' }
+				]) as PublicKeyCredentialParameters[],
+				excludeCredentials: opts.publicKey.excludeCredentials?.map((c) => ({
+					id: b64uToBytes(c.id),
+					transports: c.transports as AuthenticatorTransport[]
+				})) as unknown as PublicKeyCredentialDescriptor[],
+				authenticatorSelection: opts.publicKey
+					.authenticatorSelection as AuthenticatorSelectionCriteria,
+				timeout: opts.publicKey.timeout ?? 60_000,
+				attestation: (opts.publicKey.attestation ?? 'none') as AttestationConveyancePreference
+			}
+		})) as PublicKeyCredential & { response: AuthenticatorAttestationResponse };
+	} catch (e) {
+		ceremonyError(e);
+	}
 	if (!creation) throw new Error('passkey ceremony cancelled');
 	return {
 		id: creation.id,

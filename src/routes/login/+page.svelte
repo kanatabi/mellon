@@ -8,13 +8,14 @@
 	import { webauthnGet, type SerializedRequestOptions } from '#lib/webauthn.client.ts';
 	import { ActionFailure, submitAction } from '#lib/action-post.ts';
 	import { KeyRound } from 'lucide-svelte';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
 	interface Props {
+		data: PageData;
 		form: ActionData;
 	}
 
-	let { form }: Props = $props();
+	let { data, form }: Props = $props();
 
 	// The gate's progress indicator (owner ask 2026-11-21): the submit round
 	// trip (lumen mints the session) previously showed NOTHING. The spinner
@@ -50,7 +51,8 @@
 			// carries it, never a guessed '/'
 			const done = await submitAction<never>('passkeyFinish', {
 				state: begin.data.state,
-				response: JSON.stringify(assertion)
+				response: JSON.stringify(assertion),
+				next: data.next
 			});
 			window.location.assign(done.kind === 'redirect' ? done.location : '/');
 		} catch (err) {
@@ -97,6 +99,7 @@
 			};
 		}}
 	>
+		<input type="hidden" name="next" value={data.next} />
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
 				>username</span
@@ -126,24 +129,27 @@
 		</p>
 	</form>
 	<!-- the passkey door: begin/finish through the form actions, the
-	     ceremony in the browser — the private key never leaves home -->
-	<div class="relative flex w-full max-w-sm flex-col gap-2">
-		<Button
-			type="button"
-			variant="outline"
-			disabled={passkeyBusy}
-			onclick={() => void loginWithPasskey()}
-		>
-			{#if passkeyBusy}
-				<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
-				<span>Waiting for the authenticator…</span>
-			{:else}
-				<KeyRound class="size-4" aria-hidden="true" />
-				Login with passkey
+	     ceremony in the browser — the private key never leaves home.
+	     DATA-DRIVEN: lumen's methods probe decides (unset env = no button). -->
+	{#if data.methods.includes('passkey')}
+		<div class="relative flex w-full max-w-sm flex-col gap-2">
+			<Button
+				type="button"
+				variant="outline"
+				disabled={passkeyBusy}
+				onclick={() => void loginWithPasskey()}
+			>
+				{#if passkeyBusy}
+					<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+					<span>Waiting for the authenticator…</span>
+				{:else}
+					<KeyRound class="size-4" aria-hidden="true" />
+					Login with passkey
+				{/if}
+			</Button>
+			{#if passkeyMessage}
+				<p class="font-mono text-xs text-danger" role="alert">{passkeyMessage}</p>
 			{/if}
-		</Button>
-		{#if passkeyMessage}
-			<p class="font-mono text-xs text-danger" role="alert">{passkeyMessage}</p>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </section>
