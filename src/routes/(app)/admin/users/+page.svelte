@@ -81,10 +81,10 @@
 			</div>
 		{/if}
 		{#if form?.error}
-			<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.error}</p>
 		{/if}
 		{#if form?.deleteError}
-			<p class="font-mono text-xs text-danger" role="alert">{form.deleteError}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.deleteError}</p>
 		{/if}
 
 		<!-- Closes on SUCCESS: the one-time temp-password reveal below is what
@@ -93,7 +93,7 @@
 		<Dialog.Content class="sm:max-w-md">
 			<Dialog.Header>
 				<Dialog.Title>Create a user</Dialog.Title>
-				<Dialog.Description class="font-mono text-xs text-muted-foreground">
+				<Dialog.Description class="text-xs leading-relaxed text-muted-foreground">
 					lumen mints a server-generated temporary password, shown once on this page after the
 					dialog closes.
 				</Dialog.Description>
@@ -154,7 +154,7 @@
 					{/each}
 				</fieldset>
 				{#if form?.error}
-					<p class="font-mono text-xs text-danger" role="alert">{form.error}</p>
+					<p class="text-xs leading-relaxed text-danger" role="alert">{form.error}</p>
 				{/if}
 				<Dialog.Footer>
 					<Button type="submit">
@@ -167,7 +167,7 @@
 	</Dialog.Root>
 
 	<div class="overflow-x-auto rounded-lg border border-border bg-card">
-		<table class="w-full border-collapse font-mono text-xs">
+		<table class="w-full border-collapse text-[13px]">
 			<thead>
 				<tr
 					class="border-b border-border text-left text-[10px] tracking-widest text-muted-foreground uppercase"
@@ -186,7 +186,7 @@
 						<td class="px-4 py-2.5">
 							<span class="flex flex-wrap gap-1">
 								{#each u.scopes as sc (sc)}
-									<span class="rounded-sm bg-muted px-2 py-0.5 text-[10px]">{sc}</span>
+									<span class="rounded-sm bg-muted px-2 py-0.5 font-mono text-[10px]">{sc}</span>
 								{:else}
 									<span class="text-muted-foreground/50">none</span>
 								{/each}
@@ -203,7 +203,7 @@
 								<span class="text-muted-foreground">Set</span>
 							{/if}
 						</td>
-						<td class="px-4 py-2.5 text-muted-foreground">{u.createdAt}</td>
+						<td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">{u.createdAt}</td>
 						<td class="px-4 py-2.5 text-right">
 							<Button
 								type="button"
@@ -236,15 +236,15 @@
 				</Dialog.Header>
 
 				{#if form?.manageError}
-					<p class="font-mono text-xs text-danger" role="alert">{form.manageError}</p>
+					<p class="text-xs leading-relaxed text-danger" role="alert">{form.manageError}</p>
 				{/if}
 				{#if form?.revoked}
-					<p class="font-mono text-xs text-brand" role="status">
+					<p class="text-xs leading-relaxed text-brand" role="status">
 						{form.revoked.username}'s sessions revoked — they sign in again.
 					</p>
 				{/if}
 				{#if form?.forced}
-					<p class="font-mono text-xs text-brand" role="status">
+					<p class="text-xs leading-relaxed text-brand" role="status">
 						{form.forced} must complete a password change on next use.
 					</p>
 				{/if}

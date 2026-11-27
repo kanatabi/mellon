@@ -55,7 +55,7 @@
 		<p class="font-mono text-sm text-muted-foreground">post not found — it may have been deleted</p>
 		<a
 			href="/posts"
-			class="rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+			class="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
 		>
 			Back to posts
 		</a>

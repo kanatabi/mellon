@@ -242,7 +242,7 @@
 			</div>
 
 			{#if error}
-				<p class="font-mono text-xs break-words text-danger" role="alert">{error}</p>
+				<p class="text-xs leading-relaxed break-words text-danger" role="alert">{error}</p>
 			{/if}
 
 			<Dialog.Footer>

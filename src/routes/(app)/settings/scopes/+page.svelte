@@ -39,15 +39,15 @@
 	</p>
 
 	{#if form?.scopeError}
-		<p class="font-mono text-xs text-danger" role="alert">{form.scopeError}</p>
+		<p class="text-xs leading-relaxed text-danger" role="alert">{form.scopeError}</p>
 	{/if}
 	{#if form?.scopeAdded}
-		<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 150 }}>
+		<p class="text-xs leading-relaxed text-brand" role="status" transition:fade={{ duration: 150 }}>
 			{form.scopeAdded.scope} onboarded — it appears in the users page's grant pickers.
 		</p>
 	{/if}
 	{#if form?.scopeDeleted}
-		<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 150 }}>
+		<p class="text-xs leading-relaxed text-brand" role="status" transition:fade={{ duration: 150 }}>
 			{form.scopeDeleted} deleted.
 		</p>
 	{/if}

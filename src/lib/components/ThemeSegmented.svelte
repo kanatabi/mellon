@@ -24,7 +24,7 @@
 			role="radio"
 			aria-checked={themeState.mode === m}
 			onclick={() => setMode(m)}
-			class="flex items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-xs transition-colors {themeState.mode ===
+			class="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors {themeState.mode ===
 			m
 				? 'bg-card text-foreground ring-1 ring-border'
 				: 'text-muted-foreground hover:text-foreground'}"

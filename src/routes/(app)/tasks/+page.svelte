@@ -381,7 +381,7 @@
 	<header class="flex shrink-0 items-start justify-between gap-3 md:items-end md:gap-4">
 		<div class="flex min-w-0 flex-col gap-1">
 			<h1 class="text-3xl font-semibold tracking-tight">Tasks</h1>
-			<p class="font-mono text-xs text-muted-foreground">
+			<p class="text-xs leading-relaxed text-muted-foreground">
 				{#if loadError}
 					the workspace is unavailable
 				{:else if workspace}
@@ -477,7 +477,7 @@
 								type="button"
 								onclick={() => (view = option.id)}
 								aria-pressed={view === option.id}
-								class="rounded-md px-3 py-1 font-mono text-xs transition-colors {view === option.id
+								class="rounded-md px-3 py-1 text-xs transition-colors {view === option.id
 									? 'bg-card text-foreground ring-1 ring-border'
 									: 'text-muted-foreground hover:text-foreground'}"
 							>

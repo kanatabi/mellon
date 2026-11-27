@@ -81,7 +81,7 @@
 		<div class="flex-1 overflow-y-auto p-4">
 			{#if available.length === 0}
 				<p
-					class="rounded-lg border border-border bg-background p-4 text-center font-mono text-xs text-muted-foreground"
+					class="rounded-lg border border-border bg-background p-4 text-center text-xs text-muted-foreground"
 				>
 					your account has no widget access yet — ask an administrator for scopes
 				</p>

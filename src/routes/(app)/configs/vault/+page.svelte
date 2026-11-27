@@ -569,7 +569,7 @@
 
 		{#if message && message.text}
 			<p
-				class="w-fit rounded-sm px-3 py-1 font-mono text-xs {message.kind === 'ok'
+				class="w-fit rounded-sm px-3 py-1 text-xs {message.kind === 'ok'
 					? 'bg-brand/10 text-brand'
 					: 'text-danger'}"
 				role="status"
@@ -668,7 +668,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="font-mono text-xs text-danger hover:bg-danger/10 hover:text-danger"
+						class="text-xs text-danger hover:bg-danger/10 hover:text-danger"
 						onclick={() => removeRow(k)}
 						aria-label={`Remove ${k}`}
 					>
@@ -676,7 +676,7 @@
 					</Button>
 				</div>
 			{:else}
-				<p class="px-4 py-6 text-center font-mono text-xs text-muted-foreground">
+				<p class="px-4 py-6 text-center text-xs text-muted-foreground">
 					no keys match “{query}”
 				</p>
 			{/each}

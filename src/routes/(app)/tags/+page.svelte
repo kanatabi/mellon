@@ -281,7 +281,7 @@
 			<Button
 				type="submit"
 				variant="primary"
-				class="shrink-0 gap-1.5 px-3 py-1.5 font-mono text-xs disabled:opacity-40"
+				class="shrink-0 gap-1.5 px-3 py-1.5 text-xs disabled:opacity-40"
 				disabled={!createName.trim()}
 			>
 				<Plus class="size-3.5" /> create
@@ -322,7 +322,7 @@
 
 	{#if message}
 		<p
-			class="w-fit rounded-sm px-3 py-1 font-mono text-xs {message.kind === 'ok'
+			class="w-fit rounded-sm px-3 py-1 text-xs {message.kind === 'ok'
 				? 'bg-brand/10 text-brand'
 				: 'text-danger'}"
 			role="status"
@@ -332,7 +332,7 @@
 	{/if}
 
 	{#if data.q}
-		<p class="font-mono text-xs text-muted-foreground" role="status">
+		<p class="text-xs leading-relaxed text-muted-foreground" role="status">
 			engine results · {total} matching “{data.q}” — order is relevance
 		</p>
 	{/if}
@@ -345,7 +345,7 @@
 			role="toolbar"
 			aria-label="Bulk tag curation"
 		>
-			<span class="font-mono text-xs text-brand">{selection.size} selected</span>
+			<span class="text-xs font-medium text-brand">{selection.size} selected</span>
 			<Button
 				type="button"
 				variant="quiet"
@@ -452,14 +452,14 @@
 				</Button>
 			</div>
 		{:else}
-			<p class="px-4 py-8 text-center font-mono text-xs text-muted-foreground">
+			<p class="px-4 py-8 text-center text-xs text-muted-foreground">
 				{data.q ? `nothing matches “${data.q}”` : 'the vocabulary is empty'}
 			</p>
 		{/each}
 	</div>
 
 	{#if totalPages > 1}
-		<div class="flex items-center justify-between gap-4 font-mono text-xs">
+		<div class="flex items-center justify-between gap-4 text-xs">
 			{#if data.page > 1}
 				<a
 					href={url({ page: data.page - 1 })}
@@ -531,7 +531,7 @@
 				onclick={() => void toggleFromDialog()}
 				aria-pressed={current.featured}
 				aria-label="Toggle featured"
-				class="flex items-center justify-between rounded-md border border-border px-3 py-2 font-mono text-xs transition-colors hover:border-brand/60"
+				class="flex items-center justify-between rounded-md border border-border px-3 py-2 text-xs transition-colors hover:border-brand/60"
 			>
 				<span class="text-muted-foreground">In the earendil TOPICS widget</span>
 				<span
@@ -549,19 +549,19 @@
 					{usedTotal === 1 ? 'post' : 'posts'}
 				</p>
 				{#if usedBusy}
-					<p class="font-mono text-xs text-muted-foreground/60">loading…</p>
+					<p class="text-xs text-muted-foreground/60">loading…</p>
 				{:else}
 					<div class="flex max-h-40 flex-col gap-1 overflow-y-auto">
 						{#each usedPosts as p (p.slug)}
 							<a
 								href="/posts/{p.slug}"
-								class="flex items-center justify-between gap-2 rounded-md px-2 py-1 font-mono text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+								class="flex items-center justify-between gap-2 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 							>
 								<span class="truncate">{p.title}</span>
 								<span class="shrink-0 text-[10px] uppercase">{p.status}</span>
 							</a>
 						{:else}
-							<p class="px-2 font-mono text-xs text-muted-foreground/60">
+							<p class="px-2 text-xs text-muted-foreground/60">
 								lives in the vocabulary only — free to delete
 							</p>
 						{/each}
@@ -570,10 +570,7 @@
 			</div>
 
 			{#if message}
-				<p
-					class="font-mono text-xs {message.kind === 'ok' ? 'text-brand' : 'text-danger'}"
-					role="status"
-				>
+				<p class="text-xs {message.kind === 'ok' ? 'text-brand' : 'text-danger'}" role="status">
 					{message.text}
 				</p>
 			{/if}

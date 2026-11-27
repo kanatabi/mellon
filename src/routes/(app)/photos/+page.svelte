@@ -396,7 +396,12 @@
 	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
 		<div class="flex shrink-0 flex-col gap-4">
 			<div class="flex items-end justify-between gap-4">
-				<h1 class="text-3xl font-semibold tracking-tight">Photos</h1>
+				<div class="flex flex-col gap-1">
+					<h1 class="text-3xl font-semibold tracking-tight">Photos</h1>
+					<p class="text-xs leading-relaxed text-muted-foreground">
+						Curate the image library — collections, gallery, alt text.
+					</p>
+				</div>
 				<div class="flex items-center gap-3">
 					<!-- View segment (md+): tiles ⇄ table. -->
 					<div
@@ -408,7 +413,7 @@
 							type="button"
 							onclick={() => setView('tiles')}
 							aria-pressed={view === 'tiles'}
-							class="flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-xs transition-colors {view ===
+							class="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs transition-colors {view ===
 							'tiles'
 								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
@@ -419,7 +424,7 @@
 							type="button"
 							onclick={() => setView('table')}
 							aria-pressed={view === 'table'}
-							class="flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-xs transition-colors {view ===
+							class="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs transition-colors {view ===
 							'table'
 								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
@@ -479,7 +484,7 @@
 					<a
 						href={buildUrl({ gallery: true })}
 						aria-current={data.gallery === true ? 'true' : undefined}
-						class="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
+						class="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1 text-xs whitespace-nowrap transition-colors {data.gallery ===
 						true
 							? 'border-accent-teal bg-accent-teal/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
@@ -489,7 +494,7 @@
 					<a
 						href={buildUrl({ gallery: false })}
 						aria-current={data.gallery === false ? 'true' : undefined}
-						class="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
+						class="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1 text-xs whitespace-nowrap transition-colors {data.gallery ===
 						false
 							? 'border-accent-teal bg-accent-teal/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
@@ -500,7 +505,7 @@
 				{#if hasFilters}
 					<a
 						href="/photos"
-						class="flex shrink-0 items-center gap-1 self-center rounded-md px-2 py-1 font-mono text-xs text-muted-foreground hover:text-foreground"
+						class="flex shrink-0 items-center gap-1 self-center rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
 					>
 						<X class="size-3" /> clear
 					</a>
@@ -547,7 +552,7 @@
 					role="toolbar"
 					aria-label="Bulk curation"
 				>
-					<span class="font-mono text-xs text-brand">{selection.size} selected</span>
+					<span class="text-xs font-medium text-brand">{selection.size} selected</span>
 					<div class="w-44">
 						<Combobox
 							items={data.collections.map((c) => ({ name: c.name, count: c.photos }))}
@@ -588,10 +593,7 @@
 			{/if}
 
 			{#if message}
-				<p
-					class="w-fit rounded-sm bg-brand/10 px-3 py-1 font-mono text-xs text-brand"
-					role="status"
-				>
+				<p class="w-fit rounded-sm bg-brand/10 px-3 py-1 text-xs text-brand" role="status">
 					{message}
 				</p>
 			{/if}
@@ -599,7 +601,7 @@
 			<!-- The engine answers in its own voice: count of the FULL match set,
 		     and the order it picked. Sort and the date window rest while q lives. -->
 			{#if data.q}
-				<p class="font-mono text-xs text-muted-foreground" role="status">
+				<p class="text-xs leading-relaxed text-muted-foreground" role="status">
 					engine results · {data.total} matching “{data.q}” — order is relevance
 				</p>
 			{/if}
@@ -613,7 +615,7 @@
 						opacity={0.08}
 					/>
 					<Images class="relative size-6 text-muted-foreground" />
-					<p class="relative font-mono text-xs text-muted-foreground">
+					<p class="relative text-xs leading-relaxed text-muted-foreground">
 						{data.q
 							? `nothing matches “${data.q}”`
 							: hasFilters
@@ -771,7 +773,7 @@
 										class="h-10 w-14 rounded border border-border object-cover"
 									/>
 								</span>
-								<span role="cell" class="min-w-0 truncate font-mono text-xs text-muted-foreground">
+								<span role="cell" class="min-w-0 truncate text-[13px] text-muted-foreground">
 									<a href="/photos/{p.id}" class="transition-colors hover:text-foreground">
 										{p.alt}
 									</a>
@@ -825,7 +827,7 @@
 
 			<!-- Pager: links, not fetch logic. Hidden when everything fits one page. -->
 			{#if data.totalPages > 1}
-				<div class="flex items-center justify-between gap-4 font-mono text-xs">
+				<div class="flex items-center justify-between gap-4 text-xs">
 					{#if data.page > 1}
 						<a
 							href={buildUrl({ page: data.page - 1 })}

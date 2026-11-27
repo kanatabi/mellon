@@ -40,7 +40,7 @@
 		{/each}
 	</div>
 {:else if failed}
-	<p class="font-mono text-xs text-danger" role="alert">{failed}</p>
+	<p class="text-xs leading-relaxed text-danger" role="alert">{failed}</p>
 {:else}
 	<div class="grid grid-cols-4 gap-2">
 		{#each photos as photo (photo.id)}
@@ -60,7 +60,7 @@
 				/>
 			</a>
 		{:else}
-			<p class="col-span-4 py-6 font-mono text-xs text-muted-foreground">No photos yet</p>
+			<p class="col-span-4 py-6 text-xs text-muted-foreground">No photos yet</p>
 		{/each}
 	</div>
 	<p class="mt-3 font-mono text-[10px] text-muted-foreground/70">

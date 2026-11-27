@@ -94,7 +94,7 @@
 <div class="relative flex flex-col gap-1.5">
 	<Popover.Root bind:open {onOpenChange}>
 		<Popover.Trigger
-			class="flex w-full items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+			class="flex w-full items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
 		>
 			<span class="min-w-0 truncate">
 				{selected.length ? (multiple ? `${selected.length} selected` : selected[0]) : emptyLabel}
@@ -107,7 +107,7 @@
 			sideOffset={6}
 			class="w-64 gap-0 rounded-lg border border-border bg-card p-3 shadow-xl"
 		>
-			<Command.Root class="bg-transparent p-0 font-mono text-xs" loop>
+			<Command.Root class="bg-transparent p-0 text-xs" loop>
 				<Command.Input
 					bind:value={q}
 					placeholder={create ? 'search or create…' : 'search…'}

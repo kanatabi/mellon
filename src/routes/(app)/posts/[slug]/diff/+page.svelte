@@ -188,7 +188,7 @@
 			<p class="font-mono text-sm text-muted-foreground">nothing pending — the editor is clean</p>
 			<a
 				href="/posts/{data.post.slug}"
-				class="rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				class="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				Back to editor
 			</a>
@@ -217,7 +217,7 @@
 			</div>
 		{/if}
 		{#if errMsg}
-			<p class="w-fit rounded-sm bg-danger/10 px-3 py-1 font-mono text-xs text-danger" role="alert">
+			<p class="w-fit rounded-sm bg-danger/10 px-3 py-1 text-xs text-danger" role="alert">
 				{errMsg}
 			</p>
 		{/if}
@@ -243,7 +243,7 @@
 					aria-controls="diff-panel-markdown"
 					tabindex={tab === 'markdown' ? 0 : -1}
 					onclick={() => setTab('markdown', false)}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'markdown'
+					class="rounded-full px-3 py-1 text-xs transition-colors {tab === 'markdown'
 						? 'bg-brand/15 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -257,7 +257,7 @@
 					aria-controls="diff-panel-metadata"
 					tabindex={tab === 'metadata' ? 0 : -1}
 					onclick={() => setTab('metadata', false)}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'metadata'
+					class="rounded-full px-3 py-1 text-xs transition-colors {tab === 'metadata'
 						? 'bg-brand/15 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -296,7 +296,7 @@
 									if (v !== undefined) setChangedOnly(v);
 								}}
 								closeOnSelect={false}
-								class="rounded-md py-1.5 font-mono text-xs"
+								class="rounded-md py-1.5 text-xs"
 							>
 								Changed only
 							</DropdownMenu.CheckboxItem>
@@ -307,7 +307,7 @@
 									if (v) setView('split');
 								}}
 								closeOnSelect={false}
-								class="rounded-md py-1.5 font-mono text-xs"
+								class="rounded-md py-1.5 text-xs"
 							>
 								Split view
 							</DropdownMenu.CheckboxItem>
@@ -317,7 +317,7 @@
 									if (v) setView('inline');
 								}}
 								closeOnSelect={false}
-								class="rounded-md py-1.5 font-mono text-xs"
+								class="rounded-md py-1.5 text-xs"
 							>
 								Inline view
 							</DropdownMenu.CheckboxItem>
@@ -328,7 +328,7 @@
 						type="button"
 						variant="quiet"
 						aria-pressed={hideUnchanged}
-						class="gap-1.5 rounded-md px-3 py-1 font-mono text-xs {hideUnchanged
+						class="gap-1.5 rounded-md px-3 py-1 text-xs {hideUnchanged
 							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 							: ''}"
 						onclick={() => (hideUnchanged = !hideUnchanged)}

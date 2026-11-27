@@ -53,10 +53,10 @@
 		return best;
 	});
 
-	// Wayfinding washes ride INLINE styles — Tailwind cannot generate dynamic
-	// utility names (the literal-scan lesson, again), and color-mix darkens
-	// correctly with the theme.
-	const wash = (hue: string) => `background: color-mix(in oklab, ${hue} 14%, transparent)`;
+	// Active-row skin (2026-11-28): NEUTRAL fill + a 2px destination-hue bar
+	// + the icon in its hue. At rest the icons are muted — the old rainbow
+	// read playful; the hue now marks only where you are.
+	const activeSkin = (hue: string) => `background: var(--accent); box-shadow: inset 2px 0 0 ${hue}`;
 
 	// Per-section collapse (owner ask — the doc's collapsible-group pattern):
 	// keyed by group label, all expanded by default, NOT persisted — a fresh
@@ -134,11 +134,11 @@
 												href={item.href}
 												aria-label={item.label}
 												aria-current={current ? 'page' : undefined}
-												style={current ? wash(item.hue) : undefined}
+												style={current ? activeSkin(item.hue) : undefined}
 											>
 												<item.icon
 													class="size-4 shrink-0"
-													style={`color: ${item.hue}; opacity: ${current ? 1 : 0.72}`}
+													style={current ? `color: ${item.hue}` : undefined}
 												/>
 												<span>{item.label}</span>
 											</a>

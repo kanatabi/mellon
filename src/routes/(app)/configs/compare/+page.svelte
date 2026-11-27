@@ -316,8 +316,7 @@
 						type="button"
 						onclick={() => (presentation = p)}
 						aria-pressed={presentation === p}
-						class="rounded-md px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
-						p
+						class="rounded-md px-3 py-1 text-xs capitalize transition-colors {presentation === p
 							? 'bg-card text-foreground ring-1 ring-border'
 							: 'text-muted-foreground hover:text-foreground'}"
 					>
@@ -342,8 +341,7 @@
 						onclick={() => (content = c)}
 						aria-pressed={content === c}
 						disabled={presentation === 'table' && c === 'raw'}
-						class="rounded-md px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
-						c
+						class="rounded-md px-3 py-1 text-xs transition-colors disabled:opacity-40 {content === c
 							? 'bg-card text-foreground ring-1 ring-border'
 							: 'text-muted-foreground hover:text-foreground'}"
 					>
@@ -382,7 +380,7 @@
 				{revealAll ? 'Hide values' : 'Show values'}</Button
 			>
 			{#if presentation === 'table'}
-				<label class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+				<label class="flex items-center gap-1.5 text-xs text-muted-foreground">
 					<input type="checkbox" bind:checked={hideSame} class="accent-[var(--brand)]" />
 					Hide unchanged
 				</label>
@@ -392,7 +390,7 @@
 
 	{#if !ready}
 		<p
-			class="rounded-lg border border-border bg-card px-4 py-8 text-center font-mono text-xs text-muted-foreground"
+			class="rounded-lg border border-border bg-card px-4 py-8 text-center text-xs leading-relaxed text-muted-foreground"
 		>
 			{data.meta && data.meta.versions.length <= 1
 				? 'this path has a single version — nothing to compare yet'

@@ -32,7 +32,12 @@
 
 <section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-		<h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1>
+		<div class="flex flex-col gap-1">
+			<h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1>
+			<p class="text-xs leading-relaxed text-muted-foreground">
+				Your estate at a glance — the work, the content, the state.
+			</p>
+		</div>
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
@@ -55,7 +60,7 @@
 		     home explains itself instead of erroring -->
 		<div class="rounded-lg border border-border bg-card p-6 text-center">
 			<p class="text-sm text-foreground">Your dashboard is waiting on widgets.</p>
-			<p class="mt-2 font-mono text-xs text-muted-foreground">
+			<p class="mt-2 text-xs leading-relaxed text-muted-foreground">
 				your account has no app access yet — ask an administrator to grant you scopes, and your
 				widgets will appear here.
 			</p>
@@ -65,7 +70,7 @@
 		     the door back -->
 		<div class="rounded-lg border border-border bg-card p-6 text-center">
 			<p class="text-sm text-foreground">Your canvas is empty.</p>
-			<p class="mt-2 font-mono text-xs text-muted-foreground">
+			<p class="mt-2 text-xs leading-relaxed text-muted-foreground">
 				add widgets from the panel — they land at the first free slot
 			</p>
 			<button

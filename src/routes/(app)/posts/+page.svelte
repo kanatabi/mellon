@@ -340,7 +340,12 @@
 	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
 		<div class="flex shrink-0 flex-col gap-4">
 			<div class="flex items-end justify-between gap-4">
-				<h1 class="text-3xl font-semibold tracking-tight">Posts</h1>
+				<div class="flex flex-col gap-1">
+					<h1 class="text-3xl font-semibold tracking-tight">Posts</h1>
+					<p class="text-xs leading-relaxed text-muted-foreground">
+						Write, publish, and tend the blog.
+					</p>
+				</div>
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
@@ -369,7 +374,7 @@
 			</div>
 
 			{#if importError}
-				<p class="font-mono text-xs text-danger" role="alert">import: {importError}</p>
+				<p class="text-xs leading-relaxed text-danger" role="alert">import: {importError}</p>
 			{/if}
 
 			<!-- Engine search: debounced into the URL (?q=), lumen routes it to
@@ -419,7 +424,7 @@
 						<a
 							href={buildUrl({ status: chip.value })}
 							aria-current={active ? 'true' : undefined}
-							class="shrink-0 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
+							class="shrink-0 rounded-md border px-3 py-1 text-xs whitespace-nowrap transition-colors {active
 								? 'border-brand bg-accent text-foreground'
 								: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
 						>
@@ -429,7 +434,7 @@
 					{#if hasFilters}
 						<a
 							href="/posts"
-							class="flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+							class="flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
 						>
 							<X class="size-3" /> clear
 						</a>
@@ -461,7 +466,7 @@
 			<!-- The engine answers in its own voice: count of the FULL match set,
 		     and the order it picked. Sort controls below rest while q lives. -->
 			{#if data.q}
-				<p class="font-mono text-xs text-muted-foreground" role="status">
+				<p class="text-xs leading-relaxed text-muted-foreground" role="status">
 					engine results · {data.total} matching “{data.q}” — order is relevance
 				</p>
 			{/if}
@@ -558,9 +563,7 @@
 						</div>
 					</div>
 				{:else}
-					<p
-						class="border-t border-border py-10 text-center font-mono text-xs text-muted-foreground"
-					>
+					<p class="border-t border-border py-10 text-center text-xs text-muted-foreground">
 						{data.q ? `nothing matches “${data.q}”` : 'nothing matches these filters'}
 					</p>
 				{/each}
@@ -569,7 +572,7 @@
 			<!-- Pager: links, not fetch logic — shareable, back-button honest,
 		     keyboard-native. Hidden when the corpus fits one page. -->
 			{#if data.totalPages > 1}
-				<div class="flex items-center justify-between gap-4 font-mono text-xs">
+				<div class="flex items-center justify-between gap-4 text-xs">
 					{#if data.page > 1}
 						<a
 							href={buildUrl({ page: data.page - 1 })}

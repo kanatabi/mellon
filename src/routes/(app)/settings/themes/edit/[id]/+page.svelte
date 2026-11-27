@@ -256,17 +256,11 @@
 				align="end"
 				class="w-44 rounded-lg border border-border p-1"
 			>
-				<DropdownMenu.Item
-					class="rounded-md px-2 py-1.5 font-mono text-xs"
-					onSelect={() => copyJson()}
-				>
+				<DropdownMenu.Item class="rounded-md px-2 py-1.5 text-xs" onSelect={() => copyJson()}>
 					<Copy class="mr-2 inline size-3.5" />
 					Copy JSON
 				</DropdownMenu.Item>
-				<DropdownMenu.Item
-					class="rounded-md px-2 py-1.5 font-mono text-xs"
-					onSelect={() => resetToFork()}
-				>
+				<DropdownMenu.Item class="rounded-md px-2 py-1.5 text-xs" onSelect={() => resetToFork()}>
 					<RotateCcw class="mr-2 inline size-3.5" />
 					Reset to fork base
 				</DropdownMenu.Item>
@@ -280,7 +274,7 @@
 						if (v !== undefined) live = v;
 					}}
 					closeOnSelect={false}
-					class="rounded-md py-1.5 font-mono text-xs"
+					class="rounded-md py-1.5 text-xs"
 				>
 					Preview live
 				</DropdownMenu.CheckboxItem>
@@ -380,7 +374,7 @@
 	{#if issues.length}
 		<ul class="flex flex-col gap-1 rounded-md border border-danger/40 bg-danger/5 p-2" role="alert">
 			{#each issues as issue (issue)}
-				<li class="font-mono text-xs text-danger">{issue}</li>
+				<li class="text-xs leading-relaxed text-danger">{issue}</li>
 			{/each}
 		</ul>
 	{/if}

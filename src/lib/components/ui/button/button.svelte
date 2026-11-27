@@ -39,9 +39,9 @@
 					// quiet chip gains the PICKER SURFACE — bg-card + the border,
 					// the select-trigger's anatomy — so a secondary action reads
 					// as a control everywhere it sits.
-					'h-auto border-border bg-card px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground',
+					'h-auto border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground',
 				danger:
-					'h-auto border-danger/40 px-3 py-1.5 font-mono text-xs text-danger transition-colors hover:bg-danger/10',
+					'h-auto border-danger/40 px-3 py-1.5 text-xs text-danger transition-colors hover:bg-danger/10',
 				soft: 'h-auto rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground',
 				default: 'bg-primary text-primary-foreground hover:bg-primary/80',
 				outline:

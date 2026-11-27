@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { GripVertical, Trash2, GripHorizontal } from 'lucide-svelte';
+	import { ChevronRight, GripVertical, Trash2, GripHorizontal } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 	import { GRID_COLS, GRID_GAP_PX, MAX_ROW_SPAN, ROW_UNIT_PX } from './layout.ts';
 	import type { WidgetDef } from './widgets/registry.ts';
@@ -285,7 +285,7 @@
 	tabindex="0"
 	onkeydown={keydown}
 	style={float ? `width: ${float.w}px; height: ${float.h}px; z-index: 30;` : undefined}
-	class="group relative flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-3 transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {resizing
+	class="group relative flex h-full flex-col gap-2.5 rounded-lg border border-border bg-card p-4 transition-colors outline-none hover:border-muted-foreground/40 focus-visible:ring-2 focus-visible:ring-brand/40 {resizing
 		? 'ring-2 ring-brand/60'
 		: ''}"
 	aria-label="{def.title} widget — Alt+arrows to move, Shift+Alt+arrows to resize"
@@ -304,17 +304,16 @@
 				class="size-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground"
 				aria-hidden="true"
 			/>
-			<p class="truncate text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-				{def.title}
-			</p>
+			<p class="truncate text-sm font-semibold tracking-tight text-foreground">{def.title}</p>
 		</div>
 		<div class="flex shrink-0 items-center gap-1">
 			{#if def.href}
 				<a
 					href={def.href}
-					class="rounded-sm font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+					class="flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
 				>
-					see all →
+					see all
+					<ChevronRight class="size-3" aria-hidden="true" />
 				</a>
 			{/if}
 			<button

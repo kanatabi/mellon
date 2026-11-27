@@ -1,4 +1,4 @@
-// The button cast is MELLON's (6px primary, mono quiet chip, 6px danger,
+// The button cast is MELLON's (8px primary, sans quiet chip, 8px danger,
 // soft text-ghost) with the registry names kept alive for the vendored
 // overlays (dialog X, sheet close, sidebar trigger). The 2026-11-27 Linear
 // round retired the full-round pill; these tests pin the squared anatomy and
@@ -26,12 +26,12 @@ describe('the button cast', () => {
 		expect(b.className).not.toContain('h-8');
 	});
 
-	it('quiet is the mono PICKER chip — a real surface (D14)', () => {
+	it('quiet is the PICKER chip — a real surface (D14)', () => {
 		const { getByRole } = render(Button, {
 			props: { variant: 'quiet', children: undefined as never }
 		});
 		const b = getByRole('button');
-		expect(b.className).toContain('font-mono');
+		expect(b.className).not.toContain('font-mono');
 		expect(b.className).toContain('text-xs');
 		expect(b.className).toContain('text-muted-foreground');
 		// the owner's "I don't like this kind of button": the chip carries the
@@ -65,7 +65,7 @@ describe('the house field lines', () => {
 		const { getByRole } = render(Input);
 		const input = getByRole('textbox');
 		expect(input.className).toContain('bg-card');
-		expect(input.className).toContain('font-mono');
+		expect(input.className).not.toContain('font-mono');
 		expect(input.className).toContain('focus-visible:border-brand');
 		expect(input.className).not.toContain('w-full'); // call-site decision
 		expect(input.className).toContain('aria-invalid:border-danger');

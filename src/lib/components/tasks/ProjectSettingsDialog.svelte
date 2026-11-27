@@ -247,13 +247,13 @@
 	<Dialog.Content class="max-h-[min(90svh,44rem)] overflow-y-auto sm:max-w-xl">
 		<Dialog.Header>
 			<Dialog.Title class="text-xl font-semibold tracking-tight">Project settings</Dialog.Title>
-			<Dialog.Description class="font-mono text-xs text-muted-foreground">
+			<Dialog.Description class="text-xs leading-relaxed text-muted-foreground">
 				{savedName}
 			</Dialog.Description>
 		</Dialog.Header>
 
 		{#if actionError}
-			<p class="font-mono text-xs break-words text-danger" role="alert">{actionError}</p>
+			<p class="text-xs leading-relaxed break-words text-danger" role="alert">{actionError}</p>
 		{/if}
 
 		<!-- rename -->
@@ -516,7 +516,9 @@
 				untouched.
 			</AlertDialog.Description>
 			{#if removeError}
-				<p class="mt-2 font-mono text-xs break-words text-danger" role="alert">{removeError}</p>
+				<p class="mt-2 text-xs leading-relaxed break-words text-danger" role="alert">
+					{removeError}
+				</p>
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
@@ -559,7 +561,9 @@
 				stays in the database, and no restore door ships in the portal yet.
 			</AlertDialog.Description>
 			{#if deleteError}
-				<p class="mt-2 font-mono text-xs break-words text-danger" role="alert">{deleteError}</p>
+				<p class="mt-2 text-xs leading-relaxed break-words text-danger" role="alert">
+					{deleteError}
+				</p>
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel

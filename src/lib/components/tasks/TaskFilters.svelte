@@ -73,7 +73,7 @@
 	]);
 
 	const chip =
-		'rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none';
+		'rounded-md border px-2.5 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none';
 	const off =
 		'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground';
 	const on = 'border-brand bg-accent text-foreground';

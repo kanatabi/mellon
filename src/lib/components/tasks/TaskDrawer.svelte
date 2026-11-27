@@ -976,7 +976,9 @@
 				database. No restore door ships in the portal yet.
 			</AlertDialog.Description>
 			{#if deleteError}
-				<p class="mt-2 font-mono text-xs break-words text-danger" role="alert">{deleteError}</p>
+				<p class="mt-2 text-xs leading-relaxed break-words text-danger" role="alert">
+					{deleteError}
+				</p>
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
@@ -1020,7 +1022,7 @@
 				"{commentTarget.body}"
 			</AlertDialog.Description>
 			{#if commentDeleteError}
-				<p class="mt-2 font-mono text-xs break-words text-danger" role="alert">
+				<p class="mt-2 text-xs leading-relaxed break-words text-danger" role="alert">
 					{commentDeleteError}
 				</p>
 			{/if}

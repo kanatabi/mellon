@@ -124,7 +124,7 @@
 			</label>
 			{#if failed}
 				<p
-					class="mt-3 font-mono text-xs text-danger"
+					class="mt-3 text-xs leading-relaxed text-danger"
 					role="alert"
 					transition:fade={{ duration: 120 }}
 				>

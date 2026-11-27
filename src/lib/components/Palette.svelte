@@ -533,7 +533,7 @@
 					</button>
 				</li>
 			{:else}
-				<li class="px-3 py-6 text-center font-mono text-xs text-muted-foreground">
+				<li class="px-3 py-6 text-center text-xs text-muted-foreground">
 					{#if mode === 'edit'}
 						{editHint}
 					{:else if mode === 'content' && query.trim().length < 2}

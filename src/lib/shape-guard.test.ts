@@ -23,7 +23,10 @@ const ROOT = new URL('../../', import.meta.url).pathname;
 const SRC = join(ROOT, 'src');
 
 const PILL_TABS = new Map([
-	['src/routes/(app)/posts/[slug]/diff/+page.svelte', /rounded-full px-3 py-1 font-mono text-xs/],
+	[
+		'src/routes/(app)/posts/[slug]/diff/+page.svelte',
+		/rounded-full px-3 py-1(?: font-mono)? text-xs/
+	],
 	['src/lib/components/tasks/TaskDrawer.svelte', /rounded-full px-3 py-1 font-mono text-\[11px\]/]
 ]);
 
@@ -38,7 +41,7 @@ const ALLOWED = [
 	/\bh-6 w-11\b/, // switch track
 	/\bmin-w-4\b/, // count badge
 	/\binset-0\b/, // slider track fill
-	/px-4 py-2 .*font-mono/, // topbar ⌘K field (pill by doctrine)
+	/px-4 py-2/, // topbar ⌘K field (pill by doctrine)
 	/bg-transparent px-3 py-1\.5/ // tag vocabulary search (pill by doctrine)
 ];
 

@@ -391,8 +391,7 @@ flowchart LR
 				const next = (await preview(md)).html;
 				if (seq === previewSeq) html = next;
 			} catch {
-				if (seq === previewSeq)
-					html = '<p class="font-mono text-xs text-danger">preview failed</p>';
+				if (seq === previewSeq) html = '<p class="text-xs text-danger">preview failed</p>';
 			} finally {
 				if (seq === previewSeq) previewPending = false;
 				// the map rebuilds AFTER the DOM swap settles (Svelte patches the
@@ -1005,7 +1004,7 @@ flowchart LR
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
-					class="hidden items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs transition-colors @min-[48rem]/editor:flex {showPreview
+					class="hidden items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs transition-colors @min-[48rem]/editor:flex {showPreview
 						? 'border-brand bg-accent text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-pressed={showPreview}
@@ -1033,21 +1032,21 @@ flowchart LR
 				<button
 					type="button"
 					onclick={askDiff}
-					class="rounded-md border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+					class="rounded-md border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
 					Review
 				</button>
 				<button
 					type="button"
 					onclick={() => void restoreBuffer()}
-					class="rounded-md border border-brand/40 bg-brand/10 px-3 py-1 font-mono text-xs text-foreground transition-colors hover:border-brand"
+					class="rounded-md border border-brand/40 bg-brand/10 px-3 py-1 text-xs text-foreground transition-colors hover:border-brand"
 				>
 					Restore
 				</button>
 				<button
 					type="button"
 					onclick={() => void discardBuffer()}
-					class="rounded-md px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-danger"
+					class="rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-danger"
 				>
 					Discard
 				</button>
@@ -1166,7 +1165,7 @@ flowchart LR
 					tabindex={editorTab === 'write' ? 0 : -1}
 					bind:this={writeTabBtn}
 					onclick={() => setTab('write', false)}
-					class="rounded-md px-3 py-1 font-mono text-xs transition-colors {editorTab === 'write'
+					class="rounded-md px-3 py-1 text-xs transition-colors {editorTab === 'write'
 						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -1181,7 +1180,7 @@ flowchart LR
 					tabindex={editorTab === 'preview' ? 0 : -1}
 					bind:this={previewTabBtn}
 					onclick={() => setTab('preview', false)}
-					class="rounded-md px-3 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
+					class="rounded-md px-3 py-1 text-xs transition-colors {editorTab === 'preview'
 						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -1275,7 +1274,7 @@ flowchart LR
 			<button
 				type="button"
 				onclick={() => (pickerMode = 'insert')}
-				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
 				aria-label="Insert image into the post"
 			>
 				<ImagePlus class="size-3.5" />
@@ -1294,7 +1293,7 @@ flowchart LR
 			onclick={() => setSyncScroll(!syncScroll)}
 			aria-pressed={syncScroll}
 			title="synced scrolling — the preview follows the editor and back"
-			class="{cls} items-center gap-2 rounded-md border px-3 py-1.5 font-mono text-xs transition-colors {syncScroll
+			class="{cls} items-center gap-2 rounded-md border px-3 py-1.5 text-xs transition-colors {syncScroll
 				? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 				: 'border-border text-muted-foreground hover:text-foreground'}"
 		>
@@ -1322,7 +1321,7 @@ flowchart LR
 				type="button"
 				onclick={toggleWrap}
 				aria-pressed={wrapped}
-				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
+				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs transition-colors {wrapped
 					? 'border-brand bg-accent text-foreground'
 					: 'text-muted-foreground hover:text-foreground'}"
 			>

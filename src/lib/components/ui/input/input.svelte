@@ -29,7 +29,7 @@
 			// anatomy) — bg-card field, mono text, brand border on focus. Width
 			// and placeholder color stay at the call site (several sites are not
 			// full-width; the verbatim line carries neither).
-			'rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
+			'rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-brand disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
 			className
 		)}
 		type="file"
@@ -43,7 +43,7 @@
 		data-slot={dataSlot}
 		class={cn(
 			// the house line, verbatim — see the file branch above
-			'rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm outline-none focus-visible:border-brand disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
+			'rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus-visible:border-brand disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
 			className
 		)}
 		{type}

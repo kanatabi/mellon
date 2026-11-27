@@ -85,7 +85,7 @@
 	<Dialog.Content class="max-w-lg rounded-lg border-0 bg-card p-5 shadow-2xl">
 		<Dialog.Header>
 			<Dialog.Title class="text-lg font-semibold">Import a theme</Dialog.Title>
-			<Dialog.Description class="font-mono text-xs text-muted-foreground">
+			<Dialog.Description class="text-xs leading-relaxed text-muted-foreground">
 				paste JSON or a CSS variables block — gaps inherit the theme you're wearing
 			</Dialog.Description>
 		</Dialog.Header>
@@ -130,7 +130,7 @@
 			{#if issues.length}
 				<ul class="flex flex-col gap-1" role="alert">
 					{#each issues as issue (issue)}
-						<li class="font-mono text-xs text-danger">{issue}</li>
+						<li class="text-xs leading-relaxed text-danger">{issue}</li>
 					{/each}
 				</ul>
 			{/if}

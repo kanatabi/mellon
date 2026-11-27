@@ -46,13 +46,13 @@
 				<LayoutGrid class="size-5 text-muted-foreground" aria-hidden="true" />
 				Secrets summary
 			</h1>
-			<p class="font-mono text-xs text-muted-foreground">
+			<p class="text-xs leading-relaxed text-muted-foreground">
 				{apps.length} apps · {data.rows.length} paths — versions, pins, key counts; values stay in Bao
 			</p>
 		</div>
 		<a
 			href="/configs/vault"
-			class="self-start rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+			class="self-start rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
 		>
 			← Vault
 		</a>

@@ -162,7 +162,11 @@
 			{/each}
 		</div>
 		{#if note}
-			<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 150 }}>
+			<p
+				class="text-xs leading-relaxed text-brand"
+				role="status"
+				transition:fade={{ duration: 150 }}
+			>
 				{note}
 			</p>
 		{/if}

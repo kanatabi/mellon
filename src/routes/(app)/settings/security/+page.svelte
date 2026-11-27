@@ -115,9 +115,9 @@
 			</label>
 		</div>
 		{#if form?.pw && !form.pw.ok}
-			<p class="font-mono text-xs text-danger" role="alert">{form.pw.message}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.pw.message}</p>
 		{:else if form?.pw?.ok}
-			<p class="font-mono text-xs text-brand" role="status">
+			<p class="text-xs leading-relaxed text-brand" role="status">
 				{form.pw.loginAgain ? 'Password updated — sign in again to continue.' : 'Password updated.'}
 			</p>
 		{/if}
@@ -141,7 +141,7 @@
 			>
 		</span>
 		{#if data.passkeys.length === 0}
-			<p class="font-mono text-xs text-muted-foreground">no passkeys registered yet</p>
+			<p class="text-xs text-muted-foreground">no passkeys registered yet</p>
 		{:else}
 			<ul class="flex flex-col gap-2">
 				{#each data.passkeys as pk (pk.id)}
@@ -195,17 +195,17 @@
 			</Button>
 		</div>
 		{#if pkMessage}
-			<p class="font-mono text-xs text-danger" role="alert">{pkMessage}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{pkMessage}</p>
 		{:else if pkOk}
-			<p class="font-mono text-xs text-brand" role="status">
+			<p class="text-xs leading-relaxed text-brand" role="status">
 				"{pkOk}" is ready — use it on the login screen
 			</p>
 		{:else if form?.pk && 'message' in form.pk}
-			<p class="font-mono text-xs text-danger" role="alert">{form.pk.message}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.pk.message}</p>
 		{:else if form?.pkDelete && 'message' in form.pkDelete}
-			<p class="font-mono text-xs text-danger" role="alert">{form.pkDelete.message}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.pkDelete.message}</p>
 		{:else if form?.pkDelete && 'id' in form.pkDelete}
-			<p class="font-mono text-xs text-brand" role="status">passkey removed</p>
+			<p class="text-xs leading-relaxed text-brand" role="status">passkey removed</p>
 		{/if}
 	</div>
 </section>

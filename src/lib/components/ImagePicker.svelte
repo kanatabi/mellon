@@ -235,9 +235,9 @@
 				class="flex items-center justify-center gap-3 rounded-lg border border-dashed border-border px-4 py-5 transition-colors"
 			>
 				<Upload class="size-4 text-muted-foreground" />
-				<span class="font-mono text-xs text-muted-foreground">Drop images, or</span>
+				<span class="text-xs text-muted-foreground">Drop images, or</span>
 				<label
-					class="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-brand hover:text-foreground has-[input:focus-visible]:border-brand has-[input:focus-visible]:text-foreground"
+					class="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-brand hover:text-foreground has-[input:focus-visible]:border-brand has-[input:focus-visible]:text-foreground"
 				>
 					browse…
 					<input
@@ -255,10 +255,14 @@
 				</label>
 			</div>
 			{#if err}
-				<p class="font-mono text-xs text-danger" role="alert">{err}</p>
+				<p class="text-xs leading-relaxed text-danger" role="alert">{err}</p>
 			{/if}
 			{#if note}
-				<p class="font-mono text-xs text-brand" role="status" transition:fade={{ duration: 150 }}>
+				<p
+					class="text-xs leading-relaxed text-brand"
+					role="status"
+					transition:fade={{ duration: 150 }}
+				>
 					{note}
 				</p>
 			{/if}
@@ -379,7 +383,7 @@
 								{/if}
 							</div>
 						{:else}
-							<p class="col-span-full py-6 text-center font-mono text-xs text-muted-foreground">
+							<p class="col-span-full py-6 text-center text-xs text-muted-foreground">
 								no images yet — drop or browse above
 							</p>
 						{/each}

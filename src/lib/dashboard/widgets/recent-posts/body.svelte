@@ -52,7 +52,7 @@
 		{/each}
 	</div>
 {:else if failed}
-	<p class="font-mono text-xs text-danger" role="alert">{failed}</p>
+	<p class="text-xs leading-relaxed text-danger" role="alert">{failed}</p>
 {:else}
 	<div class="flex flex-col gap-1">
 		{#each posts as post (post.slug)}
@@ -74,7 +74,7 @@
 				<StatusPill status={post.status} />
 			</a>
 		{:else}
-			<p class="px-3 py-6 font-mono text-xs text-muted-foreground">Nothing recent</p>
+			<p class="px-3 py-6 text-xs text-muted-foreground">Nothing recent</p>
 		{/each}
 	</div>
 {/if}

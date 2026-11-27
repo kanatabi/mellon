@@ -46,7 +46,7 @@
 				{#if f.action}
 					<button
 						type="button"
-						class="mt-2 rounded-md border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+						class="mt-2 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
 						onclick={() => {
 							dismissFlash();
 							f.action?.run();

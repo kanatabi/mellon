@@ -70,7 +70,7 @@
 				Save
 			</button>
 			{#if saved}
-				<span class="font-mono text-xs text-brand" role="status">saved</span>
+				<span class="text-xs leading-relaxed text-brand" role="status">saved</span>
 			{/if}
 		</div>
 	</form>

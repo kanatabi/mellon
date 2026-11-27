@@ -539,8 +539,10 @@ identifiers, dates, counts, keys/paths, statuses and shortcut hints ride
 JetBrains Mono; descriptions, hints, empty states and dialog explanations
 ride Inter (`text-xs`/12px, `leading-relaxed`). Uppercase + tracking is a
 LABEL treatment (field labels, table headers, micro captions) — never a
-sentence. This is the readability line the instrument posture needed: the
-same density, less terminal cosplay.
+sentence. The interactive chrome follows the same line: inputs, select
+triggers, text buttons/chips and table body text are Inter; mono is reserved
+for the data fields and identifiers above. This is the readability line the
+instrument posture needed: the same density, less terminal cosplay.
 Density: 13–14px base, table rows ≈40px, page gaps 20px, labels uppercase 10–12px.
 **Form controls share one height scale** (2026-11-27): inputs and selects are
 36–38px (`px-3 py-2 text-sm` with the matching field padding); the compact
@@ -628,7 +630,9 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   passkey `or` door, setup mirrors the same shell.
 
 - **The widget home (`/`)** — the user's landing view and the app-center
-  direction's first surface (owner call 2026-11-24, the widget rounds A→C):
+  direction's first surface (owner call 2026-11-24, the widget rounds A→C).
+  Card chrome (2026-11-28): 13–14px semibold sentence-case titles, a quiet
+  `see all ›` link, 16px padding, a hover border; no uppercase micro-title.
 
   - **The coordinate canvas**: every widget carries
     `{ id, x, y, w, h, hidden }` on a 24-column canvas of fixed 44px

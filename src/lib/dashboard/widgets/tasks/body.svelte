@@ -100,7 +100,7 @@
 	</div>
 {:else if failed}
 	<div class="flex flex-col gap-2">
-		<p class="font-mono text-xs text-danger" role="alert">{failed}</p>
+		<p class="text-xs leading-relaxed text-danger" role="alert">{failed}</p>
 		<button
 			type="button"
 			onclick={() => void load()}
@@ -140,7 +140,7 @@
 		</div>
 
 		{#if rows.length === 0}
-			<p class="px-2 py-4 font-mono text-xs text-muted-foreground">{allClear}</p>
+			<p class="px-2 py-4 text-xs text-muted-foreground">{allClear}</p>
 		{:else}
 			<div class="flex flex-col gap-1">
 				{#each rows as task (task.id)}
