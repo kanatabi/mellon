@@ -22,7 +22,20 @@ import type {
 	SecretPath,
 	SecretPayload,
 	TagCount,
-	SearchResults
+	SearchResults,
+	NotificationPage,
+	NotificationQuery,
+	TaskComment,
+	TaskCreateInput,
+	TaskDetail,
+	TaskInvite,
+	TaskItem,
+	TaskMember,
+	TaskPatchInput,
+	TaskProject,
+	TaskStats,
+	TaskSubtask,
+	TaskWorkspace
 } from './types.ts';
 import { MAX_UPLOAD_BYTES } from '#lib/upload.ts';
 
@@ -49,16 +62,14 @@ export function errorText(e: unknown): string {
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-	const res = await fetch(`/api${path}`, {
-		...init,
-		// JSON is the default dialect — but a FormData body must set its OWN
-		// content-type (the browser stamps the multipart boundary; an explicit
-		// JSON header here would strip it)
-		headers:
-			init?.body && !(init.body instanceof FormData)
-				? { 'content-type': 'application/json' }
-				: undefined
-	});
+	// JSON is the default dialect — but a FormData body must set its OWN
+	// content-type (the browser stamps the multipart boundary; an explicit
+	// JSON header here would strip it), and extra headers (the tasks
+	// X-Client-Timezone) ride every shape.
+	const headers = new Headers(init?.headers);
+	if (init?.body && !(init.body instanceof FormData))
+		headers.set('content-type', 'application/json');
+	const res = await fetch(`/api${path}`, { ...init, headers });
 	const text = await res.text();
 	if (!res.ok) {
 		let message = `request failed (${res.status})`;
@@ -72,6 +83,43 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 	}
 	// 204 No Content (the delete verbs) carries no body — res.json() would throw
 	return (text ? JSON.parse(text) : undefined) as T;
+}
+
+/** The tasks day-math header's default: the browser's IANA zone. The
+ *  server adapter takes the zone from its caller; here Intl is the honest
+ *  source (no cookie mechanism this round). */
+function localTimezone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+	} catch {
+		return '';
+	}
+}
+
+function timezoneHeaders(timezone?: string): Record<string, string> {
+	const zone = timezone?.trim() || localTimezone();
+	return zone ? { 'X-Client-Timezone': zone } : {};
+}
+
+/** The tasks PATCH's three-way presence: an absent key must not become a
+ *  JSON key, while an explicit null must ship (clear dueAt / unassign).
+ *  Built explicitly — JSON.stringify drops `undefined` anyway, but the
+ *  intent is the contract and a reviewer should not have to know that. */
+function taskPatchBody(patch: TaskPatchInput): Record<string, unknown> {
+	const body: Record<string, unknown> = {};
+	if (patch.title !== undefined) body.title = patch.title;
+	if (patch.notes !== undefined) body.notes = patch.notes;
+	if (patch.priority !== undefined) body.priority = patch.priority;
+	if (patch.dueAt !== undefined) body.dueAt = patch.dueAt;
+	if (patch.assignedTo !== undefined) body.assignedTo = patch.assignedTo;
+	return body;
+}
+
+function subtaskPatchBody(patch: { title?: string; done?: boolean }): Record<string, unknown> {
+	const body: Record<string, unknown> = {};
+	if (patch.title !== undefined) body.title = patch.title;
+	if (patch.done !== undefined) body.done = patch.done;
+	return body;
 }
 
 export const client: AdminApi = {
@@ -268,7 +316,122 @@ export const client: AdminApi = {
 			body: JSON.stringify({ version })
 		}),
 	unpinSecret: (app, env) => call(`/secrets/${app}/${env}/pin`, { method: 'DELETE' }),
-	estateSummary: () => call<EstateRow[]>('/secrets/summary')
+	estateSummary: () => call<EstateRow[]>('/secrets/summary'),
+
+	// ---- tasks (the same-origin relay under /api/...) ----
+	tasksWorkspace: ({ view, projectId, timezone }) => {
+		const params = new URLSearchParams({ view });
+		if (projectId) params.set('project', projectId);
+		return call<TaskWorkspace>(`/tasks?${params.toString()}`, {
+			headers: timezoneHeaders(timezone)
+		});
+	},
+	taskStats: (timezone) =>
+		call<{ stats: TaskStats }>('/task-stats', {
+			headers: timezoneHeaders(timezone)
+		}).then((r) => r.stats),
+	taskProjectCreate: (name) =>
+		call<{ project: TaskProject }>('/task-projects', {
+			method: 'POST',
+			body: JSON.stringify({ name })
+		}).then((r) => r.project),
+	taskProjectRename: (id, name) =>
+		call<{ ok: true }>(`/task-projects/${encodeURIComponent(id)}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ name })
+		}).then(() => undefined),
+	taskProjectComplete: (id, completed) =>
+		call<{ ok: true; completed: boolean }>(`/task-projects/${encodeURIComponent(id)}/complete`, {
+			method: 'POST',
+			body: JSON.stringify({ completed })
+		}).then((r) => r.completed),
+	taskProjectDelete: (id) =>
+		call<void>(`/task-projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+	taskMembers: (id) =>
+		call<{ members: TaskMember[] }>(`/task-projects/${encodeURIComponent(id)}/members`).then(
+			(r) => r.members
+		),
+	taskMemberRole: (id, userId, role) =>
+		call<{ ok: true }>(
+			`/task-projects/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}/role`,
+			{ method: 'POST', body: JSON.stringify({ role }) }
+		).then(() => undefined),
+	taskMemberRemove: (id, userId) =>
+		call<void>(`/task-projects/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`, {
+			method: 'DELETE'
+		}),
+	taskInviteCreate: (projectId, username) =>
+		call<{ invite: TaskInvite }>(`/task-projects/${encodeURIComponent(projectId)}/invites`, {
+			method: 'POST',
+			body: JSON.stringify({ username })
+		}).then((r) => r.invite),
+	taskInvites: () => call<{ invites: TaskInvite[] }>('/task-invites').then((r) => r.invites),
+	taskInviteAccept: (id) =>
+		call<{ invite: TaskInvite }>(`/task-invites/${encodeURIComponent(id)}/accept`, {
+			method: 'POST'
+		}).then((r) => r.invite),
+	taskInviteDecline: (id) =>
+		call<void>(`/task-invites/${encodeURIComponent(id)}/decline`, { method: 'POST' }),
+	taskInviteRevoke: (projectId, inviteId) =>
+		call<void>(
+			`/task-projects/${encodeURIComponent(projectId)}/invites/${encodeURIComponent(inviteId)}`,
+			{ method: 'DELETE' }
+		),
+	taskCreate: (input: TaskCreateInput) =>
+		call<{ task: TaskItem }>('/tasks', {
+			method: 'POST',
+			body: JSON.stringify(input)
+		}).then((r) => r.task),
+	taskGet: (id) => call<TaskDetail>(`/tasks/${encodeURIComponent(id)}`),
+	taskUpdate: (id, patch: TaskPatchInput) =>
+		call<{ task: TaskItem }>(`/tasks/${encodeURIComponent(id)}`, {
+			method: 'PATCH',
+			body: JSON.stringify(taskPatchBody(patch))
+		}).then((r) => r.task),
+	taskToggle: (id) =>
+		call<{ task: TaskItem }>(`/tasks/${encodeURIComponent(id)}/toggle`, {
+			method: 'POST'
+		}).then((r) => r.task),
+	taskDelete: (id) => call<void>(`/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+	taskSubtaskCreate: (taskId, title) =>
+		call<{ subtask: TaskSubtask }>(`/tasks/${encodeURIComponent(taskId)}/subtasks`, {
+			method: 'POST',
+			body: JSON.stringify({ title })
+		}).then((r) => r.subtask),
+	taskSubtaskUpdate: (taskId, subtaskId, patch) =>
+		call<{ subtask: TaskSubtask }>(
+			`/tasks/${encodeURIComponent(taskId)}/subtasks/${encodeURIComponent(subtaskId)}`,
+			{ method: 'PATCH', body: JSON.stringify(subtaskPatchBody(patch)) }
+		).then((r) => r.subtask),
+	taskSubtaskDelete: (taskId, subtaskId) =>
+		call<void>(`/tasks/${encodeURIComponent(taskId)}/subtasks/${encodeURIComponent(subtaskId)}`, {
+			method: 'DELETE'
+		}),
+	taskCommentCreate: (taskId, body) =>
+		call<{ comment: TaskComment }>(`/tasks/${encodeURIComponent(taskId)}/comments`, {
+			method: 'POST',
+			body: JSON.stringify({ body })
+		}).then((r) => r.comment),
+	taskCommentDelete: (taskId, commentId) =>
+		call<void>(`/tasks/${encodeURIComponent(taskId)}/comments/${encodeURIComponent(commentId)}`, {
+			method: 'DELETE'
+		}),
+
+	// ---- notifications (the bell; never the send door) ----
+	notifications: ({ unread, before, limit }: NotificationQuery = {}) => {
+		const params = new URLSearchParams();
+		if (unread !== undefined) params.set('unread', unread ? 'true' : 'false');
+		if (before) params.set('before', before);
+		if (limit !== undefined) params.set('limit', String(limit));
+		const qs = params.toString();
+		return call<NotificationPage>(`/notifications${qs ? `?${qs}` : ''}`);
+	},
+	notificationsUnreadCount: () =>
+		call<{ count: number }>('/notifications/unread-count').then((r) => r.count),
+	notificationMarkRead: (id) =>
+		call<void>(`/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }),
+	notificationsMarkAllRead: () =>
+		call<{ updated: number }>('/notifications/read-all', { method: 'POST' }).then((r) => r.updated)
 };
 
 export async function preview(

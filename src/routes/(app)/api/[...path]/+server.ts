@@ -253,6 +253,180 @@ async function route(ctx: Ctx) {
 		}
 	}
 
+	// --- tasks + notifications (the app-center; the SEND door is NOT here —
+	//     it is app-to-app and never rides the portal's relay) ---
+	const zone = request.headers.get('X-Client-Timezone') ?? undefined;
+	if (p[0] === 'tasks' && p.length === 1) {
+		if (request.method === 'GET') {
+			const view = (url.searchParams.get('view') ?? 'all') as 'today' | 'upcoming' | 'all';
+			const projectId = url.searchParams.get('project') ?? undefined;
+			return json(await api.tasksWorkspace({ view, projectId, timezone: zone }));
+		}
+		if (request.method === 'POST') {
+			return json({ task: await api.taskCreate(await body()) }, { status: 201 });
+		}
+	}
+	if (p[0] === 'tasks' && p.length === 2) {
+		if (request.method === 'GET') return json(await api.taskGet(p[1]));
+		if (request.method === 'PATCH') return json({ task: await api.taskUpdate(p[1], await body()) });
+		if (request.method === 'DELETE') {
+			await api.taskDelete(p[1]);
+			return new Response(null, { status: 204 });
+		}
+	}
+	if (p[0] === 'tasks' && p.length === 3 && p[2] === 'toggle' && request.method === 'POST') {
+		return json({ task: await api.taskToggle(p[1]) });
+	}
+	if (p[0] === 'tasks' && p.length === 3 && p[2] === 'subtasks' && request.method === 'POST') {
+		const { title } = (await body()) as { title?: string };
+		return json(
+			{ subtask: await api.taskSubtaskCreate(p[1], String(title ?? '')) },
+			{ status: 201 }
+		);
+	}
+	if (p[0] === 'tasks' && p.length === 4 && p[2] === 'subtasks') {
+		if (request.method === 'PATCH')
+			return json({ subtask: await api.taskSubtaskUpdate(p[1], p[3], await body()) });
+		if (request.method === 'DELETE') {
+			await api.taskSubtaskDelete(p[1], p[3]);
+			return new Response(null, { status: 204 });
+		}
+	}
+	if (p[0] === 'tasks' && p.length === 3 && p[2] === 'comments' && request.method === 'POST') {
+		const { body: text } = (await body()) as { body?: string };
+		return json(
+			{ comment: await api.taskCommentCreate(p[1], String(text ?? '')) },
+			{ status: 201 }
+		);
+	}
+	if (p[0] === 'tasks' && p.length === 4 && p[2] === 'comments' && request.method === 'DELETE') {
+		await api.taskCommentDelete(p[1], p[3]);
+		return new Response(null, { status: 204 });
+	}
+	if (p[0] === 'task-stats' && request.method === 'GET') {
+		return json({ stats: await api.taskStats(zone) });
+	}
+	if (p[0] === 'task-projects' && p.length === 1 && request.method === 'POST') {
+		const { name } = (await body()) as { name?: string };
+		return json({ project: await api.taskProjectCreate(String(name ?? '')) }, { status: 201 });
+	}
+	if (p[0] === 'task-projects' && p.length === 2) {
+		if (request.method === 'PATCH') {
+			const { name } = (await body()) as { name?: string };
+			await api.taskProjectRename(p[1], String(name ?? ''));
+			return new Response(null, { status: 204 });
+		}
+		if (request.method === 'DELETE') {
+			await api.taskProjectDelete(p[1]);
+			return new Response(null, { status: 204 });
+		}
+	}
+	if (
+		p[0] === 'task-projects' &&
+		p.length === 3 &&
+		p[2] === 'complete' &&
+		request.method === 'POST'
+	) {
+		const { completed } = (await body()) as { completed?: boolean };
+		return json({ ok: true, completed: await api.taskProjectComplete(p[1], completed !== false) });
+	}
+	if (
+		p[0] === 'task-projects' &&
+		p.length === 3 &&
+		p[2] === 'members' &&
+		request.method === 'GET'
+	) {
+		return json({ members: await api.taskMembers(p[1]) });
+	}
+	if (
+		p[0] === 'task-projects' &&
+		p.length === 4 &&
+		p[2] === 'members' &&
+		request.method === 'DELETE'
+	) {
+		await api.taskMemberRemove(p[1], p[3]);
+		return new Response(null, { status: 204 });
+	}
+	if (
+		p[0] === 'task-projects' &&
+		p.length === 5 &&
+		p[2] === 'members' &&
+		p[4] === 'role' &&
+		request.method === 'POST'
+	) {
+		const { role } = (await body()) as { role: 'admin' | 'member' };
+		await api.taskMemberRole(p[1], p[3], role);
+		return new Response(null, { status: 204 });
+	}
+	if (
+		p[0] === 'task-projects' &&
+		p.length === 3 &&
+		p[2] === 'invites' &&
+		request.method === 'POST'
+	) {
+		const { username } = (await body()) as { username?: string };
+		return json(
+			{ invite: await api.taskInviteCreate(p[1], String(username ?? '')) },
+			{ status: 201 }
+		);
+	}
+	if (
+		p[0] === 'task-projects' &&
+		p.length === 4 &&
+		p[2] === 'invites' &&
+		request.method === 'DELETE'
+	) {
+		await api.taskInviteRevoke(p[1], p[3]);
+		return new Response(null, { status: 204 });
+	}
+	if (p[0] === 'task-invites' && p.length === 1 && request.method === 'GET') {
+		return json({ invites: await api.taskInvites() });
+	}
+	if (p[0] === 'task-invites' && p.length === 3 && p[2] === 'accept' && request.method === 'POST') {
+		return json({ invite: await api.taskInviteAccept(p[1]) });
+	}
+	if (
+		p[0] === 'task-invites' &&
+		p.length === 3 &&
+		p[2] === 'decline' &&
+		request.method === 'POST'
+	) {
+		await api.taskInviteDecline(p[1]);
+		return new Response(null, { status: 204 });
+	}
+	if (p[0] === 'notifications' && p.length === 1 && request.method === 'GET') {
+		const unread = url.searchParams.get('unread');
+		const before = url.searchParams.get('before') ?? undefined;
+		const rawLimit = url.searchParams.get('limit');
+		return json(
+			await api.notifications({
+				unread: unread === null ? undefined : unread === 'true',
+				before,
+				limit: rawLimit === null ? undefined : Number(rawLimit)
+			})
+		);
+	}
+	if (
+		p[0] === 'notifications' &&
+		p.length === 2 &&
+		p[1] === 'unread-count' &&
+		request.method === 'GET'
+	) {
+		return json({ count: await api.notificationsUnreadCount() });
+	}
+	if (p[0] === 'notifications' && p.length === 3 && p[2] === 'read' && request.method === 'POST') {
+		await api.notificationMarkRead(p[1]);
+		return new Response(null, { status: 204 });
+	}
+	if (
+		p[0] === 'notifications' &&
+		p.length === 2 &&
+		p[1] === 'read-all' &&
+		request.method === 'POST'
+	) {
+		return json({ updated: await api.notificationsMarkAllRead() });
+	}
+
 	return json({ error: 'no such route' }, { status: 404 });
 }
 

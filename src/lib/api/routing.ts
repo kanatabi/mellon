@@ -4,9 +4,10 @@
  * deployment carries TWO upstreams:
  *
  *   ADMIN_URL — the CONTROL PLANE (lumen-admin, in-cluster, always). It
- *               holds the users: sessions, TOFU setup, user admin, and the
- *               Bao secrets plane. Content portals cannot mint or revoke
- *               identities; only this one can.
+ *               holds the users: sessions, TOFU setup, user admin, the Bao
+ *               secrets plane, and the tasks + notifications modules.
+ *               Content portals cannot mint or revoke identities; only this
+ *               one can.
  *   CMS_URL   — this env's CONTENT lumen (posts/photos/tags/collections/
  *               media/search, and the public /api* passthroughs). dev
  *               default = the single binary on :8080, so plain `make dev`
@@ -80,6 +81,35 @@ export const ROUTE_TABLE: RouteClass[] = [
 		prefix: '/admin/bao',
 		upstream: 'admin',
 		note: 'matrix/summary, vault read/write, pins, apps/envs, paths'
+	},
+	// the tasks + notifications modules (2026-11-27): both live on the
+	// admin plane with the users family — membership/identity is the room
+	// key, and the bell is per-user. The SEND door is not here: it is
+	// app-to-app and never rides the portal's relay.
+	{
+		prefix: '/admin/task-projects',
+		upstream: 'admin',
+		note: 'tasks: projects, members, roles, invites (soft delete/completion flags)'
+	},
+	{
+		prefix: '/admin/tasks',
+		upstream: 'admin',
+		note: 'the tasks workspace: views, CRUD, toggle, subtasks, comments'
+	},
+	{
+		prefix: '/admin/task-invites',
+		upstream: 'admin',
+		note: "the caller's pending invite inbox (accept/decline)"
+	},
+	{
+		prefix: '/admin/task-stats',
+		upstream: 'admin',
+		note: 'timezone-aware stats rollup (X-Client-Timezone)'
+	},
+	{
+		prefix: '/admin/notifications',
+		upstream: 'admin',
+		note: 'the bell: list, unread count, mark-read, mark-all (no send door)'
 	},
 	// --- CMS PLANE → CMS_URL (this env's lumen; anything content-shaped) ---
 	{ prefix: '/admin/posts', upstream: 'cms', note: 'the desk: list/CAS/publish/delete' },

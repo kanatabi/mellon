@@ -43,7 +43,20 @@ describe('route-class table — control plane (ADMIN_URL)', () => {
 		['vault write', '/admin/bao/earendil/shared'],
 		['pin lock', '/admin/bao/lumen/staging/pin'],
 		['app onboarding', '/admin/bao/apps'],
-		['env extend', '/admin/bao/mellon/envs']
+		['env extend', '/admin/bao/mellon/envs'],
+		['task projects', '/admin/task-projects'],
+		['task project members', '/admin/task-projects/p1/members'],
+		['task invite revoke', '/admin/task-projects/p1/invites/i1'],
+		['tasks workspace', '/admin/tasks'],
+		['task detail', '/admin/tasks/t1'],
+		['task subtasks', '/admin/tasks/t1/subtasks/s1'],
+		['task invite inbox', '/admin/task-invites'],
+		['task invite accept', '/admin/task-invites/i1/accept'],
+		['task stats', '/admin/task-stats'],
+		['notifications list', '/admin/notifications'],
+		['notifications unread count', '/admin/notifications/unread-count'],
+		['notification read', '/admin/notifications/n1/read'],
+		['notifications read-all', '/admin/notifications/read-all']
 	])('%s routes to admin', (_name, path) => {
 		expect(upstreamFor(path)).toBe('admin');
 	});
@@ -81,7 +94,25 @@ describe('route-class table — discipline', () => {
 		expect(() => upstreamFor('/admin/sessions')).toThrow(RoutingError); // not /admin/session
 		expect(() => upstreamFor('/apify')).toThrow(RoutingError); // not /api
 		expect(() => upstreamFor('/administrator/posts')).toThrow(RoutingError);
+		expect(() => upstreamFor('/admin/tasks-archive')).toThrow(RoutingError); // not /admin/tasks
+		expect(() => upstreamFor('/admin/task-project')).toThrow(RoutingError); // not /admin/task-projects
 		expect(() => upstreamFor('/admin')).toThrow(RoutingError); // bare prefix is no class
+	});
+	it('the tasks/notifications prefixes are disjoint (no accidental shadowing)', () => {
+		const added = [
+			'/admin/task-projects',
+			'/admin/tasks',
+			'/admin/task-invites',
+			'/admin/task-stats',
+			'/admin/notifications'
+		];
+		for (const a of added) {
+			for (const b of added) {
+				if (a === b) continue;
+				expect(b.startsWith(`${a}/`)).toBe(false);
+			}
+			expect(upstreamFor(a)).toBe('admin');
+		}
 	});
 	it('unknown paths fail LOUDLY — no default-to-admin', () => {
 		let e: unknown = null;
@@ -140,16 +171,26 @@ describe('resolveUpstreams — the env wiring chain', () => {
 });
 
 describe('fetch-adapter — two stub bases, per route class', () => {
-	type Sent = { url: string; auth?: string; method: string; contentType?: string };
+	type Sent = {
+		url: string;
+		auth?: string;
+		method: string;
+		contentType?: string;
+		timezone?: string;
+		body?: string;
+	};
 	let sent: Sent[] = [];
 	function stub() {
 		sent = [];
 		vi.stubGlobal('fetch', async (input: URL | RequestInfo, init?: RequestInit) => {
+			const headers = new Headers(init?.headers);
 			sent.push({
 				url: String(input),
 				method: init?.method ?? 'GET',
-				auth: new Headers(init?.headers).get('Authorization') ?? undefined,
-				contentType: new Headers(init?.headers).get('content-type') ?? undefined
+				auth: headers.get('Authorization') ?? undefined,
+				contentType: headers.get('content-type') ?? undefined,
+				timezone: headers.get('X-Client-Timezone') ?? undefined,
+				body: init?.body === undefined ? undefined : String(init.body)
 			});
 			// '{}' parses to a truthy object for the adapters that read a
 			// field off the result (bulkFeatureTags); routing is what's
@@ -205,6 +246,41 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 			'/admin/bao/x/dev/pin',
 			'/admin/bao/summary'
 		]);
+	});
+
+	it('tasks + notifications land on ADMIN_URL; the timezone header rides the two day reads', async () => {
+		stub();
+		const a = api();
+		await a.tasksWorkspace({ view: 'today', projectId: 'p1', timezone: 'Asia/Jakarta' });
+		await a.taskStats('Asia/Jakarta');
+		await a.taskProjectCreate('Home');
+		await a.taskGet('t1');
+		await a.notificationsUnreadCount();
+		expect(sent).toHaveLength(5);
+		for (const s of sent) expect(s.url.startsWith('http://admin.test/admin/')).toBe(true);
+		for (const s of sent) expect(s.auth).toBe('Bearer tok-1');
+		expect(sent.map((s) => new URL(s.url).pathname)).toEqual([
+			'/admin/tasks',
+			'/admin/task-stats',
+			'/admin/task-projects',
+			'/admin/tasks/t1',
+			'/admin/notifications/unread-count'
+		]);
+		expect(sent[0].url).toBe('http://admin.test/admin/tasks?view=today&project=p1');
+		expect(sent[0].timezone).toBe('Asia/Jakarta');
+		expect(sent[1].timezone).toBe('Asia/Jakarta');
+		expect(sent[2].timezone).toBeUndefined(); // only the day reads carry it
+	});
+
+	it('the task PATCH body is explicit: null ships, an absent field drops', async () => {
+		stub();
+		const a = api();
+		await a.taskUpdate('t1', { dueAt: null, assignedTo: null });
+		await a.taskUpdate('t1', { title: 'Fix the gate' });
+		expect(JSON.parse(sent[0].body ?? 'null')).toEqual({ dueAt: null, assignedTo: null });
+		expect(JSON.parse(sent[1].body ?? 'null')).toEqual({ title: 'Fix the gate' });
+		expect(sent[0].method).toBe('PATCH');
+		expect(sent[0].url).toBe('http://admin.test/admin/tasks/t1');
 	});
 
 	it('posts + photos + tags + collections + search all land on CMS_URL, bearer rides', async () => {

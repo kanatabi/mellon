@@ -268,6 +268,182 @@ export interface ScopeAssignment {
 	tokenVersion: number;
 }
 
+// ---- the tasks + notifications contract (M4.C) ----
+// lumen's internal/tasks + internal/notifications wire (M2), mapped 1:1 from
+// its transport structs: camelCase keys, RFC 3339 timestamp strings, and
+// nulls meaning "not set" (never empty strings). The SEND door is
+// deliberately absent — it is an app-to-app API (one shared in-cluster
+// token), not a portal verb; the browser never calls it.
+
+/** The three workspace views. Lumen owns the day math (the adapters ship
+ *  X-Client-Timezone); the portal never re-derives "today". */
+export type TaskView = 'today' | 'upcoming' | 'all';
+export type TaskPriority = 'high' | 'medium' | 'low' | 'none';
+/** The caller's per-project role (the membership key behind the scope gate). */
+export type TaskRole = 'admin' | 'member';
+
+/** One project as the CALLER sees it: `role` is their own membership, the
+ *  counts are live tasks. A completed project stays listed (completedAt is a
+ *  flag, C4); only a soft delete removes it from live reads. */
+export interface TaskProject {
+	id: string;
+	name: string;
+	role: TaskRole;
+	creatorId: string | null;
+	completedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+	taskCount: number;
+	openCount: number;
+}
+
+export interface TaskItem {
+	id: string;
+	projectId: string;
+	projectName: string;
+	creatorId: string | null;
+	creatorName: string | null;
+	/** The assignee's user id (v1: ONE assignee); null = unassigned. */
+	assignedTo: string | null;
+	assigneeName: string | null;
+	title: string;
+	notes: string;
+	priority: TaskPriority;
+	dueAt: string | null;
+	done: boolean;
+	doneAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+	commentCount: number;
+	subtaskCount: number;
+	subtaskDone: number;
+}
+
+/** The four stat cards, computed by lumen in the caller's zone over their
+ *  WHOLE membership (a project filter never narrows them). */
+export interface TaskStats {
+	open: number;
+	dueToday: number;
+	completedWeek: number;
+	overdue: number;
+}
+
+export interface TaskSubtask {
+	id: string;
+	taskId: string;
+	title: string;
+	done: boolean;
+	createdAt: string;
+}
+
+export interface TaskComment {
+	id: string;
+	taskId: string;
+	authorId: string | null;
+	authorName: string | null;
+	body: string;
+	createdAt: string;
+}
+
+export interface TaskActivity {
+	/** The activity table's BIGINT identity, serialized as a JSON number. */
+	id: number;
+	taskId: string;
+	actorId: string | null;
+	actorName: string | null;
+	verb: string;
+	detail: string;
+	createdAt: string;
+}
+
+/** The drawer's one snapshot: the task plus its checklist, comments and
+ *  timeline (all arrays are `[]`, never null). */
+export interface TaskDetail {
+	task: TaskItem;
+	subtasks: TaskSubtask[];
+	comments: TaskComment[];
+	activity: TaskActivity[];
+}
+
+export interface TaskInvite {
+	id: string;
+	projectId: string;
+	projectName: string;
+	inviterId: string;
+	inviterName: string;
+	inviteeId: string;
+	expiresAt: string;
+	createdAt: string;
+}
+
+export interface TaskMember {
+	userId: string;
+	username: string;
+	role: TaskRole;
+	invitedBy: string | null;
+	joinedAt: string;
+}
+
+/** estate-generic bell row: `body` is sanitized inline HTML (plain `title`),
+ *  `payload` carries the same-origin click-through (`url`) and refs. */
+export interface NotificationItem {
+	id: string;
+	app: string;
+	type: string;
+	title: string;
+	body: string;
+	payload: Record<string, unknown>;
+	readAt: string | null;
+	expiresAt: string;
+	createdAt: string;
+}
+
+/** The grouped workspace page: projects → tasks for one view, plus the cards. */
+export interface TaskWorkspace {
+	projects: TaskProject[];
+	tasks: TaskItem[];
+	stats: TaskStats;
+}
+
+export interface TaskWorkspaceQuery {
+	view: TaskView;
+	projectId?: string;
+	timezone?: string;
+}
+
+export interface TaskCreateInput {
+	projectId: string;
+	title: string;
+	notes?: string;
+	priority?: TaskPriority;
+	dueAt?: string | null;
+	assignedTo?: string | null;
+}
+
+/** The PATCH's THREE-WAY presence: an absent key leaves the field, an
+ *  explicit null clears dueAt/assignedTo, and a value sets it. The adapter
+ *  builds the JSON body explicitly so `undefined` never becomes a key. */
+export interface TaskPatchInput {
+	title?: string;
+	notes?: string;
+	priority?: TaskPriority;
+	dueAt?: string | null;
+	assignedTo?: string | null;
+}
+
+export interface NotificationQuery {
+	unread?: boolean;
+	/** Opaque cursor from the previous page's `nextBefore`. */
+	before?: string;
+	limit?: number;
+}
+
+/** Newest first; `nextBefore` is set only when the page was FULL. */
+export interface NotificationPage {
+	items: NotificationItem[];
+	nextBefore: string | null;
+}
+
 export interface AdminApi {
 	// session (mock: any non-empty identity; lumen: real credentials)
 	/** Phase B: `token` is an HS256 JWT (claims sub/iat/exp/tv/jti, 12h TTL —
@@ -454,4 +630,56 @@ export interface AdminApi {
 	/** The estate matrix feed (C1): one sweep of every app/env — head
 	 *  version, pin lock state, key counts, empty-key counts. Arithmetic only. */
 	estateSummary(): Promise<EstateRow[]>;
+
+	// ---- the tasks workspace (lumen internal/tasks, M2 wire) ----
+	// Time-of-day math is lumen's, computed in the caller's zone: BOTH
+	// adapters send X-Client-Timezone whenever a zone is known.
+	/** The grouped page: projects → tasks for one view, plus the four-card
+	 *  rollup (membership-wide, never narrowed by the project filter). */
+	tasksWorkspace(opts: TaskWorkspaceQuery): Promise<TaskWorkspace>;
+	taskStats(timezone?: string): Promise<TaskStats>;
+	taskProjectCreate(name: string): Promise<TaskProject>;
+	taskProjectRename(id: string, name: string): Promise<void>;
+	/** The completed flag (C4): true stamps completed_at once, false reopens. */
+	taskProjectComplete(id: string, completed: boolean): Promise<boolean>;
+	/** SOFT delete: the project disappears from every live read; history stays. */
+	taskProjectDelete(id: string): Promise<void>;
+	taskMembers(id: string): Promise<TaskMember[]>;
+	/** Promote/demote (many admins allowed); demoting the LAST admin is a 409. */
+	taskMemberRole(id: string, userId: string, role: TaskRole): Promise<void>;
+	/** Removal also unassigns that member's tasks in the project; the last
+	 *  admin is a 409 (a project must keep one). */
+	taskMemberRemove(id: string, userId: string): Promise<void>;
+	taskInviteCreate(projectId: string, username: string): Promise<TaskInvite>;
+	/** The caller's pending (unexpired) invite inbox. */
+	taskInvites(): Promise<TaskInvite[]>;
+	/** 410 when the 24h TTL passed (the row is consumed); 404 otherwise. */
+	taskInviteAccept(id: string): Promise<TaskInvite>;
+	taskInviteDecline(id: string): Promise<void>;
+	taskInviteRevoke(projectId: string, inviteId: string): Promise<void>;
+	taskCreate(input: TaskCreateInput): Promise<TaskItem>;
+	taskGet(id: string): Promise<TaskDetail>;
+	/** Three-way presence: absent leaves the field, null clears
+	 *  dueAt/assignedTo, a value sets it (title/notes/priority are strings). */
+	taskUpdate(id: string, patch: TaskPatchInput): Promise<TaskItem>;
+	taskToggle(id: string): Promise<TaskItem>;
+	taskDelete(id: string): Promise<void>;
+	taskSubtaskCreate(taskId: string, title: string): Promise<TaskSubtask>;
+	taskSubtaskUpdate(
+		taskId: string,
+		subtaskId: string,
+		patch: { title?: string; done?: boolean }
+	): Promise<TaskSubtask>;
+	taskSubtaskDelete(taskId: string, subtaskId: string): Promise<void>;
+	taskCommentCreate(taskId: string, body: string): Promise<TaskComment>;
+	taskCommentDelete(taskId: string, commentId: string): Promise<void>;
+
+	// ---- the notifications bell (lumen internal/notifications, M2 wire) ----
+	// Reads/marks only. The SEND door is app-to-app (ONE shared in-cluster
+	// token) and deliberately not part of the portal's contract.
+	notifications(query?: NotificationQuery): Promise<NotificationPage>;
+	notificationsUnreadCount(): Promise<number>;
+	notificationMarkRead(id: string): Promise<void>;
+	/** Returns how many rows actually moved (a second call is honestly 0). */
+	notificationsMarkAllRead(): Promise<number>;
 }

@@ -56,3 +56,52 @@ describe('fetch-adapter call() — lumen surface', () => {
 		expect(e.message).toBe(LOCK_COPY);
 	});
 });
+
+describe('browser client tasks surface — relay paths + timezone', () => {
+	type Sent = { url: string; method: string; timezone?: string; body?: string };
+	let sent: Sent[] = [];
+	function stub() {
+		sent = [];
+		vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+			const headers = new Headers(init?.headers);
+			sent.push({
+				url: String(input),
+				method: init?.method ?? 'GET',
+				timezone: headers.get('X-Client-Timezone') ?? undefined,
+				body: init?.body === undefined ? undefined : String(init.body)
+			});
+			return new Response('{}', { status: 200 });
+		});
+	}
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('tasksWorkspace defaults the header to the browser zone, under /api', async () => {
+		stub();
+		await client.tasksWorkspace({ view: 'today', projectId: 'p1' });
+		expect(sent[0].url).toBe('/api/tasks?view=today&project=p1');
+		expect(sent[0].timezone).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone || undefined);
+	});
+
+	it('an explicit zone wins (taskStats); the PATCH body keeps null and drops absent keys', async () => {
+		stub();
+		await client.taskStats('Asia/Jakarta');
+		await client.taskUpdate('t1', { dueAt: null, assignedTo: null });
+		await client.taskUpdate('t1', { title: 'x' });
+		expect(sent[0].url).toBe('/api/task-stats');
+		expect(sent[0].timezone).toBe('Asia/Jakarta');
+		expect(JSON.parse(sent[1].body ?? 'null')).toEqual({ dueAt: null, assignedTo: null });
+		expect(JSON.parse(sent[2].body ?? 'null')).toEqual({ title: 'x' });
+	});
+
+	it('a 410 expired-invite render reaches the UI verbatim through ApiError', async () => {
+		const copy = 'this invite expired — ask to be re-invited';
+		vi.stubGlobal(
+			'fetch',
+			async () => new Response(JSON.stringify({ error: copy }), { status: 410 })
+		);
+		const e = (await client.taskInviteAccept('i1').catch((x) => x)) as ApiError;
+		expect(e).toBeInstanceOf(ApiError);
+		expect(e.status).toBe(410);
+		expect(errorText(e)).toBe(copy);
+	});
+});

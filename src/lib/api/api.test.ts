@@ -530,3 +530,365 @@ describe('mock AdminApi contract', () => {
 		await expect(api.logout()).resolves.toBeUndefined();
 	});
 });
+
+describe('tasks + notifications twin (M4.C)', () => {
+	// A fixed Friday noon UTC makes the seeded calendar deterministic: the
+	// gate is due today at 17:00Z, paint yesterday (overdue), plants done.
+	const T0 = Date.parse('2026-11-27T12:00:00Z');
+	function twin(start = T0) {
+		let clock = start;
+		const api = createMockApi({ now: () => clock });
+		return { api, advance: (ms: number) => (clock += ms) };
+	}
+
+	it('tasks: the seeded workspace is coherent — projects, views, four cards', async () => {
+		const { api } = twin();
+		const ws = await api.tasksWorkspace({ view: 'all', timezone: 'UTC' });
+		expect(ws.projects).toHaveLength(1);
+		expect(ws.projects[0]).toMatchObject({
+			name: 'Home',
+			role: 'admin',
+			taskCount: 3,
+			openCount: 2,
+			completedAt: null
+		});
+		expect(ws.stats).toEqual({ open: 2, dueToday: 1, completedWeek: 1, overdue: 1 });
+		expect(ws.tasks.map((t) => t.title)).toEqual(['Buy paint', 'Fix the gate', 'Water the plants']);
+		expect(ws.tasks.find((t) => t.title === 'Fix the gate')).toMatchObject({
+			projectName: 'Home',
+			priority: 'high',
+			assigneeName: 'admin',
+			commentCount: 0,
+			subtaskCount: 0
+		});
+		// today = due today + still-open overdue; upcoming = strictly future days
+		expect(
+			(await api.tasksWorkspace({ view: 'today', timezone: 'UTC' })).tasks.map((t) => t.title)
+		).toEqual(['Buy paint', 'Fix the gate']);
+		expect((await api.tasksWorkspace({ view: 'upcoming', timezone: 'UTC' })).tasks).toEqual([]);
+		expect(await api.taskStats('UTC')).toEqual(ws.stats);
+		// The day keys are the CLIENT's (X-Client-Timezone): at 12:00Z the
+		// gate's 17:00Z due is already tomorrow in Tokyo (UTC+9).
+		const ahead = await api.tasksWorkspace({ view: 'upcoming', timezone: 'Asia/Tokyo' });
+		expect(ahead.tasks.map((t) => t.title)).toEqual(['Fix the gate']);
+		expect((await api.taskStats('Asia/Tokyo')).dueToday).toBe(0);
+	});
+
+	it('tasks: project → invite → accept → assign → toggle → stats shape', async () => {
+		const { api } = twin();
+		const project = await api.taskProjectCreate('  Garden  ');
+		expect(project).toMatchObject({
+			name: 'Garden',
+			role: 'admin',
+			taskCount: 0,
+			openCount: 0,
+			completedAt: null
+		});
+		expect(await api.taskInvites()).toEqual([]); // the invite is the INVITEE's inbox
+		const invite = await api.taskInviteCreate(project.id, 'sarah');
+		expect(invite).toMatchObject({
+			projectId: project.id,
+			projectName: 'Garden',
+			inviterName: 'admin'
+		});
+
+		const sarah = api.as('sarah');
+		expect((await sarah.taskInvites()).map((i) => i.id)).toContain(invite.id);
+		expect((await sarah.taskInviteAccept(invite.id)).id).toBe(invite.id);
+		expect((await sarah.taskInvites()).map((i) => i.id)).not.toContain(invite.id);
+		expect(
+			(await sarah.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects
+				.map((p) => p.name)
+				.sort()
+		).toEqual(['Garden']);
+
+		const members = await api.taskMembers(project.id);
+		expect(members.map((m) => `${m.username}:${m.role}`).sort()).toEqual([
+			'admin:admin',
+			'sarah:member'
+		]);
+		const sarahId = members.find((m) => m.username === 'sarah')!.userId;
+
+		const task = await api.taskCreate({
+			projectId: project.id,
+			title: 'Paint the fence',
+			notes: 'two coats',
+			priority: 'high',
+			dueAt: '2026-11-27T16:00:00Z',
+			assignedTo: sarahId
+		});
+		expect(task).toMatchObject({
+			assigneeName: 'sarah',
+			done: false,
+			doneAt: null
+		});
+		expect(Date.parse(task.dueAt ?? '')).toBe(Date.parse('2026-11-27T16:00:00Z'));
+		// the assignment's best-effort notification landed for the assignee
+		const sarahNotes = await sarah.notifications({ unread: true });
+		expect(
+			sarahNotes.items.some((n) => n.type === 'task.assigned' && n.payload.task === task.id)
+		).toBe(true);
+
+		const toggled = await api.taskToggle(task.id);
+		expect(toggled.done).toBe(true);
+		expect(toggled.doneAt).toBeTruthy();
+		const reopened = await api.taskToggle(task.id);
+		expect(reopened).toMatchObject({ done: false, doneAt: null });
+
+		const stats = await api.taskStats('UTC');
+		expect(Object.keys(stats).sort()).toEqual(['completedWeek', 'dueToday', 'open', 'overdue']);
+		expect(stats.open).toBe(3); // Home's two open + the fence
+		expect(stats.dueToday).toBe(2); // the gate + the fence, both due today in UTC
+
+		const detail = await api.taskGet(task.id);
+		expect(detail.activity.map((a) => a.verb)).toEqual([
+			'created',
+			'assigned',
+			'completed',
+			'reopened'
+		]);
+		expect(detail.activity[1].detail).toBe('sarah');
+	});
+
+	it('tasks: statuses mirror lumen — 404 non-member, 403 role, 409 guards, 400/410 invites', async () => {
+		const { api, advance } = twin();
+		const home = (await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects[0];
+		const sarah = api.as('sarah');
+
+		// the seeded invite is the invitee's; accepting makes sarah a member
+		await sarah.taskInviteAccept((await sarah.taskInvites())[0].id);
+		const roster = await api.taskMembers(home.id);
+		const adminId = roster.find((m) => m.role === 'admin')!.userId;
+		const sarahId = roster.find((m) => m.username === 'sarah')!.userId;
+
+		// 403: a project member cannot manage settings
+		await expect(sarah.taskProjectRename(home.id, 'Nope')).rejects.toMatchObject({ status: 403 });
+		// 409: the LAST admin cannot be demoted; after the promotion it can
+		await expect(api.taskMemberRole(home.id, adminId, 'member')).rejects.toMatchObject({
+			status: 409
+		});
+		await api.taskMemberRole(home.id, sarahId, 'admin');
+		await api.taskMemberRole(home.id, adminId, 'member');
+		// the caller is now a plain member, so the settings verb is 403 again
+		await expect(api.taskProjectRename(home.id, 'Nope')).rejects.toMatchObject({ status: 403 });
+		await sarah.taskProjectRename(home.id, 'Home base');
+		expect((await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects[0].name).toBe(
+			'Home base'
+		);
+
+		// C3: the assignee must be a project member (409, not 404)
+		const helper = await api.createUser('helper', ['content:manage']);
+		await expect(
+			api.taskCreate({ projectId: home.id, title: 'x', assignedTo: helper.id })
+		).rejects.toMatchObject({ status: 409 });
+		// a non-member's reads and writes are the ONE denial voice (404)
+		const outsider = api.as('helper');
+		await expect(outsider.taskGet('twin-task-gate')).rejects.toMatchObject({ status: 404 });
+		await expect(outsider.taskMembers(home.id)).rejects.toMatchObject({ status: 404 });
+		expect(await outsider.tasksWorkspace({ view: 'all' })).toEqual({
+			projects: [],
+			tasks: [],
+			stats: { open: 0, dueToday: 0, completedWeek: 0, overdue: 0 }
+		});
+
+		// the last admin cannot be removed either; with two admins removal succeeds
+		await expect(sarah.taskMemberRemove(home.id, sarahId)).rejects.toMatchObject({
+			status: 409
+		});
+		await sarah.taskMemberRole(home.id, adminId, 'admin');
+		await api.taskUpdate('twin-task-gate', { assignedTo: sarahId }); // a member may edit
+		await api.taskMemberRemove(home.id, sarahId);
+		expect((await api.taskMembers(home.id)).map((m) => m.username)).toEqual(['admin']);
+		// removal UNASSIGNS the member's tasks in the project (C3 invariant)
+		expect((await api.taskGet('twin-task-gate')).task.assignedTo).toBeNull();
+
+		// invites: unknown = 400, already a member = 409, duplicate = 409
+		await expect(api.taskInviteCreate(home.id, 'nobody')).rejects.toMatchObject({ status: 400 });
+		await expect(api.taskInviteCreate(home.id, 'admin')).rejects.toMatchObject({ status: 409 });
+		const pending = await api.taskInviteCreate(home.id, 'helper');
+		await expect(api.taskInviteCreate(home.id, 'helper')).rejects.toMatchObject({ status: 409 });
+		await api.taskInviteRevoke(home.id, pending.id);
+		await expect(api.taskInviteRevoke(home.id, pending.id)).rejects.toMatchObject({
+			status: 404
+		});
+
+		// the 24h TTL: acceptance is 410 and consumes the row (retry = 404)
+		const late = await api.taskInviteCreate(home.id, 'helper');
+		advance(25 * 3_600_000);
+		await expect(outsider.taskInviteAccept(late.id)).rejects.toMatchObject({
+			status: 410,
+			message: 'this invite expired — ask to be re-invited'
+		});
+		await expect(outsider.taskInviteAccept(late.id)).rejects.toMatchObject({ status: 404 });
+
+		// decline is the invitee's own delete (expired rows included)
+		const declined = await api.taskInviteCreate(home.id, 'sarah');
+		await sarah.taskInviteDecline(declined.id);
+		await expect(sarah.taskInviteDecline(declined.id)).rejects.toMatchObject({ status: 404 });
+
+		// unknown ids are not-found; an unknown view is the caller's 400
+		await expect(api.taskGet('nope')).rejects.toMatchObject({ status: 404 });
+		await expect(api.taskMembers('nope')).rejects.toMatchObject({ status: 404 });
+		await expect(api.tasksWorkspace({ view: 'someday' as never })).rejects.toMatchObject({
+			status: 400
+		});
+	});
+
+	it('tasks: detail drawer, comment authorization, completion flag, soft deletes', async () => {
+		const { api } = twin();
+		const workspace = await api.tasksWorkspace({ view: 'all', timezone: 'UTC' });
+		const home = workspace.projects[0];
+		const gate = workspace.tasks.find((t) => t.title === 'Fix the gate')!;
+		const sarah = api.as('sarah');
+		await sarah.taskInviteAccept((await sarah.taskInvites())[0].id);
+
+		const subtask = await api.taskSubtaskCreate(gate.id, 'Oil the hinge');
+		expect(subtask).toMatchObject({ taskId: gate.id, title: 'Oil the hinge', done: false });
+		expect((await api.taskSubtaskUpdate(gate.id, subtask.id, { done: true })).done).toBe(true);
+		const comment = await api.taskCommentCreate(gate.id, '  ordered the parts  ');
+		expect(comment).toMatchObject({ authorName: 'admin', body: 'ordered the parts' });
+
+		const detail = await api.taskGet(gate.id);
+		expect(detail.task).toMatchObject({ subtaskCount: 1, subtaskDone: 1, commentCount: 1 });
+		expect(detail.subtasks.map((s) => s.title)).toEqual(['Oil the hinge']);
+		expect(detail.comments[0]).toMatchObject({ authorName: 'admin', body: 'ordered the parts' });
+		expect(detail.activity.map((a) => a.verb)).toContain('commented');
+
+		// a non-author MEMBER cannot delete someone else's comment (403);
+		// the project admin can
+		await expect(sarah.taskCommentDelete(gate.id, comment.id)).rejects.toMatchObject({
+			status: 403
+		});
+		await api.taskCommentDelete(gate.id, comment.id);
+		await api.taskSubtaskDelete(gate.id, subtask.id);
+		expect((await api.taskGet(gate.id)).task).toMatchObject({
+			commentCount: 0,
+			subtaskCount: 0,
+			subtaskDone: 0
+		});
+
+		// the completed flag keeps the ORIGINAL instant on repeat; false reopens
+		expect(await api.taskProjectComplete(home.id, true)).toBe(true);
+		const stamp = (await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects[0]
+			.completedAt;
+		expect(stamp).toBeTruthy();
+		expect(await api.taskProjectComplete(home.id, true)).toBe(true);
+		expect(
+			(await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects[0].completedAt
+		).toBe(stamp);
+		expect(await api.taskProjectComplete(home.id, false)).toBe(false);
+		expect(
+			(await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects[0].completedAt
+		).toBeNull();
+
+		// rename propagates through every joined task wire
+		await api.taskProjectRename(home.id, 'House');
+		expect((await api.taskGet(gate.id)).task.projectName).toBe('House');
+
+		// TASK soft delete: gone from the list and the detail
+		await api.taskDelete(gate.id);
+		expect(
+			(await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).tasks.map((t) => t.id)
+		).not.toContain(gate.id);
+		await expect(api.taskGet(gate.id)).rejects.toMatchObject({ status: 404 });
+
+		// PROJECT soft delete: every live read hides it (history stays behind)
+		await api.taskProjectDelete(home.id);
+		expect((await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects).toEqual([]);
+		expect((await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).tasks).toEqual([]);
+		await expect(api.taskMembers(home.id)).rejects.toMatchObject({ status: 404 });
+		expect(await api.taskStats('UTC')).toEqual({
+			open: 0,
+			dueToday: 0,
+			completedWeek: 0,
+			overdue: 0
+		});
+	});
+
+	it('tasks: PATCH is three-way — absent leaves, null clears, a value sets', async () => {
+		const { api } = twin();
+		const gate = (await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).tasks.find(
+			(t) => t.title === 'Fix the gate'
+		)!;
+		expect(gate.dueAt).toBeTruthy();
+		expect(gate.assignedTo).toBe('twin-admin');
+
+		// absent keys leave BOTH fields untouched
+		const titleOnly = await api.taskUpdate(gate.id, { title: 'Fix the front gate' });
+		expect(titleOnly).toMatchObject({
+			title: 'Fix the front gate',
+			dueAt: gate.dueAt,
+			assignedTo: gate.assignedTo
+		});
+		// explicit null clears (the adapter must SHIP the key, never omit it)
+		const cleared = await api.taskUpdate(gate.id, { dueAt: null, assignedTo: null });
+		expect(cleared).toMatchObject({ dueAt: null, assignedTo: null, assigneeName: null });
+		// a value sets again; a malformed due is the caller's 400
+		const roster = await api.taskMembers(gate.projectId);
+		const adminId = roster[0].userId;
+		expect((await api.taskUpdate(gate.id, { assignedTo: adminId })).assignedTo).toBe(adminId);
+		await expect(api.taskUpdate(gate.id, { dueAt: 'not-a-date' })).rejects.toMatchObject({
+			status: 400
+		});
+	});
+
+	it('tasks: the project filter narrows tasks only; the cards stay membership-wide', async () => {
+		const { api } = twin();
+		const garden = await api.taskProjectCreate('Garden');
+		await api.taskCreate({
+			projectId: garden.id,
+			title: 'Plant bulbs',
+			dueAt: '2026-12-01T09:00:00Z'
+		});
+		const ws = await api.tasksWorkspace({ view: 'all', projectId: garden.id, timezone: 'UTC' });
+		expect(ws.projects.map((p) => p.name).sort()).toEqual(['Garden', 'Home']);
+		expect(ws.tasks.map((t) => t.title)).toEqual(['Plant bulbs']);
+		expect(ws.stats.open).toBe(3); // lumen computes the cards over the membership
+		await expect(
+			api.tasksWorkspace({ view: 'all', projectId: 'nope', timezone: 'UTC' })
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it('notifications: unread filter, cursor paging, read/mark-all, TTL invisibility', async () => {
+		const { api, advance } = twin();
+		const first = await api.notifications();
+		expect(first.items.map((n) => n.type)).toEqual(['task.assigned', 'content.published']);
+		expect(first.nextBefore).toBeNull();
+		expect(first.items[0].readAt).toBeNull();
+		expect(first.items[1].readAt).toBeTruthy(); // the older row is already read
+		expect(await api.notificationsUnreadCount()).toBe(1);
+		expect((await api.notifications({ unread: true })).items.map((n) => n.type)).toEqual([
+			'task.assigned'
+		]);
+
+		// the cursor pages by the last row's exact instant, strict `<`
+		const page1 = await api.notifications({ limit: 1 });
+		expect(page1.items.map((n) => n.id)).toEqual([first.items[0].id]);
+		expect(page1.nextBefore).toBe(first.items[0].createdAt);
+		const page2 = await api.notifications({ before: page1.nextBefore!, limit: 1 });
+		expect(page2.items.map((n) => n.id)).toEqual([first.items[1].id]);
+		const page3 = await api.notifications({ before: page2.nextBefore!, limit: 1 });
+		expect(page3.items).toEqual([]);
+
+		// mark-read is idempotent; foreign/expired/unknown share the 404
+		await api.notificationMarkRead(first.items[0].id);
+		expect(await api.notificationsUnreadCount()).toBe(0);
+		await api.notificationMarkRead(first.items[0].id);
+		await expect(api.notificationMarkRead('twin-nope')).rejects.toMatchObject({ status: 404 });
+
+		// mark-all reports the honest moved count (sarah's seeded invite row)
+		const sarah = api.as('sarah');
+		expect(await sarah.notificationsUnreadCount()).toBe(1);
+		expect(await sarah.notificationsMarkAllRead()).toBe(1);
+		expect(await sarah.notificationsMarkAllRead()).toBe(0);
+		expect(await sarah.notificationsUnreadCount()).toBe(0);
+
+		// TTL is DATA: expired rows vanish from list/count/mark-read (no purge)
+		advance(31 * 86_400_000);
+		expect(await api.notifications()).toEqual({ items: [], nextBefore: null });
+		expect(await api.notificationsUnreadCount()).toBe(0);
+		await expect(api.notificationMarkRead(first.items[0].id)).rejects.toMatchObject({
+			status: 404
+		});
+	});
+});

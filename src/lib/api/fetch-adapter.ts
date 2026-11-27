@@ -43,7 +43,19 @@ import type {
 	EstateRow,
 	SecretPath,
 	SearchResults,
-	TagCount
+	TagCount,
+	NotificationPage,
+	TaskComment,
+	TaskCreateInput,
+	TaskDetail,
+	TaskInvite,
+	TaskItem,
+	TaskMember,
+	TaskPatchInput,
+	TaskProject,
+	TaskStats,
+	TaskSubtask,
+	TaskWorkspace
 } from './types.ts';
 
 /** Local-dev fallback when no upstream env is set — the cluster always overrides.
@@ -70,7 +82,14 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 	async function call<T>(
 		method: string,
 		path: string,
-		opts: { op: OpName; query?: Record<string, string[]>; body?: unknown; nullOn404?: boolean }
+		opts: {
+			op: OpName;
+			query?: Record<string, string[]>;
+			body?: unknown;
+			/** Extra request headers (the tasks family's X-Client-Timezone). */
+			headers?: Record<string, string>;
+			nullOn404?: boolean;
+		}
 	): Promise<T> {
 		// the correlation seam (2026-11-15): mint → send → the access line.
 		// The id rides EVERY call; failures log with it, and the echo lands in
@@ -97,7 +116,8 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 					headers: {
 						[REQUEST_ID_HEADER]: requestId,
 						...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-						...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {})
+						...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+						...(opts.headers ?? {})
 					},
 					body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
 				})
@@ -441,12 +461,173 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 			}),
 		unpinSecret: (app, env) =>
 			call<void>('DELETE', `/admin/bao/${enc(app)}/${enc(env)}/pin`, { op: 'bao.unpin' }),
-		estateSummary: () => call<EstateRow[]>('GET', '/admin/bao/summary', { op: 'bao.summary' })
+		estateSummary: () => call<EstateRow[]>('GET', '/admin/bao/summary', { op: 'bao.summary' }),
+
+		// --- tasks (lumen internal/tasks, M2 wire) ---
+		// Every path is admin-plane (routing.ts), every call is counted under
+		// its own enumerated op, and the two day-sensitive reads carry the
+		// caller's IANA zone; lumen validates it and falls back to UTC.
+		tasksWorkspace: ({ view, projectId, timezone }) =>
+			call<TaskWorkspace>('GET', '/admin/tasks', {
+				op: 'tasks.workspace',
+				query: q({ view, project: projectId }),
+				headers: timezoneHeaders(timezone)
+			}),
+		taskStats: (timezone) =>
+			call<{ stats: TaskStats }>('GET', '/admin/task-stats', {
+				op: 'tasks.stats',
+				headers: timezoneHeaders(timezone)
+			}).then((r) => r.stats),
+		taskProjectCreate: (name) =>
+			call<{ project: TaskProject }>('POST', '/admin/task-projects', {
+				op: 'tasks.projects.create',
+				body: { name }
+			}).then((r) => r.project),
+		taskProjectRename: (id, name) =>
+			call<{ ok: true }>('PATCH', `/admin/task-projects/${enc(id)}`, {
+				op: 'tasks.projects.rename',
+				body: { name }
+			}).then(() => undefined),
+		taskProjectComplete: (id, completed) =>
+			call<{ ok: true; completed: boolean }>('POST', `/admin/task-projects/${enc(id)}/complete`, {
+				op: 'tasks.projects.complete',
+				body: { completed }
+			}).then((r) => r.completed),
+		taskProjectDelete: (id) =>
+			call<void>('DELETE', `/admin/task-projects/${enc(id)}`, {
+				op: 'tasks.projects.delete'
+			}),
+		taskMembers: (id) =>
+			call<{ members: TaskMember[] }>('GET', `/admin/task-projects/${enc(id)}/members`, {
+				op: 'tasks.members.list'
+			}).then((r) => r.members),
+		taskMemberRole: (id, userId, role) =>
+			call<{ ok: true }>('POST', `/admin/task-projects/${enc(id)}/members/${enc(userId)}/role`, {
+				op: 'tasks.members.role',
+				body: { role }
+			}).then(() => undefined),
+		taskMemberRemove: (id, userId) =>
+			call<void>('DELETE', `/admin/task-projects/${enc(id)}/members/${enc(userId)}`, {
+				op: 'tasks.members.remove'
+			}),
+		taskInviteCreate: (projectId, username) =>
+			call<{ invite: TaskInvite }>('POST', `/admin/task-projects/${enc(projectId)}/invites`, {
+				op: 'tasks.invites.create',
+				body: { username }
+			}).then((r) => r.invite),
+		taskInvites: () =>
+			call<{ invites: TaskInvite[] }>('GET', '/admin/task-invites', {
+				op: 'tasks.invites.list'
+			}).then((r) => r.invites),
+		taskInviteAccept: (id) =>
+			call<{ invite: TaskInvite }>('POST', `/admin/task-invites/${enc(id)}/accept`, {
+				op: 'tasks.invites.accept'
+			}).then((r) => r.invite),
+		taskInviteDecline: (id) =>
+			call<void>('POST', `/admin/task-invites/${enc(id)}/decline`, {
+				op: 'tasks.invites.decline'
+			}),
+		taskInviteRevoke: (projectId, inviteId) =>
+			call<void>('DELETE', `/admin/task-projects/${enc(projectId)}/invites/${enc(inviteId)}`, {
+				op: 'tasks.invites.revoke'
+			}),
+		taskCreate: (input: TaskCreateInput) =>
+			call<{ task: TaskItem }>('POST', '/admin/tasks', {
+				op: 'tasks.create',
+				body: input
+			}).then((r) => r.task),
+		taskGet: (id) => call<TaskDetail>('GET', `/admin/tasks/${enc(id)}`, { op: 'tasks.read' }),
+		taskUpdate: (id, patch: TaskPatchInput) =>
+			call<{ task: TaskItem }>('PATCH', `/admin/tasks/${enc(id)}`, {
+				op: 'tasks.update',
+				body: taskPatchBody(patch)
+			}).then((r) => r.task),
+		taskToggle: (id) =>
+			call<{ task: TaskItem }>('POST', `/admin/tasks/${enc(id)}/toggle`, {
+				op: 'tasks.toggle'
+			}).then((r) => r.task),
+		taskDelete: (id) => call<void>('DELETE', `/admin/tasks/${enc(id)}`, { op: 'tasks.delete' }),
+		taskSubtaskCreate: (taskId, title) =>
+			call<{ subtask: TaskSubtask }>('POST', `/admin/tasks/${enc(taskId)}/subtasks`, {
+				op: 'tasks.subtasks.create',
+				body: { title }
+			}).then((r) => r.subtask),
+		taskSubtaskUpdate: (taskId, subtaskId, patch) =>
+			call<{ subtask: TaskSubtask }>(
+				'PATCH',
+				`/admin/tasks/${enc(taskId)}/subtasks/${enc(subtaskId)}`,
+				{ op: 'tasks.subtasks.update', body: subtaskPatchBody(patch) }
+			).then((r) => r.subtask),
+		taskSubtaskDelete: (taskId, subtaskId) =>
+			call<void>('DELETE', `/admin/tasks/${enc(taskId)}/subtasks/${enc(subtaskId)}`, {
+				op: 'tasks.subtasks.delete'
+			}),
+		taskCommentCreate: (taskId, body) =>
+			call<{ comment: TaskComment }>('POST', `/admin/tasks/${enc(taskId)}/comments`, {
+				op: 'tasks.comments.create',
+				body: { body }
+			}).then((r) => r.comment),
+		taskCommentDelete: (taskId, commentId) =>
+			call<void>('DELETE', `/admin/tasks/${enc(taskId)}/comments/${enc(commentId)}`, {
+				op: 'tasks.comments.delete'
+			}),
+
+		// --- notifications (the bell; the send door is NOT a portal verb) ---
+		notifications: ({ unread, before, limit } = {}) =>
+			call<NotificationPage>('GET', '/admin/notifications', {
+				op: 'notifications.list',
+				query: q({
+					unread: unread === undefined ? undefined : unread ? 'true' : 'false',
+					before,
+					limit
+				})
+			}),
+		notificationsUnreadCount: () =>
+			call<{ count: number }>('GET', '/admin/notifications/unread-count', {
+				op: 'notifications.count'
+			}).then((r) => r.count),
+		notificationMarkRead: (id) =>
+			call<void>('POST', `/admin/notifications/${enc(id)}/read`, {
+				op: 'notifications.read'
+			}),
+		notificationsMarkAllRead: () =>
+			call<{ updated: number }>('POST', '/admin/notifications/read-all', {
+				op: 'notifications.read-all'
+			}).then((r) => r.updated)
 	};
 }
 
 function enc(s: string): string {
 	return encodeURIComponent(s);
+}
+
+/** The tasks day-math header: only a non-empty zone ships (lumen falls back
+ *  to UTC on absence/malformed input — the header is not a credential). */
+function timezoneHeaders(timezone?: string): Record<string, string> | undefined {
+	const zone = timezone?.trim();
+	return zone ? { 'X-Client-Timezone': zone } : undefined;
+}
+
+/** The tasks PATCH's three-way presence, made explicit: an ABSENT key ships
+ *  not at all (leave the field), an explicit null SHIPS (clear dueAt /
+ *  unassign), and a value sets it. JSON.stringify happens to honour the same
+ *  rule, but building the body makes the intent unmissable and keeps a
+ *  caller's `undefined` from becoming a phantom key. */
+function taskPatchBody(patch: TaskPatchInput): Record<string, unknown> {
+	const body: Record<string, unknown> = {};
+	if (patch.title !== undefined) body.title = patch.title;
+	if (patch.notes !== undefined) body.notes = patch.notes;
+	if (patch.priority !== undefined) body.priority = patch.priority;
+	if (patch.dueAt !== undefined) body.dueAt = patch.dueAt;
+	if (patch.assignedTo !== undefined) body.assignedTo = patch.assignedTo;
+	return body;
+}
+
+function subtaskPatchBody(patch: { title?: string; done?: boolean }): Record<string, unknown> {
+	const body: Record<string, unknown> = {};
+	if (patch.title !== undefined) body.title = patch.title;
+	if (patch.done !== undefined) body.done = patch.done;
+	return body;
 }
 
 function safeError(text: string, fallback: string): string {

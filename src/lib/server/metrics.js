@@ -84,7 +84,38 @@ export const OP = {
 	BaoAddEnv: 'bao.add-env',
 	BaoPin: 'bao.pin',
 	BaoUnpin: 'bao.unpin',
-	BaoSummary: 'bao.summary'
+	BaoSummary: 'bao.summary',
+	// the tasks workspace (lumen internal/tasks; admin plane)
+	TasksWorkspace: 'tasks.workspace',
+	TasksStats: 'tasks.stats',
+	TasksProjectCreate: 'tasks.projects.create',
+	TasksProjectRename: 'tasks.projects.rename',
+	TasksProjectComplete: 'tasks.projects.complete',
+	TasksProjectDelete: 'tasks.projects.delete',
+	TasksMembersList: 'tasks.members.list',
+	TasksMemberRole: 'tasks.members.role',
+	TasksMemberRemove: 'tasks.members.remove',
+	TasksInviteCreate: 'tasks.invites.create',
+	TasksInviteList: 'tasks.invites.list',
+	TasksInviteAccept: 'tasks.invites.accept',
+	TasksInviteDecline: 'tasks.invites.decline',
+	TasksInviteRevoke: 'tasks.invites.revoke',
+	TasksCreate: 'tasks.create',
+	TasksRead: 'tasks.read',
+	TasksUpdate: 'tasks.update',
+	TasksToggle: 'tasks.toggle',
+	TasksDelete: 'tasks.delete',
+	TasksSubtaskCreate: 'tasks.subtasks.create',
+	TasksSubtaskUpdate: 'tasks.subtasks.update',
+	TasksSubtaskDelete: 'tasks.subtasks.delete',
+	TasksCommentCreate: 'tasks.comments.create',
+	TasksCommentDelete: 'tasks.comments.delete',
+	// the estate-generic bell (lumen internal/notifications; admin plane).
+	// The SEND door is absent by design: it is app-to-app, never a portal verb.
+	NotificationsList: 'notifications.list',
+	NotificationsCount: 'notifications.count',
+	NotificationsRead: 'notifications.read',
+	NotificationsReadAll: 'notifications.read-all'
 };
 
 /**
