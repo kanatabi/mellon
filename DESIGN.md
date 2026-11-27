@@ -656,23 +656,25 @@ minSpan, body }` — **adding a widget = one folder + one registry line**
   panel naming the any-of scope trio, never a 500): the stats cards
   (open / due today / completed week / overdue — lumen computes them in
   the `X-Client-Timezone` zone the relay client sends), the My day /
-  Upcoming / All views, the toolbar's FILTER ROW (status · assignee ·
-  priority + the sort control, all client-side over the loaded view; the
-  assignee vocabulary is the people the loaded rows show — a member with no
-  task in the view is deliberately absent), the projects SUB-SIDEBAR (role +
-  counts, the admin settings door, the new-project form) and the grouped
-  list (checkbox-style toggle, priority badge, assignee, due label; the row
-  title opens the drawer). The **drawer** is
-  the existing right-side `Sheet`: details (inline title, explicit notes,
-  auto-save priority/due/assignee, done, soft delete), checklist,
-  comments (author/project-admin delete), activity. Project settings carry
-  rename / complete / soft delete, the member roster (role changes; the
-  last admin is refused with lumen's 409 copy), invite-by-username and
-  revoke. Pending invitations ride a banner at the top (accept/decline).
-  The bell's click-through `/tasks?task=<id>` is observed on same-route
-  navigations and cleared on close. Scope courtesy: affordances hidden
-  without the matching scope; the drawer degrades read-only without
-  `tasks:update`.
+  Upcoming / All views, the RIGHT RAIL (status · assignee · priority + sort
+  as collapsible/reorderable panes — the posts/photos rail anatomy; at xl the
+  rail appears, below it the same body rides the bottom sheet behind the
+  toolbar's slider chip; everything is client-side over the loaded view, and
+  the assignee vocabulary is the people the loaded rows show — a member with
+  no task in the view is deliberately absent), the projects SUB-SIDEBAR (role
+  - counts, the admin settings door, the new-project form) and the grouped
+    list (checkbox-style toggle, priority badge, assignee, due label; the row
+    title opens the drawer). The **drawer** is
+    the existing right-side `Sheet`: details (inline title, explicit notes,
+    auto-save priority/due/assignee, done, soft delete), checklist,
+    comments (author/project-admin delete), activity. Project settings carry
+    rename / complete / soft delete, the member roster (role changes; the
+    last admin is refused with lumen's 409 copy), invite-by-username and
+    revoke. Pending invitations ride a banner at the top (accept/decline).
+    The bell's click-through `/tasks?task=<id>` is observed on same-route
+    navigations and cleared on close. Scope courtesy: affordances hidden
+    without the matching scope; the drawer degrades read-only without
+    `tasks:update`.
 - **The notifications bell** (topbar): the count is the layout load's
   fail-soft read (0 on an outage — never a 503); the panel is
   PULL-ON-OPEN (mounted per open, one `limit=20` read, no polling) with

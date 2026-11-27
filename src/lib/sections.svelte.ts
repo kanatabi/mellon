@@ -102,3 +102,4 @@ export const postSections = new SectionSet(
 );
 export const deskSections = new SectionSet('desk', ['sort', 'dates', 'tags']);
 export const photosSections = new SectionSet('photos', ['sort', 'dates', 'collections']);
+export const tasksSections = new SectionSet('tasks', ['status', 'assignee', 'priority', 'sort']);

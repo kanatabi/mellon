@@ -3,10 +3,20 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { ListTodo, Plus, Search, X } from 'lucide-svelte';
+	import {
+		ListTodo,
+		PanelRightClose,
+		PanelRightOpen,
+		Plus,
+		Search,
+		SlidersHorizontal,
+		X
+	} from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
 	import { client, ApiError, errorText } from '#lib/api/client.ts';
 	import type { Principal, TaskInvite, TaskItem, TaskView, TaskWorkspace } from '#lib/api/types.ts';
 	import Button from '#lib/components/ui/button/button.svelte';
+	import RailDrawer from '#lib/components/RailDrawer.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
@@ -17,6 +27,9 @@
 	import TaskRow from '#lib/components/tasks/TaskRow.svelte';
 	import TaskStatsRow from '#lib/components/tasks/TaskStatsRow.svelte';
 	import TaskFilters from '#lib/components/tasks/TaskFilters.svelte';
+	import { reorderable } from '#lib/drag-reorder.ts';
+	import { tasksRail } from '#lib/rails.svelte.ts';
+	import { tasksSections } from '#lib/sections.svelte.ts';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import { taskCommands } from '#lib/tasks/commands.ts';
 	import { flash } from '#lib/flash.svelte.ts';
@@ -77,6 +90,8 @@
 	let inviteActionError = $state<string | null>(null);
 	let inviteBusyId = $state<string | null>(null);
 	let invitesGen = 0;
+	let filtersSheet = $state(false);
+	let filtersTrigger = $state<HTMLElement | null>(null);
 
 	let composerOpen = $state(false);
 	let drawerId = $state<string | null>(null);
@@ -92,6 +107,9 @@
 	const assignees = $derived(assigneeOptions(tasks));
 	const filterActive = $derived(
 		taskFilterActive({ query: trimmedQuery, status, assignee, priority })
+	);
+	const filterCount = $derived(
+		Number(status !== 'all') + Number(assignee !== 'all') + Number(priority !== 'all')
 	);
 	const sortedTasks = $derived(sortTasks(tasks, sort));
 	const visibleTasks = $derived(
@@ -180,6 +198,9 @@
 			invitesLoadError = errorText(e);
 		}
 	}
+
+	$effect(() => tasksRail.init());
+	$effect(() => tasksSections.init());
 
 	$effect(() => {
 		const v = view;
@@ -505,21 +526,30 @@
 							updating
 						</span>
 					{/if}
-				</div>
 
-				<TaskFilters
-					{status}
-					{assignee}
-					{priority}
-					{sort}
-					{assignees}
-					active={filterActive}
-					onstatus={(next) => (status = next)}
-					onassignee={(next) => (assignee = next)}
-					onpriority={(next) => (priority = next)}
-					onsort={(next) => (sort = next)}
-					onclear={clearFilters}
-				/>
+					<!-- Below xl the filters arrive as the posts/photos bottom sheet. -->
+					<Button
+						type="button"
+						variant="soft"
+						class="relative ml-auto h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] xl:hidden {filterCount
+							? 'border-brand bg-accent text-foreground'
+							: 'border-border text-muted-foreground hover:text-foreground'}"
+						bind:ref={filtersTrigger}
+						onclick={() => (filtersSheet = true)}
+						aria-haspopup="dialog"
+						aria-expanded={filtersSheet}
+						aria-label={filterCount ? `Open filters, ${filterCount} active` : 'Open filters'}
+						title="Filters"
+					>
+						<SlidersHorizontal class="size-4" />
+						{#if filterCount}
+							<span
+								class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-primary-foreground"
+								>{filterCount}</span
+							>
+						{/if}
+					</Button>
+				</div>
 
 				{#if refreshError}
 					<p class="font-mono text-[11px] break-words text-muted-foreground" role="status">
@@ -626,9 +656,95 @@
 					{/if}
 				</div>
 			</div>
+
+			<!-- Right rail (xl+): the posts/photos filter architecture — same
+			     collapse, curtain, reorder and bottom-sheet body. Tasks also own
+			     a LEFT project sidebar, so the rail waits for xl to keep the list
+			     readable; below it the sheet trigger in the toolbar takes over. -->
+			<div
+				class="hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-out xl:block {tasksRail.collapsed
+					? 'w-9'
+					: 'w-60'}"
+			>
+				{#if tasksRail.collapsed}
+					<button
+						type="button"
+						onclick={tasksRail.toggle}
+						aria-label="Open filters"
+						class="flex w-9 flex-col items-center gap-3 rounded-lg border border-border bg-card py-3 text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<PanelRightOpen class="size-4" />
+						<span
+							class="font-mono text-[10px] tracking-widest uppercase [writing-mode:vertical-rl]"
+						>
+							filters{#if filterCount}· {filterCount}{/if}
+						</span>
+					</button>
+				{:else}
+					<aside
+						transition:fade={{ duration: 120 }}
+						use:reorderable={{ store: tasksSections }}
+						class="rail-scroll flex h-full w-60 flex-col gap-3 overflow-y-auto overscroll-contain"
+						aria-label="Task filters"
+					>
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div
+							style="order:-1"
+							class="flex items-center justify-between"
+							title="Double-click resets pane order"
+							ondblclick={tasksSections.reset}
+						>
+							<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+								filters
+							</p>
+							<Button
+								type="button"
+								variant="soft"
+								class="rounded-full p-1"
+								onclick={tasksRail.toggle}
+								aria-label="Collapse filters"
+							>
+								<PanelRightClose class="size-4" />
+							</Button>
+						</div>
+						<TaskFilters
+							movable={true}
+							{status}
+							{assignee}
+							{priority}
+							{sort}
+							{assignees}
+							active={filterActive}
+							onstatus={(next) => (status = next)}
+							onassignee={(next) => (assignee = next)}
+							onpriority={(next) => (priority = next)}
+							onsort={(next) => (sort = next)}
+							onclear={clearFilters}
+						/>
+					</aside>
+				{/if}
+			</div>
 		</div>
 	{/if}
 </section>
+
+<!-- Phones/tablets: the same filter body in a bottom sheet. -->
+<RailDrawer label="Task filters" bind:open={filtersSheet} bind:trigger={filtersTrigger}>
+	<TaskFilters
+		movable={false}
+		{status}
+		{assignee}
+		{priority}
+		{sort}
+		{assignees}
+		active={filterActive}
+		onstatus={(next) => (status = next)}
+		onassignee={(next) => (assignee = next)}
+		onpriority={(next) => (priority = next)}
+		onsort={(next) => (sort = next)}
+		onclear={clearFilters}
+	/>
+</RailDrawer>
 
 {#if composerOpen && projects.length > 0}
 	<NewTaskDialog

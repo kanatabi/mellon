@@ -43,3 +43,4 @@ export const postsRail = new Rail('posts');
 export const photosRail = new Rail('photos');
 export const editorRail = new Rail('editor');
 export const photoRail = new Rail('photo');
+export const tasksRail = new Rail('tasks');
