@@ -340,7 +340,7 @@
 	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
 		<div class="flex shrink-0 flex-col gap-4">
 			<div class="flex items-end justify-between gap-4">
-				<h1 class="font-brand text-4xl font-semibold tracking-tight">Posts</h1>
+				<h1 class="font-brand text-3xl font-semibold tracking-tight">Posts</h1>
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
@@ -420,7 +420,7 @@
 							href={buildUrl({ status: chip.value })}
 							aria-current={active ? 'true' : undefined}
 							class="shrink-0 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
-								? 'border-brand bg-brand/10 text-foreground'
+								? 'border-brand bg-accent text-foreground'
 								: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
 						>
 							{chip.label}
@@ -439,7 +439,7 @@
 					type="button"
 					variant="soft"
 					class="relative h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
-						? 'border-brand bg-brand/10 text-foreground'
+						? 'border-brand bg-accent text-foreground'
 						: 'border-border text-muted-foreground hover:text-foreground'}"
 					bind:ref={filtersTrigger}
 					onclick={() => (filtersSheet = true)}
@@ -476,7 +476,7 @@
 			<div role="table" aria-label="Posts" class="flex flex-col">
 				<div
 					role="row"
-					class="hidden items-center gap-4 border-b border-border pb-2 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem]"
+					class="hidden items-center gap-4 border-b border-border bg-background pb-2 lg:sticky lg:top-0 lg:z-10 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem]"
 				>
 					{#each headerCols as col (col.field)}
 						<a
@@ -516,7 +516,7 @@
 					<div
 						role="row"
 						transition:fade|local={{ duration: 140 }}
-						class="group relative flex items-center justify-between gap-4 border-b border-border py-3.5 transition-colors focus-within:bg-accent/40 hover:bg-accent/40 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem] lg:justify-start"
+						class="group relative flex items-center justify-between gap-4 border-b border-border py-3 transition-colors focus-within:bg-accent/40 hover:bg-accent/40 lg:grid lg:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_7.5rem_7.5rem] lg:justify-start"
 					>
 						<div role="cell" class="min-w-0">
 							<a
@@ -667,7 +667,7 @@
 						class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
 							? 'opacity-40'
 							: on
-								? 'border-brand bg-brand/10 text-foreground'
+								? 'border-brand bg-accent text-foreground'
 								: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
 						{#if chip.Icon}
@@ -714,7 +714,7 @@
 						href={buildUrl({ toggleTag: t.name })}
 						aria-current={on ? 'true' : undefined}
 						class="flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
-							? 'border-brand bg-brand/10 text-foreground'
+							? 'border-brand bg-accent text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
 						{t.name}

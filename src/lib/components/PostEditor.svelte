@@ -1006,7 +1006,7 @@ flowchart LR
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
 					class="hidden items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs transition-colors @min-[48rem]/editor:flex {showPreview
-						? 'border-brand bg-brand/10 text-foreground'
+						? 'border-brand bg-accent text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-pressed={showPreview}
 				>
@@ -1310,7 +1310,7 @@ flowchart LR
 				onclick={toggleWrap}
 				aria-pressed={wrapped}
 				class="{cls} h-9 w-11 items-center justify-center rounded-md border bg-card transition-colors active:scale-[0.98] {wrapped
-					? 'border-brand bg-brand/10 text-foreground'
+					? 'border-brand bg-accent text-foreground'
 					: 'border-border text-muted-foreground hover:text-foreground'}"
 				aria-label="Toggle line wrap"
 				title="Toggle wrap"
@@ -1323,7 +1323,7 @@ flowchart LR
 				onclick={toggleWrap}
 				aria-pressed={wrapped}
 				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
-					? 'border-brand bg-brand/10 text-foreground'
+					? 'border-brand bg-accent text-foreground'
 					: 'text-muted-foreground hover:text-foreground'}"
 			>
 				<WrapText class="size-3.5" />

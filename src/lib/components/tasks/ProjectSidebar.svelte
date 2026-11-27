@@ -188,7 +188,7 @@
 				onclick={() => onselect(null)}
 				class="flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none lg:w-full lg:rounded-md {selectedId ===
 				null
-					? 'border-brand bg-brand/10 text-foreground'
+					? 'border-brand bg-accent text-foreground'
 					: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
 			>
 				<span class="min-w-0 flex-1 truncate text-sm">All projects</span>
@@ -201,7 +201,7 @@
 				<div
 					class="flex shrink-0 items-center gap-0.5 rounded-md border pr-0.5 transition-colors lg:w-full lg:rounded-md {selectedId ===
 					project.id
-						? 'border-brand bg-brand/10'
+						? 'border-brand bg-accent'
 						: 'border-border hover:border-muted-foreground'}"
 				>
 					<button

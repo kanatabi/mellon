@@ -314,7 +314,7 @@
 <section class="flex h-full min-h-0 flex-col gap-4">
 	<header class="flex shrink-0 flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
 		<div class="flex min-w-0 flex-col gap-1">
-			<h1 class="font-brand text-4xl font-semibold tracking-tight">Tasks</h1>
+			<h1 class="font-brand text-3xl font-semibold tracking-tight">Tasks</h1>
 			<p class="font-mono text-xs text-muted-foreground">
 				{#if loadError}
 					the workspace is unavailable

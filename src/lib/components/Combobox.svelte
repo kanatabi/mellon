@@ -178,7 +178,7 @@
 		<div class="flex flex-wrap gap-1.5">
 			{#each selected as t (t)}
 				<span
-					class="flex items-center gap-1 rounded-md border border-brand bg-brand/10 py-0.5 pr-1 pl-2.5 font-mono text-[11px] text-foreground"
+					class="flex items-center gap-1 rounded-md border border-brand bg-accent py-0.5 pr-1 pl-2.5 font-mono text-[11px] text-foreground"
 				>
 					{t}
 					<Button

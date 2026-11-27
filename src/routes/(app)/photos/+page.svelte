@@ -395,8 +395,8 @@
 	     made title/search/chips grandchildren of the page's gap-6 — a plain
 	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
 		<div class="flex shrink-0 flex-col gap-4">
-			<div class="flex items-center justify-between gap-4">
-				<h1 class="font-brand text-4xl font-semibold tracking-tight">Photos</h1>
+			<div class="flex items-end justify-between gap-4">
+				<h1 class="font-brand text-3xl font-semibold tracking-tight">Photos</h1>
 				<div class="flex items-center gap-3">
 					<!-- View segment (md+): tiles ⇄ table. -->
 					<div
@@ -519,7 +519,7 @@
 					type="button"
 					variant="soft"
 					class="relative ml-auto h-9 w-11 shrink-0 rounded-md border bg-card transition-colors active:scale-[0.98] lg:hidden {sheetCount
-						? 'border-brand bg-brand/10 text-foreground'
+						? 'border-brand bg-accent text-foreground'
 						: 'border-border text-muted-foreground hover:text-foreground'}"
 					bind:ref={filtersTrigger}
 					onclick={() => (filtersSheet = true)}
@@ -703,7 +703,7 @@
 					<div role="table" aria-label="Photos" class="hidden flex-col md:flex">
 						<div
 							role="row"
-							class="mb-1 grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border pb-2"
+							class="mb-1 grid grid-cols-[2.25rem_5.5rem_minmax(0,1fr)_11rem_5.5rem_5.5rem_7rem] items-center gap-4 border-b border-border bg-background pb-2 md:sticky md:top-0 md:z-10"
 						>
 							{#each photoCols as col (col.label)}
 								{#if col.field}
@@ -796,7 +796,7 @@
 											? `Remove ${p.alt} from gallery`
 											: `Add ${p.alt} to gallery`}
 										class="flex size-7 items-center justify-center rounded border transition-colors {p.gallery
-											? 'border-brand bg-brand/15 text-brand'
+											? 'border-brand bg-accent text-foreground'
 											: 'border-border text-muted-foreground hover:text-foreground'}"
 									>
 										{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
@@ -923,7 +923,7 @@
 						class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
 							? 'opacity-40'
 							: on
-								? 'border-brand bg-brand/10 text-foreground'
+								? 'border-brand bg-accent text-foreground'
 								: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
 						{#if chip.Icon}
@@ -979,7 +979,7 @@
 						href={buildUrl({ toggleCollection: c.name })}
 						aria-current={on ? 'true' : undefined}
 						class="flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
-							? 'border-brand bg-brand/10 text-foreground'
+							? 'border-brand bg-accent text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
 						{c.name}

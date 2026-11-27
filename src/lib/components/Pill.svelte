@@ -22,7 +22,7 @@
 	{disabled}
 	aria-pressed={disabled ? undefined : active ? 'true' : 'false'}
 	class="flex w-fit items-center gap-2 rounded-md border px-3 py-1 font-mono text-xs transition-colors disabled:pointer-events-none disabled:opacity-40 {active
-		? 'border-brand bg-brand/10 text-foreground'
+		? 'border-brand bg-accent text-foreground'
 		: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'} {cls}"
 >
 	{@render children()}

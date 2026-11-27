@@ -502,7 +502,7 @@
 						</span>
 					{/if}
 				</p>
-				<h1 class="font-brand text-4xl font-semibold tracking-tight">Secrets</h1>
+				<h1 class="font-brand text-3xl font-semibold tracking-tight">Secrets</h1>
 			</div>
 			<div class="flex flex-col gap-2 md:items-end">
 				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env.
@@ -548,7 +548,7 @@
 							aria-label={`Environment ${env}`}
 							class="rounded-md border px-3 py-1 font-mono text-xs transition-colors {env ===
 							data.env
-								? 'border-brand bg-brand/10 text-foreground'
+								? 'border-brand bg-accent text-foreground'
 								: 'border-border text-muted-foreground hover:text-foreground'}"
 						>
 							{env}

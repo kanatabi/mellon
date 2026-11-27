@@ -256,10 +256,10 @@
 	<title>Tags · mellon</title>
 </svelte:head>
 
-<section class="flex flex-col gap-6">
+<section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
 		<div class="flex flex-col gap-1">
-			<h1 class="font-brand text-4xl font-semibold tracking-tight">Tags</h1>
+			<h1 class="font-brand text-3xl font-semibold tracking-tight">Tags</h1>
 			<p class="font-mono text-xs text-muted-foreground">
 				{data.tags.length} names · {data.tags.filter((t) => t.featured).length} featured — the widget
 				lists featured ones that a published post actually uses
@@ -437,7 +437,7 @@
 					type="button"
 					variant="quiet"
 					class="w-fit gap-1.5 px-2.5 py-1 text-[11px] {tag.featured
-						? 'border-brand bg-brand/10 text-brand'
+						? 'border-brand bg-accent text-foreground'
 						: ''}"
 					onclick={() =>
 						void run(async () => {
