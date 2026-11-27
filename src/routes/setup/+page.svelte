@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
-	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
+	import AuthShell from '#lib/components/AuthShell.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -20,31 +19,15 @@
 	<title>{registering ? 'Claim the estate' : 'Set your password'} · mellon</title>
 </svelte:head>
 
-<section
-	class="relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-6"
+<AuthShell
+	title={registering ? 'Claim the estate.' : 'Set your password.'}
+	subtitle={registering
+		? 'Create the first admin. This door locks behind you — it can never open again.'
+		: `Hello ${data.username} — you arrived with a temporary password. Set your own and the door opens normally from here on.`}
 >
-	<!-- same sanctioned brand aura as /login (§11.3 exception) — the wizard IS
-	     the gate's first impression, it earns the same staging -->
-	<div class="login-aura" aria-hidden="true"></div>
-	<div class="absolute top-4 right-4 z-10">
-		<ThemeToggle mode={themeState.mode} onToggle={toggleMode} />
-	</div>
-	<div class="flex flex-col items-center gap-1.5">
-		<h1 class="relative font-brand text-4xl font-semibold tracking-tight">
-			{registering ? 'No one rules this estate yet' : 'One more thing: your own password'}
-		</h1>
-		<p class="relative max-w-sm text-center text-sm text-muted-foreground">
-			{#if registering}
-				Create the first admin. This door locks behind you — it can never open again.
-			{:else}
-				Hello {data.username} — you arrived with a temporary password. Set your own and the door opens
-				normally from here on.
-			{/if}
-		</p>
-	</div>
 	<form
 		method="POST"
-		class="relative flex w-full max-w-sm flex-col gap-4"
+		class="flex flex-col gap-4"
 		use:enhance={() => {
 			return ({ update }) => update();
 		}}
@@ -53,59 +36,73 @@
 		<!-- the username carrier exists ONLY in change mode: in register mode
 		     data.username is '', and a second [name=username] field would be
 		     read FIRST by the action (FormData.get) — the empty ghost field
-		     shadowed real claims (the live wizard bug this guards). -->
+		     shadowed real claims. -->
 		{#if !registering}
 			<input type="hidden" name="username" value={data.username} />
-		{/if}
-		{#if !registering}
 			<label class="flex flex-col gap-1.5">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-					>current (temporary) password</span
+					>Current password</span
 				>
-				<Input type="password" name="current" required autocomplete="current-password" />
+				<Input
+					type="password"
+					name="current"
+					required
+					autocomplete="current-password"
+					class="w-full"
+					placeholder="the temporary password"
+				/>
 			</label>
 		{:else}
 			<label class="flex flex-col gap-1.5">
 				<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-					>username</span
+					>Username</span
 				>
-				<Input type="text" name="username" required autocomplete="username" />
+				<Input
+					type="text"
+					name="username"
+					required
+					autocomplete="username"
+					class="w-full"
+					placeholder="your username"
+				/>
 			</label>
 		{/if}
 		<label class="flex flex-col gap-1.5">
-			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-				>{registering ? 'password' : 'new password'}</span
-			>
-			<Input type="password" name="password" required minlength={10} autocomplete="new-password" />
+			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+				{registering ? 'Password' : 'New password'}
+			</span>
+			<Input
+				type="password"
+				name="password"
+				required
+				minlength={10}
+				autocomplete="new-password"
+				class="w-full"
+				placeholder="at least 10 characters"
+			/>
 		</label>
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-				>confirm</span
+				>Confirm</span
 			>
-			<Input type="password" name="confirm" required minlength={10} autocomplete="new-password" />
+			<Input
+				type="password"
+				name="confirm"
+				required
+				minlength={10}
+				autocomplete="new-password"
+				class="w-full"
+				placeholder="the same password again"
+			/>
 		</label>
 		{#if form?.message}
-			<p class="font-mono text-xs text-danger" role="alert">{form.message}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.message}</p>
 		{/if}
-		<Button type="submit" variant="primary">
-			{registering ? 'claim the estate' : 'set my password'}
+		<Button type="submit" variant="primary" class="mt-1 w-full justify-center">
+			{registering ? 'Claim the estate' : 'Set my password'}
 		</Button>
-		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
-			lumen decides every rule this form can break — the portal just renders it
+		<p class="text-center text-xs leading-relaxed text-muted-foreground/70">
+			Your password is hashed by lumen — the portal only carries the form.
 		</p>
 	</form>
-</section>
-
-<style>
-	/* the aura rule lives with the login page's §11.3 exception */
-	.login-aura {
-		position: absolute;
-		inset: 0;
-		background: radial-gradient(
-			60% 50% at 50% 40%,
-			color-mix(in oklab, var(--brand) 14%, transparent),
-			transparent
-		);
-		pointer-events: none;
-	}
-</style>
+</AuthShell>

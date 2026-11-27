@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { LoaderCircle } from 'lucide-svelte';
-	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
-	import { toggleMode, themeState } from '#lib/theme-state.svelte.ts';
+	import { Eye, EyeOff, KeyRound, LoaderCircle } from 'lucide-svelte';
+	import AuthShell from '#lib/components/AuthShell.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { webauthnGet, type SerializedRequestOptions } from '#lib/webauthn.client.ts';
 	import { ActionFailure, submitAction } from '#lib/action-post.ts';
-	import { KeyRound } from 'lucide-svelte';
 	import type { ActionData, PageData } from './$types';
 
 	interface Props {
@@ -17,25 +15,16 @@
 
 	let { data, form }: Props = $props();
 
-	// The gate's progress indicator (owner ask 2026-11-21): the submit round
-	// trip (lumen mints the session) previously showed NOTHING. The spinner
-	// rides the enhance lifecycle; the button disables so a second Enter
-	// can't double-mint.
 	let pending = $state(false);
-	// the PASSKEY login (the auth-method seam): begin -> the browser's
-	// WebAuthn ceremony -> finish. The server relays and mints; the
-	// private key never leaves the authenticator (Bitwarden/iCloud/a key).
 	let passkeyBusy = $state(false);
 	let passkeyMessage = $state('');
+	let showPassword = $state(false);
 
 	async function loginWithPasskey() {
 		if (passkeyBusy) return;
 		passkeyBusy = true;
 		passkeyMessage = '';
 		try {
-			// the action envelope is NOT the action's return value — unwrap it
-			// in ONE place (src/lib/action-post.ts); reading `begin.options`
-			// off the envelope crashed the register twin the same way
 			const begin = await submitAction<{ state: string; options: SerializedRequestOptions }>(
 				'passkeyBegin',
 				{ ready: '1' }
@@ -45,10 +34,6 @@
 				return;
 			}
 			const assertion = await webauthnGet(begin.data.options);
-			// the cookie is already set server-side; the destination is the
-			// SERVER's call (must_change goes to the guided change, `next`
-			// returns where the session bounced from) — a redirect envelope
-			// carries it, never a guessed '/'
 			const done = await submitAction<never>('passkeyFinish', {
 				state: begin.data.state,
 				response: JSON.stringify(assertion),
@@ -70,27 +55,13 @@
 	<title>Sign in · mellon</title>
 </svelte:head>
 
-<section
-	class="relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-6"
->
-	<!-- The login is the portal's brand moment: a soft brand aura behind the
-	     gate. This is the ONE sanctioned radial (§11.3 exception, owner
-	     decision 2026-11-08) — all other chrome stays flat. -->
-	<div class="login-aura" aria-hidden="true"></div>
-	<div class="absolute top-4 right-4 z-10">
-		<ThemeToggle mode={themeState.mode} onToggle={toggleMode} />
-	</div>
-	<h1 class="relative font-brand text-4xl font-semibold tracking-tight">
-		Speak, friend, and enter
-	</h1>
-	<!-- EVERY login method is a NAMED action: with named actions
-	     present, Kit's default action is unreachable
-	     (action_default_with_named — hit twice: un-named, then
-	     ?/default). password + passkey + (later) oauth = named. -->
+<AuthShell title="Welcome back." subtitle="Sign in to manage the blog, the vault, and the work.">
+	<!-- EVERY login method is a NAMED action: with named actions present,
+	     Kit's default action is unreachable. password + passkey = named. -->
 	<form
 		method="POST"
 		action="?/password"
-		class="relative flex w-full max-w-sm flex-col gap-4"
+		class="flex flex-col gap-4"
 		use:enhance={() => {
 			pending = true;
 			return async ({ update }) => {
@@ -102,40 +73,75 @@
 		<input type="hidden" name="next" value={data.next} />
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-				>username</span
+				>Username</span
 			>
-			<Input type="text" name="username" required autocomplete="username" />
+			<Input
+				type="text"
+				name="username"
+				required
+				autocomplete="username"
+				class="w-full"
+				placeholder="your username"
+			/>
 		</label>
 		<label class="flex flex-col gap-1.5">
 			<span class="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-				>password</span
+				>Password</span
 			>
-			<Input type="password" name="password" required autocomplete="current-password" />
+			<span class="relative block">
+				<Input
+					type={showPassword ? 'text' : 'password'}
+					name="password"
+					required
+					autocomplete="current-password"
+					class="w-full pr-10"
+					placeholder="your password"
+				/>
+				<button
+					type="button"
+					class="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+					aria-label={showPassword ? 'Hide password' : 'Show password'}
+					aria-pressed={showPassword}
+					onclick={() => (showPassword = !showPassword)}
+				>
+					{#if showPassword}
+						<EyeOff class="size-4" aria-hidden="true" />
+					{:else}
+						<Eye class="size-4" aria-hidden="true" />
+					{/if}
+				</button>
+			</span>
 		</label>
 		{#if form?.message}
-			<p class="font-mono text-xs text-danger" role="alert">{form.message}</p>
+			<p class="text-xs leading-relaxed text-danger" role="alert">{form.message}</p>
 		{/if}
-		<Button type="submit" variant="primary" disabled={pending}>
+		<Button type="submit" variant="primary" class="mt-1 w-full justify-center" disabled={pending}>
 			{#if pending}
 				<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
-				<span>Entering…</span>
+				<span>Signing in…</span>
 				<span class="sr-only" role="status">Signing in — the session is being minted</span>
 			{:else}
-				Enter
+				Sign in
 			{/if}
 		</Button>
-		<p class="text-center font-mono text-[10px] text-muted-foreground/70">
-			sessions are minted by lumen — the portal only carries the cookie
+		<p class="text-center text-xs leading-relaxed text-muted-foreground/70">
+			Sessions last 12 hours. Need a reset? Ask the owner for a temporary password.
 		</p>
 	</form>
-	<!-- the passkey door: begin/finish through the form actions, the
-	     ceremony in the browser — the private key never leaves home.
-	     DATA-DRIVEN: lumen's methods probe decides (unset env = no button). -->
+
 	{#if data.methods.includes('passkey')}
-		<div class="relative flex w-full max-w-sm flex-col gap-2">
+		<div class="mt-5 flex flex-col gap-3">
+			<div class="flex items-center gap-3" aria-hidden="true">
+				<span class="h-px flex-1 bg-border"></span>
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+					or
+				</span>
+				<span class="h-px flex-1 bg-border"></span>
+			</div>
 			<Button
 				type="button"
 				variant="outline"
+				class="w-full justify-center gap-2"
 				disabled={passkeyBusy}
 				onclick={() => void loginWithPasskey()}
 			>
@@ -144,12 +150,12 @@
 					<span>Waiting for the authenticator…</span>
 				{:else}
 					<KeyRound class="size-4" aria-hidden="true" />
-					Login with passkey
+					Sign in with a passkey
 				{/if}
 			</Button>
 			{#if passkeyMessage}
-				<p class="font-mono text-xs text-danger" role="alert">{passkeyMessage}</p>
+				<p class="text-xs leading-relaxed text-danger" role="alert">{passkeyMessage}</p>
 			{/if}
 		</div>
 	{/if}
-</section>
+</AuthShell>

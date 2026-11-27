@@ -104,8 +104,10 @@ built-in path REMOVES them on switch). Imports lift ONLY core custom-property
 declarations out of a detached stylesheet — arbitrary CSS never executes.
 The editor (`/settings/themes/edit/[id]`) paints its LIVE draft over the worn
 theme through the same seam, effect-scoped with a revert-first cleanup — a
-draft never persists unless Save. Deliberately NOT themeable: the login aura
-gradient, the photo-detail canvas, the editor's syntax palette (per-token).
+draft never persists unless Save. The auth panel DOES follow the CORE tokens
+(its hues are brand/accent-derived), so custom themes apply to the gate too.
+Deliberately NOT themeable: the photo-detail canvas, the editor's syntax
+palette (per-token).
 
 ## 4. Architecture
 
@@ -570,7 +572,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   tables striped by hue. `red` remains EXCLUSIVELY destructive; green never;
   statuses speak the cast (published violet / draft amber / unpublished
   dashed-neutral).
-- **The one gradient exception:** the login aura (`§11.4`), brand at 15% radial.
+- **The auth-panel exception:** the login/setup visual side is the one bold
+  surface — a token-derived brand/accent aurora with a fixed dark scrim and
+  white ink (the scrim is a contrast decision, not a theme value; it keeps the
+  panel legible on every palette). All other chrome stays flat.
   Every other surface is flat.
 - **The source pane obeys the same tokens (2026-11-20):** CodeMirror's
   `basicSetup` registers its DEFAULT syntax palette as a **fallback**, and that
@@ -609,6 +614,18 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   ThemeForest preview, it is wrong.
 
 ### 11.4 Per-view anatomy
+
+- **The auth gate (`/login`, `/setup`)** — the shared `AuthShell` (2026-11-28):
+  one card on `--chrome`, **form RIGHT / visual LEFT**; below lg the visual is
+  hidden and only a thin aurora strip rides the card's top edge. The visual
+  (decorative, `aria-hidden`, NO API/data) is a token-hued aurora + grain +
+  ASCII-glyph texture, a floating glass "console" postcard of INVENTED rows
+  (`api_key`, `session_secret`, a sample task/draft), and the quote block.
+  Level 3 motion: aurora drift (46s), glass bob (9s), glyph drift (72s), and
+  desktop-only pointer parallax (±4–9px); transform/opacity only, frozen under
+  `prefers-reduced-motion`. The form side carries the wordmark + theme toggle,
+  the title/subtitle, and the page's form; login adds the password eye + the
+  passkey `or` door, setup mirrors the same shell.
 
 - **The widget home (`/`)** — the user's landing view and the app-center
   direction's first surface (owner call 2026-11-24, the widget rounds A→C):
