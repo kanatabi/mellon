@@ -482,11 +482,13 @@
 {:else}
 	<section class="flex flex-col gap-5">
 		<div
-			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4"
+			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4"
 		>
-			<div class="flex flex-col gap-1">
-				<!-- The path crumb rides ABOVE the title (owner call 2026-11-17):
-				     the in-page crumb grammar — crumb line first, title under it. -->
+			<!-- Owner call 2026-11-28: the title and its kv crumb share ONE line at
+			     the top of the content box; the app selector rides that same row
+			     (the old items-end push left blank space above the crumb). -->
+			<div class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+				<h1 class="text-3xl font-semibold tracking-tight">Secrets</h1>
 				<!-- The double-`data` KV-v2 envelope, humanized: kv/<app>/<env>. -->
 				<p class="font-mono text-xs text-muted-foreground">
 					kv / {data.app} / {data.env} · v{cas}
@@ -502,14 +504,14 @@
 						</span>
 					{/if}
 				</p>
-				<h1 class="text-3xl font-semibold tracking-tight">Secrets</h1>
 			</div>
 			<div class="flex flex-col gap-2 md:items-end">
 				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env.
 				     Mobile: full-width stack, select grows; desktop: right cluster. -->
-				<div class="flex flex-wrap items-end gap-2 md:justify-end">
+				<div class="flex flex-wrap items-end gap-2 md:mt-1 md:justify-end">
 					<label class="flex min-w-0 grow flex-col gap-1 md:grow-0">
-						<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+						<span
+							class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase md:hidden"
 							>app</span
 						>
 						<Select.Root
