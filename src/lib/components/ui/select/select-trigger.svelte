@@ -7,7 +7,7 @@
 		ref = $bindable(null),
 		class: className,
 		children,
-		size = 'sm',
+		size = 'default',
 		...restProps
 	}: WithoutChild<SelectPrimitive.TriggerProps> & {
 		size?: 'sm' | 'default';

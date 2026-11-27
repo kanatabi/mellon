@@ -78,7 +78,7 @@
 	<Popover.Content
 		align="start"
 		sideOffset={8}
-		class="w-64 rounded-lg border border-border bg-card shadow-xl"
+		class="w-auto rounded-lg border border-border bg-card shadow-xl"
 	>
 		<Calendar
 			type="single"

@@ -125,7 +125,7 @@
 		<Popover.Content
 			align="end"
 			sideOffset={8}
-			class="w-64 rounded-lg border border-border bg-card shadow-xl"
+			class="w-auto rounded-lg border border-border bg-card shadow-xl"
 		>
 			<RangeCalendar
 				bind:value={range as never}

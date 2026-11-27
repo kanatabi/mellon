@@ -520,7 +520,12 @@ checkbox fieldset now, 2026-11-24.)
 Configs, Compare, Users. Settings sub-pages and entity headers use `text-2xl`
 (24px); only the login/setup brand moment keeps `text-4xl`. The action cluster
 sits on the title's baseline (`items-end`), never floating mid-title.
-Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px. The instrument is
+Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px.
+**Form controls share one height scale** (2026-11-27): inputs and selects are
+36–38px (`px-3 py-2 text-sm` with the matching field padding); the compact
+`size="sm"` select is reserved for inline table controls, never a form field.
+Date popovers size to their calendar (`w-auto`), never a fixed width with a
+dead column. The instrument is
 comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 
 Voice (owner call 2026-11-08): component copy is **normal** — buttons, labels, tags,
