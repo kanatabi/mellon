@@ -433,7 +433,7 @@
 						class="gap-2 px-4 py-2 text-sm hover:border-brand active:scale-[0.98]"
 						onclick={() => (pickerOpen = true)}
 					>
-						<Plus class="size-4" /> Upload Photos
+						<Plus class="size-4" /> Upload
 					</Button>
 				</div>
 			</div>
@@ -473,7 +473,7 @@
 			<!-- Filter strip: the always-visible axes (gallery state, select-all) live
 	     here; collection + dates + sort moved to the sidebar (like posts). -->
 			<div
-				class="flex min-w-0 [scrollbar-width:none] gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
+				class="flex min-w-0 [scrollbar-width:none] items-center gap-2 overflow-x-auto px-1 [&::-webkit-scrollbar]:hidden"
 			>
 				<div class="flex shrink-0 items-center gap-2" role="group" aria-label="Filter by gallery">
 					<a
@@ -508,7 +508,7 @@
 				<Button
 					type="button"
 					variant="quiet"
-					class="shrink-0 gap-1.5 self-start py-1"
+					class="shrink-0 gap-1.5 self-center py-1"
 					onclick={selectAll}
 				>
 					<Check class="size-3" />
