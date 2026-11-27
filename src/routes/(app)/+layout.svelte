@@ -177,7 +177,7 @@
 			items: [{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' }]
 		},
 		{
-			label: 'Tasks',
+			label: 'Tools',
 			// any of the three grants opens the workspace door; the page's
 			// own 403 stays the page's business (courtesy gate only).
 			scopes: ['tasks:create', 'tasks:update', 'tasks:manage'],
