@@ -482,13 +482,11 @@
 {:else}
 	<section class="flex flex-col gap-5">
 		<div
-			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4"
+			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4"
 		>
-			<!-- Owner call 2026-11-28: the title and its kv crumb share ONE line at
-			     the top of the content box; the app selector rides that same row
-			     (the old items-end push left blank space above the crumb). -->
-			<div class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-				<h1 class="text-3xl font-semibold tracking-tight">Secrets</h1>
+			<!-- Owner call 2026-11-28: the pre-mobile-pass header stays as-is.
+			     Do not reflow this unrequested; the crumb rides above the title. -->
+			<div class="flex flex-col gap-1">
 				<!-- The double-`data` KV-v2 envelope, humanized: kv/<app>/<env>. -->
 				<p class="font-mono text-xs text-muted-foreground">
 					kv / {data.app} / {data.env} · v{cas}
@@ -504,16 +502,14 @@
 						</span>
 					{/if}
 				</p>
+				<h1 class="text-3xl font-semibold tracking-tight">Secrets</h1>
 			</div>
 			<div class="flex flex-col gap-2 md:items-end">
 				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env.
 				     Mobile: full-width stack, select grows; desktop: right cluster. -->
-				<div class="flex flex-wrap items-end gap-2 md:mt-1 md:justify-end">
-					<label class="flex min-w-0 grow flex-col gap-1 md:grow-0">
-						<span
-							class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase md:hidden"
-							>app</span
-						>
+				<div class="flex flex-wrap items-center gap-2 md:justify-end">
+					<label class="flex min-w-0 grow items-center gap-1.5 md:grow-0">
+						<span class="sr-only">App namespace</span>
 						<Select.Root
 							type="single"
 							items={apps.map((a) => ({ value: a.app, label: a.app }))}
@@ -543,35 +539,30 @@
 						<Plus class="size-3.5" /> App
 					</Button>
 				</div>
-				<div class="flex flex-col gap-1 md:items-end">
-					<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-						>env</span
-					>
-					<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
-						{#each currentEnvs as env (env)}
-							<button
-								type="button"
-								onclick={() => selectPath(data.app, env)}
-								aria-pressed={env === data.env}
-								aria-label={`Environment ${env}`}
-								class="rounded-md border px-3 py-1 font-mono text-xs transition-colors {env ===
-								data.env
-									? 'border-brand bg-accent text-foreground'
-									: 'border-border text-muted-foreground hover:text-foreground'}"
-							>
-								{env}
-							</button>
-						{/each}
-						<Button
+				<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
+					{#each currentEnvs as env (env)}
+						<button
 							type="button"
-							variant="quiet"
-							class="border-dashed px-2.5 py-1"
-							onclick={() => (addEnvOpen = true)}
-							aria-label="Add environment"
+							onclick={() => selectPath(data.app, env)}
+							aria-pressed={env === data.env}
+							aria-label={`Environment ${env}`}
+							class="rounded-md border px-3 py-1 font-mono text-xs transition-colors {env ===
+							data.env
+								? 'border-brand bg-accent text-foreground'
+								: 'border-border text-muted-foreground hover:text-foreground'}"
 						>
-							+ Env
-						</Button>
-					</div>
+							{env}
+						</button>
+					{/each}
+					<Button
+						type="button"
+						variant="quiet"
+						class="border-dashed px-2.5 py-1"
+						onclick={() => (addEnvOpen = true)}
+						aria-label="Add environment"
+					>
+						+ Env
+					</Button>
 				</div>
 			</div>
 		</div>
