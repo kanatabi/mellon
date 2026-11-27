@@ -571,13 +571,15 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
     someone placed deliberately. Below `md` the canvas stacks.
   - **The plugin seam**: `src/lib/dashboard/widgets/registry.ts` is the
     ONLY thing the canvas/card/tray/store/persistence read. A `WidgetDef`
-    is `{ id, title, description, href?, scope?, defaultSpan, minSpan,
-body }` — **adding a widget = one folder + one registry line**
+    is `{ id, title, description, href?, scope?, scopes?, defaultSpan,
+minSpan, body }` — **adding a widget = one folder + one registry line**
     (the walkthrough lives in the omicron runbook, ch. 15). `id` is
     forever (it keys the persisted layout); `scope` gates the MOUNT —
     an unheld scope means the body never mounts and its calls never
-    fire (lumen's truth over the browser's memory); spans are
-    col = 1/24 canvas, row = 44px units.
+    fire (lumen's truth over the browser's memory); `scopes` is the
+    ANY-OF form for multi-scope apps (the tasks trio — one shared
+    `widgetHeld` rule feeds the store seed, the canvas mount and the
+    picker); spans are col = 1/24 canvas, row = 44px units.
   - **The body contract**: self-contained — fetches its own data
     through the relay client, renders its own loading/error/empty
     states, never touches the layout store; content that outgrows the
@@ -612,6 +614,36 @@ body }` — **adding a widget = one folder + one registry line**
     version 4 — no hidden flag; older layouts migrate chained, v3's
     unpinned entries deleting under the placed-or-absent model).
 
+- **The tasks workspace (`/tasks`)** — the app-center's first real
+  application (2026-11-27, the tasks/notifications plan). CLIENT-rendered
+  through the relay (the layout gates auth; a 403 renders as a quiet
+  panel naming the any-of scope trio, never a 500): the stats cards
+  (open / due today / completed week / overdue — lumen computes them in
+  the `X-Client-Timezone` zone the relay client sends), the My day /
+  Upcoming / All views, the projects SUB-SIDEBAR (role + counts, the
+  presentation-only SORT control, the admin settings door, the new-project
+  form) and the grouped list (checkbox-style toggle, priority badge,
+  assignee, due label; the row title opens the drawer). The **drawer** is
+  the existing right-side `Sheet`: details (inline title, explicit notes,
+  auto-save priority/due/assignee, done, soft delete), checklist,
+  comments (author/project-admin delete), activity. Project settings carry
+  rename / complete / soft delete, the member roster (role changes; the
+  last admin is refused with lumen's 409 copy), invite-by-username and
+  revoke. Pending invitations ride a banner at the top (accept/decline).
+  The bell's click-through `/tasks?task=<id>` is observed on same-route
+  navigations and cleared on close. Scope courtesy: affordances hidden
+  without the matching scope; the drawer degrades read-only without
+  `tasks:update`.
+- **The notifications bell** (topbar): the count is the layout load's
+  fail-soft read (0 on an outage — never a 503); the panel is
+  PULL-ON-OPEN (mounted per open, one `limit=20` read, no polling) with
+  skeleton/empty/quiet-error+retry, plain-text titles, and bodies through
+  `#lib/notifications/render.ts` — the CLIENT gate of the two-gate rule
+  (DOMPurify to lumen's exact inline allowlist; scripts/images/iframes/
+  handlers/external and protocol-relative links stripped). A row click
+  marks read (only when unread, best-effort) and navigates only to a
+  SAME-ORIGIN `payload.url`; "mark all read" is optimistic. The SEND door
+  is not part of the portal at all (app-to-app, one shared token).
 - **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
   on row focus** — the AGENTS §10.5 lesson, restated for keyboards: _"no mouse-only
   affordance in the admin either."_ Filter/tool rows use the `Pill` chip language.
