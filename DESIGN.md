@@ -515,6 +515,11 @@ checkbox fieldset now, 2026-11-24.)
 | **entity titles**    | **Fraunces**       | table post titles, the editor's document title, page headers — and nowhere else. The author's voice greets you in the admin; one signature is enough |
 | anything data-like   | **JetBrains Mono** | slugs, dates, readTime, tags, secret keys/versions/values, shortcut hints                                                                            |
 
+**Page-title scale (2026-11-27, the title round):** the top-level desks carry
+`text-3xl` (30px, Fraunces) — Dashboard, Posts, Photos, Tags, Tasks, Secrets,
+Configs, Compare, Users. Settings sub-pages and entity headers use `text-2xl`
+(24px); only the login/setup brand moment keeps `text-4xl`. The action cluster
+sits on the title's baseline (`items-end`), never floating mid-title.
 Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px. The instrument is
 comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 
