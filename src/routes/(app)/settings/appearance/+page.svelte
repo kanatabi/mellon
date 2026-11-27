@@ -76,7 +76,7 @@
 		<div class="flex items-start justify-between gap-4">
 			<span class="flex flex-col gap-1">
 				<span class="text-sm font-medium">Theme</span>
-				<span class="font-mono text-xs leading-relaxed text-muted-foreground">
+				<span class="text-xs leading-relaxed text-muted-foreground">
 					each card previews its palettes — pick feels before you commit
 				</span>
 			</span>

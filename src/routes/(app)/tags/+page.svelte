@@ -401,7 +401,7 @@
 				onclick={(e) => {
 					if (!(e.target as HTMLElement).closest('button')) openDialog(tag);
 				}}
-				class="grid grid-cols-[2.25rem_minmax(0,1fr)_5rem_7.5rem] items-center gap-3 border-b border-border/60 px-4 py-2 transition-colors last:border-b-0 hover:bg-card/60"
+				class="grid grid-cols-[2.25rem_minmax(0,1fr)_5rem_7.5rem] items-center gap-3 border-b border-border/60 px-4 py-2.5 transition-colors last:border-b-0 hover:bg-card/60"
 			>
 				<button
 					type="button"
@@ -482,7 +482,7 @@
 		</div>
 	{/if}
 
-	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+	<p class="text-xs leading-relaxed text-muted-foreground/70">
 		click a row for its settings — rename propagates to every post (id-keyed), feature decides the
 		widget (a featured tag shows up once a published post uses it), delete refuses while any live
 		post references the name.

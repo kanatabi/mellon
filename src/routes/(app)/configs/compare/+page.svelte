@@ -468,7 +468,7 @@
 		</div>
 	{/if}
 
-	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+	<p class="text-xs leading-relaxed text-muted-foreground/70">
 		values mask by default (short ones read as-is); "show values" is display-only and resets on
 		reload — Bao's audit holds the true bytes
 	</p>

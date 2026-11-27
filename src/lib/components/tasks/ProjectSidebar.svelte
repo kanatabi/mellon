@@ -244,7 +244,7 @@
 	{/if}
 
 	{#if projects.length === 0 && !creating && !loading}
-		<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+		<p class="text-xs leading-relaxed text-muted-foreground/70">
 			no projects yet{canCreate ? ' — start one above' : ' — an admin can invite you to one'}
 		</p>
 	{/if}

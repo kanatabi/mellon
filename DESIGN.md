@@ -521,7 +521,14 @@ checkbox fieldset now, 2026-11-24.)
 Configs, Compare, Users. Settings sub-pages and entity headers use `text-2xl`
 (24px); only the login/setup brand moment keeps `text-4xl`. The action cluster
 sits on the title's baseline (`items-end`), never floating mid-title.
-Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px.
+**Mono is data, not voice** (2026-11-27, the second wave): values,
+identifiers, dates, counts, keys/paths, statuses and shortcut hints ride
+JetBrains Mono; descriptions, hints, empty states and dialog explanations
+ride Inter (`text-xs`/12px, `leading-relaxed`). Uppercase + tracking is a
+LABEL treatment (field labels, table headers, micro captions) — never a
+sentence. This is the readability line the instrument posture needed: the
+same density, less terminal cosplay.
+Density: 13–14px base, table rows ≈40px, page gaps 20px, labels uppercase 10–12px.
 **Form controls share one height scale** (2026-11-27): inputs and selects are
 36–38px (`px-3 py-2 text-sm` with the matching field padding); the compact
 `size="sm"` select belongs to TOOLBARS and inline table controls — form fields

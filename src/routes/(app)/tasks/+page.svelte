@@ -426,16 +426,16 @@
 			<ListTodo class="size-5 text-muted-foreground/60" aria-hidden="true" />
 			{#if loadStatus === 403}
 				<p class="text-sm text-foreground">Tasks isn't open to this account.</p>
-				<p class="max-w-md font-mono text-xs leading-relaxed break-words text-muted-foreground">
+				<p class="max-w-md text-xs leading-relaxed break-words text-muted-foreground">
 					{loadError}
 				</p>
-				<p class="max-w-md font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				<p class="max-w-md text-xs leading-relaxed text-muted-foreground/70">
 					ask an administrator for any of tasks:create · tasks:update · tasks:manage — the workspace
 					is lumen's to open
 				</p>
 			{:else}
 				<p class="text-sm text-foreground">couldn't load tasks</p>
-				<p class="max-w-md font-mono text-xs leading-relaxed break-words text-muted-foreground">
+				<p class="max-w-md text-xs leading-relaxed break-words text-muted-foreground">
 					{loadError}
 				</p>
 			{/if}
@@ -583,7 +583,7 @@
 							<ListTodo class="size-5 text-muted-foreground/60" aria-hidden="true" />
 							<div>
 								<p class="text-sm text-foreground">No projects yet.</p>
-								<p class="mt-1 max-w-md font-mono text-xs leading-relaxed text-muted-foreground">
+								<p class="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
 									{canCreate
 										? canManage
 											? 'create the first project — then invite the people who share the work.'

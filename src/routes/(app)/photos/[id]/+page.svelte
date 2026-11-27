@@ -429,7 +429,7 @@
 				{/if}
 				Alt text
 			</span>
-			<span class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+			<span class="text-xs leading-relaxed text-muted-foreground/70">
 				Reads aloud to screen readers and describes the image for search — say what's in the
 				picture.
 			</span>
@@ -450,7 +450,7 @@
 				{/if}
 				Collection
 			</span>
-			<span class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+			<span class="text-xs leading-relaxed text-muted-foreground/70">
 				Groups the image on the blog's Gallery page — one image, one collection.
 			</span>
 			<Combobox
@@ -474,7 +474,7 @@
 					{/if}
 					Public gallery
 				</span>
-				<span class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				<span class="text-xs leading-relaxed text-muted-foreground/70">
 					Shown on the blog's Gallery page
 				</span>
 			</span>
@@ -516,11 +516,9 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
-					no post embeds this image
-				</p>
+				<p class="text-xs leading-relaxed text-muted-foreground/70">no post embeds this image</p>
 			{/if}
-			<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+			<p class="text-xs leading-relaxed text-muted-foreground/70">
 				the links update automatically when the image changes
 			</p>
 		</div>
@@ -543,7 +541,7 @@
 					{/each}
 				</dl>
 			{:else}
-				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				<p class="text-xs leading-relaxed text-muted-foreground/70">
 					no EXIF — uploaded before capture
 				</p>
 			{/if}
@@ -555,7 +553,7 @@
 			>
 				file
 			</p>
-			<span class="font-mono text-[10px] text-muted-foreground/70">
+			<span class="font-sans text-xs text-muted-foreground/70">
 				the image's public URL — paste it into any markdown
 			</span>
 			<span>{data.photo.width}×{data.photo.height} · created {fmtDate(data.photo.createdAt)}</span>

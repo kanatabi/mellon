@@ -33,7 +33,7 @@
 		Scopes
 	</h1>
 
-	<p class="font-mono text-xs leading-relaxed text-muted-foreground">
+	<p class="text-xs leading-relaxed text-muted-foreground">
 		the assignable vocabulary — every scope here appears in the users page's grant pickers; deleting
 		one that users still hold is refused, never cascaded.
 	</p>

@@ -187,6 +187,6 @@
 	</Button>
 {/if}
 
-<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
+<p class="text-xs leading-relaxed text-muted-foreground/60">
 	filters apply to the loaded view — lumen owns the day math
 </p>

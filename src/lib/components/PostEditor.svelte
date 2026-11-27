@@ -1462,7 +1462,7 @@ flowchart LR
 						touch();
 					}}
 				/>
-				<span class="font-mono text-[10px] text-muted-foreground/60">Fixed at creation</span>
+				<span class="text-[10px] text-muted-foreground/60">Fixed at creation</span>
 			{:else}
 				<input
 					class="w-full rounded-md border border-border bg-muted/40 px-1 py-0.5 font-mono text-xs text-muted-foreground outline-none"
@@ -1470,7 +1470,7 @@ flowchart LR
 					disabled
 					aria-label="Slug (immutable after creation)"
 				/>
-				<span class="font-mono text-[10px] text-muted-foreground/60">URLs never move</span>
+				<span class="text-[10px] text-muted-foreground/60">URLs never move</span>
 			{/if}
 		</SectionCard>
 

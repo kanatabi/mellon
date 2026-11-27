@@ -67,7 +67,7 @@
 	</nav>
 	<div class="flex min-w-0 flex-1 flex-col gap-4">
 		{@render children()}
-		<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+		<p class="text-xs leading-relaxed text-muted-foreground/70">
 			session length is set by lumen — today a 12h TTL, re-minted on every login
 		</p>
 	</div>

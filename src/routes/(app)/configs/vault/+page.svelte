@@ -480,7 +480,7 @@
 		</Button>
 	</div>
 {:else}
-	<section class="flex flex-col gap-6">
+	<section class="flex flex-col gap-5">
 		<div
 			class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4"
 		>
@@ -877,7 +877,7 @@
 						{/each}
 					</pre>
 				{/if}
-				<p class="mt-6 font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+				<p class="mt-6 text-xs leading-relaxed text-muted-foreground/70">
 					values are masked in views and diffs too — Bao's audit (server-side) holds the true bytes
 				</p>
 			</aside>
@@ -918,7 +918,7 @@
 			}}
 		>
 			<h2 class="font-brand text-lg font-semibold">Onboard an app</h2>
-			<p class="font-mono text-xs leading-relaxed text-muted-foreground">
+			<p class="text-xs leading-relaxed text-muted-foreground">
 				creates <code class="text-foreground"
 					>kv/{onboardName || '<app>'}/{'{dev, staging, production}'}</code
 				>
@@ -978,7 +978,7 @@
 			}}
 		>
 			<h2 class="font-brand text-lg font-semibold">Add environment to {data.app}</h2>
-			<p class="font-mono text-xs leading-relaxed text-muted-foreground">
+			<p class="text-xs leading-relaxed text-muted-foreground">
 				seeded to the app's canonical key set (union of live siblings, empty values) — a late env
 				Never drifts a smaller shape.
 			</p>

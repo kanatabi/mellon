@@ -41,7 +41,7 @@
 	<title>Users · mellon</title>
 </svelte:head>
 
-<section class="flex flex-col gap-6">
+<section class="flex flex-col gap-5">
 	<Dialog.Root bind:open={createOpen}>
 		<div class="flex items-end justify-between gap-4">
 			<div class="flex flex-col gap-1">
@@ -183,8 +183,8 @@
 			<tbody>
 				{#each data.users as u (u.username)}
 					<tr class="border-b border-border/50 last:border-0">
-						<td class="px-4 py-2 text-foreground">{u.username}</td>
-						<td class="px-4 py-2">
+						<td class="px-4 py-2.5 text-foreground">{u.username}</td>
+						<td class="px-4 py-2.5">
 							<span class="flex flex-wrap gap-1">
 								{#each u.scopes as sc (sc)}
 									<span class="rounded-sm bg-muted px-2 py-0.5 text-[10px]">{sc}</span>
@@ -193,7 +193,7 @@
 								{/each}
 							</span>
 						</td>
-						<td class="px-4 py-2">
+						<td class="px-4 py-2.5">
 							{#if u.disabled}
 								<span class="text-danger" title="login denied — re-enable to undo">Disabled</span>
 							{:else if u.mustChange}
@@ -204,8 +204,8 @@
 								<span class="text-muted-foreground">Set</span>
 							{/if}
 						</td>
-						<td class="px-4 py-2 text-muted-foreground">{u.createdAt}</td>
-						<td class="px-4 py-2 text-right">
+						<td class="px-4 py-2.5 text-muted-foreground">{u.createdAt}</td>
+						<td class="px-4 py-2.5 text-right">
 							<Button
 								type="button"
 								variant="quiet"

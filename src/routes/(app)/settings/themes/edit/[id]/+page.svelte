@@ -321,7 +321,7 @@
 		<!-- the token rail: named colors with swatches — the picker is the
 		     only editor; the token name demotes to a subtitle -->
 		<div class="order-2 flex flex-col gap-5 lg:order-1">
-			<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+			<p class="text-xs leading-relaxed text-muted-foreground/70">
 				pick a color to change it — leave it alone to keep the one you started from
 			</p>
 			{#each SECTIONS as s (s.title)}

@@ -39,7 +39,7 @@
 	<title>Configs · mellon</title>
 </svelte:head>
 
-<section class="flex flex-col gap-6">
+<section class="flex flex-col gap-5">
 	<div class="flex flex-wrap items-end justify-between gap-4">
 		<div class="flex flex-col gap-1">
 			<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
@@ -139,7 +139,7 @@
 		</table>
 	</div>
 
-	<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/70">
+	<p class="text-xs leading-relaxed text-muted-foreground/70">
 		○n = n keys awaiting values (onboarded shape, unfilled env) · pin vN = write lock (saves to that
 		path are refused until unpin — head stays what everything reads; amber when pin ≠ head) · ↓ =
 		this env's key set trails its widest sibling. Cells deep-link the cockpit.

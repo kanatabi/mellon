@@ -689,7 +689,7 @@
 									onchange={(next) => void patch(p.id, { collection: next[0] ?? null })}
 								/>
 							</div>
-							<figcaption class="font-mono text-[10px] leading-relaxed text-muted-foreground">
+							<figcaption class="text-xs leading-relaxed text-muted-foreground">
 								{p.width}×{p.height} · {p.alt}
 							</figcaption>
 						</figure>
@@ -1000,7 +1000,7 @@
 			</div>
 		</SectionCard>
 
-		<p class="font-mono text-[10px] leading-relaxed text-muted-foreground/60">
+		<p class="text-xs leading-relaxed text-muted-foreground/60">
 			filters ride the URL — the API does the work, the page never sorts
 		</p>
 	{/snippet}

@@ -179,7 +179,7 @@
 	</div>
 
 	{#if !loaded}
-		<p class="font-mono text-xs text-muted-foreground" role="status">reading pending buffer…</p>
+		<p class="text-xs text-muted-foreground" role="status">reading pending buffer…</p>
 	{:else if !pending}
 		<!-- No buffer: the editor is clean (or the buffer was consumed by a save). -->
 		<div

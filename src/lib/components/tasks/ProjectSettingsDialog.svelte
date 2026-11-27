@@ -478,7 +478,7 @@
 		<!-- the soft delete: warned, confirmed, and honestly labelled -->
 		<div class="border-t border-border pt-3">
 			<div class="flex flex-wrap items-center justify-between gap-2">
-				<p class="font-mono text-[10px] leading-relaxed text-muted-foreground">
+				<p class="text-xs leading-relaxed text-muted-foreground">
 					delete is soft — every live view hides the project and its tasks; there is no restore door
 					in the portal yet.
 				</p>
