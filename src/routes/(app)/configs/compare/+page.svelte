@@ -169,7 +169,7 @@
 <section class="flex flex-col gap-4">
 	<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
 		<div class="flex flex-col gap-1">
-			<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
+			<h1 class="flex items-center gap-2 text-3xl font-semibold tracking-tight">
 				<GitCompareArrows class="size-5 text-muted-foreground" aria-hidden="true" />
 				Compare versions
 			</h1>
@@ -185,187 +185,211 @@
 		</a>
 	</div>
 
-	<!-- pickers: app → env → versions; every change re-runs the SSR load -->
-	<div class="flex flex-wrap items-center gap-2">
-		<label class="flex items-center gap-1.5">
-			<span class="sr-only">App namespace</span>
-			<Select.Root
-				type="single"
-				items={apps.map((a) => ({ value: a.app, label: a.app }))}
-				value={data.app}
-				onValueChange={(app) =>
-					go({
-						app,
-						env: undefined,
-						from: undefined,
-						to: undefined
-					})}
+	<!-- pickers: app/env, then from ⇄ to; every change re-runs the SSR load.
+	     Visible micro-labels keep the mobile stack legible. -->
+	<div class="flex flex-col gap-3">
+		<div class="grid grid-cols-2 gap-2">
+			<label class="flex min-w-0 flex-col gap-1">
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+					>app</span
+				>
+				<Select.Root
+					type="single"
+					items={apps.map((a) => ({ value: a.app, label: a.app }))}
+					value={data.app}
+					onValueChange={(app) =>
+						go({
+							app,
+							env: undefined,
+							from: undefined,
+							to: undefined
+						})}
+				>
+					<Select.Trigger size="sm" aria-label="App namespace" class="w-full justify-between">
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content>
+						{#each apps as a (a.app)}
+							<Select.Item value={a.app} label={a.app} />
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</label>
+			<label class="flex min-w-0 flex-col gap-1">
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+					>env</span
+				>
+				<Select.Root
+					type="single"
+					items={envs.map((env) => ({ value: env, label: env }))}
+					value={String(data.env)}
+					onValueChange={(env) => go({ env, from: undefined, to: undefined })}
+				>
+					<Select.Trigger size="sm" aria-label="Environment" class="w-full justify-between">
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content>
+						{#each envs as env (env)}
+							<Select.Item value={env} label={env} />
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</label>
+		</div>
+		<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
+			<label class="flex min-w-0 flex-col gap-1">
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+					>from</span
+				>
+				<Select.Root
+					type="single"
+					items={versionsDesc.map((v) => ({
+						value: String(v.version),
+						label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
+					}))}
+					value={String(data.fromV)}
+					onValueChange={(from) => go({ from: Number(from) })}
+				>
+					<Select.Trigger size="sm" aria-label="From version" class="w-full justify-between">
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content class="min-w-[340px]">
+						{#each versionsDesc as v (v.version)}
+							<Select.Item
+								value={String(v.version)}
+								label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
+							/>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</label>
+			<Button
+				type="button"
+				onclick={swap}
+				aria-label="Swap versions"
+				variant="soft"
+				class="mb-0.5 border-border p-1.5"
 			>
-				<Select.Trigger size="sm" aria-label="App namespace">
-					<Select.Value />
-				</Select.Trigger>
-				<Select.Content>
-					{#each apps as a (a.app)}
-						<Select.Item value={a.app} label={a.app} />
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</label>
-		<label class="flex items-center gap-1.5">
-			<span class="sr-only">Environment</span>
-			<Select.Root
-				type="single"
-				items={envs.map((env) => ({ value: env, label: env }))}
-				value={String(data.env)}
-				onValueChange={(env) => go({ env, from: undefined, to: undefined })}
-			>
-				<Select.Trigger size="sm" aria-label="Environment">
-					<Select.Value />
-				</Select.Trigger>
-				<Select.Content>
-					{#each envs as env (env)}
-						<Select.Item value={env} label={env} />
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</label>
-		<span class="font-mono text-xs text-muted-foreground/60">from</span>
-		<label class="flex items-center gap-1.5">
-			<span class="sr-only">From version</span>
-			<Select.Root
-				type="single"
-				items={versionsDesc.map((v) => ({
-					value: String(v.version),
-					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
-				}))}
-				value={String(data.fromV)}
-				onValueChange={(from) => go({ from: Number(from) })}
-			>
-				<Select.Trigger size="sm" aria-label="From version">
-					<Select.Value />
-				</Select.Trigger>
-				<Select.Content class="min-w-[340px]">
-					{#each versionsDesc as v (v.version)}
-						<Select.Item
-							value={String(v.version)}
-							label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
-						/>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</label>
-		<span class="font-mono text-xs text-muted-foreground/60">to</span>
-		<label class="flex items-center gap-1.5">
-			<span class="sr-only">To version</span>
-			<Select.Root
-				type="single"
-				items={versionsDesc.map((v) => ({
-					value: String(v.version),
-					label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
-				}))}
-				value={String(data.toV)}
-				onValueChange={(to) => go({ to: Number(to) })}
-			>
-				<Select.Trigger size="sm" aria-label="To version">
-					<Select.Value />
-				</Select.Trigger>
-				<Select.Content class="min-w-[340px]">
-					{#each versionsDesc as v (v.version)}
-						<Select.Item
-							value={String(v.version)}
-							label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
-						/>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</label>
-		<Button
-			type="button"
-			onclick={swap}
-			aria-label="Swap versions"
-			variant="soft"
-			class="border-border p-1.5"
-		>
-			<ArrowLeftRight class="size-3.5" />
-		</Button>
+				<ArrowLeftRight class="size-3.5" />
+			</Button>
+			<label class="flex min-w-0 flex-col gap-1">
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">to</span
+				>
+				<Select.Root
+					type="single"
+					items={versionsDesc.map((v) => ({
+						value: String(v.version),
+						label: `v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`
+					}))}
+					value={String(data.toV)}
+					onValueChange={(to) => go({ to: Number(to) })}
+				>
+					<Select.Trigger size="sm" aria-label="To version" class="w-full justify-between">
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content class="min-w-[340px]">
+						{#each versionsDesc as v (v.version)}
+							<Select.Item
+								value={String(v.version)}
+								label={`v${v.version}${v.version === pinned ? ' · pinned' : ''}${v.version === data.meta?.currentVersion ? ' · head' : ''} · ${stamp(v.createdTime)}${v.destroyed ? ' · destroyed' : ''}`}
+							/>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</label>
+		</div>
 	</div>
 
-	<!-- presentation + content + reveal -->
-	<div class="flex flex-wrap items-center gap-2">
-		<div
-			class="flex rounded-lg border border-border bg-muted p-0.5"
-			role="group"
-			aria-label="Presentation"
-		>
-			{#each PRESENTATIONS as p (p)}
-				<button
-					type="button"
-					onclick={() => (presentation = p)}
-					aria-pressed={presentation === p}
-					class="rounded-md px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
-					p
-						? 'bg-card text-foreground ring-1 ring-border'
-						: 'text-muted-foreground hover:text-foreground'}"
+	<!-- presentation + content + the display toggles -->
+	<div class="flex flex-col gap-2">
+		<div class="flex flex-wrap items-end gap-3">
+			<div class="flex flex-col gap-1">
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+					>view</span
 				>
-					{p}
-				</button>
-			{/each}
-		</div>
-		<div
-			class="flex rounded-lg border border-border bg-muted p-0.5"
-			role="group"
-			aria-label="Content form"
-			title="Raw JSON diffs the serialized bytes; parsed diffs sorted KEY=value lines"
-		>
-			{#each CONTENTS as c (c)}
-				<button
-					type="button"
-					onclick={() => (content = c)}
-					aria-pressed={content === c}
-					disabled={presentation === 'table' && c === 'raw'}
-					class="rounded-md px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
-					c
-						? 'bg-card text-foreground ring-1 ring-border'
-						: 'text-muted-foreground hover:text-foreground'}"
+				<div
+					class="flex rounded-lg border border-border bg-muted p-0.5"
+					role="group"
+					aria-label="Presentation"
 				>
-					{c === 'raw' ? 'Raw JSON' : 'Parsed'}
-				</button>
-			{/each}
+					{#each PRESENTATIONS as p (p)}
+						<button
+							type="button"
+							onclick={() => (presentation = p)}
+							aria-pressed={presentation === p}
+							class="rounded-md px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
+							p
+								? 'bg-card text-foreground ring-1 ring-border'
+								: 'text-muted-foreground hover:text-foreground'}"
+						>
+							{p}
+						</button>
+					{/each}
+				</div>
+			</div>
+			<div class="flex flex-col gap-1">
+				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+					>content</span
+				>
+				<div
+					class="flex rounded-lg border border-border bg-muted p-0.5"
+					role="group"
+					aria-label="Content form"
+					title="Raw JSON diffs the serialized bytes; parsed diffs sorted KEY=value lines"
+				>
+					{#each CONTENTS as c (c)}
+						<button
+							type="button"
+							onclick={() => (content = c)}
+							aria-pressed={content === c}
+							disabled={presentation === 'table' && c === 'raw'}
+							class="rounded-md px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
+							c
+								? 'bg-card text-foreground ring-1 ring-border'
+								: 'text-muted-foreground hover:text-foreground'}"
+						>
+							{c === 'raw' ? 'Raw JSON' : 'Parsed'}
+						</button>
+					{/each}
+				</div>
+			</div>
 		</div>
-		<Button
-			type="button"
-			onclick={() => (wrap = !wrap)}
-			aria-pressed={wrap}
-			aria-label="Wrap long lines"
-			title={presentation === 'table'
-				? 'Table cells wrap on their own — wrap applies to split/inline'
-				: 'Wrap long diff lines instead of scrolling'}
-			disabled={presentation === 'table'}
-			variant="quiet"
-			class="gap-1.5 disabled:opacity-40 {wrap ? 'text-foreground' : 'hover:text-foreground'}"
-		>
-			<WrapText class="size-3.5" />
-			Wrap</Button
-		>
-		<Button
-			type="button"
-			onclick={() => (revealAll = !revealAll)}
-			aria-pressed={revealAll}
-			aria-label={revealAll ? 'Hide all values' : 'Show all values'}
-			variant="quiet"
-			class="gap-1.5 {revealAll
-				? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
-				: 'hover:text-foreground'}"
-		>
-			{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-			{revealAll ? 'Hide values' : 'Show values'}</Button
-		>
-		{#if presentation === 'table'}
-			<label class="ml-auto flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-				<input type="checkbox" bind:checked={hideSame} class="accent-[var(--brand)]" />
-				Hide unchanged
-			</label>
-		{/if}
+		<div class="flex flex-wrap items-center gap-2">
+			<Button
+				type="button"
+				onclick={() => (wrap = !wrap)}
+				aria-pressed={wrap}
+				aria-label="Wrap long lines"
+				title={presentation === 'table'
+					? 'Table cells wrap on their own — wrap applies to split/inline'
+					: 'Wrap long diff lines instead of scrolling'}
+				disabled={presentation === 'table'}
+				variant="quiet"
+				class="gap-1.5 disabled:opacity-40 {wrap ? 'text-foreground' : 'hover:text-foreground'}"
+			>
+				<WrapText class="size-3.5" />
+				Wrap</Button
+			>
+			<Button
+				type="button"
+				onclick={() => (revealAll = !revealAll)}
+				aria-pressed={revealAll}
+				aria-label={revealAll ? 'Hide all values' : 'Show all values'}
+				variant="quiet"
+				class="gap-1.5 {revealAll
+					? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+					: 'hover:text-foreground'}"
+			>
+				{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
+				{revealAll ? 'Hide values' : 'Show values'}</Button
+			>
+			{#if presentation === 'table'}
+				<label class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+					<input type="checkbox" bind:checked={hideSame} class="accent-[var(--brand)]" />
+					Hide unchanged
+				</label>
+			{/if}
+		</div>
 	</div>
 
 	{#if !ready}

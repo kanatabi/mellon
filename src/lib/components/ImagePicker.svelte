@@ -203,7 +203,7 @@
 		aria-label={title}
 	>
 		<div class="flex items-center justify-between border-b border-border px-5 py-3.5">
-			<h2 class="font-brand text-xl font-semibold tracking-tight">{title}</h2>
+			<h2 class="text-xl font-semibold tracking-tight">{title}</h2>
 			<button
 				type="button"
 				onclick={onClose}

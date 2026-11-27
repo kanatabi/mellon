@@ -79,7 +79,7 @@
 		>
 			<div class="mb-3 flex items-start gap-3">
 				<TriangleAlert class="mt-0.5 size-5 shrink-0 text-danger" />
-				<AlertDialog.Title class="font-brand text-xl leading-snug font-semibold tracking-tight">
+				<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight">
 					{heading}
 				</AlertDialog.Title>
 			</div>

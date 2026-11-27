@@ -241,7 +241,7 @@
 				bind:value={name}
 				placeholder="name this theme"
 				spellcheck="false"
-				class="w-full truncate rounded-md border border-transparent bg-transparent px-1.5 py-1 font-brand text-2xl font-semibold tracking-tight text-foreground transition-colors outline-none placeholder:text-muted-foreground/40 hover:border-border focus:border-brand"
+				class="w-full truncate rounded-md border border-transparent bg-transparent px-1.5 py-1 text-2xl font-semibold tracking-tight text-foreground transition-colors outline-none placeholder:text-muted-foreground/40 hover:border-border focus:border-brand"
 			/>
 		</label>
 		<DropdownMenu.Root>

@@ -25,7 +25,7 @@
 	<SubCrumb href="/settings" label="settings">
 		<span>editor</span>
 	</SubCrumb>
-	<h1 class="font-brand text-2xl font-semibold tracking-tight">Editor</h1>
+	<h1 class="text-2xl font-semibold tracking-tight">Editor</h1>
 
 	<form
 		method="POST"

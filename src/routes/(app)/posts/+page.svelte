@@ -340,16 +340,16 @@
 	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
 		<div class="flex shrink-0 flex-col gap-4">
 			<div class="flex items-end justify-between gap-4">
-				<h1 class="font-brand text-3xl font-semibold tracking-tight">Posts</h1>
+				<h1 class="text-3xl font-semibold tracking-tight">Posts</h1>
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
-						class="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+						class="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 						onclick={() => fileInput?.click()}
 						disabled={importing}
 					>
 						<FileUp class="size-4" />
-						{importing ? 'importing…' : 'Import markdown'}
+						{importing ? 'importing…' : 'Import'}
 					</button>
 					<input
 						bind:this={fileInput}
@@ -361,7 +361,7 @@
 					/>
 					<a
 						href="/posts/new"
-						class="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
+						class="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium whitespace-nowrap text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
 					>
 						<Plus class="size-4" /> New Post
 					</a>
@@ -521,7 +521,7 @@
 						<div role="cell" class="min-w-0">
 							<a
 								href="/posts/{post.slug}"
-								class="font-brand text-lg leading-snug font-semibold tracking-tight after:absolute after:inset-0 after:content-[''] focus-visible:underline"
+								class="text-lg leading-snug font-semibold tracking-tight after:absolute after:inset-0 after:content-[''] focus-visible:underline"
 							>
 								{post.title}
 							</a>

@@ -473,7 +473,7 @@
 		class="gap-0 data-[side=bottom]:h-[88svh] data-[side=right]:w-full data-[side=right]:sm:max-w-2xl"
 	>
 		<Sheet.Header class="shrink-0 border-b border-border px-5 py-4 pr-14">
-			<Sheet.Title class="font-brand text-xl leading-snug font-semibold tracking-tight break-words">
+			<Sheet.Title class="text-xl leading-snug font-semibold tracking-tight break-words">
 				{task?.title ?? 'Task'}
 			</Sheet.Title>
 			<Sheet.Description
@@ -968,9 +968,7 @@
 		<AlertDialog.Content
 			class="max-h-[min(90svh,36rem)] max-w-md overflow-y-auto rounded-lg border-0 bg-card p-5 shadow-2xl data-[size=default]:max-w-md data-[size=default]:sm:max-w-md"
 		>
-			<AlertDialog.Title
-				class="font-brand text-xl leading-snug font-semibold tracking-tight break-words"
-			>
+			<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight break-words">
 				Delete "{task.title}"?
 			</AlertDialog.Title>
 			<AlertDialog.Description class="text-sm leading-relaxed text-muted-foreground">
@@ -1013,9 +1011,7 @@
 		<AlertDialog.Content
 			class="max-h-[min(90svh,36rem)] max-w-md overflow-y-auto rounded-lg border-0 bg-card p-5 shadow-2xl data-[size=default]:max-w-md data-[size=default]:sm:max-w-md"
 		>
-			<AlertDialog.Title
-				class="font-brand text-xl leading-snug font-semibold tracking-tight break-words"
-			>
+			<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight break-words">
 				Delete this comment?
 			</AlertDialog.Title>
 			<AlertDialog.Description

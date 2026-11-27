@@ -396,7 +396,7 @@
 	     block stacks with zero margin. gap-4 inside, gap-6 to the rows. -->
 		<div class="flex shrink-0 flex-col gap-4">
 			<div class="flex items-end justify-between gap-4">
-				<h1 class="font-brand text-3xl font-semibold tracking-tight">Photos</h1>
+				<h1 class="text-3xl font-semibold tracking-tight">Photos</h1>
 				<div class="flex items-center gap-3">
 					<!-- View segment (md+): tiles ⇄ table. -->
 					<div

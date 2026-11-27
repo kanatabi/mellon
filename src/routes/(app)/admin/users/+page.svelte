@@ -43,27 +43,26 @@
 
 <section class="flex flex-col gap-5">
 	<Dialog.Root bind:open={createOpen}>
-		<div class="flex items-end justify-between gap-4">
-			<div class="flex flex-col gap-1">
-				<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
+		<div class="flex flex-col gap-2">
+			<div class="flex items-start justify-between gap-3">
+				<h1 class="flex items-center gap-2 text-3xl font-semibold tracking-tight">
 					<Users class="size-5 text-muted-foreground" aria-hidden="true" />
 					Users
 				</h1>
-				<p class="font-mono text-xs text-muted-foreground">
-					scopes are per-request facts (lumen reads the row every call) — a reset, a demotion, a
-					completed password change all bite on the NEXT request ·
-					<a href="/settings/scopes" class="underline underline-offset-2 hover:text-foreground"
-						>the scope catalog</a
-					>
-				</p>
+				<!-- the door sits above the table, on the title line -->
+				<Dialog.Trigger
+					class="flex shrink-0 items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium whitespace-nowrap text-primary-foreground transition-colors hover:bg-brand/90"
+				>
+					<UserPlus class="size-4" aria-hidden="true" />
+					New user
+				</Dialog.Trigger>
 			</div>
-			<!-- the door sits above the table, in the header row (owner call) -->
-			<Dialog.Trigger
-				class="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90"
-			>
-				<UserPlus class="size-4" aria-hidden="true" />
-				Create New User
-			</Dialog.Trigger>
+			<p class="max-w-2xl text-xs leading-relaxed text-muted-foreground">
+				Scopes are checked on every request — changes apply on the next call.
+				<a href="/settings/scopes" class="underline underline-offset-2 hover:text-foreground"
+					>Open the scope catalog</a
+				>.
+			</p>
 		</div>
 
 		{#if reveal?.tempPassword}
@@ -230,9 +229,7 @@
 		>
 			<Dialog.Content class="flex max-h-[85svh] flex-col gap-4 overflow-y-auto sm:max-w-lg">
 				<Dialog.Header>
-					<Dialog.Title class="font-brand text-lg font-semibold"
-						>Manage {manageUser.username}</Dialog.Title
-					>
+					<Dialog.Title class="text-lg font-semibold">Manage {manageUser.username}</Dialog.Title>
 					<Dialog.Description class="font-mono text-[10px] text-muted-foreground">
 						set · {manageUser.createdAt} · every verb here is lumen's — the portal renders, never decides
 					</Dialog.Description>

@@ -502,14 +502,16 @@
 						</span>
 					{/if}
 				</p>
-				<h1 class="font-brand text-3xl font-semibold tracking-tight">Secrets</h1>
+				<h1 class="text-3xl font-semibold tracking-tight">Secrets</h1>
 			</div>
 			<div class="flex flex-col gap-2 md:items-end">
 				<!-- APP picker (outer) → ENV tabs (inner); + onboard / + add-env.
 				     Mobile: full-width stack, select grows; desktop: right cluster. -->
-				<div class="flex flex-wrap items-center gap-2 md:justify-end">
-					<label class="flex min-w-0 grow items-center gap-1.5 md:grow-0">
-						<span class="sr-only">App namespace</span>
+				<div class="flex flex-wrap items-end gap-2 md:justify-end">
+					<label class="flex min-w-0 grow flex-col gap-1 md:grow-0">
+						<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+							>app</span
+						>
 						<Select.Root
 							type="single"
 							items={apps.map((a) => ({ value: a.app, label: a.app }))}
@@ -539,349 +541,355 @@
 						<Plus class="size-3.5" /> App
 					</Button>
 				</div>
-				<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
-					{#each currentEnvs as env (env)}
-						<button
-							type="button"
-							onclick={() => selectPath(data.app, env)}
-							aria-pressed={env === data.env}
-							aria-label={`Environment ${env}`}
-							class="rounded-md border px-3 py-1 font-mono text-xs transition-colors {env ===
-							data.env
-								? 'border-brand bg-accent text-foreground'
-								: 'border-border text-muted-foreground hover:text-foreground'}"
-						>
-							{env}
-						</button>
-					{/each}
-					<Button
-						type="button"
-						variant="quiet"
-						class="border-dashed px-2.5 py-1"
-						onclick={() => (addEnvOpen = true)}
-						aria-label="Add environment"
+				<div class="flex flex-col gap-1 md:items-end">
+					<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+						>env</span
 					>
-						+ Env
-					</Button>
-				</div>
-			</div>
-		</div>
-
-		{#if message && message.text}
-			<p
-				class="w-fit rounded-sm px-3 py-1 font-mono text-xs {message.kind === 'ok'
-					? 'bg-brand/10 text-brand'
-					: 'text-danger'}"
-				role="status"
-			>
-				{message.text}
-			</p>
-		{/if}
-
-		<!-- Search bar (D3) + the reveal-all display switch. -->
-		<div class="flex items-center gap-2">
-			<div class="relative flex grow items-center">
-				<Search
-					class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
-					aria-hidden="true"
-				/>
-				<Input
-					type="search"
-					bind:ref={searchEl}
-					bind:value={query}
-					placeholder="filter keys and values…"
-					aria-label="Search keys and values"
-					class="w-full py-2 pr-9 pl-9 text-xs focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
-				/>
-				{#if query}
-					<Button
-						type="button"
-						variant="soft"
-						class="absolute right-2.5 rounded-full p-1"
-						onclick={() => (query = '')}
-						aria-label="Clear search"
-					>
-						<X class="size-3.5" />
-					</Button>
-				{/if}
-			</div>
-			<Button
-				type="button"
-				variant="quiet"
-				class="shrink-0 gap-1.5 rounded-lg py-2 {revealAll
-					? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
-					: 'hover:text-foreground'}"
-				onclick={() => (revealAll = !revealAll)}
-				aria-pressed={revealAll}
-				aria-label={revealAll ? 'Hide all values' : 'Show all values'}
-			>
-				{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
-				{revealAll ? 'hide all' : 'show all'}
-			</Button>
-		</div>
-
-		<!-- Config-file anatomy: mono table, masked values, reveal-on-press. -->
-		<div class="overflow-hidden rounded-lg border border-border bg-card">
-			{#each visibleOrder as k (k)}
-				<div
-					class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto_auto] items-center gap-3 border-b border-border px-4 py-2 last:border-b-0"
-				>
-					<input
-						class="min-w-0 bg-transparent font-mono text-xs text-muted-foreground outline-none focus-visible:text-foreground"
-						value={k}
-						aria-label={`key ${k}`}
-						onchange={(e) => {
-							const nk = String(e.currentTarget.value);
-							if (nk !== k && nk) {
-								const rebuilt: Record<string, string> = {};
-								for (const key of order) rebuilt[key === k ? nk : key] = rows[key];
-								rows = rebuilt;
-								order = order.map((x) => (x === k ? nk : x));
-								dirty = true;
-							}
-						}}
-					/>
-					<input
-						class="min-w-0 rounded bg-transparent px-1 font-mono text-xs outline-none focus-visible:bg-muted"
-						type={revealed[k] || revealAll ? 'text' : 'password'}
-						value={rows[k]}
-						aria-label={`value of ${k}`}
-						oninput={(e) => setVal(k, String(e.currentTarget.value))}
-					/>
-					<Button
-						type="button"
-						variant="soft"
-						class="transition-colors {revealed[k] ? 'text-accent-amber' : ''}"
-						aria-label={revealed[k] ? 'Hide value' : 'Reveal value'}
-						onpointerdown={() => toggleReveal(k, true)}
-						onpointerup={() => toggleReveal(k, false)}
-						onpointerleave={() => toggleReveal(k, false)}
-						onkeydown={(e) => e.key === ' ' && toggleReveal(k, true)}
-						onkeyup={(e) => e.key === ' ' && toggleReveal(k, false)}
-					>
-						{#if revealed[k]}
-							<EyeOff class="size-3.5" />
-						{:else}
-							<Eye class="size-3.5" />
-						{/if}
-					</Button>
-					<Button
-						type="button"
-						variant="soft"
-						class="font-mono text-xs text-danger hover:bg-danger/10 hover:text-danger"
-						onclick={() => removeRow(k)}
-						aria-label={`Remove ${k}`}
-					>
-						<Trash2 class="size-3" />
-					</Button>
-				</div>
-			{:else}
-				<p class="px-4 py-6 text-center font-mono text-xs text-muted-foreground">
-					no keys match “{query}”
-				</p>
-			{/each}
-		</div>
-
-		<div class="flex items-center gap-2">
-			<Button type="button" variant="quiet" onclick={addRow}>+ Key</Button>
-			<Button
-				type="button"
-				variant="quiet"
-				class="gap-2"
-				onclick={() => void openHistory()}
-				aria-expanded={historyOpen}
-			>
-				<History class="size-3.5" /> History
-			</Button>
-			{#if offerPin !== null}
-				<!-- RE-PIN OFFER (lock follow-through): a restore-seeded save
-				     just promoted v{offerPin}; pinning it is the release
-				     ritual's last step. Icon + number only — masked values
-				     doctrine untouched. Plain saves never reach this chip. -->
-				<span
-					class="ml-3 flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 py-1 pr-1 pl-3 font-mono text-xs text-brand"
-					role="status"
-				>
-					<Pin class="size-3" />
-					<button
-						type="button"
-						onclick={() => void acceptOfferPin()}
-						class="transition-colors hover:text-foreground"
-						aria-label={`Pin v${offerPin} — lock the restored head`}
-					>
-						pin v{offerPin}?
-					</button>
-					<button
-						type="button"
-						onclick={() => (offerPin = null)}
-						aria-label="Dismiss the pin offer"
-						class="p-0.5 text-brand/70 transition-colors hover:text-brand"
-					>
-						<X class="size-3" />
-					</button>
-				</span>
-			{/if}
-			<Button
-				type="button"
-				variant="primary"
-				class="ml-auto py-1.5 disabled:opacity-40"
-				disabled={!dirty}
-				onclick={() => void save()}
-			>
-				Save as v{cas + 1}
-			</Button>
-		</div>
-
-		{#if dropTarget}
-			<Confirm
-				heading={`Drop ${dropTarget} from this secret?`}
-				description="the key-set mirror removes it from EVERY env — history keeps it recoverable"
-				confirmLabel="Drop key"
-				onConfirm={confirmDrop}
-				onClose={() => (dropTarget = null)}
-			/>
-		{/if}
-		{#if leaveOpen}
-			<Confirm
-				heading="Leave with unsaved changes?"
-				description="the secret has edits that are not saved anywhere — leaving now drops them (history only knows saved versions)"
-				confirmLabel="Leave"
-				onConfirm={leave}
-				onClose={() => (leaveOpen = false)}
-			/>
-		{/if}
-
-		{#if historyOpen}
-			<aside
-				class="fixed inset-y-0 right-0 z-30 w-96 max-w-[85vw] overflow-y-auto border-l border-border bg-card p-5 shadow-2xl"
-				transition:slide={{ axis: 'x', duration: 220 }}
-				aria-label="Version history"
-			>
-				<div class="mb-4 flex items-center justify-between">
-					<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-						Versions
-					</p>
-					<Button
-						type="button"
-						variant="soft"
-						class="p-0 font-mono text-xs"
-						onclick={() => (historyOpen = false)}
-					>
-						Close
-					</Button>
-				</div>
-				<div class="flex flex-col gap-1">
-					{#each historyVersions as v (v)}
-						<div
-							class="flex items-center justify-between rounded-md px-3 py-1.5 font-mono text-xs transition-colors hover:bg-accent"
-						>
-							<span class="flex items-center gap-2">
-								<span>v{v}</span>
-								{#if envIsPinned(v)}
-									<span class="text-accent-amber" title="pinned — writes to this path are locked">
-										<Pin class="inline size-3 align-[-2px]" />
-									</span>
-								{/if}
-							</span>
-							<span class="flex items-center gap-1">
-								<button
-									type="button"
-									onclick={() => void viewVersion(v)}
-									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
-									aria-label={`View v${v}`}
-								>
-									View
-								</button>
-								<button
-									type="button"
-									onclick={() => void diffAgainst(v)}
-									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
-									aria-label={`Diff v${v}`}
-								>
-									Diff
-								</button>
-								<button
-									type="button"
-									onclick={() => void restoreVersion(v)}
-									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
-									aria-label={`Restore v${v}`}
-								>
-									Restore
-								</button>
-								<a
-									href={`/secrets/compare?app=${data.app}&env=${data.env}&from=${v}&to=${cas}`}
-									class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
-									aria-label={`Compare v${v} with head`}
-									title="Compare with head"
-								>
-									<ArrowLeftRight class="size-3.5" />
-								</a>
-								<button
-									type="button"
-									onclick={() => void togglePin(v)}
-									class="rounded px-1.5 py-0.5 transition-colors {envIsPinned(v)
-										? 'text-accent-amber hover:text-foreground'
-										: 'text-muted-foreground hover:text-foreground'}"
-									aria-label={envIsPinned(v) ? `Unpin v${v}` : `Pin v${v}`}
-								>
-									{#if envIsPinned(v)}
-										<PinOff class="size-3.5" />
-									{:else}
-										<Pin class="size-3.5" />
-									{/if}
-								</button>
-							</span>
-						</div>
-					{/each}
-				</div>
-
-				{#if viewing}
-					<!-- read-only version payload (values masked — same rule as the
-					     editor and diffs; D1: viewing a version never changes head). -->
-					<div class="mt-4 rounded-lg border border-border bg-muted/30 p-3">
-						<p class="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-							viewing v{viewing.version} (read-only)
-						</p>
-						<div class="flex flex-col gap-1">
-							{#each Object.keys(viewing.data).sort() as k (k)}
-								<div class="flex justify-between gap-3 font-mono text-[11px]">
-									<span class="text-muted-foreground">{k}</span>
-									<span class="truncate">{displayValue(viewing.data[k], revealAll)}</span>
-								</div>
-							{/each}
-						</div>
+					<div class="flex flex-wrap items-center gap-1.5 md:justify-end">
+						{#each currentEnvs as env (env)}
+							<button
+								type="button"
+								onclick={() => selectPath(data.app, env)}
+								aria-pressed={env === data.env}
+								aria-label={`Environment ${env}`}
+								class="rounded-md border px-3 py-1 font-mono text-xs transition-colors {env ===
+								data.env
+									? 'border-brand bg-accent text-foreground'
+									: 'border-border text-muted-foreground hover:text-foreground'}"
+							>
+								{env}
+							</button>
+						{/each}
 						<Button
 							type="button"
 							variant="quiet"
-							class="mt-3 px-2.5 py-1 text-[11px]"
-							onclick={() => viewing && void restoreVersion(viewing.version)}
+							class="border-dashed px-2.5 py-1"
+							onclick={() => (addEnvOpen = true)}
+							aria-label="Add environment"
 						>
-							Restore these values
+							+ Env
 						</Button>
 					</div>
-				{/if}
+				</div>
+			</div>
 
-				{#if historyDiff}
-					<pre
-						class="mt-4 flex flex-col gap-0.5 overflow-x-auto font-mono text-[11px]"
-						transition:fade={{ duration: 150 }}>
-						{#each historyDiff as op, i (i + ':' + op.kind + ':' + op.text)}
-							<span
-								class={op.kind === 'add'
-									? `${DIFF_BLOCK.add} text-diff-add`
-									: op.kind === 'del'
-										? `${DIFF_BLOCK.del} text-diff-del`
-										: 'text-muted-foreground'}
-								>{op.kind === 'add' ? '+ ' : op.kind === 'del' ? '- ' : '  '}{op.text}</span
-							>
-						{/each}
-					</pre>
-				{/if}
-				<p class="mt-6 text-xs leading-relaxed text-muted-foreground/70">
-					values are masked in views and diffs too — Bao's audit (server-side) holds the true bytes
+			{#if message && message.text}
+				<p
+					class="w-fit rounded-sm px-3 py-1 font-mono text-xs {message.kind === 'ok'
+						? 'bg-brand/10 text-brand'
+						: 'text-danger'}"
+					role="status"
+				>
+					{message.text}
 				</p>
-			</aside>
-		{/if}
+			{/if}
+
+			<!-- Search bar (D3) + the reveal-all display switch. -->
+			<div class="flex items-center gap-2">
+				<div class="relative flex grow items-center">
+					<Search
+						class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground/60"
+						aria-hidden="true"
+					/>
+					<Input
+						type="search"
+						bind:ref={searchEl}
+						bind:value={query}
+						placeholder="filter keys and values…"
+						aria-label="Search keys and values"
+						class="w-full py-2 pr-9 pl-9 text-xs focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40"
+					/>
+					{#if query}
+						<Button
+							type="button"
+							variant="soft"
+							class="absolute right-2.5 rounded-full p-1"
+							onclick={() => (query = '')}
+							aria-label="Clear search"
+						>
+							<X class="size-3.5" />
+						</Button>
+					{/if}
+				</div>
+				<Button
+					type="button"
+					variant="quiet"
+					class="shrink-0 gap-1.5 rounded-lg py-2 {revealAll
+						? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
+						: 'hover:text-foreground'}"
+					onclick={() => (revealAll = !revealAll)}
+					aria-pressed={revealAll}
+					aria-label={revealAll ? 'Hide all values' : 'Show all values'}
+				>
+					{#if revealAll}<EyeOff class="size-3.5" />{:else}<Eye class="size-3.5" />{/if}
+					{revealAll ? 'hide all' : 'show all'}
+				</Button>
+			</div>
+
+			<!-- Config-file anatomy: mono table, masked values, reveal-on-press. -->
+			<div class="overflow-hidden rounded-lg border border-border bg-card">
+				{#each visibleOrder as k (k)}
+					<div
+						class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto_auto] items-center gap-3 border-b border-border px-4 py-2 last:border-b-0"
+					>
+						<input
+							class="min-w-0 bg-transparent font-mono text-xs text-muted-foreground outline-none focus-visible:text-foreground"
+							value={k}
+							aria-label={`key ${k}`}
+							onchange={(e) => {
+								const nk = String(e.currentTarget.value);
+								if (nk !== k && nk) {
+									const rebuilt: Record<string, string> = {};
+									for (const key of order) rebuilt[key === k ? nk : key] = rows[key];
+									rows = rebuilt;
+									order = order.map((x) => (x === k ? nk : x));
+									dirty = true;
+								}
+							}}
+						/>
+						<input
+							class="min-w-0 rounded bg-transparent px-1 font-mono text-xs outline-none focus-visible:bg-muted"
+							type={revealed[k] || revealAll ? 'text' : 'password'}
+							value={rows[k]}
+							aria-label={`value of ${k}`}
+							oninput={(e) => setVal(k, String(e.currentTarget.value))}
+						/>
+						<Button
+							type="button"
+							variant="soft"
+							class="transition-colors {revealed[k] ? 'text-accent-amber' : ''}"
+							aria-label={revealed[k] ? 'Hide value' : 'Reveal value'}
+							onpointerdown={() => toggleReveal(k, true)}
+							onpointerup={() => toggleReveal(k, false)}
+							onpointerleave={() => toggleReveal(k, false)}
+							onkeydown={(e) => e.key === ' ' && toggleReveal(k, true)}
+							onkeyup={(e) => e.key === ' ' && toggleReveal(k, false)}
+						>
+							{#if revealed[k]}
+								<EyeOff class="size-3.5" />
+							{:else}
+								<Eye class="size-3.5" />
+							{/if}
+						</Button>
+						<Button
+							type="button"
+							variant="soft"
+							class="font-mono text-xs text-danger hover:bg-danger/10 hover:text-danger"
+							onclick={() => removeRow(k)}
+							aria-label={`Remove ${k}`}
+						>
+							<Trash2 class="size-3" />
+						</Button>
+					</div>
+				{:else}
+					<p class="px-4 py-6 text-center font-mono text-xs text-muted-foreground">
+						no keys match “{query}”
+					</p>
+				{/each}
+			</div>
+
+			<div class="flex items-center gap-2">
+				<Button type="button" variant="quiet" onclick={addRow}>+ Key</Button>
+				<Button
+					type="button"
+					variant="quiet"
+					class="gap-2"
+					onclick={() => void openHistory()}
+					aria-expanded={historyOpen}
+				>
+					<History class="size-3.5" /> History
+				</Button>
+				{#if offerPin !== null}
+					<!-- RE-PIN OFFER (lock follow-through): a restore-seeded save
+				     just promoted v{offerPin}; pinning it is the release
+				     ritual's last step. Icon + number only — masked values
+				     doctrine untouched. Plain saves never reach this chip. -->
+					<span
+						class="ml-3 flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 py-1 pr-1 pl-3 font-mono text-xs text-brand"
+						role="status"
+					>
+						<Pin class="size-3" />
+						<button
+							type="button"
+							onclick={() => void acceptOfferPin()}
+							class="transition-colors hover:text-foreground"
+							aria-label={`Pin v${offerPin} — lock the restored head`}
+						>
+							pin v{offerPin}?
+						</button>
+						<button
+							type="button"
+							onclick={() => (offerPin = null)}
+							aria-label="Dismiss the pin offer"
+							class="p-0.5 text-brand/70 transition-colors hover:text-brand"
+						>
+							<X class="size-3" />
+						</button>
+					</span>
+				{/if}
+				<Button
+					type="button"
+					variant="primary"
+					class="ml-auto py-1.5 disabled:opacity-40"
+					disabled={!dirty}
+					onclick={() => void save()}
+				>
+					Save as v{cas + 1}
+				</Button>
+			</div>
+
+			{#if dropTarget}
+				<Confirm
+					heading={`Drop ${dropTarget} from this secret?`}
+					description="the key-set mirror removes it from EVERY env — history keeps it recoverable"
+					confirmLabel="Drop key"
+					onConfirm={confirmDrop}
+					onClose={() => (dropTarget = null)}
+				/>
+			{/if}
+			{#if leaveOpen}
+				<Confirm
+					heading="Leave with unsaved changes?"
+					description="the secret has edits that are not saved anywhere — leaving now drops them (history only knows saved versions)"
+					confirmLabel="Leave"
+					onConfirm={leave}
+					onClose={() => (leaveOpen = false)}
+				/>
+			{/if}
+
+			{#if historyOpen}
+				<aside
+					class="fixed inset-y-0 right-0 z-30 w-96 max-w-[85vw] overflow-y-auto border-l border-border bg-card p-5 shadow-2xl"
+					transition:slide={{ axis: 'x', duration: 220 }}
+					aria-label="Version history"
+				>
+					<div class="mb-4 flex items-center justify-between">
+						<p class="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+							Versions
+						</p>
+						<Button
+							type="button"
+							variant="soft"
+							class="p-0 font-mono text-xs"
+							onclick={() => (historyOpen = false)}
+						>
+							Close
+						</Button>
+					</div>
+					<div class="flex flex-col gap-1">
+						{#each historyVersions as v (v)}
+							<div
+								class="flex items-center justify-between rounded-md px-3 py-1.5 font-mono text-xs transition-colors hover:bg-accent"
+							>
+								<span class="flex items-center gap-2">
+									<span>v{v}</span>
+									{#if envIsPinned(v)}
+										<span class="text-accent-amber" title="pinned — writes to this path are locked">
+											<Pin class="inline size-3 align-[-2px]" />
+										</span>
+									{/if}
+								</span>
+								<span class="flex items-center gap-1">
+									<button
+										type="button"
+										onclick={() => void viewVersion(v)}
+										class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+										aria-label={`View v${v}`}
+									>
+										View
+									</button>
+									<button
+										type="button"
+										onclick={() => void diffAgainst(v)}
+										class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+										aria-label={`Diff v${v}`}
+									>
+										Diff
+									</button>
+									<button
+										type="button"
+										onclick={() => void restoreVersion(v)}
+										class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+										aria-label={`Restore v${v}`}
+									>
+										Restore
+									</button>
+									<a
+										href={`/secrets/compare?app=${data.app}&env=${data.env}&from=${v}&to=${cas}`}
+										class="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
+										aria-label={`Compare v${v} with head`}
+										title="Compare with head"
+									>
+										<ArrowLeftRight class="size-3.5" />
+									</a>
+									<button
+										type="button"
+										onclick={() => void togglePin(v)}
+										class="rounded px-1.5 py-0.5 transition-colors {envIsPinned(v)
+											? 'text-accent-amber hover:text-foreground'
+											: 'text-muted-foreground hover:text-foreground'}"
+										aria-label={envIsPinned(v) ? `Unpin v${v}` : `Pin v${v}`}
+									>
+										{#if envIsPinned(v)}
+											<PinOff class="size-3.5" />
+										{:else}
+											<Pin class="size-3.5" />
+										{/if}
+									</button>
+								</span>
+							</div>
+						{/each}
+					</div>
+
+					{#if viewing}
+						<!-- read-only version payload (values masked — same rule as the
+					     editor and diffs; D1: viewing a version never changes head). -->
+						<div class="mt-4 rounded-lg border border-border bg-muted/30 p-3">
+							<p class="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+								viewing v{viewing.version} (read-only)
+							</p>
+							<div class="flex flex-col gap-1">
+								{#each Object.keys(viewing.data).sort() as k (k)}
+									<div class="flex justify-between gap-3 font-mono text-[11px]">
+										<span class="text-muted-foreground">{k}</span>
+										<span class="truncate">{displayValue(viewing.data[k], revealAll)}</span>
+									</div>
+								{/each}
+							</div>
+							<Button
+								type="button"
+								variant="quiet"
+								class="mt-3 px-2.5 py-1 text-[11px]"
+								onclick={() => viewing && void restoreVersion(viewing.version)}
+							>
+								Restore these values
+							</Button>
+						</div>
+					{/if}
+
+					{#if historyDiff}
+						<pre
+							class="mt-4 flex flex-col gap-0.5 overflow-x-auto font-mono text-[11px]"
+							transition:fade={{ duration: 150 }}>
+						{#each historyDiff as op, i (i + ':' + op.kind + ':' + op.text)}
+								<span
+									class={op.kind === 'add'
+										? `${DIFF_BLOCK.add} text-diff-add`
+										: op.kind === 'del'
+											? `${DIFF_BLOCK.del} text-diff-del`
+											: 'text-muted-foreground'}
+									>{op.kind === 'add' ? '+ ' : op.kind === 'del' ? '- ' : '  '}{op.text}</span
+								>
+							{/each}
+					</pre>
+					{/if}
+					<p class="mt-6 text-xs leading-relaxed text-muted-foreground/70">
+						values are masked in views and diffs too — Bao's audit (server-side) holds the true
+						bytes
+					</p>
+				</aside>
+			{/if}
+		</div>
 	</section>
 {/if}
 
@@ -917,7 +925,7 @@
 				void onboard();
 			}}
 		>
-			<h2 class="font-brand text-lg font-semibold">Onboard an app</h2>
+			<h2 class="text-lg font-semibold">Onboard an app</h2>
 			<p class="text-xs leading-relaxed text-muted-foreground">
 				creates <code class="text-foreground"
 					>kv/{onboardName || '<app>'}/{'{dev, staging, production}'}</code
@@ -977,7 +985,7 @@
 				void submitAddEnv();
 			}}
 		>
-			<h2 class="font-brand text-lg font-semibold">Add environment to {data.app}</h2>
+			<h2 class="text-lg font-semibold">Add environment to {data.app}</h2>
 			<p class="text-xs leading-relaxed text-muted-foreground">
 				seeded to the app's canonical key set (union of live siblings, empty values) — a late env
 				Never drifts a smaller shape.

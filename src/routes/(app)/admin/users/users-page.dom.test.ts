@@ -12,13 +12,13 @@ import Fixture from './users-page-fixture.svelte';
 describe('the users page renders (the 500-on-a-200 round)', () => {
 	it('renders the header door + the table without throwing', () => {
 		const { getByRole } = render(Fixture);
-		expect(getByRole('button', { name: 'Create New User' })).toBeTruthy();
+		expect(getByRole('button', { name: 'New user' })).toBeTruthy();
 		expect(getByRole('table')).toBeTruthy();
 	});
 
 	it('the door OPENS the dialog (the Root wraps the whole section)', async () => {
 		const { getByRole } = render(Fixture);
-		getByRole('button', { name: 'Create New User' }).click();
+		getByRole('button', { name: 'New user' }).click();
 		await tick();
 		// the dialog content mounts with the username field focused inside it
 		expect(getByRole('dialog')).toBeTruthy();

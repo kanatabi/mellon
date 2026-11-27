@@ -170,7 +170,7 @@
 		>
 			<ArrowLeft class="size-4" />
 		</a>
-		<h1 class="min-w-0 truncate font-brand text-2xl font-semibold tracking-tight">
+		<h1 class="min-w-0 truncate text-2xl font-semibold tracking-tight">
 			{data.post.title}
 		</h1>
 		<span class="shrink-0 font-mono text-[10px] tracking-wider text-muted-foreground/60 uppercase"

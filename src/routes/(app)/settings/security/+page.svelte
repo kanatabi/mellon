@@ -72,7 +72,7 @@
 	<SubCrumb href="/settings" label="settings">
 		<span>security</span>
 	</SubCrumb>
-	<h1 class="font-brand text-2xl font-semibold tracking-tight">Security</h1>
+	<h1 class="text-2xl font-semibold tracking-tight">Security</h1>
 
 	<form
 		method="POST"

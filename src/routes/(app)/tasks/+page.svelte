@@ -378,9 +378,9 @@
 </svelte:head>
 
 <section class="flex h-full min-h-0 flex-col gap-4">
-	<header class="flex shrink-0 flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
+	<header class="flex shrink-0 items-start justify-between gap-3 md:items-end md:gap-4">
 		<div class="flex min-w-0 flex-col gap-1">
-			<h1 class="font-brand text-3xl font-semibold tracking-tight">Tasks</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">Tasks</h1>
 			<p class="font-mono text-xs text-muted-foreground">
 				{#if loadError}
 					the workspace is unavailable
@@ -396,7 +396,7 @@
 			<Button
 				type="button"
 				variant="primary"
-				class="gap-2 self-start md:self-auto"
+				class="shrink-0 gap-2"
 				onclick={() => (composerOpen = true)}
 			>
 				<Plus class="size-4" aria-hidden="true" />
@@ -626,7 +626,7 @@
 								<div
 									class="sticky top-0 z-10 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-background/95 px-2 py-1.5 backdrop-blur"
 								>
-									<h2 class="font-brand text-base font-semibold tracking-tight">
+									<h2 class="text-base font-semibold tracking-tight">
 										{group.projectName}
 									</h2>
 									{#if group.completed}

@@ -46,7 +46,7 @@
 	}}
 >
 	<AlertDialog.Content class="max-w-md rounded-lg border-0 bg-card p-5 shadow-2xl sm:max-w-md">
-		<AlertDialog.Title class="font-brand text-xl leading-snug font-semibold tracking-tight">
+		<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight">
 			{heading}
 		</AlertDialog.Title>
 		<!-- the changed list: ONE ATTRIBUTE PER LINE (owner feedback — the comma

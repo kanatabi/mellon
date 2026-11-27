@@ -84,7 +84,7 @@
 >
 	<Dialog.Content class="max-w-lg rounded-lg border-0 bg-card p-5 shadow-2xl">
 		<Dialog.Header>
-			<Dialog.Title class="font-brand text-lg font-semibold">Import a theme</Dialog.Title>
+			<Dialog.Title class="text-lg font-semibold">Import a theme</Dialog.Title>
 			<Dialog.Description class="font-mono text-xs text-muted-foreground">
 				paste JSON or a CSS variables block — gaps inherit the theme you're wearing
 			</Dialog.Description>

@@ -63,7 +63,7 @@
 	>
 		<header class="flex items-center justify-between gap-3 border-b border-border p-4">
 			<div>
-				<h2 class="font-brand text-lg font-semibold">Add widgets</h2>
+				<h2 class="text-lg font-semibold">Add widgets</h2>
 				<p class="font-mono text-[10px] text-muted-foreground/70">
 					select one or many · they land at the first free slot
 				</p>

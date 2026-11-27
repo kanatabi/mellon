@@ -28,7 +28,7 @@
 	<SubCrumb href="/settings" label="settings">
 		<span>scopes</span>
 	</SubCrumb>
-	<h1 class="flex items-center gap-2 font-brand text-2xl font-semibold tracking-tight">
+	<h1 class="flex items-center gap-2 text-2xl font-semibold tracking-tight">
 		<KeyRound class="size-5 text-muted-foreground" aria-hidden="true" />
 		Scopes
 	</h1>

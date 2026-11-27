@@ -246,9 +246,7 @@
 >
 	<Dialog.Content class="max-h-[min(90svh,44rem)] overflow-y-auto sm:max-w-xl">
 		<Dialog.Header>
-			<Dialog.Title class="font-brand text-xl font-semibold tracking-tight">
-				Project settings
-			</Dialog.Title>
+			<Dialog.Title class="text-xl font-semibold tracking-tight">Project settings</Dialog.Title>
 			<Dialog.Description class="font-mono text-xs text-muted-foreground">
 				{savedName}
 			</Dialog.Description>
@@ -510,9 +508,7 @@
 		<AlertDialog.Content
 			class="max-h-[min(90svh,36rem)] max-w-md overflow-y-auto rounded-lg border-0 bg-card p-5 shadow-2xl data-[size=default]:max-w-md data-[size=default]:sm:max-w-md"
 		>
-			<AlertDialog.Title
-				class="font-brand text-xl leading-snug font-semibold tracking-tight break-words"
-			>
+			<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight break-words">
 				Remove {removeTarget.username} from {savedName}?
 			</AlertDialog.Title>
 			<AlertDialog.Description class="text-sm leading-relaxed text-muted-foreground">
@@ -555,9 +551,7 @@
 		<AlertDialog.Content
 			class="max-h-[min(90svh,36rem)] max-w-md overflow-y-auto rounded-lg border-0 bg-card p-5 shadow-2xl data-[size=default]:max-w-md data-[size=default]:sm:max-w-md"
 		>
-			<AlertDialog.Title
-				class="font-brand text-xl leading-snug font-semibold tracking-tight break-words"
-			>
+			<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight break-words">
 				Delete "{savedName}"?
 			</AlertDialog.Title>
 			<AlertDialog.Description class="text-sm leading-relaxed text-muted-foreground">

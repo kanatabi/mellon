@@ -66,7 +66,7 @@
 	<SubCrumb href="/settings" label="settings">
 		<span>appearance</span>
 	</SubCrumb>
-	<h1 class="font-brand text-2xl font-semibold tracking-tight">Appearance</h1>
+	<h1 class="text-2xl font-semibold tracking-tight">Appearance</h1>
 
 	<!-- The theme card: grouped by family (section headers, never tabs),
 	     one write path (setTheme: store + cookie + View Transition). -->

@@ -10,11 +10,7 @@
 
 <div class="flex min-h-svh flex-col">
 	<header class="px-6 py-4">
-		<a
-			href="/"
-			class="font-brand text-xl font-semibold tracking-tight"
-			aria-label="gofar; console home"
-		>
+		<a href="/" class="text-xl font-semibold tracking-tight" aria-label="gofar; console home">
 			gofar;
 		</a>
 	</header>

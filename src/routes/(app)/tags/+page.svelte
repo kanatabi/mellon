@@ -259,7 +259,7 @@
 <section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
 		<div class="flex flex-col gap-1">
-			<h1 class="font-brand text-3xl font-semibold tracking-tight">Tags</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">Tags</h1>
 			<p class="font-mono text-xs text-muted-foreground">
 				{data.tags.length} names · {data.tags.filter((t) => t.featured).length} featured — the widget
 				lists featured ones that a published post actually uses
@@ -503,7 +503,7 @@
 			class="flex w-full max-w-md flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-2xl"
 		>
 			<div class="flex items-start justify-between gap-3">
-				<h2 class="flex items-center gap-2 font-brand text-lg font-semibold">
+				<h2 class="flex items-center gap-2 text-lg font-semibold">
 					<Hash class="size-4 text-muted-foreground" aria-hidden="true" />
 					Tag settings
 				</h2>

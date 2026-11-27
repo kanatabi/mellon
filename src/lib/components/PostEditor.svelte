@@ -967,7 +967,7 @@ flowchart LR
 		     lives here — verbs moved to the post rail's actions block. -->
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<div class="flex min-w-0 items-center gap-3">
-				<h1 class="min-w-0 truncate font-brand text-2xl font-semibold tracking-tight">
+				<h1 class="min-w-0 truncate text-2xl font-semibold tracking-tight">
 					{draft.title || 'New post'}
 				</h1>
 				{#if !isNew}

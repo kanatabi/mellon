@@ -76,7 +76,7 @@
 		{status}
 	</p>
 
-	<h1 class="font-brand text-2xl font-semibold tracking-tight">{copy.title}</h1>
+	<h1 class="text-2xl font-semibold tracking-tight">{copy.title}</h1>
 	<p class="max-w-sm text-sm leading-6 text-muted-foreground">{copy.body}</p>
 
 	<div class="mt-3 flex items-center gap-2">

@@ -36,7 +36,7 @@
 >
 	<Dialog.Content class="max-w-sm rounded-lg border-0 bg-card p-5 shadow-2xl">
 		<Dialog.Header>
-			<Dialog.Title class="font-brand text-lg font-semibold">Rename theme</Dialog.Title>
+			<Dialog.Title class="text-lg font-semibold">Rename theme</Dialog.Title>
 		</Dialog.Header>
 		<form
 			class="flex flex-col gap-3 pt-1"

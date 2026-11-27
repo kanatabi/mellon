@@ -32,7 +32,7 @@
 
 <section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-		<h1 class="font-brand text-3xl font-semibold tracking-tight">Dashboard</h1>
+		<h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1>
 		<div class="flex items-center gap-2">
 			<button
 				type="button"

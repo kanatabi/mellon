@@ -42,7 +42,7 @@
 <section class="flex flex-col gap-5">
 	<div class="flex flex-wrap items-end justify-between gap-4">
 		<div class="flex flex-col gap-1">
-			<h1 class="flex items-center gap-2 font-brand text-3xl font-semibold tracking-tight">
+			<h1 class="flex items-center gap-2 text-3xl font-semibold tracking-tight">
 				<LayoutGrid class="size-5 text-muted-foreground" aria-hidden="true" />
 				Secrets summary
 			</h1>

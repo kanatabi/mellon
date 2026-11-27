@@ -121,7 +121,7 @@
 >
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
-			<Dialog.Title class="font-brand text-xl font-semibold tracking-tight">New task</Dialog.Title>
+			<Dialog.Title class="text-xl font-semibold tracking-tight">New task</Dialog.Title>
 			<Dialog.Description class="font-mono text-[11px] text-muted-foreground">
 				the title is the only field the server insists on
 			</Dialog.Description>
