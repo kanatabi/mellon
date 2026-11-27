@@ -87,6 +87,9 @@
 	let deleteError = $state<string | null>(null);
 
 	const adminCount = $derived(members.filter((m) => m.role === 'admin').length);
+	// A bare "@" opens the panel with a hint (never a directory dump); a term
+	// is required before the server is asked.
+	const inviteHint = $derived(mentionQuery(inviteName) === '');
 	const nameDirty = $derived(nameDraft.trim() !== '' && nameDraft.trim() !== savedName);
 
 	async function loadMembers() {
@@ -202,7 +205,7 @@
 	$effect(() => {
 		const term = mentionQuery(inviteName);
 		peopleError = null;
-		if (term === null || term.length === 0) {
+		if (term === null) {
 			peopleGen++; // any in-flight response is now stale
 			people = [];
 			peopleOpen = false;
@@ -210,7 +213,13 @@
 			activePerson = -1;
 			return;
 		}
+		peopleGen++;
+		people = [];
+		peopleLoading = false;
+		activePerson = -1;
 		peopleOpen = true;
+		if (term.length === 0) return; // the bare "@" hint state
+		peopleLoading = true;
 		const gen = ++peopleGen;
 		peopleLoading = true;
 		clearTimeout(peopleTimer);
@@ -541,7 +550,11 @@
 								aria-label="Matching accounts"
 								class="absolute bottom-full z-20 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-border bg-card p-1 shadow-xl"
 							>
-								{#if peopleLoading && people.length === 0}
+								{#if inviteHint}
+									<p class="px-2 py-1.5 font-mono text-[10px] text-muted-foreground/60">
+										type a username, name, or email…
+									</p>
+								{:else if peopleLoading && people.length === 0}
 									<p class="px-2 py-1.5 font-mono text-[10px] text-muted-foreground/60">
 										searching…
 									</p>
