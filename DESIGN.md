@@ -554,15 +554,19 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   underline; diff/invalid ride their existing tokens. Theming the editor's
   chrome without its syntax is half a theme.
 - Anti-rules, as binding as the rules: **the radius scale is the shape
-  contract** (2026-11-27, the Linear round — the 2026-11 cast's full-round
-  pill is retired): 6px controls (`rounded-md`: buttons, inputs, chips,
-  segmented cells), 4px tags (`rounded-sm`: statuses, priorities, keycaps),
-  8px surfaces (`rounded-lg`: cards, dialogs, menus), 16px furniture (the
-  content box only). Full radius is reserved for marks whose MEANING is a
-  circle — avatars, count badges, status/unread dots, color swatches, switch
-  tracks — and a shape-guard test enforces the whitelist. Content tabs are
-  underline tabs; MODE switches are one bordered segmented group with
-  rectangular cells (no nested pill). Shadows **only** on overlays (palette,
+  contract** (v2, 2026-11-27 — the 2026-11 cast's full-round pill is
+  retired, but shape still carries meaning): **8px** text buttons, inputs,
+  selects and segmented TRACKS (`rounded-lg`); **6px** filter chips,
+  segmented CELLS and inline action chips (`rounded-md`); **4px** tags
+  (`rounded-sm`: statuses, priorities, keycaps); 8px surfaces (cards,
+  dialogs, menus); 16px furniture (the content box only). **Full radius is
+  a meaning, not a default**: search fields (the ⌘K field + the tag
+  vocabulary search), icon-only controls (bell, theme toggle, close X,
+  clear/remove icons, hint), avatars, count badges, status/unread dots,
+  color swatches and switch tracks — a shape-guard test enforces the exact
+  signatures. Content tabs are underline tabs; MODE switches are one
+  bordered segmented group with rectangular cells (no nested pill).
+  Shadows **only** on overlays (palette,
   menus, sheets), and motion lives
   in overlays (150–200ms transforms/opacity — the drawer transitions) plus the
   **rails**: sidebars fold to the side with a 200ms width transition and curtain
