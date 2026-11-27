@@ -11,12 +11,12 @@ import Label from '#lib/components/ui/label/label.svelte';
 import Textarea from '#lib/components/ui/textarea/textarea.svelte';
 
 describe('the button cast', () => {
-	it('primary is the violet 6px control — the one verb', () => {
+	it('primary is the violet 8px control — the one verb', () => {
 		const { getByRole } = render(Button, {
 			props: { variant: 'primary', children: undefined as never }
 		});
 		const b = getByRole('button');
-		expect(b.className).toContain('rounded-md');
+		expect(b.className).toContain('rounded-lg');
 		expect(b.className).toContain('bg-brand');
 		expect(b.className).toContain('text-primary-foreground');
 		expect(b.className).not.toContain('rounded-full');
@@ -44,19 +44,19 @@ describe('the button cast', () => {
 		// size's h-8/px-2.5 (tv definition order: size before variant)
 		expect(b.className).toContain('px-3');
 		expect(b.className).toContain('py-1.5');
-		expect(b.className).toContain('rounded-md');
+		expect(b.className).toContain('rounded-lg');
 		expect(b.className).not.toContain('h-8');
 		expect(b.className).not.toContain('px-2.5');
 	});
 
-	it('ghost stays the registry look — the overlays did not move', () => {
+	it('ghost stays the registry look — and icon sizes are circles', () => {
 		const { getByRole } = render(Button, {
 			props: { variant: 'ghost', size: 'icon-sm', children: undefined as never }
 		});
 		const b = getByRole('button');
 		expect(b.className).toContain('hover:bg-muted'); // the S2 hover wash
 		expect(b.className).toContain('size-7');
-		expect(b.className).not.toContain('rounded-full');
+		expect(b.className).toContain('rounded-full');
 	});
 });
 

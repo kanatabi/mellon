@@ -344,7 +344,7 @@
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
-						class="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+						class="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 						onclick={() => fileInput?.click()}
 						disabled={importing}
 					>
@@ -361,7 +361,7 @@
 					/>
 					<a
 						href="/posts/new"
-						class="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
+						class="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
 					>
 						<Plus class="size-4" /> New Post
 					</a>
@@ -393,7 +393,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
+						class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-full"
 						onclick={clearSearch}
 						aria-label="Clear search"
 						title="Clear search"
@@ -633,6 +633,7 @@
 					<Button
 						type="button"
 						variant="soft"
+						class="rounded-full p-1"
 						onclick={postsRail.toggle}
 						aria-label="Collapse filters"
 					>

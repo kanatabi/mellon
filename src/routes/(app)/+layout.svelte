@@ -187,7 +187,7 @@
 			<button
 				type="button"
 				onclick={openPalette}
-				class="hidden w-80 max-w-[42vw] items-center justify-between gap-2 rounded-md border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:col-start-2 md:flex md:justify-self-center"
+				class="hidden w-80 max-w-[42vw] items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:col-start-2 md:flex md:justify-self-center"
 				aria-label="Open command palette"
 			>
 				<span class="flex items-center gap-2">
@@ -203,7 +203,7 @@
 					type="button"
 					onclick={openPalette}
 					aria-label="Search"
-					class="flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted md:hidden"
+					class="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted md:hidden"
 				>
 					<Search class="size-4" />
 				</button>

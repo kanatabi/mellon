@@ -1144,7 +1144,7 @@ flowchart LR
 		>
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
-				class="flex w-fit rounded-md border border-border bg-muted p-0.5"
+				class="flex w-fit rounded-lg border border-border bg-muted p-0.5"
 				role="tablist"
 				aria-label="Editor pane"
 				onkeydown={(e) => {
@@ -1166,7 +1166,7 @@ flowchart LR
 					tabindex={editorTab === 'write' ? 0 : -1}
 					bind:this={writeTabBtn}
 					onclick={() => setTab('write', false)}
-					class="rounded-sm px-3 py-1 font-mono text-xs transition-colors {editorTab === 'write'
+					class="rounded-md px-3 py-1 font-mono text-xs transition-colors {editorTab === 'write'
 						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -1181,7 +1181,7 @@ flowchart LR
 					tabindex={editorTab === 'preview' ? 0 : -1}
 					bind:this={previewTabBtn}
 					onclick={() => setTab('preview', false)}
-					class="rounded-sm px-3 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
+					class="rounded-md px-3 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
 						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
@@ -1247,7 +1247,7 @@ flowchart LR
 						type="button"
 						onclick={editorRail.toggle}
 						aria-label="Collapse post rail"
-						class="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+						class="rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<PanelRightClose class="size-4" />
 					</button>
@@ -1351,7 +1351,7 @@ flowchart LR
 				type="button"
 				disabled={saving}
 				onclick={() => requestSave()}
-				class="w-full rounded-md border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
+				class="w-full rounded-lg border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
 			>
 				{status === 'published' ? 'Save Post' : 'Save draft'}
 			</button>
@@ -1360,7 +1360,7 @@ flowchart LR
 					type="button"
 					disabled={saving}
 					onclick={() => void unpublish()}
-					class="w-full rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+					class="w-full rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 				>
 					Unpublish
 				</button>
@@ -1369,7 +1369,7 @@ flowchart LR
 					type="button"
 					disabled={saving}
 					onclick={() => requestPublish()}
-					class="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98] disabled:opacity-40"
+					class="w-full rounded-lg bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98] disabled:opacity-40"
 				>
 					Publish
 				</button>
@@ -1378,7 +1378,7 @@ flowchart LR
 				<button
 					type="button"
 					onclick={() => (confirmDelete = true)}
-					class="w-full rounded-md px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+					class="w-full rounded-lg px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
 				>
 					Delete
 				</button>

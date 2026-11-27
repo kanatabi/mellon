@@ -17,7 +17,7 @@
 	class={cn(
 		// SHADCN-PLAN 3.1: the house line, verbatim (photos/[id]'s alt-text
 		// anatomy — the tree's only textarea outside the moat).
-		'resize-y rounded-md border border-border bg-transparent px-3 py-2 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-brand disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
+		'resize-y rounded-lg border border-border bg-transparent px-3 py-2 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-brand disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
 		className
 	)}
 	bind:value

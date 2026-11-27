@@ -14,7 +14,7 @@
 </script>
 
 <div
-	class="flex w-fit shrink-0 rounded-md border border-border bg-muted p-0.5"
+	class="flex w-fit shrink-0 rounded-lg border border-border bg-muted p-0.5"
 	role="radiogroup"
 	aria-label="Mode"
 >
@@ -24,7 +24,7 @@
 			role="radio"
 			aria-checked={themeState.mode === m}
 			onclick={() => setMode(m)}
-			class="flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-mono text-xs transition-colors {themeState.mode ===
+			class="flex items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-xs transition-colors {themeState.mode ===
 			m
 				? 'bg-card text-foreground ring-1 ring-border'
 				: 'text-muted-foreground hover:text-foreground'}"

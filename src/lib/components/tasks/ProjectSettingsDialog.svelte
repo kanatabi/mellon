@@ -365,7 +365,7 @@
 						<div class="flex items-center gap-2 rounded-md border border-border/70 px-2 py-1.5">
 							<span
 								aria-hidden="true"
-								class="grid size-6 shrink-0 place-items-center rounded-md bg-brand/15 font-mono text-[9px] font-bold text-brand uppercase"
+								class="grid size-6 shrink-0 place-items-center rounded-full bg-brand/15 font-mono text-[9px] font-bold text-brand uppercase"
 							>
 								{initial(member.username)}
 							</span>
@@ -402,7 +402,7 @@
 							<Button
 								type="button"
 								variant="soft"
-								class="text-muted-foreground hover:text-danger disabled:opacity-30"
+								class="rounded-full p-1 text-muted-foreground hover:text-danger disabled:opacity-30"
 								aria-label="Remove {member.username} from {savedName}"
 								title={lastAdmin ? 'a project keeps at least one admin' : 'Remove member'}
 								disabled={lastAdmin || roleBusyId !== null}
@@ -524,7 +524,7 @@
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
-					class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					class="h-auto rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 					onclick={(e) => {
 						if (removing) e.preventDefault();
 					}}
@@ -569,7 +569,7 @@
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
-					class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					class="h-auto rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 					onclick={(e) => {
 						if (deleting) e.preventDefault();
 					}}

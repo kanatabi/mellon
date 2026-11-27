@@ -597,7 +597,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="absolute right-2.5"
+						class="absolute right-2.5 rounded-full p-1"
 						onclick={() => (query = '')}
 						aria-label="Clear search"
 					>

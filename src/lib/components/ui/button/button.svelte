@@ -15,19 +15,20 @@
 			// class per button keeps the shape deterministic.
 			size: {
 				default:
-					'h-8 gap-1.5 rounded-md px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-				xs: "h-6 gap-1 rounded-sm px-2 text-xs in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-				lg: 'h-9 gap-1.5 rounded-md px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-				icon: 'size-8 rounded-md',
-				'icon-xs': "size-6 rounded-sm [&_svg:not([class*='size-'])]:size-3",
-				'icon-sm': 'size-7 rounded-md',
-				'icon-lg': 'size-9 rounded-md'
+					'h-8 gap-1.5 rounded-lg px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+				xs: "h-6 gap-1 rounded-md px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+				lg: 'h-9 gap-1.5 rounded-lg px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+				icon: 'size-8 rounded-full',
+				'icon-xs': "size-6 rounded-full [&_svg:not([class*='size-'])]:size-3",
+				'icon-sm': 'size-7 rounded-full',
+				'icon-lg': 'size-9 rounded-full'
 			},
 			variant: {
 				// ── mellon's cast (the 2026-11-27 Linear round): the pill was
-				// retired. Controls are 6px rectangles (rounded-md), tags are
-				// 4px (rounded-sm), full circles stay reserved for avatars and
-				// count badges. Colors remain SEMANTIC tokens — `text-primary-
+				// retired. Text buttons are 8px rectangles (rounded-lg);
+				// icon-only controls are circles; tags are 4px (rounded-sm);
+				// full circles also mark avatars, count badges and search
+				// fields. Colors remain SEMANTIC tokens — `text-primary-
 				// foreground` (not text-white) keeps contrast correct on the
 				// light-brand dark themes.
 				primary:

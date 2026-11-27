@@ -123,19 +123,19 @@
 		<span class="text-xs font-medium text-foreground">Colors</span>
 		<PopoverPrimitive.Close
 			aria-label="Close the color picker"
-			class="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+			class="rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<X class="size-3.5" />
 		</PopoverPrimitive.Close>
 	</div>
 
-	<div class="flex w-fit rounded-md border border-border bg-muted p-0.5">
+	<div class="flex w-fit rounded-lg border border-border bg-muted p-0.5">
 		{#each ['grid', 'spectrum', 'sliders'] as t (t)}
 			<button
 				type="button"
 				aria-pressed={tab === t}
 				onclick={() => (tab = t as typeof tab)}
-				class="rounded-sm px-2.5 py-1 font-mono text-[10px] transition-colors {tab === t
+				class="rounded-md px-2.5 py-1 font-mono text-[10px] transition-colors {tab === t
 					? 'bg-card text-foreground ring-1 ring-border'
 					: 'text-muted-foreground hover:text-foreground'}"
 			>

@@ -400,7 +400,7 @@
 				<div class="flex items-center gap-3">
 					<!-- View segment (md+): tiles ⇄ table. -->
 					<div
-						class="hidden rounded-md border border-border bg-muted p-0.5 md:flex"
+						class="hidden rounded-lg border border-border bg-muted p-0.5 md:flex"
 						role="group"
 						aria-label="Photos view"
 					>
@@ -408,7 +408,7 @@
 							type="button"
 							onclick={() => setView('tiles')}
 							aria-pressed={view === 'tiles'}
-							class="flex items-center gap-1.5 rounded-sm px-3 py-1 font-mono text-xs transition-colors {view ===
+							class="flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-xs transition-colors {view ===
 							'tiles'
 								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
@@ -419,7 +419,7 @@
 							type="button"
 							onclick={() => setView('table')}
 							aria-pressed={view === 'table'}
-							class="flex items-center gap-1.5 rounded-sm px-3 py-1 font-mono text-xs transition-colors {view ===
+							class="flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-xs transition-colors {view ===
 							'table'
 								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
@@ -460,7 +460,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center"
+						class="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-full"
 						onclick={clearSearch}
 						aria-label="Clear search"
 						title="Clear search"
@@ -578,7 +578,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="ml-auto rounded-md p-1.5"
+						class="ml-auto rounded-full p-1.5"
 						onclick={() => selection.clear()}
 						aria-label="Clear selection"
 					>
@@ -645,8 +645,8 @@
 									aria-pressed={selection.has(p.id)}
 									aria-label={selection.has(p.id) ? `Deselect ${p.alt}` : `Select ${p.alt}`}
 									class={sel
-										? 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-brand bg-brand text-primary-foreground backdrop-blur transition-colors'
-										: 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground'}
+										? 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-full border border-brand bg-brand text-primary-foreground backdrop-blur transition-colors'
+										: 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground'}
 								>
 									<Check class="size-3.5" />
 								</button>
@@ -656,7 +656,7 @@
 									onclick={() => void copyLink(p)}
 									aria-label={`Copy link for ${p.alt}`}
 									title="Copy link"
-									class="absolute top-2 right-10 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+									class="absolute top-2 right-10 flex size-7 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
 								>
 									<Link class="size-3.5" />
 								</button>
@@ -669,7 +669,7 @@
 										? `Remove ${p.alt} from gallery`
 										: `Add ${p.alt} to gallery`}
 									title="In gallery"
-									class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md border backdrop-blur transition-colors {p.gallery
+									class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full border backdrop-blur transition-colors {p.gallery
 										? 'border-brand bg-brand/90 text-primary-foreground'
 										: 'border-border bg-card/80 text-muted-foreground hover:text-foreground'}"
 								>
@@ -891,7 +891,7 @@
 						type="button"
 						onclick={photosRail.toggle}
 						aria-label="Collapse filters"
-						class="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+						class="rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<PanelRightClose class="size-4" />
 					</button>

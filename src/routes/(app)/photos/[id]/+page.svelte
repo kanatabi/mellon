@@ -392,6 +392,7 @@
 					<Button
 						type="button"
 						variant="soft"
+						class="rounded-full p-1"
 						onclick={photoRail.toggle}
 						aria-label="Collapse details"
 					>

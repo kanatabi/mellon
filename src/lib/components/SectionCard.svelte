@@ -98,7 +98,7 @@
 			type="button"
 			onclick={ontoggle}
 			aria-label={open ? `Collapse ${label}` : `Expand ${label}`}
-			class="rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground focus-visible:text-foreground"
+			class="rounded-full p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground focus-visible:text-foreground"
 		>
 			<ChevronDown class={`size-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
 		</button>

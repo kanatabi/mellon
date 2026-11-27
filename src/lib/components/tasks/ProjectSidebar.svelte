@@ -238,7 +238,7 @@
 							type="button"
 							aria-label="Project settings for {project.name}"
 							title="Project settings"
-							class="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+							class="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
 							onclick={() => (settingsId = project.id)}
 						>
 							<MoreHorizontal class="size-3.5" aria-hidden="true" />

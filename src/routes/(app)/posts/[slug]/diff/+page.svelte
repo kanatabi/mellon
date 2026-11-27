@@ -166,7 +166,7 @@
 			href="/posts/{data.post.slug}"
 			aria-label="Back to editor"
 			title="Back to editor"
-			class="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+			class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<ArrowLeft class="size-4" />
 		</a>
@@ -208,7 +208,7 @@
 				<Button
 					type="button"
 					variant="quiet"
-					class="h-auto gap-1.5 rounded-md px-4 py-2 font-sans text-sm"
+					class="h-auto gap-1.5 rounded-lg px-4 py-2 font-sans text-sm"
 					onclick={() => void invalidateAll()}
 					aria-label="Reload head"
 				>
@@ -275,7 +275,7 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger
 							aria-label="Diff preferences"
-							class="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+							class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 						>
 							<Ellipsis class="size-4" />
 						</DropdownMenu.Trigger>
@@ -720,7 +720,7 @@
 			<Button
 				type="button"
 				variant="danger"
-				class="h-auto w-full rounded-md px-4 py-2 font-sans text-sm sm:w-auto"
+				class="h-auto w-full rounded-lg px-4 py-2 font-sans text-sm sm:w-auto"
 				disabled={saving}
 				onclick={() => void discard()}
 			>
@@ -729,7 +729,7 @@
 			<Button
 				type="button"
 				variant="primary"
-				class="h-auto w-full rounded-md px-4 py-2 font-sans text-sm sm:w-auto"
+				class="h-auto w-full rounded-lg px-4 py-2 font-sans text-sm sm:w-auto"
 				disabled={saving}
 				onclick={() => void saveFrom(conflict)}
 			>

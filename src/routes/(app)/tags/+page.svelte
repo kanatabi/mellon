@@ -276,7 +276,7 @@
 				bind:value={createName}
 				aria-label="New tag name"
 				placeholder="new-tag-name"
-				class="w-full rounded-md bg-transparent px-3 py-1.5 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40 md:w-48"
+				class="w-full rounded-full bg-transparent px-3 py-1.5 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40 md:w-48"
 			/>
 			<Button
 				type="submit"
@@ -308,7 +308,7 @@
 			<Button
 				type="button"
 				variant="soft"
-				class="absolute right-2.5"
+				class="absolute right-2.5 rounded-full p-1"
 				onclick={() => {
 					query = '';
 					go({ q: '', page: 1 });
@@ -365,7 +365,7 @@
 			<Button
 				type="button"
 				variant="soft"
-				class="ml-auto rounded-md p-1.5"
+				class="ml-auto rounded-full p-1.5"
 				onclick={() => selection.clear()}
 				aria-label="Clear selection"
 			>

@@ -72,7 +72,7 @@
 				type="button"
 				onclick={onClose}
 				aria-label="Close the widget panel"
-				class="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				class="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 			>
 				<X class="size-4" />
 			</button>
@@ -158,7 +158,7 @@
 					type="button"
 					disabled={selected.length === 0}
 					onclick={commit}
-					class="rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40"
+					class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					Add {selected.length === 0 ? '' : selected.length}
 					widget{selected.length === 1 ? '' : 's'}

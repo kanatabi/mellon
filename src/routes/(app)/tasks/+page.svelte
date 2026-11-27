@@ -404,7 +404,7 @@
 			<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
 				<div class="flex shrink-0 flex-wrap items-center gap-2">
 					<div
-						class="flex rounded-md border border-border bg-muted p-0.5"
+						class="flex rounded-lg border border-border bg-muted p-0.5"
 						role="group"
 						aria-label="Task view"
 					>
@@ -413,7 +413,7 @@
 								type="button"
 								onclick={() => (view = option.id)}
 								aria-pressed={view === option.id}
-								class="rounded-sm px-3 py-1 font-mono text-xs transition-colors {view === option.id
+								class="rounded-md px-3 py-1 font-mono text-xs transition-colors {view === option.id
 									? 'bg-card text-foreground ring-1 ring-border'
 									: 'text-muted-foreground hover:text-foreground'}"
 							>
@@ -439,7 +439,7 @@
 							<Button
 								type="button"
 								variant="soft"
-								class="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center"
+								class="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-full"
 								aria-label="Clear the task filter"
 								title="Clear filter"
 								onclick={() => (query = '')}

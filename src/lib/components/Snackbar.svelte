@@ -60,7 +60,7 @@
 				type="button"
 				onclick={dismissFlash}
 				aria-label="Dismiss notification"
-				class="rounded p-1.5 text-muted-foreground/60 transition-colors hover:text-foreground"
+				class="rounded-full p-1.5 text-muted-foreground/60 transition-colors hover:text-foreground"
 			>
 				<X class="size-4" />
 			</button>

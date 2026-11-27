@@ -164,7 +164,7 @@
 						<Button
 							type="submit"
 							variant="ghost"
-							class="size-8 shrink-0 p-0 text-muted-foreground hover:text-danger"
+							class="size-8 shrink-0 rounded-full p-0 text-muted-foreground hover:text-danger"
 							aria-label="Delete {pk.label}"
 						>
 							<Trash2 class="size-4" aria-hidden="true" />

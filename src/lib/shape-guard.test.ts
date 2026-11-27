@@ -3,38 +3,36 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Shape guard (2026-11-27, the Linear round): `rounded-full` is a MEANING,
- * not a style — avatars, count badges, status dots, color swatches and switch
- * tracks. Interactive controls are 6px (`rounded-md`), tags 4px
- * (`rounded-sm`). Without a guard the pill cast creeps back in one component
- * at a time; the whitelist below is the reviewed set of files where a circle
- * is honest. Add a file only when the circle IS the meaning, never for a
- * button.
+ * Shape guard (v2, 2026-11-27): `rounded-full` is a MEANING, never the default
+ * control shape. The reviewed legitimate uses are:
+ *
+ *   - icon-only controls            → `size-*`, `p-1`, `p-1.5`, `p-0.5`
+ *   - status dots / badges / bars   → `size-*`, `h-1.5`/`h-2`/`h-3`/`h-4`, `min-w-4`
+ *   - avatars, swatches, switch     → `size-*`, `h-6 w-11`
+ *   - slider tracks                 → `h-3`/`h-4`, `inset-0`
+ *   - the two search fields         → pill by doctrine (⌘K, tag vocabulary)
+ *
+ * A text button or a filter chip in a full circle is the retired 2026-11 cast
+ * and fails. The scale: 8px text buttons/inputs/surfaces, 6px chips/cells,
+ * 4px tags, full only for the marks above.
  */
 const ROOT = new URL('../../', import.meta.url).pathname;
 const SRC = join(ROOT, 'src');
 
-const WHITELIST = new Set([
-	// identity + counters
-	'src/lib/components/UserMenu.svelte',
-	'src/lib/components/notifications/NotificationBell.svelte',
-	// status/unread dots and the single-letter chip
-	'src/lib/components/ErrorPanel.svelte',
-	'src/lib/components/SectionCard.svelte',
-	'src/lib/components/PostEditor.svelte',
-	'src/lib/components/notifications/NotificationPanel.svelte',
-	'src/lib/components/tasks/TaskDrawer.svelte',
-	'src/lib/components/tasks/TaskRow.svelte',
-	'src/lib/dashboard/widgets/recent-tags/body.svelte',
-	'src/lib/dashboard/widgets/tasks/body.svelte',
-	'src/routes/(app)/posts/+page.svelte', // list count badge
-	'src/routes/(app)/photos/+page.svelte', // selection count badge
-	// swatches, slider tracks/thumbs, the gallery toggle switch
-	'src/lib/components/ColorPicker.svelte',
-	'src/routes/(app)/photos/[id]/+page.svelte',
-	// the theme PREVIEW's abstract skeleton bars/dots (not controls)
-	'src/lib/components/ThemePane.svelte'
-]);
+const ALLOWED = [
+	/\bsize-(?:\d|full|\[)/, // avatars, icon buttons, dots, swatches
+	/\bp-1(?:\.5)?\b/, // icon-only padding (X, clear, hint)
+	/\bp-0\.5\b/, // micro icon inside a chip
+	/\bh-1\.5\b/,
+	/\bh-2\b/,
+	/\bh-3\b/,
+	/\bh-4\b/,
+	/\bh-6 w-11\b/, // switch track
+	/\bmin-w-4\b/, // count badge
+	/\binset-0\b/, // slider track fill
+	/px-4 py-2 .*font-mono/, // topbar ⌘K field (pill by doctrine)
+	/bg-transparent px-3 py-1\.5/ // tag vocabulary search (pill by doctrine)
+];
 
 function svelteFiles(dir: string): string[] {
 	const out: string[] = [];
@@ -46,12 +44,25 @@ function svelteFiles(dir: string): string[] {
 	return out;
 }
 
-describe('shape guard (one roundness scale)', () => {
-	it('rounded-full appears only where the circle is the meaning', () => {
-		const offenders = svelteFiles(SRC)
-			.filter((file) => !WHITELIST.has(relative(ROOT, file)))
-			.filter((file) => readFileSync(file, 'utf8').includes('rounded-full'))
-			.map((file) => relative(ROOT, file));
-		expect(offenders, `retired pill cast in: ${offenders.join(', ')}`).toEqual([]);
+describe('shape guard (circles are meaning, not style)', () => {
+	it('every rounded-full line carries a reviewed mark signature', () => {
+		const offenders: string[] = [];
+		for (const file of svelteFiles(SRC)) {
+			for (const [i, line] of readFileSync(file, 'utf8').split('\n').entries()) {
+				if (!line.includes('rounded-full')) continue;
+				if (ALLOWED.some((re) => re.test(line))) continue;
+				offenders.push(`${relative(ROOT, file)}:${i + 1}`);
+			}
+		}
+		expect(offenders, `pill-shaped controls returned at:\n${offenders.join('\n')}`).toEqual([]);
+	});
+
+	it('text buttons and filter chips are rectangles', () => {
+		const button = readFileSync(join(SRC, 'lib/components/ui/button/button.svelte'), 'utf8');
+		const primary = button.match(/primary:\s*'([^']+)'/)?.[1] ?? '';
+		expect(primary).not.toContain('rounded-full');
+		const pill = readFileSync(join(SRC, 'lib/components/Pill.svelte'), 'utf8');
+		expect(pill).toContain('rounded-md');
+		expect(pill).not.toContain('rounded-full');
 	});
 });

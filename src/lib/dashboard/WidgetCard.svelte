@@ -322,7 +322,7 @@
 				onclick={onDelete}
 				aria-label={`Delete ${def.title} from the dashboard`}
 				title="Delete from the dashboard (re-add from the Add Widget panel)"
-				class="rounded p-1 text-muted-foreground/50 transition-colors hover:text-danger"
+				class="rounded-full p-1 text-muted-foreground/50 transition-colors hover:text-danger"
 			>
 				<Trash2 class="size-3.5" />
 			</button>

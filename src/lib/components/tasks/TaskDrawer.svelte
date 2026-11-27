@@ -811,7 +811,7 @@
 												aria-label="Delete {subtask.title}"
 												title="Delete checklist item"
 												disabled={subtaskBusy}
-												class="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-40"
+												class="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-40"
 												onclick={() => void removeSubtask(subtask)}
 											>
 												<X class="size-3.5" aria-hidden="true" />
@@ -852,7 +852,7 @@
 													type="button"
 													aria-label="Delete comment by {userLabel(comment.authorName)}"
 													title="Delete comment"
-													class="grid size-6 place-items-center rounded-md text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+													class="grid size-6 place-items-center rounded-full text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
 													onclick={() => {
 														commentDeleteError = null;
 														commentTarget = comment;
@@ -977,7 +977,7 @@
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
-					class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					class="h-auto rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 					onclick={(e) => {
 						if (deleting) e.preventDefault();
 					}}
@@ -1025,7 +1025,7 @@
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
-					class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					class="h-auto rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 					onclick={(e) => {
 						if (commentDeleting) e.preventDefault();
 					}}

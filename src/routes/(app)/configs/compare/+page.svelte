@@ -293,7 +293,7 @@
 	<!-- presentation + content + reveal -->
 	<div class="flex flex-wrap items-center gap-2">
 		<div
-			class="flex rounded-md border border-border bg-muted p-0.5"
+			class="flex rounded-lg border border-border bg-muted p-0.5"
 			role="group"
 			aria-label="Presentation"
 		>
@@ -302,7 +302,7 @@
 					type="button"
 					onclick={() => (presentation = p)}
 					aria-pressed={presentation === p}
-					class="rounded-sm px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
+					class="rounded-md px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
 					p
 						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
@@ -312,7 +312,7 @@
 			{/each}
 		</div>
 		<div
-			class="flex rounded-md border border-border bg-muted p-0.5"
+			class="flex rounded-lg border border-border bg-muted p-0.5"
 			role="group"
 			aria-label="Content form"
 			title="Raw JSON diffs the serialized bytes; parsed diffs sorted KEY=value lines"
@@ -323,7 +323,7 @@
 					onclick={() => (content = c)}
 					aria-pressed={content === c}
 					disabled={presentation === 'table' && c === 'raw'}
-					class="rounded-sm px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
+					class="rounded-md px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
 					c
 						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"

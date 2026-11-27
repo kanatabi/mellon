@@ -110,7 +110,7 @@
 												href="/settings/themes/edit/{custom.id}"
 												aria-label="Edit {custom.name} in the theme editor"
 												title="Edit"
-												class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												class="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-foreground"
 											>
 												<Palette class="size-3" />
 											</a>
@@ -121,7 +121,7 @@
 												}}
 												aria-label="Copy {custom.name}'s JSON"
 												title="Copy JSON"
-												class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												class="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-foreground"
 											>
 												<Copy class="size-3" />
 											</button>
@@ -130,7 +130,7 @@
 												onclick={() => (renameTarget = custom)}
 												aria-label="Rename {custom.name}"
 												title="Rename"
-												class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												class="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-foreground"
 											>
 												<Pencil class="size-3" />
 											</button>
@@ -139,7 +139,7 @@
 												onclick={() => (deleteTarget = custom)}
 												aria-label="Delete {custom.name}"
 												title="Delete"
-												class="rounded p-0.5 text-danger transition-colors hover:text-danger"
+												class="rounded-full p-0.5 text-danger transition-colors hover:text-danger"
 											>
 												<Trash2 class="size-3" />
 											</button>
@@ -148,7 +148,7 @@
 												href="/settings/themes/edit/new?fork={t.id}"
 												aria-label="Fork {t.name} into a new theme"
 												title="Fork this theme"
-												class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+												class="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-foreground"
 											>
 												<Palette class="size-3" />
 											</a>

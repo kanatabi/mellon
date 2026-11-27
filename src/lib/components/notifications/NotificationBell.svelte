@@ -34,7 +34,7 @@
 <Popover.Root bind:open>
 	<Popover.Trigger
 		aria-label={unread > 0 ? `Notifications (${unread} unread)` : 'Notifications'}
-		class="relative flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+		class="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 	>
 		<Bell class="size-4" aria-hidden="true" />
 		{#if badge}

@@ -184,7 +184,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="rounded-sm p-0.5"
+						class="rounded-full p-0.5"
 						onclick={() => toggle(t)}
 						aria-label="Remove {t}"
 					>

@@ -209,7 +209,7 @@
 				onclick={onClose}
 				disabled={busy}
 				aria-label="Close"
-				class="rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+				class="rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 				use:focusOnMount
 			>
 				<X class="size-4" />
@@ -363,7 +363,7 @@
 											type="button"
 											onclick={() => copyLink(p)}
 											aria-label="Copy link for {p.alt}"
-											class="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+											class="rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
 										>
 											<Link class="size-3" />
 										</button>
@@ -371,7 +371,7 @@
 											type="button"
 											onclick={() => onPick?.(p)}
 											aria-label="Insert {p.alt}"
-											class="rounded p-1 text-muted-foreground transition-colors hover:text-brand"
+											class="rounded-full p-1 text-muted-foreground transition-colors hover:text-brand"
 										>
 											<ImagePlus class="size-3.5" />
 										</button>
@@ -393,7 +393,7 @@
 				<button
 					type="button"
 					onclick={onClose}
-					class="rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
+					class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
 				>
 					Done
 				</button>
