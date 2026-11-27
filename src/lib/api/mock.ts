@@ -573,24 +573,49 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 	const DAY = 86_400_000;
 	const clock = options.now ?? (() => Date.now());
 	const tnow = () => new Date(clock()).toISOString();
-	const identities = new Map<string, { id: string; username: string }>([
-		['admin', { id: 'twin-admin', username: 'admin' }],
-		['sarah', { id: 'twin-sarah', username: 'sarah' }]
+	interface TwinIdentity {
+		id: string;
+		username: string;
+		/** Display name — the tasks plane's label (never an identity key). */
+		name: string;
+		/** Optional private contact: a MATCH KEY for the invite search only. */
+		email?: string;
+	}
+	const identities = new Map<string, TwinIdentity>([
+		[
+			'admin',
+			{ id: 'twin-admin', username: 'admin', name: 'Faiz Rahman', email: 'faiz@example.com' }
+		],
+		[
+			'sarah',
+			{ id: 'twin-sarah', username: 'sarah', name: 'Sarah Lim', email: 'sarah@example.com' }
+		],
+		['budi', { id: 'twin-budi', username: 'budi', name: 'Budi Santoso', email: 'budi@example.com' }]
 	]);
-	const identityFor = (username: string): { id: string; username: string } => {
+	const identityFor = (username: string): TwinIdentity => {
 		const seeded = identities.get(username);
 		if (seeded) return seeded;
 		const authUser = users.get(username);
 		if (!authUser) throw new AdminApiError(404, `no such user: ${username}`);
-		const identity = { id: authUser.id, username };
+		const identity: TwinIdentity = {
+			id: authUser.id,
+			username,
+			name: authUser.name,
+			email: authUser.email || undefined
+		};
 		identities.set(username, identity);
 		return identity;
 	};
-	const identityById = (id: string): { id: string; username: string } | undefined => {
+	const identityById = (id: string): TwinIdentity | undefined => {
 		for (const identity of identities.values()) if (identity.id === id) return identity;
 		for (const [username, row] of users) {
 			if (row.id === id) {
-				const identity = { id, username };
+				const identity: TwinIdentity = {
+					id,
+					username,
+					name: row.name,
+					email: row.email || undefined
+				};
 				identities.set(username, identity);
 				return identity;
 			}
@@ -599,6 +624,8 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 	};
 	const usernameOf = (id: string | null): string | null =>
 		id ? (identityById(id)?.username ?? null) : null;
+	const nameOf = (id: string | null): string | null =>
+		id ? (identityById(id)?.name ?? null) : null;
 
 	const seededAt = clock();
 	const at = (offsetMs: number) => new Date(seededAt + offsetMs).toISOString();
@@ -623,6 +650,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 			{
 				userId: 'twin-admin',
 				username: 'admin',
+				name: 'Faiz Rahman',
 				role: 'admin',
 				invitedBy: null,
 				joinedAt: at(-30 * DAY)
@@ -770,9 +798,9 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 			projectId: task.projectId,
 			projectName: project.name,
 			creatorId: task.creatorId,
-			creatorName: usernameOf(task.creatorId),
+			creatorName: nameOf(task.creatorId),
 			assignedTo: task.assignedTo,
-			assigneeName: usernameOf(task.assignedTo),
+			assigneeName: nameOf(task.assignedTo),
 			title: task.title,
 			notes: task.notes,
 			priority: task.priority,
@@ -1786,6 +1814,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 						{
 							userId: actor.id,
 							username: actor.username,
+							name: actor.name,
 							role: 'admin',
 							invitedBy: null,
 							joinedAt: tnow()
@@ -1868,7 +1897,9 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 			async taskInviteCreate(projectId, username) {
 				const project = projectForActor(projectId);
 				requireProjectAdmin(project);
-				const inviteeName = String(username ?? '').trim();
+				const inviteeName = String(username ?? '')
+					.trim()
+					.replace(/^@/, '');
 				if (!inviteeName) throw new AdminApiError(400, 'username is required');
 				let invitee: { id: string; username: string };
 				try {
@@ -1908,6 +1939,56 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 				return inviteRow(created);
 			},
 
+			async taskInviteeSearch(projectId, query) {
+				const project = projectForActor(projectId);
+				requireProjectAdmin(project);
+				const q = String(query ?? '')
+					.trim()
+					.toLowerCase()
+					.replace(/^@/, '');
+				if (!q) return [];
+				// auth-created accounts fold into the directory on first search
+				for (const [username, row] of users) {
+					if (!identities.has(username))
+						identities.set(username, {
+							id: row.id,
+							username,
+							name: row.name,
+							email: row.email || undefined
+						});
+				}
+				const now = tnow();
+				const rows = [...identities.values()].filter((identity) => {
+					if (identity.id === actor.id) return false;
+					if (users.get(identity.username)?.disabled) return false;
+					if (project.members.some((member) => member.userId === identity.id)) return false;
+					if (
+						taskInvites.some(
+							(invite) =>
+								invite.projectId === project.id &&
+								invite.inviteeId === identity.id &&
+								invite.expiresAt > now
+						)
+					)
+						return false;
+					return (
+						identity.username.toLowerCase().startsWith(q) ||
+						identity.name.toLowerCase().startsWith(q) ||
+						(identity.email ?? '') === q
+					);
+				});
+				const rank = (identity: TwinIdentity) =>
+					identity.username.toLowerCase() === q
+						? 0
+						: identity.username.toLowerCase().startsWith(q)
+							? 1
+							: 2;
+				return rows
+					.sort((a, b) => rank(a) - rank(b) || a.username.localeCompare(b.username))
+					.slice(0, 8)
+					.map(({ username, name }) => ({ username, name }));
+			},
+
 			async taskInvites() {
 				const now = clock();
 				return taskInvites
@@ -1940,6 +2021,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 					project.members.push({
 						userId: actor.id,
 						username: actor.username,
+						name: actor.name,
 						role: 'member',
 						invitedBy: invite.inviterId,
 						joinedAt: tnow()

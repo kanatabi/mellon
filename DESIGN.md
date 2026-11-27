@@ -714,7 +714,12 @@ minSpan, body }` — **adding a widget = one folder + one registry line**
   no task in the view is deliberately absent), the projects SUB-SIDEBAR (role
   - counts, the admin settings door, the new-project form) and the grouped
     list (checkbox-style toggle, priority badge, assignee, due label; the row
-    title opens the drawer). The **drawer** is
+    title opens the drawer). Person labels are **display names** (the assignee
+    picker, the roster and the invite search; selections still submit
+    `userId`/the resolved username, never a label), and the project-invite
+    field doubles as a people search: typing `@` opens a debounced dropdown of
+    matching accounts (display name + `@username`; username/display-name
+    prefixes and an exact email are the server's match keys). The **drawer** is
     the existing right-side `Sheet`: details (inline title, explicit notes,
     auto-save priority/due/assignee, done, soft delete), checklist,
     comments (author/project-admin delete), activity. Project settings carry

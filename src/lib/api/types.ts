@@ -311,9 +311,11 @@ export interface TaskItem {
 	projectId: string;
 	projectName: string;
 	creatorId: string | null;
+	/** Read-only label (users.display_name); creatorId is the identity. */
 	creatorName: string | null;
 	/** The assignee's user id (v1: ONE assignee); null = unassigned. */
 	assignedTo: string | null;
+	/** Read-only label (users.display_name); assignedTo is the identity. */
 	assigneeName: string | null;
 	title: string;
 	notes: string;
@@ -388,9 +390,18 @@ export interface TaskInvite {
 export interface TaskMember {
 	userId: string;
 	username: string;
+	/** The account's display name — the roster's primary label. */
+	name: string;
 	role: TaskRole;
 	invitedBy: string | null;
 	joinedAt: string;
+}
+
+/** One invite-typeahead row. Email is a server-side match key only — it is
+ *  never part of this wire shape. */
+export interface TaskPerson {
+	username: string;
+	name: string;
 }
 
 /** estate-generic bell row: `body` is sanitized inline HTML (plain `title`),
@@ -665,6 +676,9 @@ export interface AdminApi {
 	 *  admin is a 409 (a project must keep one). */
 	taskMemberRemove(id: string, userId: string): Promise<void>;
 	taskInviteCreate(projectId: string, username: string): Promise<TaskInvite>;
+	/** Project-admin people search for the invite field: username/display-name
+	 *  prefixes or an EXACT email; members/pending invitees are excluded. */
+	taskInviteeSearch(projectId: string, query: string): Promise<TaskPerson[]>;
 	/** The caller's pending (unexpired) invite inbox. */
 	taskInvites(): Promise<TaskInvite[]>;
 	/** 410 when the 24h TTL passed (the row is consumed); 404 otherwise. */

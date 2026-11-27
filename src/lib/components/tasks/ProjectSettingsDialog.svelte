@@ -8,8 +8,15 @@
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 	import { client, errorText } from '#lib/api/client.ts';
-	import type { TaskInvite, TaskMember, TaskProject, TaskRole } from '#lib/api/types.ts';
+	import type {
+		TaskInvite,
+		TaskMember,
+		TaskPerson,
+		TaskProject,
+		TaskRole
+	} from '#lib/api/types.ts';
 	import { expiryLabel } from '#lib/tasks/dates.ts';
+	import { mentionQuery } from '#lib/tasks/people.ts';
 	import { flash } from '#lib/flash.svelte.ts';
 
 	/**
@@ -55,8 +62,18 @@
 	let busy = $state(false);
 
 	let inviteName = $state('');
+	let inviteInput = $state<HTMLInputElement | null>(null);
 	let inviting = $state(false);
 	let inviteError = $state<string | null>(null);
+	// the @-mention typeahead: server rows, one in-flight generation, and a
+	// focus/keyboard contract that never turns the free-text path off
+	let people = $state<TaskPerson[]>([]);
+	let peopleOpen = $state(false);
+	let peopleLoading = $state(false);
+	let peopleError = $state<string | null>(null);
+	let peopleGen = 0;
+	let activePerson = $state(-1);
+	let peopleTimer: ReturnType<typeof setTimeout> | undefined;
 	let lastInvite = $state<{ invite: TaskInvite; username: string } | null>(null);
 	let revoking = $state(false);
 
@@ -140,7 +157,7 @@
 			flash({
 				kind: 'ok',
 				title: 'Role updated',
-				description: `${member.username} is now ${role}`
+				description: `${member.name} is now ${role}`
 			});
 			await loadMembers();
 			onChanged();
@@ -166,7 +183,7 @@
 				description:
 					target.userId === viewerId
 						? 'you left the project — its tasks are no longer here'
-						: `${target.username}'s tasks in this project are unassigned`
+						: `${target.name}'s tasks in this project are unassigned`
 			});
 			await loadMembers();
 			onChanged();
@@ -178,8 +195,74 @@
 		}
 	}
 
+	// A leading "@" switches the field to the people search; plain typing
+	// stays the free-text username path (the server still resolves it). The
+	// effect owns the debounce and the stale-response guard: every keystroke
+	// bumps the generation, so an older response can never overwrite a newer.
+	$effect(() => {
+		const term = mentionQuery(inviteName);
+		peopleError = null;
+		if (term === null || term.length === 0) {
+			peopleGen++; // any in-flight response is now stale
+			people = [];
+			peopleOpen = false;
+			peopleLoading = false;
+			activePerson = -1;
+			return;
+		}
+		peopleOpen = true;
+		const gen = ++peopleGen;
+		peopleLoading = true;
+		clearTimeout(peopleTimer);
+		peopleTimer = setTimeout(async () => {
+			try {
+				const rows = await client.taskInviteeSearch(project.id, term);
+				if (gen !== peopleGen) return;
+				people = rows;
+				activePerson = rows.length > 0 ? 0 : -1;
+			} catch (e) {
+				if (gen !== peopleGen) return;
+				people = [];
+				peopleError = errorText(e);
+				activePerson = -1;
+			} finally {
+				if (gen === peopleGen) peopleLoading = false;
+			}
+		}, 160);
+		return () => clearTimeout(peopleTimer);
+	});
+
+	function chooseInvitee(person: TaskPerson) {
+		// The FIELD carries the username (the invite wire's lookup key); the
+		// stored invite is lumen's users.id, resolved server-side.
+		inviteName = person.username;
+		peopleOpen = false;
+		people = [];
+		activePerson = -1;
+		inviteInput?.focus();
+	}
+
+	function onInviteKeydown(event: KeyboardEvent) {
+		if (!peopleOpen) return;
+		if (event.key === 'ArrowDown' && people.length > 0) {
+			event.preventDefault();
+			activePerson = (activePerson + 1) % people.length;
+		} else if (event.key === 'ArrowUp' && people.length > 0) {
+			event.preventDefault();
+			activePerson = activePerson <= 0 ? people.length - 1 : activePerson - 1;
+		} else if (event.key === 'Enter' && activePerson >= 0 && people[activePerson]) {
+			// Enter commits the highlighted person instead of submitting the form
+			event.preventDefault();
+			chooseInvitee(people[activePerson]);
+		} else if (event.key === 'Escape' || event.key === 'Tab') {
+			peopleOpen = false;
+		}
+	}
+
 	async function invite() {
-		const username = inviteName.trim();
+		// The field's friendly "@name" spelling is accepted here too; the wire
+		// carries the bare handle (lumen resolves it to the users.id).
+		const username = inviteName.trim().replace(/^@/, '');
 		if (!username || inviting) return;
 		inviting = true;
 		inviteError = null;
@@ -365,14 +448,19 @@
 								aria-hidden="true"
 								class="grid size-6 shrink-0 place-items-center rounded-full bg-brand/15 font-mono text-[9px] font-bold text-brand uppercase"
 							>
-								{initial(member.username)}
+								{initial(member.name)}
 							</span>
-							<span class="min-w-0 flex-1 truncate text-sm">
-								{member.username}{#if member.userId === viewerId}<span
-										class="text-muted-foreground/60"
-									>
-										· you</span
-									>{/if}
+							<span class="min-w-0 flex-1">
+								<span class="block truncate text-sm">
+									{member.name}{#if member.userId === viewerId}<span
+											class="text-muted-foreground/60"
+										>
+											· you</span
+										>{/if}
+								</span>
+								<span class="block truncate font-mono text-[10px] text-muted-foreground/70">
+									@{member.username}
+								</span>
 							</span>
 							<Select.Root
 								type="single"
@@ -386,7 +474,7 @@
 							>
 								<Select.Trigger
 									size="sm"
-									aria-label="Role for {member.username}"
+									aria-label="Role for {member.name}"
 									title={lastAdmin ? 'a project keeps at least one admin' : undefined}
 									class="w-24 justify-between"
 								>
@@ -401,7 +489,7 @@
 								type="button"
 								variant="soft"
 								class="rounded-full p-1 text-muted-foreground hover:text-danger disabled:opacity-30"
-								aria-label="Remove {member.username} from {savedName}"
+								aria-label="Remove {member.name} from {savedName}"
 								title={lastAdmin ? 'a project keeps at least one admin' : 'Remove member'}
 								disabled={lastAdmin || roleBusyId !== null}
 								onclick={() => {
@@ -424,18 +512,81 @@
 					void invite();
 				}}
 			>
-				<label class="flex min-w-0 flex-1 flex-col gap-1">
+				<div class="flex min-w-0 flex-1 flex-col gap-1">
 					<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-						invite by username
+						invite · @ to search
 					</span>
-					<Input
-						bind:value={inviteName}
-						aria-label="Username to invite"
-						placeholder="username"
-						autocomplete="off"
-						class="w-full text-xs"
-					/>
-				</label>
+					<div class="relative">
+						<Input
+							bind:ref={inviteInput}
+							bind:value={inviteName}
+							aria-label="Username or @name to invite"
+							role="combobox"
+							aria-expanded={peopleOpen}
+							aria-controls="invite-people"
+							aria-autocomplete="list"
+							aria-activedescendant={activePerson >= 0
+								? `invite-person-${activePerson}`
+								: undefined}
+							placeholder="@username or email"
+							autocomplete="off"
+							class="w-full text-xs"
+							onkeydown={onInviteKeydown}
+							onblur={() => (peopleOpen = false)}
+						/>
+						{#if peopleOpen}
+							<div
+								id="invite-people"
+								role="listbox"
+								aria-label="Matching accounts"
+								class="absolute bottom-full z-20 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-border bg-card p-1 shadow-xl"
+							>
+								{#if peopleLoading && people.length === 0}
+									<p class="px-2 py-1.5 font-mono text-[10px] text-muted-foreground/60">
+										searching…
+									</p>
+								{:else if peopleError}
+									<p class="px-2 py-1.5 font-mono text-[10px] break-words text-muted-foreground/70">
+										search unavailable — {peopleError}
+									</p>
+								{:else if people.length === 0}
+									<p class="px-2 py-1.5 font-mono text-[10px] text-muted-foreground/60">
+										no matching account
+									</p>
+								{:else}
+									{#each people as person, index (person.username)}
+										<button
+											type="button"
+											id="invite-person-{index}"
+											role="option"
+											aria-selected={index === activePerson}
+											class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs transition-colors {index ===
+											activePerson
+												? 'bg-accent text-foreground'
+												: 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'}"
+											onmousedown={(e) => e.preventDefault()}
+											onclick={() => chooseInvitee(person)}
+											onmouseenter={() => (activePerson = index)}
+										>
+											<span
+												aria-hidden="true"
+												class="grid size-5 shrink-0 place-items-center rounded-full bg-brand/15 font-mono text-[8px] font-bold text-brand uppercase"
+											>
+												{initial(person.name)}
+											</span>
+											<span class="min-w-0 flex-1 truncate">{person.name}</span>
+											<span
+												class="max-w-28 truncate font-mono text-[10px] text-muted-foreground/70"
+											>
+												@{person.username}
+											</span>
+										</button>
+									{/each}
+								{/if}
+							</div>
+						{/if}
+					</div>
+				</div>
 				<Button
 					type="submit"
 					variant="primary"
@@ -509,11 +660,12 @@
 			class="max-h-[min(90svh,36rem)] max-w-md overflow-y-auto rounded-lg border-0 bg-card p-5 shadow-2xl data-[size=default]:max-w-md data-[size=default]:sm:max-w-md"
 		>
 			<AlertDialog.Title class="text-xl leading-snug font-semibold tracking-tight break-words">
-				Remove {removeTarget.username} from {savedName}?
+				Remove {removeTarget.name} from {savedName}?
 			</AlertDialog.Title>
 			<AlertDialog.Description class="text-sm leading-relaxed text-muted-foreground">
-				Their tasks in this project become unassigned. Their account and every other project are
-				untouched.
+				<span class="font-mono text-[10px] text-muted-foreground/70">@{removeTarget.username}</span>
+				<br />
+				Their tasks in this project become unassigned. Their account and every other project are untouched.
 			</AlertDialog.Description>
 			{#if removeError}
 				<p class="mt-2 text-xs leading-relaxed break-words text-danger" role="alert">

@@ -52,6 +52,7 @@ import type {
 	TaskInvite,
 	TaskItem,
 	TaskMember,
+	TaskPerson,
 	TaskPatchInput,
 	TaskProject,
 	TaskStats,
@@ -522,6 +523,12 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				op: 'tasks.invites.create',
 				body: { username }
 			}).then((r) => r.invite),
+		taskInviteeSearch: (projectId, query) =>
+			call<{ people: TaskPerson[] }>(
+				'GET',
+				`/admin/task-projects/${enc(projectId)}/people?q=${encodeURIComponent(query)}`,
+				{ op: 'tasks.invitees.search' }
+			).then((r) => r.people),
 		taskInvites: () =>
 			call<{ invites: TaskInvite[] }>('GET', '/admin/task-invites', {
 				op: 'tasks.invites.list'

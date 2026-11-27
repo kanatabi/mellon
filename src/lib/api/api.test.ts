@@ -557,7 +557,7 @@ describe('tasks + notifications twin (M4.C)', () => {
 		expect(ws.tasks.find((t) => t.title === 'Fix the gate')).toMatchObject({
 			projectName: 'Home',
 			priority: 'high',
-			assigneeName: 'admin',
+			assigneeName: 'Faiz Rahman',
 			commentCount: 0,
 			subtaskCount: 0
 		});
@@ -607,6 +607,7 @@ describe('tasks + notifications twin (M4.C)', () => {
 			'admin:admin',
 			'sarah:member'
 		]);
+		expect(members.map((m) => m.name).sort()).toEqual(['Faiz Rahman', 'Sarah Lim']);
 		const sarahId = members.find((m) => m.username === 'sarah')!.userId;
 
 		const task = await api.taskCreate({
@@ -618,7 +619,7 @@ describe('tasks + notifications twin (M4.C)', () => {
 			assignedTo: sarahId
 		});
 		expect(task).toMatchObject({
-			assigneeName: 'sarah',
+			assigneeName: 'Sarah Lim',
 			done: false,
 			doneAt: null
 		});
@@ -648,6 +649,33 @@ describe('tasks + notifications twin (M4.C)', () => {
 			'reopened'
 		]);
 		expect(detail.activity[1].detail).toBe('sarah');
+	});
+
+	it('tasks: invitee search matches handles/display prefixes and exact email only', async () => {
+		const { api } = twin();
+		const home = (await api.tasksWorkspace({ view: 'all', timezone: 'UTC' })).projects[0];
+
+		// username prefix, display-name prefix, and the @ mention trigger
+		expect(await api.taskInviteeSearch(home.id, '@bud')).toEqual([
+			{ username: 'budi', name: 'Budi Santoso' }
+		]);
+		expect(await api.taskInviteeSearch(home.id, 'Bud')).toEqual([
+			{ username: 'budi', name: 'Budi Santoso' }
+		]);
+		// email is EXACT (and case-insensitive) — a partial address never matches
+		expect(await api.taskInviteeSearch(home.id, 'BUDI@example.com')).toEqual([
+			{ username: 'budi', name: 'Budi Santoso' }
+		]);
+		expect(await api.taskInviteeSearch(home.id, 'budi@example')).toEqual([]);
+		// members and people with a live pending invite are never offered
+		expect(await api.taskInviteeSearch(home.id, '@admin')).toEqual([]);
+		expect(await api.taskInviteeSearch(home.id, '@sarah')).toEqual([]); // seeded pending invite
+		// the empty query is an empty menu, not the directory
+		expect(await api.taskInviteeSearch(home.id, '@')).toEqual([]);
+		// the invite door's second key: a plain member is forbidden
+		const sarah = api.as('sarah');
+		await sarah.taskInviteAccept((await sarah.taskInvites())[0].id);
+		await expect(sarah.taskInviteeSearch(home.id, '@bud')).rejects.toMatchObject({ status: 403 });
 	});
 
 	it('tasks: statuses mirror lumen — 404 non-member, 403 role, 409 guards, 400/410 invites', async () => {

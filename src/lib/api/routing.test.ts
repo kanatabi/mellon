@@ -259,8 +259,9 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		await a.taskStats('Asia/Jakarta');
 		await a.taskProjectCreate('Home');
 		await a.taskGet('t1');
+		await a.taskInviteeSearch('p1', '@sarah');
 		await a.notificationsUnreadCount();
-		expect(sent).toHaveLength(5);
+		expect(sent).toHaveLength(6);
 		for (const s of sent) expect(s.url.startsWith('http://admin.test/admin/')).toBe(true);
 		for (const s of sent) expect(s.auth).toBe('Bearer tok-1');
 		expect(sent.map((s) => new URL(s.url).pathname)).toEqual([
@@ -268,8 +269,10 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 			'/admin/task-stats',
 			'/admin/task-projects',
 			'/admin/tasks/t1',
+			'/admin/task-projects/p1/people',
 			'/admin/notifications/unread-count'
 		]);
+		expect(sent[4].url).toBe('http://admin.test/admin/task-projects/p1/people?q=%40sarah');
 		expect(sent[0].url).toBe('http://admin.test/admin/tasks?view=today&project=p1');
 		expect(sent[0].timezone).toBe('Asia/Jakarta');
 		expect(sent[1].timezone).toBe('Asia/Jakarta');

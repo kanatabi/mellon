@@ -31,6 +31,7 @@ import type {
 	TaskInvite,
 	TaskItem,
 	TaskMember,
+	TaskPerson,
 	TaskPatchInput,
 	TaskProject,
 	TaskStats,
@@ -371,6 +372,10 @@ export const client: AdminApi = {
 			method: 'POST',
 			body: JSON.stringify({ username })
 		}).then((r) => r.invite),
+	taskInviteeSearch: (projectId, query) =>
+		call<{ people: TaskPerson[] }>(
+			`/task-projects/${encodeURIComponent(projectId)}/people?q=${encodeURIComponent(query)}`
+		).then((r) => r.people),
 	taskInvites: () => call<{ invites: TaskInvite[] }>('/task-invites').then((r) => r.invites),
 	taskInviteAccept: (id) =>
 		call<{ invite: TaskInvite }>(`/task-invites/${encodeURIComponent(id)}/accept`, {

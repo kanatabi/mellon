@@ -338,6 +338,9 @@ async function route(ctx: Ctx) {
 	) {
 		return json({ members: await api.taskMembers(p[1]) });
 	}
+	if (p[0] === 'task-projects' && p.length === 3 && p[2] === 'people' && request.method === 'GET') {
+		return json({ people: await api.taskInviteeSearch(p[1], url.searchParams.get('q') ?? '') });
+	}
 	if (
 		p[0] === 'task-projects' &&
 		p.length === 4 &&

@@ -6,6 +6,7 @@
 	import { client, errorText } from '#lib/api/client.ts';
 	import type { TaskItem, TaskMember, TaskPriority, TaskProject } from '#lib/api/types.ts';
 	import { PRIORITIES } from '#lib/tasks/labels.ts';
+	import { memberLabels } from '#lib/tasks/people.ts';
 	import { dueAtFromDate } from '#lib/tasks/dates.ts';
 	import TaskDuePicker from './TaskDuePicker.svelte';
 
@@ -51,10 +52,16 @@
 		titleInput?.focus();
 	});
 
-	const assigneeItems = $derived([
-		{ value: 'unassigned', label: 'unassigned' },
-		...members.map((m) => ({ value: m.userId, label: m.username }))
-	]);
+	const assigneeItems = $derived.by(() => {
+		const labels = memberLabels(members);
+		return [
+			{ value: 'unassigned', label: 'unassigned' },
+			...members.map((member) => ({
+				value: member.userId, // the FK; the display name is only a label
+				label: labels.get(member.userId) ?? member.name
+			}))
+		];
+	});
 
 	async function loadMembers(pid: string) {
 		const gen = ++membersGen;

@@ -20,6 +20,7 @@
 	} from '#lib/api/types.ts';
 	import { dueAtFromDate, dueDateValue, fullDateLabel } from '#lib/tasks/dates.ts';
 	import { activityText, PRIORITIES, userLabel } from '#lib/tasks/labels.ts';
+	import { memberLabels } from '#lib/tasks/people.ts';
 	import { relativeTime } from '#lib/notifications/time.ts';
 	import { flash } from '#lib/flash.svelte.ts';
 	import TaskDuePicker from './TaskDuePicker.svelte';
@@ -91,9 +92,13 @@
 	const notesDirty = $derived(detail !== null && notesDraft !== notesBaseline);
 	const projectAdmin = $derived(task !== null && adminProjectIds.includes(task.projectId));
 	const assigneeItems = $derived.by(() => {
+		const labels = memberLabels(members);
 		const items = [
 			{ value: 'unassigned', label: 'unassigned' },
-			...members.map((member) => ({ value: member.userId, label: member.username }))
+			...members.map((member) => ({
+				value: member.userId, // the identity — labels are never submitted
+				label: labels.get(member.userId) ?? member.name
+			}))
 		];
 		// A member row can disappear between reads (removal unassigns, but a
 		// race is possible) — keep the current assignee selectable/visible.
