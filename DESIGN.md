@@ -146,7 +146,7 @@ The editor's chrome follows §11.4: split view, meta rail, two verbs.
   vocabulary), featured photo (thumbnail picker deferred with lumen's upload pipeline).
 - **Publish button** = the §2-lumen unit of work: derivations + Postgres + Meilisearch
   upsert fire server-side; the UI shows state (`draft;` / `published;` / `unpublished;`
-  pills). **State machine (owner decision 2026-11-08): three states — `draft →
+  tags). **State machine (owner decision 2026-11-08): three states — `draft →
 published ⇄ unpublished`; a shipped post NEVER returns to draft.** Slug is fixed at
   creation (URLs never move; auto-derived from the title until authored by hand).
 
@@ -154,19 +154,19 @@ published ⇄ unpublished`; a shipped post NEVER returns to draft.** Slug is fix
 
 Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view anatomy in §11.4.
 
-| route                | content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`             | single-user session start                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `/` (dashboard)      | **the widget home** — a per-user customizable coordinate canvas (24 cols × 44px rows, the Grafana custom-grid model): widgets from the registry (`§11.4` "The widget home") placed freely by header-drag, resized by edge grips, keyboard parity, per-user layout behind a storage seam; **availability is the picker's** — placed-or-absent (schema v4): the header's Add Widget panel lists the registry with static-structure previews, cards DELETE (no confirm), deleted stays deleted across reloads; its server load dials NO scoped API — bodies fetch client-side and only mount for scope-holders                                                                     |
-| `/posts`             | list (status pills, roving-tabindex rows, `n` = new) + engine search bar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `/posts/[slug]`      | editor + preview (split or toggle), save/publish (`Ctrl+Enter`); **streamed load** — the click renders the editor-shaped skeleton immediately, PostEditor mounts when the data lands (the recent-cookie write moved client-side with it); local autosave (the pending buffer, staleness bound `EDITOR_AUTOSAVE_SECONDS`, default 60s, the pill states it: `Unsaved` → `Autosaved locally · HH:MM`) + the save-confirm gate (uniform dialog: the changed attributes as a LIST → `Check diff` / `Save directly`) + the restore banner (recovered unsaved changes); the preview pane skeletons on its FIRST render only — live edits keep the stale render until the new one lands |
-| `/posts/[slug]/diff` | the pending-change review: head (fresh from the server) vs the autosave buffer — tabs **Markdown** (two TEXT PANES, whole file by default, changed lines BLOCK-highlighted `bg-diff-*`; `Changed only` collapses to regions + gap bands) and **Metadata** (the vault's table view: status chips, `Hide unchanged` toggle, body excluded — it once rendered the whole document twice); the action bar is uniform-sized, ordered toggle → Discard (danger red) → Save; a rev mismatch renders the conflict notice (Save anyway / Discard mine — hunk-level parked), and the page saves or discards; create mode has no diff door (nothing saved to diff against)                  |
-| `/photos`            | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker, engine search bar (date chips visibly pause while searching — PhotoDoc carries no day) (owner calls 2026-11-08/2026-11-10)                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `/photos/[id]`       | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `/secrets`           | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-lock badge (saves refused while pinned), restore-as-snapshot + re-pin offer (a restore replaces the FORM with the chosen version exactly — keys and values; save promotes it)                                                                                                                                                                                                                                                                                                                                             |
-| `/secrets/summary`   | the **estate matrix** (C1): every app × env — head version, pin lock state (amber when ≠ head), key counts with empty-key signals (○n = onboarded-unfilled), shape-drift marker; cells deep-link the cockpit. Counts only — values never leave Bao                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `/tags`              | the **tag desk** — lean rows (checkbox · name · posts · featured pill), row click opens the **settings dialog** (rename → propagates via id-keyed FKs, feature toggle, used-by roster, timestamps, guarded delete naming the COUNT), engine typo search across the whole vocabulary, bulk feature for the multi-select, pager — all filters ride the URL; `?tag=` deep-links the dialog (palette tag rows + dashboard chips land here)                                                                                                                                                                                                                                          |
-| `/settings`          | appearance (theme segment), vim toggle, session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| route                | content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`             | single-user session start                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/` (dashboard)      | **the widget home** — a per-user customizable coordinate canvas (24 cols × 44px rows, the Grafana custom-grid model): widgets from the registry (`§11.4` "The widget home") placed freely by header-drag, resized by edge grips, keyboard parity, per-user layout behind a storage seam; **availability is the picker's** — placed-or-absent (schema v4): the header's Add Widget panel lists the registry with static-structure previews, cards DELETE (no confirm), deleted stays deleted across reloads; its server load dials NO scoped API — bodies fetch client-side and only mount for scope-holders                                                                            |
+| `/posts`             | list (status tags, roving-tabindex rows, `n` = new) + engine search bar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `/posts/[slug]`      | editor + preview (split or toggle), save/publish (`Ctrl+Enter`); **streamed load** — the click renders the editor-shaped skeleton immediately, PostEditor mounts when the data lands (the recent-cookie write moved client-side with it); local autosave (the pending buffer, staleness bound `EDITOR_AUTOSAVE_SECONDS`, default 60s, the status line states it: `Unsaved` → `Autosaved locally · HH:MM`) + the save-confirm gate (uniform dialog: the changed attributes as a LIST → `Check diff` / `Save directly`) + the restore banner (recovered unsaved changes); the preview pane skeletons on its FIRST render only — live edits keep the stale render until the new one lands |
+| `/posts/[slug]/diff` | the pending-change review: head (fresh from the server) vs the autosave buffer — tabs **Markdown** (two TEXT PANES, whole file by default, changed lines BLOCK-highlighted `bg-diff-*`; `Changed only` collapses to regions + gap bands) and **Metadata** (the vault's table view: status chips, `Hide unchanged` toggle, body excluded — it once rendered the whole document twice); the action bar is uniform-sized, ordered toggle → Discard (danger red) → Save; a rev mismatch renders the conflict notice (Save anyway / Discard mine — hunk-level parked), and the page saves or discards; create mode has no diff door (nothing saved to diff against)                         |
+| `/photos`            | the darkroom — curation surface: tiles ⇄ table (md+), gallery keys, collection comboboxes, bulk bar, upload via the shared picker, engine search bar (date chips visibly pause while searching — PhotoDoc carries no day) (owner calls 2026-11-08/2026-11-10)                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `/photos/[id]`       | the image's own page — dark preview canvas + hideable metadata pane; explicit-save curation form (alt/collection/gallery), used-in references, download, delete-warned (owner call 2026-11-08)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `/secrets`           | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-lock badge (saves refused while pinned), restore-as-snapshot + re-pin offer (a restore replaces the FORM with the chosen version exactly — keys and values; save promotes it)                                                                                                                                                                                                                                                                                                                                                    |
+| `/secrets/summary`   | the **estate matrix** (C1): every app × env — head version, pin lock state (amber when ≠ head), key counts with empty-key signals (○n = onboarded-unfilled), shape-drift marker; cells deep-link the cockpit. Counts only — values never leave Bao                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `/tags`              | the **tag desk** — lean rows (checkbox · name · posts · featured tag), row click opens the **settings dialog** (rename → propagates via id-keyed FKs, feature toggle, used-by roster, timestamps, guarded delete naming the COUNT), engine typo search across the whole vocabulary, bulk feature for the multi-select, pager — all filters ride the URL; `?tag=` deep-links the dialog (palette tag rows + dashboard chips land here)                                                                                                                                                                                                                                                  |
+| `/settings`          | appearance (theme segment), vim toggle, session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### 6.1 Secrets control plane ([secrets-control-plane.md](https://github.com/kanatabi/omicron/blob/main/context-knowledge/decisions/secrets-control-plane.md), ratified D1-D5)
 
@@ -213,17 +213,26 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
 ## 7. Keyboard-first
 
 - **Command palette**: ⌘K / Ctrl+K (aliases of one binding). Sections, ranked in order:
-  `photos`, `posts`, `tags` (API content results), `actions` (new post, save, publish,
-  toggles), `go to`, `open recent`. Mode prefixes re-route this list — see **Mode
-  grammar** below. Shortcut-hint column. Built on a
+  `photos`, `posts`, `tags`, `tasks` (the tasks page's own rows), `actions` (new post,
+  save, publish, toggles), `go to`, `open recent`. Mode prefixes re-route this list —
+  see **Mode grammar** below. Shortcut-hint column. Built on a
   **command registry** (`commands.ts`: `{ id, title, shortcut?, run? }` plus the
   declarative shapes — `children`, `arm`, `edit`+`seed`+`commit`, `keepOpen`, `task`,
   `createChild`) — pages register,
   the palette renders (the rail kit's plug-and-play contract, applied to navigation).
+  **Destinations are not a second list** (2026-11-27): `destinations.ts` is the ONE
+  table the rail and the palette both read, filtered by the same `held()` scope gate
+  (`visibleDestinationGroups` → `destinationCommands`). A door the rail hides is never
+  offered by ⌘K; the old palette copy that pointed Users at a dead
+  `/settings/users` is exactly the drift this kills.
   Context registration is real (`page-commands.svelte.ts`): a page publishes its verbs in
   an effect whose cleanup unregisters — the editor's save/publish/unpublish/delete… appear
   ONLY while the editor is mounted; leaving the page cannot leave stale commands behind.
-  The photo detail page registers its own set (Save metadata ⌘S / Download / Delete…).
+  The photo detail page registers its own set (Save metadata ⌘S / Download / Delete…);
+  the **tasks workspace** registers New task / New project / View / Project filter /
+  Sort / Review invitations / one row per visible task (flat, so typing a task title
+  lands in its drawer in one step) — gated by the tasks trio and the page's own
+  workspace state (a 403 registers nothing).
   Contextual delete opens the confirm dialog, never deletes from the palette directly.
   Focus management + Esc + focus return reuse the `SearchDialog` recipe.
 - **Search doctrine** (owner call, 2026-11-08): the palette is DUMB about content.
@@ -239,10 +248,10 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   exception is the declared INSERT task below — declared intent, never inferred context).
   A TAG result enters `/posts?tag=<name>`: a filter axis, not a page.
   **Content rows wear their kind** (owner call, 2026-11-16): in content mode every
-  result carries a type pill — `posts` / `photos` / `tags` — colored by the wayfinding
+  result carries a type tag — `posts` / `photos` / `tags` — colored by the wayfinding
   cast (§11.3), so the palette echoes the nav's one-hue-one-destination rule.
 - **Mode grammar** (owner call, 2026-11-08): the palette also knows WHERE to look.
-  A position-0 prefix + space commits a MODE, rendered as a pill inside the search row —
+  A position-0 prefix + space commits a MODE, rendered as a mode chip inside the search row —
   the sigil characters are CONSUMED (mode is explicit state, never re-parsed text, so a
   plain `<input>` keeps IME/caret semantics boring; contenteditable chips were rejected):
   `> ` **commands** — current-page verbs + stateful toggles + global actions,
@@ -273,7 +282,7 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   `edit` is the buffer mode — `edit: true` + `seed` (the field's CURRENT value: you
   EDIT, never replace) + `commit(buffer)`, Enter saves and **stays open** so
   title→subtitle→date chains in one session, `commit` returning `false` REJECTS
-  (an invalid value must never eat a keystroke). The pill names the field
+  (an invalid value must never eat a keystroke). The mode chip names the field
   (`TITLE` `DATE` `COVER`), not the generic mode.
   Escape unwinds ONE layer per press: buffer/task → submenu → palette; typed modes
   are grammar, not a path, so Esc closes straight through them.
@@ -414,7 +423,7 @@ tool, a different posture. Every rule below serves that sentence.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ left nav      topbar (56px): ⌘K pill · ⓘ            │   one chrome mass —
+│ left nav      topbar (56px): ⌘K field · ⓘ            │   one chrome mass —
 │ 240px        ┌──────────────────────────────────┐   no border between them;
 │              │ ╭──────────────────────────────╮ │   the box is the only
 │  content     │ │  content: tables/forms/editor │ │   surface that draws
@@ -439,7 +448,7 @@ covers the x-axis and the bottom, the top stays flush under the topbar).
 
 **Breadcrumbs live IN-PAGE, not in the topbar** (owner call 2026-11-17): the
 topbar's left zone is the hamburger's home below `lg` and empty at desktop — the
-⌘K pill stays dead-center via the three-zone grid. Only SUB-pages carry a crumb,
+⌘K field stays dead-center via the three-zone grid. Only SUB-pages carry a crumb,
 rendered above the title block and naming only the PARENT (the title itself is
 the current crumb — showing it twice is noise): the post editor (`posts ›`, the
 shared `SubCrumb`), the photo detail (`photos › {id}`, the grammar's origin).
@@ -509,7 +518,7 @@ checkbox fieldset now, 2026-11-24.)
 Density: 13–14px base, table rows ≈40px, labels uppercase mono 12px. The instrument is
 comfortable, not cozy: no 18px editor paragraphs pretending to be a novel.
 
-Voice (owner call 2026-11-08): component copy is **normal** — buttons, labels, pills,
+Voice (owner call 2026-11-08): component copy is **normal** — buttons, labels, tags,
 messages and empty states carry no decorative `;`. The semicolon lives only in the
 **wordmark** (`mellon;`), same pen-word device as the public site's `gofar;`.
 
@@ -526,7 +535,7 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   `--accent-slate` (settings — deliberately quiet). Cast members sit at equal
   chroma/lightness so the family reads as one voice set.
 - **Where color may live:** nav icons (72% opacity at rest, full + `color-mix`
-  wash pill when active), status pills, keys/chips pressed states, selection
+  wash when active), status tags, keys/chips pressed states, selection
   tints. **Where it may not:** body/label text wholesale, backgrounds en masse,
   tables striped by hue. `red` remains EXCLUSIVELY destructive; green never;
   statuses speak the cast (published violet / draft amber / unpublished
@@ -544,8 +553,17 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   inline code stays `--foreground`; headings go bold without the default
   underline; diff/invalid ride their existing tokens. Theming the editor's
   chrome without its syntax is half a theme.
-- Anti-rules, as binding as the rules: `rounded-lg` is the roundest anything
-  gets, shadows **only** on overlays (palette, menus, sheets), and motion lives
+- Anti-rules, as binding as the rules: **the radius scale is the shape
+  contract** (2026-11-27, the Linear round — the 2026-11 cast's full-round
+  pill is retired): 6px controls (`rounded-md`: buttons, inputs, chips,
+  segmented cells), 4px tags (`rounded-sm`: statuses, priorities, keycaps),
+  8px surfaces (`rounded-lg`: cards, dialogs, menus), 16px furniture (the
+  content box only). Full radius is reserved for marks whose MEANING is a
+  circle — avatars, count badges, status/unread dots, color swatches, switch
+  tracks — and a shape-guard test enforces the whitelist. Content tabs are
+  underline tabs; MODE switches are one bordered segmented group with
+  rectangular cells (no nested pill). Shadows **only** on overlays (palette,
+  menus, sheets), and motion lives
   in overlays (150–200ms transforms/opacity — the drawer transitions) plus the
   **rails**: sidebars fold to the side with a 200ms width transition and curtain
   the content behind them (owner call 2026-11-08 — "smooth where it moves, still
@@ -644,7 +662,7 @@ minSpan, body }` — **adding a widget = one folder + one registry line**
   marks read (only when unread, best-effort) and navigates only to a
   SAME-ORIGIN `payload.url`; "mark all read" is optimistic. The SEND door
   is not part of the portal at all (app-to-app, one shared token).
-- **Lists** (posts/photos/tags): table + status pills; row actions revealed on hover **and
+- **Lists** (posts/photos/tags): table + status tags; row actions revealed on hover **and
   on row focus** — the AGENTS §10.5 lesson, restated for keyboards: _"no mouse-only
   affordance in the admin either."_ Filter/tool rows use the `Pill` chip language.
 - **Post editor**: split view — CodeMirror left, true-to-prod preview right (**toggle
