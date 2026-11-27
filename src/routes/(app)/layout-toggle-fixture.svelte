@@ -15,7 +15,9 @@
 			id: 'u-probe',
 			scopes: ['content:manage', 'secrets:admin', 'users:manage', 'settings:manage'],
 			mustChange: false,
-			disabled: false
+			disabled: false,
+			name: 'probe',
+			email: ''
 		},
 		recent: [],
 		vim: false,

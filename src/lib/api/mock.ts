@@ -497,7 +497,15 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 	// schema runs in TestSetupWizardE2E (per-instance state IS the reset button)
 	const users = new Map<
 		string,
-		{ id: string; scopes: string[]; mustChange: boolean; disabled: boolean; createdAt: string }
+		{
+			id: string;
+			name: string;
+			email: string;
+			scopes: string[];
+			mustChange: boolean;
+			disabled: boolean;
+			createdAt: string;
+		}
 	>();
 	// the PORTAL-MANAGED catalog (the spine ruling: onboarding a scope is a
 	// portal action) — seeded exactly like lumen's migration
@@ -983,6 +991,8 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 				const id = uid();
 				users.set(username, {
 					id,
+					name: username,
+					email: '',
 					scopes: [...catalog.keys()],
 					mustChange: false,
 					disabled: false,
@@ -1006,7 +1016,51 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 					id: u.id,
 					scopes: [...u.scopes],
 					mustChange: u.mustChange,
-					disabled: u.disabled
+					disabled: u.disabled,
+					name: u.name,
+					email: u.email
+				};
+			},
+			async profile() {
+				const [username, u] = [...users.entries()][0] ?? [];
+				if (!username) throw new AdminApiError(401, 'unauthorized');
+				return {
+					id: u.id,
+					username,
+					name: u.name,
+					email: u.email,
+					scopes: [...u.scopes],
+					mustChange: u.mustChange,
+					disabled: u.disabled,
+					createdAt: u.createdAt
+				};
+			},
+			async updateProfile(name, email) {
+				const [username, u] = [...users.entries()][0] ?? [];
+				if (!username) throw new AdminApiError(401, 'unauthorized');
+				name = name.trim();
+				if (!name || [...name].length > 80)
+					throw new AdminApiError(400, 'display name must be 1-80 characters');
+				const normalized = email.trim().toLowerCase();
+				if (normalized) {
+					if (normalized.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))
+						throw new AdminApiError(400, 'enter a valid email address');
+					for (const [other, row] of users) {
+						if (other !== username && row.email === normalized)
+							throw new AdminApiError(409, 'email already in use');
+					}
+				}
+				u.name = name;
+				u.email = normalized;
+				return {
+					id: u.id,
+					username,
+					name: u.name,
+					email: u.email,
+					scopes: [...u.scopes],
+					mustChange: u.mustChange,
+					disabled: u.disabled,
+					createdAt: u.createdAt
 				};
 			},
 			async changePassword(current, next) {
@@ -1047,6 +1101,8 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 				const id = uid();
 				users.set(username, {
 					id,
+					name: username,
+					email: '',
 					scopes: [...granted],
 					mustChange: true,
 					disabled: false,
@@ -1055,6 +1111,8 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 				return {
 					username,
 					id,
+					name: username,
+					email: '',
 					scopes: [...granted],
 					mustChange: true,
 					disabled: false,

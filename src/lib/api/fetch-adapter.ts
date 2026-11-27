@@ -29,6 +29,7 @@ import type {
 	ScopeAssignment,
 	LoginResponse,
 	Principal,
+	Profile,
 	AdminApi,
 	AdminPhoto,
 	CollectionCount,
@@ -166,6 +167,12 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 				body: { username, password }
 			}),
 		whoami: () => call<Principal>('GET', '/admin/session', { op: 'session.read' }),
+		profile: () => call<Profile>('GET', '/admin/profile', { op: 'profile.read' }),
+		updateProfile: (name, email) =>
+			call<Profile>('PATCH', '/admin/profile', {
+				op: 'profile.write',
+				body: { name, email }
+			}),
 		// ---- the passkey round (C1): the auth-method seam ----
 		authMethods: () =>
 			call<{ methods: string[] }>('GET', '/admin/session/auth/methods', { op: 'session.methods' }),

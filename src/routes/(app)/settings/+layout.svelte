@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { KeyRound, Keyboard, Palette, ShieldCheck, Users } from 'lucide-svelte';
+	import { KeyRound, Keyboard, Palette, ShieldCheck, UserRound, Users } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	/**
@@ -24,6 +24,7 @@
 		icon: typeof Palette;
 	}
 	const sections: Section[] = [
+		{ href: '/settings/profile', label: 'Profile', icon: UserRound },
 		{ href: '/settings/appearance', label: 'Appearance', icon: Palette },
 		{ href: '/settings/editor', label: 'Editor', icon: Keyboard },
 		{ href: '/settings/security', label: 'Security', icon: ShieldCheck },

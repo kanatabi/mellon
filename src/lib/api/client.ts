@@ -157,6 +157,12 @@ export const client: AdminApi = {
 		throw new ApiError(500, 'setup registration is served by the /setup form action');
 	},
 	whoami: () => call<Principal>('/session'),
+	profile: () => {
+		throw new ApiError(500, 'the profile is served by the /settings/profile form action');
+	},
+	updateProfile: () => {
+		throw new ApiError(500, 'the profile is served by the /settings/profile form action');
+	},
 	changePassword: () => {
 		throw new ApiError(500, 'password change is served by the /setup form action');
 	},

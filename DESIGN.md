@@ -168,7 +168,7 @@ Every route lives inside the §11 shell (left nav + topbar + ⌘K); per-view ana
 | `/secrets`           | the **secrets control plane** (§6.1): app picker → env tabs, values masked by default (click/keyboard reveal), version history + diff + CAS save, pin-lock badge (saves refused while pinned), restore-as-snapshot + re-pin offer (a restore replaces the FORM with the chosen version exactly — keys and values; save promotes it)                                                                                                                                                                                                                                                                                                                                                    |
 | `/secrets/summary`   | the **estate matrix** (C1): every app × env — head version, pin lock state (amber when ≠ head), key counts with empty-key signals (○n = onboarded-unfilled), shape-drift marker; cells deep-link the cockpit. Counts only — values never leave Bao                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `/tags`              | the **tag desk** — lean rows (checkbox · name · posts · featured tag), row click opens the **settings dialog** (rename → propagates via id-keyed FKs, feature toggle, used-by roster, timestamps, guarded delete naming the COUNT), engine typo search across the whole vocabulary, bulk feature for the multi-select, pager — all filters ride the URL; `?tag=` deep-links the dialog (palette tag rows + dashboard chips land here)                                                                                                                                                                                                                                                  |
-| `/settings`          | appearance (theme segment), vim toggle, session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/settings`          | profile (display name + private email), appearance (theme segment), vim toggle, session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ### 6.1 Secrets control plane ([secrets-control-plane.md](https://github.com/kanatabi/omicron/blob/main/context-knowledge/decisions/secrets-control-plane.md), ratified D1-D5)
 
@@ -508,15 +508,12 @@ checkbox fieldset now, 2026-11-24.)
   rather than burying it; it reserves its space, never floats over content), and
   right: the **account avatar** (owner amendment 2026-11-16 — the identity dot left
   the sidebar footer, where it was `size-4`-small, for a proper `size-9` trigger).
-  Clicking it opens the **account menu** (GitHub grammar): the account card
-  (avatar + username + role), then Settings, then the theme control — the SAME
-  `ThemeSegmented` radiogroup the Settings page uses (one control, two homes) —
-  then Sign out (the same `POST /logout` the old footer row carried; the session
-  revocation is lumen's truth, only its address moved). Esc / click-outside close,
-  focus returns to the trigger, every row a real button or link. The old icon
-  ThemeToggle left the top bar with it: theme lives in the menu, Settings and the
-  palette's ⌘K command. On phones the avatar rides the same top-bar slot, so the
-  trade is one tap deeper for theme — accepted (owner, 2026-11-16).
+  Clicking it opens the **account menu** (the identity-pill round, 2026-11-28):
+  the identity header (avatar + display name + email/“Estate console”; scopes in
+  a tooltip), ACCOUNT (Profile, Settings, Security), PREFERENCES (Appearance + the
+  in-place `ThemeSegmented`), and Sign out. Esc / click-outside close, focus returns
+  to the trigger, every row a real button or link. On phones the trigger is the
+  avatar alone; sm+ shows the display name and chevron.
 - **Content area**: the rounded box of the surface model; forms constrained to
   their measure (max ~72ch), lists allowed the width.
 
@@ -875,7 +872,9 @@ minSpan, body }` — **adding a widget = one folder + one registry line**
   documented, not folklore.
 - **Empty states**: the `Watermark` ghost at 8–10% + one quiet sentence. Continuity, and
   the charm is free.
-- **Settings**: max-width form, same voice (owner call 2026-11-08: the theme became an
+- **Settings**: max-width form, same voice; the section nav starts with **Profile**
+  (display name + private email + read-only username/scopes; `/settings/profile`,
+  2026-11-29). Then the appearance setting (owner call 2026-11-08: the theme became an
   ACTUAL setting — an **appearance** segment `[☀ light | ☾ dark]` above the editor group,
   radiogroup semantics, writing through the ONE `setTheme()` (store + cookie + View
   Transition) that the account menu and the palette command share; three doors, zero

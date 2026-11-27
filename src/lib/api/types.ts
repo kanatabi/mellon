@@ -226,6 +226,10 @@ export interface Principal {
 	scopes: string[];
 	mustChange: boolean;
 	disabled: boolean;
+	/** The profile's display name (whoami carries it; fallback = username). */
+	name: string;
+	/** Private account contact; empty = unset. Never public. */
+	email: string;
 }
 
 /** Login/register wire shape (lumen answers exactly these fields —
@@ -245,11 +249,16 @@ export interface LoginResponse {
 export interface AdminUserRow {
 	id: string;
 	username: string;
+	name: string;
+	email: string;
 	scopes: string[];
 	mustChange: boolean;
 	disabled: boolean;
 	createdAt: string;
 }
+
+/** The self profile is the same row shape (GET /admin/profile). */
+export type Profile = AdminUserRow;
 
 /** One line of the PORTAL-MANAGED scope catalog (the RBAC spine): the
  *  assignable vocabulary — onboarding a scope is a portal action, never
@@ -467,6 +476,11 @@ export interface AdminApi {
 	/** Who the bearer is (lumen GET /admin/session): the portal's layout and
 	 *  the admin-only surfaces (users) gate on this, never on cookie folklore. */
 	whoami(): Promise<Principal>;
+	/** The self profile (lumen GET /admin/profile): display name + private
+	 *  email + scopes + lineage. Auth-only — it is yourself. */
+	profile(): Promise<Profile>;
+	/** Self-service profile write (lumen PATCH /admin/profile). */
+	updateProfile(name: string, email: string): Promise<Profile>;
 	/** The forced-change flow's write (lumen POST /admin/session/password):
 	 *  clears must_change and REVOKES old sessions — the caller re-mints via
 	 *  login(next) to keep the visitor comfortably logged in. */

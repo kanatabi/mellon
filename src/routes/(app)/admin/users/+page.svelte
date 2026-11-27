@@ -182,7 +182,15 @@
 			<tbody>
 				{#each data.users as u (u.username)}
 					<tr class="border-b border-border/50 transition-colors last:border-0 hover:bg-muted/40">
-						<td class="px-4 py-2.5 text-foreground">{u.username}</td>
+						<td class="px-4 py-2.5">
+							<span class="block text-foreground">{u.username}</span>
+							{#if u.name && u.name !== u.username}
+								<span class="block text-xs text-muted-foreground">{u.name}</span>
+							{/if}
+							{#if u.email}
+								<span class="block font-mono text-[10px] text-muted-foreground/70">{u.email}</span>
+							{/if}
+						</td>
 						<td class="px-4 py-2.5">
 							<span class="flex flex-wrap gap-1">
 								{#each u.scopes as sc (sc)}

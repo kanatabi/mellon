@@ -12,6 +12,7 @@
 		Palette,
 		Settings2,
 		ShieldCheck,
+		UserRound,
 		SunMoon
 	} from 'lucide-svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
@@ -24,7 +25,8 @@
 
 	let { principal }: Props = $props();
 
-	const initial = $derived(principal.username.slice(0, 1).toUpperCase());
+	const displayName = $derived(principal.name || principal.username);
+	const initial = $derived(displayName.slice(0, 1).toUpperCase());
 	const scopeTitle = $derived(principal.scopes.join(' · '));
 </script>
 
@@ -40,7 +42,7 @@
 			{initial}
 		</span>
 		<span class="hidden max-w-32 truncate text-xs font-medium text-foreground sm:block">
-			{principal.username}
+			{displayName}
 		</span>
 		<ChevronDown
 			class="hidden size-3.5 shrink-0 text-muted-foreground sm:block"
@@ -60,9 +62,11 @@
 			</span>
 			<span class="min-w-0" title={scopeTitle}>
 				<span class="block truncate text-sm font-semibold text-foreground">
-					{principal.username}
+					{displayName}
 				</span>
-				<span class="block truncate text-[11px] text-muted-foreground">Estate console</span>
+				<span class="block truncate text-[11px] text-muted-foreground">
+					{principal.email || 'Estate console'}
+				</span>
 			</span>
 		</div>
 
@@ -73,6 +77,25 @@
 		>
 			Account
 		</DropdownMenu.Label>
+
+		<DropdownMenu.Item
+			class="gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted-foreground hover:bg-accent/60 hover:text-foreground focus:bg-accent/60 focus:text-foreground"
+		>
+			{#snippet child({ props })}
+				<a
+					{...props}
+					href="/settings/profile"
+					class={cn(props.class as string | undefined, 'flex w-full items-center gap-2.5')}
+				>
+					<UserRound class="size-4 shrink-0" aria-hidden="true" />
+					Profile
+					<ChevronRight
+						class="ml-auto size-3.5 shrink-0 text-muted-foreground/50"
+						aria-hidden="true"
+					/>
+				</a>
+			{/snippet}
+		</DropdownMenu.Item>
 
 		<DropdownMenu.Item
 			class="gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted-foreground hover:bg-accent/60 hover:text-foreground focus:bg-accent/60 focus:text-foreground"

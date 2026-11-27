@@ -45,6 +45,11 @@ export const ROUTE_TABLE: RouteClass[] = [
 		note: 'login, verify/whoami, password change, logout'
 	},
 	{
+		prefix: '/admin/profile',
+		upstream: 'admin',
+		note: 'the self profile: display name + private email'
+	},
+	{
 		prefix: '/admin/users',
 		upstream: 'admin',
 		note: 'user list/create, server-generated temp passwords'

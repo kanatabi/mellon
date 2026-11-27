@@ -207,6 +207,8 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		const a = api();
 		await a.login('u', 'p');
 		await a.whoami();
+		await a.profile();
+		await a.updateProfile('u', 'u@example.com');
 		await a.changePassword('a', 'b');
 		await a.logout();
 		await a.listUsers();
@@ -223,12 +225,14 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		await a.pinSecret('x', 'dev', 1);
 		await a.unpinSecret('x', 'dev');
 		await a.estateSummary();
-		expect(sent).toHaveLength(18);
+		expect(sent).toHaveLength(20);
 		for (const s of sent) expect(s.url.startsWith('http://admin.test/admin/')).toBe(true);
 		for (const s of sent) expect(s.auth).toBe('Bearer tok-1');
 		expect(sent.map((s) => new URL(s.url).pathname)).toEqual([
 			'/admin/session', // login
 			'/admin/session', // whoami
+			'/admin/profile',
+			'/admin/profile',
 			'/admin/session/password',
 			'/admin/session', // logout
 			'/admin/users',
