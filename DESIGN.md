@@ -574,6 +574,11 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   tables striped by hue. `red` remains EXCLUSIVELY destructive; green never;
   statuses speak the cast (published violet / draft amber / unpublished
   dashed-neutral).
+- **Global finish (2026-11-28):** `::selection` takes the brand at 30%,
+  scrollbars are thin/neutral in every theme, and `color-scheme` follows the
+  mode (native controls + browser UI). The users table carries the 40px row
+  rhythm with hover and a right-aligned date; notification actions are product
+  text, not mono keys.
 - **The auth-panel exception:** the login/setup visual side is the one bold
   surface — a token-derived brand/accent aurora with a fixed dark scrim and
   white ink (the scrim is a contrast decision, not a theme value; it keeps the

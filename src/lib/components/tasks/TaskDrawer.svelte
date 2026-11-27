@@ -515,7 +515,7 @@
 						tabindex={tab === item.id ? 0 : -1}
 						onclick={() => selectTab(item.id, false)}
 						onkeydown={(e) => onTabKey(e, index)}
-						class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {tab ===
+						class="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {tab ===
 						item.id
 							? 'bg-brand/10 text-foreground'
 							: 'text-muted-foreground hover:text-foreground'}"

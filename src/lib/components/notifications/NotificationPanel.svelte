@@ -125,7 +125,7 @@
 			type="button"
 			variant="soft"
 			size="xs"
-			class="gap-1.5 font-mono text-[10px] tracking-wide text-muted-foreground uppercase"
+			class="gap-1.5 text-[11px] text-muted-foreground"
 			disabled={unread === 0 || loading || markingAll}
 			onclick={() => void markAll()}
 		>
@@ -155,7 +155,7 @@
 		{:else if items.length === 0}
 			<div class="flex flex-col items-center gap-2 px-4 py-10 text-center text-muted-foreground">
 				<BellOff class="size-5" aria-hidden="true" />
-				<p class="text-sm">you're all caught up</p>
+				<p class="text-sm">You're all caught up.</p>
 			</div>
 		{:else}
 			<ul aria-label="Notifications">
@@ -223,7 +223,7 @@
 		<p
 			class="shrink-0 border-t border-border px-4 py-2 text-[11px] break-words text-muted-foreground"
 		>
-			mark all read failed — <span class="font-mono">{actionError}</span>
+			mark all read failed — {actionError}
 		</p>
 	{/if}
 </div>

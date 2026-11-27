@@ -132,7 +132,7 @@ describe('the notifications bell + panel', () => {
 		expect(c.container.querySelector('[data-slot="notification-badge"]')).toBeNull();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
-		expect(await screen.findByText("you're all caught up")).toBeTruthy();
+		expect(await screen.findByText("You're all caught up.")).toBeTruthy();
 	});
 
 	it('shows the quiet inline error, never a thrown page', async () => {

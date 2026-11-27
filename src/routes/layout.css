@@ -20,6 +20,7 @@
    flat white/black. The semantic mapping is still the contract (§3); the
    tint is mellon's own voice (§11.3 wayfinding doctrine). */
 :root {
+	color-scheme: light;
 	/* tinted zinc → whisper-indigo */
 	--background: #f8f7fb;
 	--foreground: #171521;
@@ -187,6 +188,10 @@
 	--danger: #f7768e; /* red */
 	--diff-add: #9ece6a; /* green */
 	--diff-del: #f7768e; /* red */
+}
+
+[data-mode='dark'] {
+	color-scheme: dark;
 }
 
 @custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
@@ -1529,3 +1534,37 @@
 	--diff-del: #ee9598;
 }
 /* ═══ ANUPPUCCIN — GENERATED, end ═══ */
+
+/* Global finish (2026-11-28): the browser's own chrome should feel like the
+   instrument it frames. Selection takes the brand at a low tint; scrollbars
+   are thin and neutral in every theme. */
+::selection {
+	background: color-mix(in oklab, var(--brand) 30%, transparent);
+	color: var(--foreground);
+}
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklab, var(--border), var(--foreground) 18%) transparent;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	border: 2px solid transparent;
+	border-radius: 999px;
+	background: color-mix(in oklab, var(--border), var(--foreground) 18%);
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: color-mix(in oklab, var(--border), var(--foreground) 32%);
+	background-clip: content-box;
+}

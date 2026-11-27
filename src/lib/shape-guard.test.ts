@@ -27,7 +27,10 @@ const PILL_TABS = new Map([
 		'src/routes/(app)/posts/[slug]/diff/+page.svelte',
 		/rounded-full px-3 py-1(?: font-mono)? text-xs/
 	],
-	['src/lib/components/tasks/TaskDrawer.svelte', /rounded-full px-3 py-1 font-mono text-\[11px\]/]
+	[
+		'src/lib/components/tasks/TaskDrawer.svelte',
+		/rounded-full px-3 py-1(?: font-mono)? text-\[11px\]/
+	]
 ]);
 
 const ALLOWED = [

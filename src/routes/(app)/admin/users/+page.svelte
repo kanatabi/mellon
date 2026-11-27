@@ -175,13 +175,13 @@
 					<th class="px-4 py-2 font-medium">username</th>
 					<th class="px-4 py-2 font-medium">scopes</th>
 					<th class="px-4 py-2 font-medium">state</th>
-					<th class="px-4 py-2 font-medium">since</th>
+					<th class="px-4 py-2 text-right font-medium">since</th>
 					<th class="px-4 py-2 text-right font-medium">manage</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each data.users as u (u.username)}
-					<tr class="border-b border-border/50 last:border-0">
+					<tr class="border-b border-border/50 transition-colors last:border-0 hover:bg-muted/40">
 						<td class="px-4 py-2.5 text-foreground">{u.username}</td>
 						<td class="px-4 py-2.5">
 							<span class="flex flex-wrap gap-1">
@@ -203,7 +203,9 @@
 								<span class="text-muted-foreground">Set</span>
 							{/if}
 						</td>
-						<td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">{u.createdAt}</td>
+						<td class="px-4 py-2.5 text-right font-mono text-xs text-muted-foreground tabular-nums"
+							>{u.createdAt}</td
+						>
 						<td class="px-4 py-2.5 text-right">
 							<Button
 								type="button"
