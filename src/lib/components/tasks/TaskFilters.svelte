@@ -175,18 +175,22 @@
 	</div>
 </SectionCard>
 
-{#if active}
-	<Button
-		type="button"
-		variant="quiet"
-		class="w-full justify-center gap-1 px-2.5 py-1"
-		onclick={onclear}
-	>
-		<X class="size-3.5" aria-hidden="true" />
-		clear filters
-	</Button>
-{/if}
+<!-- The rail footers own the LAST flex slot: panes start at order 0, so an
+     un-ordered footer ties with the first pane and lands mid-rail. -->
+<div class="flex flex-col gap-3" style="order:999">
+	{#if active}
+		<Button
+			type="button"
+			variant="quiet"
+			class="w-full justify-center gap-1 px-2.5 py-1"
+			onclick={onclear}
+		>
+			<X class="size-3.5" aria-hidden="true" />
+			clear filters
+		</Button>
+	{/if}
 
-<p class="text-xs leading-relaxed text-muted-foreground/60">
-	filters apply to the loaded view — lumen owns the day math
-</p>
+	<p class="text-xs leading-relaxed text-muted-foreground/60">
+		filters apply to the loaded view — lumen owns the day math
+	</p>
+</div>

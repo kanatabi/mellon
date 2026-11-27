@@ -724,7 +724,7 @@
 			</div>
 		</SectionCard>
 
-		<p class="text-xs leading-relaxed text-muted-foreground/60">
+		<p class="text-xs leading-relaxed text-muted-foreground/60" style="order:999">
 			filters ride the URL — the API does the work, the page never sorts
 		</p>
 	{/snippet}

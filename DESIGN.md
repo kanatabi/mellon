@@ -447,6 +447,16 @@ topbar above and the nav beside it — the true GitLab shape — with the 12px r
 (`mx-3 mb-3 lg:ml-0`) reading on the viewport edges only; below `lg` the ring
 covers the x-axis and the bottom, the top stays flush under the topbar).
 
+**Overlay anatomy (2026-11-28):** bottom sheets wear the shadcn Drawer look —
+rounded top, a presentational grab handle, header → scroll body → sticky
+footer; dismissal stays X/Esc/backdrop (no drag dependency). The task drawer
+is a BOTTOM sheet below md and the right sheet above it (same content, `side`
+follows a media query). Sheet borders are `border-border`: Tailwind v4's
+default border color is `currentColor`, which had turned the right drawer's
+edge near-white. Rail footers (clear + notes) own `order:999` — pane order
+starts at 0, so an un-ordered footer ties with the first pane and lands
+mid-rail.
+
 **Breadcrumbs live IN-PAGE, not in the topbar** (owner call 2026-11-17): the
 topbar's left zone is the hamburger's home below `lg` and empty at desktop — the
 ⌘K field stays dead-center via the three-zone grid. Only SUB-pages carry a crumb,

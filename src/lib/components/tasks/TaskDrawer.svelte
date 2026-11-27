@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Check, Trash2, X } from 'lucide-svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import * as Select from '#lib/components/ui/select/index.js';
@@ -76,6 +77,7 @@
 	let commentDraft = $state('');
 	let commentBusy = $state(false);
 
+	const drawerBottom = new MediaQuery('(max-width: 767px)');
 	let deleteOpen = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
@@ -466,7 +468,10 @@
 		if (!next) onClose();
 	}}
 >
-	<Sheet.Content side="right" class="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
+	<Sheet.Content
+		side={drawerBottom.current ? 'bottom' : 'right'}
+		class="gap-0 data-[side=bottom]:h-[88svh] data-[side=right]:w-full data-[side=right]:sm:max-w-2xl"
+	>
 		<Sheet.Header class="shrink-0 border-b border-border px-5 py-4 pr-14">
 			<Sheet.Title class="font-brand text-xl leading-snug font-semibold tracking-tight break-words">
 				{task?.title ?? 'Task'}
