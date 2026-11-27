@@ -9,7 +9,7 @@
 		spanHeightPx
 	} from './layout.ts';
 	import type { WidgetLayoutEntry } from './layout.ts';
-	import type { WidgetDef as WidgetDefT } from './widgets/registry.ts';
+	import { widgetHeld, type WidgetDef as WidgetDefT } from './widgets/registry.ts';
 
 	/**
 	 * The dashboard canvas — the COORDINATE model (the C round): every
@@ -142,7 +142,7 @@
 	{/if}
 	{#each entries as entry (entry.id)}
 		{@const def = registry.find((d) => d.id === entry.id)}
-		{#if def && (held(def.scope ?? '') ?? true)}
+		{#if def && widgetHeld(def, held)}
 			<!-- absolute placement: left/width are CANVAS PERCENTAGES (any
 			     breakpoint), top/height the fixed 44px rows. The position
 			     transitions make every engine move glide — except the

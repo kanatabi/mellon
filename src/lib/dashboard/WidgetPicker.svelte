@@ -2,7 +2,7 @@
 	import { X } from 'lucide-svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import type { WidgetDef } from './widgets/registry.ts';
+	import { widgetHeld, type WidgetDef } from './widgets/registry.ts';
 
 	/**
 	 * The widget PICKER — the "Add Widget" side panel (the tray's
@@ -27,7 +27,7 @@
 
 	let selected = $state<string[]>([]);
 
-	const available = $derived(registry.filter((w) => held(w.scope)));
+	const available = $derived(registry.filter((w) => widgetHeld(w, held)));
 	const unplaced = $derived(available.filter((w) => !placedIds.includes(w.id)));
 
 	function toggle(id: string) {
@@ -137,8 +137,8 @@
 								</div>
 								<p class="px-3 pb-3 font-mono text-[10px] text-muted-foreground/70">
 									{w.description}
-									{#if w.scope}
-										· needs {w.scope}
+									{#if w.scope || w.scopes?.length}
+										· needs {(w.scope ? [w.scope] : (w.scopes ?? [])).join(' · ')}
 									{/if}
 								</p>
 							</button>

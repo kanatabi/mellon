@@ -27,4 +27,14 @@ describe('the layout store inside an effect (the depth-exceeded regression)', ()
 		store.init('someone-else', WIDGETS);
 		expect(store.entries).not.toBe(before);
 	});
+
+	it('first-run seeding honors the ANY-OF scopes: a tasks-only principal gets Tasks alone', () => {
+		store.init('tasks-only', WIDGETS, (scope) => scope === 'tasks:update');
+		expect(store.entries.map((e) => e.id)).toEqual(['tasks']);
+	});
+
+	it('a principal holding no widget scopes seeds an EMPTY canvas, never ghost cards', () => {
+		store.init('no-widget-scopes', WIDGETS, () => false);
+		expect(store.entries).toEqual([]);
+	});
 });

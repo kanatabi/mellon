@@ -30,9 +30,9 @@ describe('the widget picker (Round D)', () => {
 			}
 		});
 		expect(open(c)).toBeTruthy();
-		// three rows, zero canvas bodies — the previews mount the REAL
+		// four rows, zero canvas bodies — the previews mount the REAL
 		// bodies in preview mode (placeholder content, no fetch)
-		expect(c.getAllByLabelText(/widget row/)).toHaveLength(3);
+		expect(c.getAllByLabelText(/widget row/)).toHaveLength(4);
 		// the posts preview shows the real row shape: status pill chrome
 		expect(c.container.textContent?.toLowerCase()).toContain('draft');
 		// the placeholder bars must RENDER — percentage widths need a
@@ -102,13 +102,29 @@ describe('the widget picker (Round D)', () => {
 			props: {
 				registry: WIDGETS,
 				placedIds: [],
-				held: (scope?: string) => scope !== 'content:manage', // holds nothing here
+				held: () => false, // holds nothing here
 				open: true,
 				onAdd: () => {},
 				onClose: () => {}
 			}
 		});
 		expect(c.container.textContent).toContain('no widget access yet');
+	});
+
+	it('the tasks row is ANY-OF: one held tasks scope is enough, and the line names the trio', () => {
+		const c = render(Picker, {
+			props: {
+				registry: WIDGETS,
+				placedIds: [],
+				held: (scope?: string) => scope === 'tasks:update',
+				open: true,
+				onAdd: () => {},
+				onClose: () => {}
+			}
+		});
+		expect(c.getAllByLabelText(/widget row/)).toHaveLength(1);
+		expect(row(c, 'Tasks')).toBeTruthy();
+		expect(c.container.textContent).toContain('needs tasks:create · tasks:update · tasks:manage');
 	});
 
 	it('Escape closes; the backdrop click closes', async () => {

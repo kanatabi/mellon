@@ -3,7 +3,7 @@
 	import DashboardGrid from '#lib/dashboard/DashboardGrid.svelte';
 	import WidgetPicker from '#lib/dashboard/WidgetPicker.svelte';
 	import { dashboardLayout } from '#lib/dashboard/dashboard.svelte.ts';
-	import { WIDGETS } from '#lib/dashboard/widgets/registry.ts';
+	import { WIDGETS, widgetHeld } from '#lib/dashboard/widgets/registry.ts';
 	import { page } from '$app/state';
 
 	// The dashboard is the USER'S HOME (the widget-home round): it dials NO
@@ -19,7 +19,7 @@
 	let pickerOpen = $state(false);
 
 	const anyPlaced = $derived(dashboardLayout.entries.length > 0);
-	const anyAvailable = $derived(WIDGETS.some((w) => held(w.scope)));
+	const anyAvailable = $derived(WIDGETS.some((w) => widgetHeld(w, held)));
 
 	$effect(() => {
 		dashboardLayout.init(page.data.principal?.username ?? 'owner', WIDGETS, held);

@@ -5,7 +5,7 @@
  * grid/registry/components). Per-USER arrangement: the key carries the
  * username, so family members on one browser each get their own home.
  */
-import { WIDGETS, type WidgetDef as WidgetDefT } from './widgets/registry.ts';
+import { WIDGETS, widgetHeld, type WidgetDef as WidgetDefT } from './widgets/registry.ts';
 import {
 	clampEntry,
 	compact,
@@ -102,7 +102,7 @@ export class DashboardLayoutStore {
 			// first run ever for this user: seed the scope-held defaults
 			next = [];
 			for (const def of registry) {
-				if (!held(def.scope)) continue;
+				if (!widgetHeld(def, held)) continue;
 				const slot = firstFit(next, def.defaultSpan.col, def.defaultSpan.row);
 				next.push(
 					clampEntry(def, {

@@ -7,6 +7,9 @@
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import DashboardGrid from './DashboardGrid.svelte';
+import RecentPostsBody from './widgets/recent-posts/body.svelte';
+import type { WidgetDef } from './widgets/registry.ts';
 import { columnLeftStyle, columnWidthStyle } from './layout.ts';
 import Fixture from './grid-fixture.svelte';
 
@@ -199,5 +202,45 @@ describe('the dashboard canvas wiring (the coordinate model)', () => {
 		expect(c.container.querySelectorAll('[data-widget-card]').length).toBe(before - 1);
 		expect(c.container.querySelector('[data-widget-id="w-a"]')).toBeNull();
 		expect(captures(c).dataset.deleted).toBe('w-a');
+	});
+
+	it('the mount gate is ANY-OF for scopes: a held sibling mounts, the other never renders', () => {
+		const registry: WidgetDef[] = [
+			{
+				id: 'tasks',
+				title: 'Tasks',
+				description: '',
+				scopes: ['tasks:create', 'tasks:update', 'tasks:manage'],
+				defaultSpan: { col: 6, row: 5 },
+				minSpan: { col: 2, row: 2 },
+				body: RecentPostsBody
+			},
+			{
+				id: 'posts',
+				title: 'Posts',
+				description: '',
+				scope: 'content:manage',
+				defaultSpan: { col: 6, row: 5 },
+				minSpan: { col: 2, row: 2 },
+				body: RecentPostsBody
+			}
+		];
+		const c = render(DashboardGrid, {
+			registry,
+			entries: [
+				{ id: 'tasks', x: 0, y: 0, w: 6, h: 5 },
+				{ id: 'posts', x: 6, y: 0, w: 6, h: 5 }
+			],
+			held: (scope: string) => scope === 'tasks:update',
+			onDelete: () => {},
+			onNudge: () => {},
+			onSpanApply: () => {},
+			onDragMove: () => {},
+			onDragEnd: () => {},
+			onDragCancel: () => {}
+		});
+		expect(c.container.querySelector('[data-widget-id="tasks"]')).toBeTruthy();
+		// the content widget's single scope is NOT held — its body never mounts
+		expect(c.container.querySelector('[data-widget-id="posts"]')).toBeNull();
 	});
 });
