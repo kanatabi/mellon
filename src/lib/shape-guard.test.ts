@@ -11,6 +11,9 @@ import { describe, expect, it } from 'vitest';
  *   - avatars, swatches, switch     → `size-*`, `h-6 w-11`
  *   - slider tracks                 → `h-3`/`h-4`, `inset-0`
  *   - the two search fields         → pill by doctrine (⌘K, tag vocabulary)
+ *   - the two TAB strips            → owner exception (2026-11-27 screenshot:
+ *                                     the diff + task-drawer tabs keep the
+ *                                     pre-Linear pill switcher)
  *
  * A text button or a filter chip in a full circle is the retired 2026-11 cast
  * and fails. The scale: 8px text buttons/inputs/surfaces, 6px chips/cells,
@@ -18,6 +21,11 @@ import { describe, expect, it } from 'vitest';
  */
 const ROOT = new URL('../../', import.meta.url).pathname;
 const SRC = join(ROOT, 'src');
+
+const PILL_TABS = new Map([
+	['src/routes/(app)/posts/[slug]/diff/+page.svelte', /rounded-full px-3 py-1 font-mono text-xs/],
+	['src/lib/components/tasks/TaskDrawer.svelte', /rounded-full px-3 py-1 font-mono text-\[11px\]/]
+]);
 
 const ALLOWED = [
 	/\bsize-(?:\d|full|\[)/, // avatars, icon buttons, dots, swatches
@@ -48,10 +56,13 @@ describe('shape guard (circles are meaning, not style)', () => {
 	it('every rounded-full line carries a reviewed mark signature', () => {
 		const offenders: string[] = [];
 		for (const file of svelteFiles(SRC)) {
+			const rel = relative(ROOT, file);
+			const tabLine = PILL_TABS.get(rel);
 			for (const [i, line] of readFileSync(file, 'utf8').split('\n').entries()) {
 				if (!line.includes('rounded-full')) continue;
 				if (ALLOWED.some((re) => re.test(line))) continue;
-				offenders.push(`${relative(ROOT, file)}:${i + 1}`);
+				if (tabLine?.test(line)) continue;
+				offenders.push(`${rel}:${i + 1}`);
 			}
 		}
 		expect(offenders, `pill-shaped controls returned at:\n${offenders.join('\n')}`).toEqual([]);

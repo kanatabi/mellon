@@ -564,8 +564,10 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
   vocabulary search), icon-only controls (bell, theme toggle, close X,
   clear/remove icons, hint), avatars, count badges, status/unread dots,
   color swatches and switch tracks — a shape-guard test enforces the exact
-  signatures. Content tabs are underline tabs; MODE switches are one
-  bordered segmented group with rectangular cells (no nested pill).
+  signatures. The two TAB strips (diff Markdown/Metadata, task-drawer
+  sections) keep the pre-Linear pill switcher — the owner's sanctioned
+  exception (2026-11-27); MODE switches are one bordered segmented group
+  with rectangular cells (no nested pill).
   Shadows **only** on overlays (palette,
   menus, sheets), and motion lives
   in overlays (150–200ms transforms/opacity — the drawer transitions) plus the

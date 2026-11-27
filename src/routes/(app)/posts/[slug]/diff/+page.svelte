@@ -230,7 +230,7 @@
 			<!-- Tabs (house roving-tabindex pattern): markdown ⇄ metadata. -->
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
-				class="flex w-fit gap-4 border-b border-border"
+				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
 				role="tablist"
 				aria-label="Diff view"
 				onkeydown={onTabKey}
@@ -243,10 +243,9 @@
 					aria-controls="diff-panel-markdown"
 					tabindex={tab === 'markdown' ? 0 : -1}
 					onclick={() => setTab('markdown', false)}
-					class="-mb-px border-b-2 px-0.5 pb-2 font-mono text-xs transition-colors {tab ===
-					'markdown'
-						? 'border-brand text-foreground'
-						: 'border-transparent text-muted-foreground hover:text-foreground'}"
+					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'markdown'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					Markdown
 				</button>
@@ -258,10 +257,9 @@
 					aria-controls="diff-panel-metadata"
 					tabindex={tab === 'metadata' ? 0 : -1}
 					onclick={() => setTab('metadata', false)}
-					class="-mb-px border-b-2 px-0.5 pb-2 font-mono text-xs transition-colors {tab ===
-					'metadata'
-						? 'border-brand text-foreground'
-						: 'border-transparent text-muted-foreground hover:text-foreground'}"
+					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'metadata'
+						? 'bg-brand/15 text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					Metadata
 				</button>

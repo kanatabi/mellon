@@ -498,7 +498,7 @@
 			<div
 				role="tablist"
 				aria-label="Task detail sections"
-				class="flex shrink-0 flex-wrap gap-4 border-b border-border px-5 pt-3"
+				class="flex shrink-0 flex-wrap gap-1 border-b border-border px-5 pt-3 pb-2"
 			>
 				{#each tabs as item, index (item.id)}
 					<button
@@ -510,10 +510,10 @@
 						tabindex={tab === item.id ? 0 : -1}
 						onclick={() => selectTab(item.id, false)}
 						onkeydown={(e) => onTabKey(e, index)}
-						class="-mb-px flex items-center gap-1.5 border-b-2 px-0.5 pb-2 font-mono text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {tab ===
+						class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {tab ===
 						item.id
-							? 'border-brand text-foreground'
-							: 'border-transparent text-muted-foreground hover:text-foreground'}"
+							? 'bg-brand/10 text-foreground'
+							: 'text-muted-foreground hover:text-foreground'}"
 					>
 						{item.label}
 						{#if item.count !== null}
