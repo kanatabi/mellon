@@ -492,7 +492,7 @@
 					kv / {data.app} / {data.env} · v{cas}
 					{#if pinnedVersion !== null}
 						<span
-							class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] {pinnedVersion === cas
+							class="ml-1 rounded-sm px-1.5 py-0.5 text-[10px] {pinnedVersion === cas
 								? 'bg-brand/10 text-brand'
 								: 'bg-accent-amber/15 text-accent-amber'}"
 							title="pin is a lock: writes to this path are refused until unpin — reads still serve head"
@@ -546,7 +546,7 @@
 							onclick={() => selectPath(data.app, env)}
 							aria-pressed={env === data.env}
 							aria-label={`Environment ${env}`}
-							class="rounded-full border px-3 py-1 font-mono text-xs transition-colors {env ===
+							class="rounded-md border px-3 py-1 font-mono text-xs transition-colors {env ===
 							data.env
 								? 'border-brand bg-brand/10 text-foreground'
 								: 'border-border text-muted-foreground hover:text-foreground'}"
@@ -569,7 +569,7 @@
 
 		{#if message && message.text}
 			<p
-				class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
+				class="w-fit rounded-sm px-3 py-1 font-mono text-xs {message.kind === 'ok'
 					? 'bg-brand/10 text-brand'
 					: 'text-danger'}"
 				role="status"
@@ -699,14 +699,14 @@
 				     ritual's last step. Icon + number only — masked values
 				     doctrine untouched. Plain saves never reach this chip. -->
 				<span
-					class="ml-3 flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 py-1 pr-1 pl-3 font-mono text-xs text-brand"
+					class="ml-3 flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/10 py-1 pr-1 pl-3 font-mono text-xs text-brand"
 					role="status"
 				>
 					<Pin class="size-3" />
 					<button
 						type="button"
 						onclick={() => void acceptOfferPin()}
-						class="transition-colors hover:brightness-125"
+						class="transition-colors hover:text-foreground"
 						aria-label={`Pin v${offerPin} — lock the restored head`}
 					>
 						pin v{offerPin}?

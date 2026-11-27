@@ -16,7 +16,7 @@
 <Tooltip.Provider delayDuration={150}>
 	<Tooltip.Root>
 		<Tooltip.Trigger
-			class="rounded-full text-muted-foreground/40 transition-colors hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+			class="rounded-md text-muted-foreground/40 transition-colors hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
 			aria-label="What is this section?"
 		>
 			<CircleHelp class="size-3.5" aria-hidden="true" />

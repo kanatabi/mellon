@@ -209,7 +209,7 @@
 				onclick={onClose}
 				disabled={busy}
 				aria-label="Close"
-				class="rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+				class="rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 				use:focusOnMount
 			>
 				<X class="size-4" />
@@ -237,7 +237,7 @@
 				<Upload class="size-4 text-muted-foreground" />
 				<span class="font-mono text-xs text-muted-foreground">Drop images, or</span>
 				<label
-					class="flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-brand hover:text-foreground has-[input:focus-visible]:border-brand has-[input:focus-visible]:text-foreground"
+					class="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-brand hover:text-foreground has-[input:focus-visible]:border-brand has-[input:focus-visible]:text-foreground"
 				>
 					browse…
 					<input
@@ -393,7 +393,7 @@
 				<button
 					type="button"
 					onclick={onClose}
-					class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
+					class="rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
 				>
 					Done
 				</button>

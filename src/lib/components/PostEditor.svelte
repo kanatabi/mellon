@@ -1005,7 +1005,7 @@ flowchart LR
 				<button
 					type="button"
 					onclick={() => (showPreview = !showPreview)}
-					class="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors @min-[48rem]/editor:flex {showPreview
+					class="hidden items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs transition-colors @min-[48rem]/editor:flex {showPreview
 						? 'border-brand bg-brand/10 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-pressed={showPreview}
@@ -1033,21 +1033,21 @@ flowchart LR
 				<button
 					type="button"
 					onclick={askDiff}
-					class="rounded-full border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+					class="rounded-md border border-border px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				>
 					Review
 				</button>
 				<button
 					type="button"
 					onclick={() => void restoreBuffer()}
-					class="rounded-full border border-brand/40 bg-brand/10 px-3 py-1 font-mono text-xs text-foreground transition-colors hover:border-brand"
+					class="rounded-md border border-brand/40 bg-brand/10 px-3 py-1 font-mono text-xs text-foreground transition-colors hover:border-brand"
 				>
 					Restore
 				</button>
 				<button
 					type="button"
 					onclick={() => void discardBuffer()}
-					class="rounded-full px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-danger"
+					class="rounded-md px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-danger"
 				>
 					Discard
 				</button>
@@ -1144,7 +1144,7 @@ flowchart LR
 		>
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
-				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
+				class="flex w-fit rounded-md border border-border bg-muted p-0.5"
 				role="tablist"
 				aria-label="Editor pane"
 				onkeydown={(e) => {
@@ -1166,8 +1166,8 @@ flowchart LR
 					tabindex={editorTab === 'write' ? 0 : -1}
 					bind:this={writeTabBtn}
 					onclick={() => setTab('write', false)}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {editorTab === 'write'
-						? 'bg-brand/15 text-foreground'
+					class="rounded-sm px-3 py-1 font-mono text-xs transition-colors {editorTab === 'write'
+						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					Write
@@ -1181,8 +1181,8 @@ flowchart LR
 					tabindex={editorTab === 'preview' ? 0 : -1}
 					bind:this={previewTabBtn}
 					onclick={() => setTab('preview', false)}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
-						? 'bg-brand/15 text-foreground'
+					class="rounded-sm px-3 py-1 font-mono text-xs transition-colors {editorTab === 'preview'
+						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					Preview
@@ -1275,7 +1275,7 @@ flowchart LR
 			<button
 				type="button"
 				onclick={() => (pickerMode = 'insert')}
-				class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 				aria-label="Insert image into the post"
 			>
 				<ImagePlus class="size-3.5" />
@@ -1294,7 +1294,7 @@ flowchart LR
 			onclick={() => setSyncScroll(!syncScroll)}
 			aria-pressed={syncScroll}
 			title="synced scrolling — the preview follows the editor and back"
-			class="{cls} items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-xs transition-colors {syncScroll
+			class="{cls} items-center gap-2 rounded-md border px-3 py-1.5 font-mono text-xs transition-colors {syncScroll
 				? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 				: 'border-border text-muted-foreground hover:text-foreground'}"
 		>
@@ -1322,7 +1322,7 @@ flowchart LR
 				type="button"
 				onclick={toggleWrap}
 				aria-pressed={wrapped}
-				class="{cls} items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
+				class="{cls} items-center gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs transition-colors {wrapped
 					? 'border-brand bg-brand/10 text-foreground'
 					: 'text-muted-foreground hover:text-foreground'}"
 			>
@@ -1351,7 +1351,7 @@ flowchart LR
 				type="button"
 				disabled={saving}
 				onclick={() => requestSave()}
-				class="w-full rounded-full border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
+				class="w-full rounded-md border border-border px-4 py-2 text-sm transition-all hover:border-muted-foreground active:scale-[0.98] disabled:opacity-40"
 			>
 				{status === 'published' ? 'Save Post' : 'Save draft'}
 			</button>
@@ -1360,7 +1360,7 @@ flowchart LR
 					type="button"
 					disabled={saving}
 					onclick={() => void unpublish()}
-					class="w-full rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+					class="w-full rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-all hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 				>
 					Unpublish
 				</button>
@@ -1369,7 +1369,7 @@ flowchart LR
 					type="button"
 					disabled={saving}
 					onclick={() => requestPublish()}
-					class="w-full rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
+					class="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98] disabled:opacity-40"
 				>
 					Publish
 				</button>
@@ -1378,7 +1378,7 @@ flowchart LR
 				<button
 					type="button"
 					onclick={() => (confirmDelete = true)}
-					class="w-full rounded-full px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+					class="w-full rounded-md px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
 				>
 					Delete
 				</button>
@@ -1554,7 +1554,7 @@ flowchart LR
 				<button
 					type="button"
 					onclick={() => (pickerMode = 'thumbnail')}
-					class="rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+					class="rounded-md border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
 				>
 					{draft.thumbnail ? 'change cover' : 'set cover'}
 				</button>
@@ -1565,7 +1565,7 @@ flowchart LR
 							draft.thumbnail = null;
 							touch();
 						}}
-						class="rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-danger"
+						class="rounded-md border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-danger"
 					>
 						Clear
 					</button>
@@ -1574,7 +1574,7 @@ flowchart LR
 			<button
 				type="button"
 				onclick={() => (pickerMode = 'insert')}
-				class="flex items-center gap-2 self-start rounded-full border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+				class="flex items-center gap-2 self-start rounded-md border border-border px-3 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
 			>
 				<ImagePlus class="size-3" />
 				insert image…

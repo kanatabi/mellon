@@ -34,7 +34,7 @@
 			disabled={busy}
 			onclick={ontoggle}
 			class="relative z-10 grid size-5 shrink-0 place-items-center rounded border transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-50 {task.done
-				? 'border-brand bg-brand text-white'
+				? 'border-brand bg-brand text-primary-foreground'
 				: 'border-border text-transparent hover:border-brand/60 hover:text-brand/50'} {busy
 				? 'animate-pulse'
 				: ''}"

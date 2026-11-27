@@ -37,13 +37,13 @@
 			<button
 				type="button"
 				onclick={() => (pickerOpen = true)}
-				class="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium whitespace-nowrap text-foreground transition-all hover:border-brand sm:px-4"
+				class="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium whitespace-nowrap text-foreground transition-colors hover:border-brand sm:px-4"
 			>
 				<SquarePlus class="size-4" /> Add Widget
 			</button>
 			<a
 				href="/posts/new"
-				class="flex items-center gap-2 rounded-full bg-brand px-3 py-2 text-sm font-medium whitespace-nowrap text-white transition-all hover:brightness-110 sm:px-4"
+				class="flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium whitespace-nowrap text-primary-foreground transition-colors hover:bg-brand/90 sm:px-4"
 			>
 				<Plus class="size-4" /> New Post
 			</a>
@@ -71,7 +71,7 @@
 			<button
 				type="button"
 				onclick={() => (pickerOpen = true)}
-				class="mt-4 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+				class="mt-4 rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90"
 			>
 				Add Widget
 			</button>

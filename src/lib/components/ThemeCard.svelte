@@ -57,15 +57,14 @@
 			     row; single-mode themes render a plain indicator -->
 			{#if theme.modes.length === 2}
 				<span
-					class="flex gap-0.5 rounded-full border border-border bg-background p-0.5"
+					class="flex rounded-md border border-border bg-muted p-0.5"
 					role="radiogroup"
 					aria-label="{theme.name} variant"
 				>
 					{#each theme.modes as m (m)}
 						<span
-							class="rounded-full px-1.5 py-0.5 font-mono text-[10px] transition-colors {variant ===
-							m
-								? 'bg-brand/15 text-foreground'
+							class="rounded-sm px-1.5 py-0.5 font-mono text-[10px] transition-colors {variant === m
+								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
 							role="radio"
 							aria-checked={variant === m}

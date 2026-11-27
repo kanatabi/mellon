@@ -107,7 +107,7 @@
 	<Popover.Root bind:open>
 		<Popover.Trigger
 			aria-label="Choose a date range"
-			class="group flex w-full items-center gap-2.5 rounded-full border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent/40"
+			class="group flex w-full items-center gap-2.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent/40"
 		>
 			<CalendarDays class="size-4 shrink-0 text-muted-foreground" />
 			<span

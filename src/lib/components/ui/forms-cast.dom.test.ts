@@ -1,7 +1,8 @@
-// The S3 cast: the button variant map is MELLON's (pill primary, mono chip
-// quiet, danger pill, soft text-ghost) with the registry names kept alive for
-// the vendored overlays (dialog X, sheet close, sidebar trigger). Pins the
-// anatomy the sweep relies on — SHADCN-PLAN 3.1.
+// The button cast is MELLON's (6px primary, mono quiet chip, 6px danger,
+// soft text-ghost) with the registry names kept alive for the vendored
+// overlays (dialog X, sheet close, sidebar trigger). The 2026-11-27 Linear
+// round retired the full-round pill; these tests pin the squared anatomy and
+// the theme-safe ink (text-primary-foreground, never text-white).
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import Button from '#lib/components/ui/button/button.svelte';
@@ -10,14 +11,16 @@ import Label from '#lib/components/ui/label/label.svelte';
 import Textarea from '#lib/components/ui/textarea/textarea.svelte';
 
 describe('the button cast', () => {
-	it('primary is the violet pill — the one verb', () => {
+	it('primary is the violet 6px control — the one verb', () => {
 		const { getByRole } = render(Button, {
 			props: { variant: 'primary', children: undefined as never }
 		});
 		const b = getByRole('button');
-		expect(b.className).toContain('rounded-full');
+		expect(b.className).toContain('rounded-md');
 		expect(b.className).toContain('bg-brand');
-		expect(b.className).not.toContain('rounded-lg');
+		expect(b.className).toContain('text-primary-foreground');
+		expect(b.className).not.toContain('rounded-full');
+		expect(b.className).not.toContain('text-white');
 		// pills are padding-sized — and the VARIANT must beat the default
 		// size's h-8 (tv emits size before variant: the ordering regression)
 		expect(b.className).not.toContain('h-8');
@@ -41,6 +44,7 @@ describe('the button cast', () => {
 		// size's h-8/px-2.5 (tv definition order: size before variant)
 		expect(b.className).toContain('px-3');
 		expect(b.className).toContain('py-1.5');
+		expect(b.className).toContain('rounded-md');
 		expect(b.className).not.toContain('h-8');
 		expect(b.className).not.toContain('px-2.5');
 	});

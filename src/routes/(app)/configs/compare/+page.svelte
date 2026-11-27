@@ -179,7 +179,7 @@
 		</div>
 		<a
 			href="/configs/vault?app={data.app}&env={data.env}"
-			class="self-start rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground md:self-auto"
+			class="self-start rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground md:self-auto"
 		>
 			← editor
 		</a>
@@ -293,7 +293,7 @@
 	<!-- presentation + content + reveal -->
 	<div class="flex flex-wrap items-center gap-2">
 		<div
-			class="flex rounded-full border border-border p-0.5"
+			class="flex rounded-md border border-border bg-muted p-0.5"
 			role="group"
 			aria-label="Presentation"
 		>
@@ -302,9 +302,9 @@
 					type="button"
 					onclick={() => (presentation = p)}
 					aria-pressed={presentation === p}
-					class="rounded-full px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
+					class="rounded-sm px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
 					p
-						? 'bg-brand/10 text-foreground'
+						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					{p}
@@ -312,7 +312,7 @@
 			{/each}
 		</div>
 		<div
-			class="flex rounded-full border border-border p-0.5"
+			class="flex rounded-md border border-border bg-muted p-0.5"
 			role="group"
 			aria-label="Content form"
 			title="Raw JSON diffs the serialized bytes; parsed diffs sorted KEY=value lines"
@@ -323,9 +323,9 @@
 					onclick={() => (content = c)}
 					aria-pressed={content === c}
 					disabled={presentation === 'table' && c === 'raw'}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
+					class="rounded-sm px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
 					c
-						? 'bg-brand/10 text-foreground'
+						? 'bg-card text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
 					{c === 'raw' ? 'Raw JSON' : 'Parsed'}

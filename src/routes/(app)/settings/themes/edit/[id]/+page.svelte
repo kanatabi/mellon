@@ -231,7 +231,7 @@
 			href="/settings"
 			aria-label="Back to settings"
 			title="Back to settings"
-			class="grid size-8 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground"
+			class="grid size-8 shrink-0 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<ArrowLeft class="size-4" />
 		</a>
@@ -247,7 +247,7 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger
 				aria-label="Theme draft actions"
-				class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+				class="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Ellipsis class="size-4" />
 			</DropdownMenu.Trigger>

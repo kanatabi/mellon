@@ -40,9 +40,10 @@
 		<span class="mt-2 block h-1.5 w-5/6 rounded-full bg-foreground/35"></span>
 		<span class="mt-1.5 block h-1.5 w-2/3 rounded-full bg-muted-foreground/40"></span>
 		<div class="mt-3 flex items-center gap-2">
-			<span class="rounded-full bg-brand px-2.5 py-1 text-[9px] font-medium text-white">action</span
+			<span class="rounded-sm bg-brand px-2.5 py-1 text-[9px] font-medium text-primary-foreground"
+				>action</span
 			>
-			<span class="rounded-full bg-danger/10 px-2 py-1 text-[9px] text-danger">danger</span>
+			<span class="rounded-sm bg-danger/10 px-2 py-1 text-[9px] text-danger">danger</span>
 			<span class="ml-auto h-5 w-20 rounded-md border border-border bg-background"></span>
 		</div>
 		<div class="mt-2 flex items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5">

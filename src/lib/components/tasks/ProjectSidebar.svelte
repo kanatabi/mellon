@@ -113,7 +113,7 @@
 		{#if canCreate && !creating && !loading}
 			<button
 				type="button"
-				class="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+				class="flex items-center gap-1 rounded-sm px-2 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
 				onclick={() => {
 					createError = null;
 					creating = true;
@@ -173,7 +173,7 @@
 	{#if loading && projects.length === 0}
 		<div class="flex gap-1.5" aria-busy="true" aria-label="Loading projects">
 			{#each [0, 1, 2] as i (i)}
-				<Skeleton class="h-8 w-24 shrink-0 rounded-full lg:h-9 lg:w-full lg:rounded-md" />
+				<Skeleton class="h-8 w-24 shrink-0 rounded-md lg:h-9 lg:w-full lg:rounded-md" />
 			{/each}
 		</div>
 	{:else}
@@ -186,7 +186,7 @@
 				type="button"
 				aria-current={selectedId === null ? 'true' : undefined}
 				onclick={() => onselect(null)}
-				class="flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none lg:w-full lg:rounded-md {selectedId ===
+				class="flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none lg:w-full lg:rounded-md {selectedId ===
 				null
 					? 'border-brand bg-brand/10 text-foreground'
 					: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
@@ -199,7 +199,7 @@
 
 			{#each projects as project (project.id)}
 				<div
-					class="flex shrink-0 items-center gap-0.5 rounded-full border pr-0.5 transition-colors lg:w-full lg:rounded-md {selectedId ===
+					class="flex shrink-0 items-center gap-0.5 rounded-md border pr-0.5 transition-colors lg:w-full lg:rounded-md {selectedId ===
 					project.id
 						? 'border-brand bg-brand/10'
 						: 'border-border hover:border-muted-foreground'}"
@@ -208,7 +208,7 @@
 						type="button"
 						aria-current={selectedId === project.id ? 'true' : undefined}
 						onclick={() => onselect(project.id)}
-						class="flex min-w-0 items-center gap-2 rounded-full px-3 py-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none lg:flex-1 lg:rounded-md {selectedId ===
+						class="flex min-w-0 items-center gap-2 rounded-md px-3 py-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none lg:flex-1 lg:rounded-md {selectedId ===
 						project.id
 							? 'text-foreground'
 							: 'text-muted-foreground hover:text-foreground'}"
@@ -227,7 +227,7 @@
 						</span>
 						{#if project.completedAt}
 							<span
-								class="shrink-0 rounded-full border border-dashed border-muted-foreground/40 px-1.5 py-0 font-mono text-[9px] text-muted-foreground/70"
+								class="shrink-0 rounded-sm border border-dashed border-muted-foreground/40 px-1.5 py-0 font-mono text-[9px] text-muted-foreground/70"
 							>
 								completed
 							</span>
@@ -238,7 +238,7 @@
 							type="button"
 							aria-label="Project settings for {project.name}"
 							title="Project settings"
-							class="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+							class="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
 							onclick={() => (settingsId = project.id)}
 						>
 							<MoreHorizontal class="size-3.5" aria-hidden="true" />

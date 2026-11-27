@@ -276,7 +276,7 @@
 				bind:value={createName}
 				aria-label="New tag name"
 				placeholder="new-tag-name"
-				class="w-full rounded-full bg-transparent px-3 py-1.5 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40 md:w-48"
+				class="w-full rounded-md bg-transparent px-3 py-1.5 text-xs placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-2 focus-visible:ring-brand/40 md:w-48"
 			/>
 			<Button
 				type="submit"
@@ -322,7 +322,7 @@
 
 	{#if message}
 		<p
-			class="w-fit rounded-full px-3 py-1 font-mono text-xs {message.kind === 'ok'
+			class="w-fit rounded-sm px-3 py-1 font-mono text-xs {message.kind === 'ok'
 				? 'bg-brand/10 text-brand'
 				: 'text-danger'}"
 			role="status"
@@ -365,7 +365,7 @@
 			<Button
 				type="button"
 				variant="soft"
-				class="ml-auto rounded-full p-1.5"
+				class="ml-auto rounded-md p-1.5"
 				onclick={() => selection.clear()}
 				aria-label="Clear selection"
 			>
@@ -411,7 +411,7 @@
 					class="flex size-6 items-center justify-center rounded border transition-colors {selection.has(
 						tag.name
 					)
-						? 'border-brand bg-brand text-white'
+						? 'border-brand bg-brand text-primary-foreground'
 						: 'border-border text-muted-foreground hover:text-foreground'}"
 				>
 					<Check class="size-3" />
@@ -463,7 +463,7 @@
 			{#if data.page > 1}
 				<a
 					href={url({ page: data.page - 1 })}
-					class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+					class="rounded-md border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 					>← prev</a
 				>
 			{:else}
@@ -473,7 +473,7 @@
 			{#if data.page < totalPages}
 				<a
 					href={url({ page: data.page + 1 })}
-					class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+					class="rounded-md border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 					>next →</a
 				>
 			{:else}
@@ -508,7 +508,7 @@
 					Tag settings
 				</h2>
 				<span
-					class="mt-1 rounded-full border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+					class="mt-1 rounded-sm border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
 				>
 					{current.posts} posts · created {stamp(current.createdAt)} · touched {stamp(
 						current.updatedAt

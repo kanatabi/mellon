@@ -352,10 +352,7 @@
 		</div>
 
 		{#if message}
-			<p
-				class="w-fit rounded-full bg-brand/10 px-3 py-1 font-mono text-xs text-brand"
-				role="status"
-			>
+			<p class="w-fit rounded-sm bg-brand/10 px-3 py-1 font-mono text-xs text-brand" role="status">
 				{message}
 			</p>
 		{/if}

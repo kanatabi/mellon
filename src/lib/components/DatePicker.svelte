@@ -50,7 +50,7 @@
 	<Popover.Root bind:open>
 		<Popover.Trigger
 			aria-label="Choose publish date"
-			class="group flex w-full items-center gap-2.5 rounded-full border border-transparent px-3 py-1.5 text-sm transition-colors hover:border-border focus-visible:border-brand"
+			class="group flex w-full items-center gap-2.5 rounded-md border border-transparent px-3 py-1.5 text-sm transition-colors hover:border-border focus-visible:border-brand"
 		>
 			<CalendarDays class="size-4 shrink-0 text-muted-foreground" />
 			<span

@@ -22,7 +22,7 @@
 
 {#if priority !== 'none'}
 	<span
-		class="inline-flex w-fit items-center rounded-full border font-mono tracking-wider uppercase {tone[
+		class="inline-flex w-fit items-center rounded-sm border font-mono tracking-wider uppercase {tone[
 			priority
 		]} {size === 'sm' ? 'px-1.5 py-0 text-[9px]' : 'px-2 py-0.5 text-[10px]'}"
 	>

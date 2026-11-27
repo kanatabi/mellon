@@ -52,7 +52,7 @@
 		</div>
 		<a
 			href="/configs/vault"
-			class="self-start rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+			class="self-start rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 		>
 			← Vault
 		</a>

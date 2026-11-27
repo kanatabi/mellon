@@ -94,7 +94,7 @@
 <div class="relative flex flex-col gap-1.5">
 	<Popover.Root bind:open {onOpenChange}>
 		<Popover.Trigger
-			class="flex w-full items-center justify-between gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+			class="flex w-full items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
 		>
 			<span class="min-w-0 truncate">
 				{selected.length ? (multiple ? `${selected.length} selected` : selected[0]) : emptyLabel}
@@ -178,13 +178,13 @@
 		<div class="flex flex-wrap gap-1.5">
 			{#each selected as t (t)}
 				<span
-					class="flex items-center gap-1 rounded-full border border-brand bg-brand/10 py-0.5 pr-1 pl-2.5 font-mono text-[11px] text-foreground"
+					class="flex items-center gap-1 rounded-md border border-brand bg-brand/10 py-0.5 pr-1 pl-2.5 font-mono text-[11px] text-foreground"
 				>
 					{t}
 					<Button
 						type="button"
 						variant="soft"
-						class="rounded-full p-0.5"
+						class="rounded-sm p-0.5"
 						onclick={() => toggle(t)}
 						aria-label="Remove {t}"
 					>

@@ -104,7 +104,7 @@
 		<button
 			type="button"
 			onclick={() => void load()}
-			class="w-fit rounded-full border border-border px-3 py-1 font-mono text-[10px] tracking-wide text-muted-foreground uppercase transition-colors hover:border-brand/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+			class="w-fit rounded-md border border-border px-3 py-1 font-mono text-[10px] tracking-wide text-muted-foreground uppercase transition-colors hover:border-brand/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
 		>
 			Retry
 		</button>

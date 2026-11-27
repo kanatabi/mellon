@@ -13,7 +13,7 @@
      shelf"). Three states, three voices — no green/blue soup, red stays
      reserved for destructive: retirement is neither. -->
 <span
-	class="inline-flex w-fit items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] tracking-wider uppercase {status ===
+	class="inline-flex w-fit items-center rounded-sm px-2.5 py-0.5 font-mono text-[10px] tracking-wider uppercase {status ===
 	'published'
 		? 'bg-brand/15 text-brand'
 		: status === 'draft'

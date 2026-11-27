@@ -166,7 +166,7 @@
 			href="/posts/{data.post.slug}"
 			aria-label="Back to editor"
 			title="Back to editor"
-			class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+			class="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<ArrowLeft class="size-4" />
 		</a>
@@ -188,7 +188,7 @@
 			<p class="font-mono text-sm text-muted-foreground">nothing pending — the editor is clean</p>
 			<a
 				href="/posts/{data.post.slug}"
-				class="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+				class="rounded-md border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
 			>
 				Back to editor
 			</a>
@@ -208,7 +208,7 @@
 				<Button
 					type="button"
 					variant="quiet"
-					class="h-auto gap-1.5 rounded-full px-4 py-2 font-sans text-sm"
+					class="h-auto gap-1.5 rounded-md px-4 py-2 font-sans text-sm"
 					onclick={() => void invalidateAll()}
 					aria-label="Reload head"
 				>
@@ -217,10 +217,7 @@
 			</div>
 		{/if}
 		{#if errMsg}
-			<p
-				class="w-fit rounded-full bg-danger/10 px-3 py-1 font-mono text-xs text-danger"
-				role="alert"
-			>
+			<p class="w-fit rounded-sm bg-danger/10 px-3 py-1 font-mono text-xs text-danger" role="alert">
 				{errMsg}
 			</p>
 		{/if}
@@ -233,7 +230,7 @@
 			<!-- Tabs (house roving-tabindex pattern): markdown ⇄ metadata. -->
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<div
-				class="flex w-fit gap-1 rounded-full border border-border bg-card p-1"
+				class="flex w-fit gap-4 border-b border-border"
 				role="tablist"
 				aria-label="Diff view"
 				onkeydown={onTabKey}
@@ -246,9 +243,10 @@
 					aria-controls="diff-panel-markdown"
 					tabindex={tab === 'markdown' ? 0 : -1}
 					onclick={() => setTab('markdown', false)}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'markdown'
-						? 'bg-brand/15 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
+					class="-mb-px border-b-2 px-0.5 pb-2 font-mono text-xs transition-colors {tab ===
+					'markdown'
+						? 'border-brand text-foreground'
+						: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				>
 					Markdown
 				</button>
@@ -260,9 +258,10 @@
 					aria-controls="diff-panel-metadata"
 					tabindex={tab === 'metadata' ? 0 : -1}
 					onclick={() => setTab('metadata', false)}
-					class="rounded-full px-3 py-1 font-mono text-xs transition-colors {tab === 'metadata'
-						? 'bg-brand/15 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
+					class="-mb-px border-b-2 px-0.5 pb-2 font-mono text-xs transition-colors {tab ===
+					'metadata'
+						? 'border-brand text-foreground'
+						: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				>
 					Metadata
 				</button>
@@ -276,7 +275,7 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger
 							aria-label="Diff preferences"
-							class="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+							class="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
 						>
 							<Ellipsis class="size-4" />
 						</DropdownMenu.Trigger>
@@ -331,7 +330,7 @@
 						type="button"
 						variant="quiet"
 						aria-pressed={hideUnchanged}
-						class="gap-1.5 rounded-full px-3 py-1 font-mono text-xs {hideUnchanged
+						class="gap-1.5 rounded-md px-3 py-1 font-mono text-xs {hideUnchanged
 							? 'border-accent-amber bg-accent-amber/10 text-accent-amber'
 							: ''}"
 						onclick={() => (hideUnchanged = !hideUnchanged)}
@@ -721,7 +720,7 @@
 			<Button
 				type="button"
 				variant="danger"
-				class="h-auto w-full rounded-full px-4 py-2 font-sans text-sm sm:w-auto"
+				class="h-auto w-full rounded-md px-4 py-2 font-sans text-sm sm:w-auto"
 				disabled={saving}
 				onclick={() => void discard()}
 			>
@@ -730,7 +729,7 @@
 			<Button
 				type="button"
 				variant="primary"
-				class="h-auto w-full rounded-full px-4 py-2 font-sans text-sm sm:w-auto"
+				class="h-auto w-full rounded-md px-4 py-2 font-sans text-sm sm:w-auto"
 				disabled={saving}
 				onclick={() => void saveFrom(conflict)}
 			>

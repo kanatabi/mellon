@@ -115,7 +115,7 @@
 									</p>
 									{#if isPlaced}
 										<span
-											class="ml-auto shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+											class="ml-auto shrink-0 rounded-sm border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
 										>
 											on the dashboard
 										</span>
@@ -158,7 +158,7 @@
 					type="button"
 					disabled={selected.length === 0}
 					onclick={commit}
-					class="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+					class="rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					Add {selected.length === 0 ? '' : selected.length}
 					widget{selected.length === 1 ? '' : 's'}

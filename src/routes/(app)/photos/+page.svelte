@@ -400,7 +400,7 @@
 				<div class="flex items-center gap-3">
 					<!-- View segment (md+): tiles ⇄ table. -->
 					<div
-						class="hidden gap-1 rounded-full border border-border bg-card p-1 md:flex"
+						class="hidden rounded-md border border-border bg-muted p-0.5 md:flex"
 						role="group"
 						aria-label="Photos view"
 					>
@@ -408,9 +408,9 @@
 							type="button"
 							onclick={() => setView('tiles')}
 							aria-pressed={view === 'tiles'}
-							class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
+							class="flex items-center gap-1.5 rounded-sm px-3 py-1 font-mono text-xs transition-colors {view ===
 							'tiles'
-								? 'bg-brand/15 text-foreground'
+								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
 						>
 							<LayoutGrid class="size-3.5" /> Tiles
@@ -419,9 +419,9 @@
 							type="button"
 							onclick={() => setView('table')}
 							aria-pressed={view === 'table'}
-							class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
+							class="flex items-center gap-1.5 rounded-sm px-3 py-1 font-mono text-xs transition-colors {view ===
 							'table'
-								? 'bg-brand/15 text-foreground'
+								? 'bg-card text-foreground ring-1 ring-border'
 								: 'text-muted-foreground hover:text-foreground'}"
 						>
 							<Table class="size-3.5" /> Table
@@ -479,7 +479,7 @@
 					<a
 						href={buildUrl({ gallery: true })}
 						aria-current={data.gallery === true ? 'true' : undefined}
-						class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
+						class="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
 						true
 							? 'border-accent-teal bg-accent-teal/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
@@ -489,7 +489,7 @@
 					<a
 						href={buildUrl({ gallery: false })}
 						aria-current={data.gallery === false ? 'true' : undefined}
-						class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
+						class="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {data.gallery ===
 						false
 							? 'border-accent-teal bg-accent-teal/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
@@ -500,7 +500,7 @@
 				{#if hasFilters}
 					<a
 						href="/photos"
-						class="flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-1 font-mono text-xs text-muted-foreground hover:text-foreground"
+						class="flex shrink-0 items-center gap-1 self-center rounded-md px-2 py-1 font-mono text-xs text-muted-foreground hover:text-foreground"
 					>
 						<X class="size-3" /> clear
 					</a>
@@ -531,7 +531,7 @@
 					<SlidersHorizontal class="size-4" />
 					{#if sheetCount}
 						<span
-							class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
+							class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-primary-foreground"
 							>{sheetCount}</span
 						>
 					{/if}
@@ -578,7 +578,7 @@
 					<Button
 						type="button"
 						variant="soft"
-						class="ml-auto rounded-full p-1.5"
+						class="ml-auto rounded-md p-1.5"
 						onclick={() => selection.clear()}
 						aria-label="Clear selection"
 					>
@@ -589,7 +589,7 @@
 
 			{#if message}
 				<p
-					class="w-fit rounded-full bg-brand/10 px-3 py-1 font-mono text-xs text-brand"
+					class="w-fit rounded-sm bg-brand/10 px-3 py-1 font-mono text-xs text-brand"
 					role="status"
 				>
 					{message}
@@ -645,7 +645,7 @@
 									aria-pressed={selection.has(p.id)}
 									aria-label={selection.has(p.id) ? `Deselect ${p.alt}` : `Select ${p.alt}`}
 									class={sel
-										? 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-brand bg-brand text-white backdrop-blur transition-colors'
+										? 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-brand bg-brand text-primary-foreground backdrop-blur transition-colors'
 										: 'absolute top-2 left-2 flex size-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:text-foreground'}
 								>
 									<Check class="size-3.5" />
@@ -670,7 +670,7 @@
 										: `Add ${p.alt} to gallery`}
 									title="In gallery"
 									class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md border backdrop-blur transition-colors {p.gallery
-										? 'border-brand bg-brand/90 text-white'
+										? 'border-brand bg-brand/90 text-primary-foreground'
 										: 'border-border bg-card/80 text-muted-foreground hover:text-foreground'}"
 								>
 									{#if p.gallery}<Eye class="size-3.5" />{:else}<EyeOff class="size-3.5" />{/if}
@@ -755,7 +755,7 @@
 										aria-pressed={sel}
 										aria-label={sel ? `Deselect ${p.alt}` : `Select ${p.alt}`}
 										class="flex size-6 items-center justify-center rounded border transition-colors {sel
-											? 'border-brand bg-brand text-white'
+											? 'border-brand bg-brand text-primary-foreground'
 											: 'border-border text-muted-foreground hover:text-foreground'}"
 									>
 										<Check class="size-3" />
@@ -829,7 +829,7 @@
 					{#if data.page > 1}
 						<a
 							href={buildUrl({ page: data.page - 1 })}
-							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							class="rounded-md border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 							>← prev</a
 						>
 					{:else}
@@ -839,7 +839,7 @@
 					{#if data.page < data.totalPages}
 						<a
 							href={buildUrl({ page: data.page + 1 })}
-							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							class="rounded-md border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 							>next →</a
 						>
 					{:else}
@@ -920,7 +920,7 @@
 						aria-current={on ? 'true' : undefined}
 						aria-disabled={searching || undefined}
 						title={searching ? 'relevance order while searching' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
+						class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
 							? 'opacity-40'
 							: on
 								? 'border-brand bg-brand/10 text-foreground'
@@ -978,7 +978,7 @@
 					<a
 						href={buildUrl({ toggleCollection: c.name })}
 						aria-current={on ? 'true' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
+						class="flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
 							? 'border-brand bg-brand/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
@@ -989,7 +989,7 @@
 				<a
 					href={buildUrl({ toggleCollection: 'uncategorized' })}
 					aria-current={data.activeCollections.includes('uncategorized') ? 'true' : undefined}
-					class="rounded-full border border-dashed px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors {data.activeCollections.includes(
+					class="rounded-md border border-dashed px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors {data.activeCollections.includes(
 						'uncategorized'
 					)
 						? 'border-brand text-foreground'

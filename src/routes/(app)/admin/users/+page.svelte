@@ -59,7 +59,7 @@
 			</div>
 			<!-- the door sits above the table, in the header row (owner call) -->
 			<Dialog.Trigger
-				class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+				class="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90"
 			>
 				<UserPlus class="size-4" aria-hidden="true" />
 				Create New User
@@ -187,7 +187,7 @@
 						<td class="px-4 py-2">
 							<span class="flex flex-wrap gap-1">
 								{#each u.scopes as sc (sc)}
-									<span class="rounded-full bg-muted px-2 py-0.5 text-[10px]">{sc}</span>
+									<span class="rounded-sm bg-muted px-2 py-0.5 text-[10px]">{sc}</span>
 								{:else}
 									<span class="text-muted-foreground/50">none</span>
 								{/each}

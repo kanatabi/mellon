@@ -75,7 +75,7 @@
 		     violet). -->
 		<div class="mt-5 flex flex-wrap items-center justify-end gap-2">
 			<AlertDialog.Cancel
-				class="h-auto rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+				class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 				onclick={(e) => {
 					if (busy) e.preventDefault();
 				}}
@@ -86,7 +86,7 @@
 				<Button
 					type="button"
 					variant="quiet"
-					class="h-auto rounded-full px-4 py-2 font-sans text-sm"
+					class="h-auto rounded-md px-4 py-2 font-sans text-sm"
 					disabled={busy}
 					onclick={() => {
 						if (busy) return;

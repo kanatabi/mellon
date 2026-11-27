@@ -47,7 +47,7 @@ describe('the house confirm', () => {
 		// cancel (the owner's screenshot)
 		const cancel = getByRole('button', { name: 'Cancel' });
 		const verb = getByRole('button', { name: 'Leave' });
-		for (const cls of ['h-auto', 'py-2', 'text-sm', 'rounded-full']) {
+		for (const cls of ['h-auto', 'py-2', 'text-sm', 'rounded-md']) {
 			expect(cancel.className, 'Cancel lacks ' + cls).toContain(cls);
 			expect(verb.className, 'the verb lacks ' + cls).toContain(cls);
 		}
@@ -65,6 +65,8 @@ describe('the house confirm', () => {
 			}
 		});
 		expect(getByRole('button', { name: 'Drop key' }).className).toContain('bg-danger');
-		expect(getByRole('button', { name: 'Drop key' }).className).not.toContain('bg-brand');
+		expect(getByRole('button', { name: 'Drop key' }).className.split(/\s+/)).not.toContain(
+			'bg-brand'
+		);
 	});
 });

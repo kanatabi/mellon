@@ -62,7 +62,7 @@
 					{@render cell(row, 'from')}
 					{@render cell(row, 'to')}
 					<td class="px-4 py-2 text-right">
-						<span class="rounded-full px-2 py-0.5 {chip[row.status]}">{row.status}</span>
+						<span class="rounded-sm px-2 py-0.5 {chip[row.status]}">{row.status}</span>
 					</td>
 				</tr>
 			{/each}

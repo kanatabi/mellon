@@ -12,7 +12,7 @@
 
 <button
 	type="button"
-	class="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted"
+	class="flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted"
 	aria-label="Toggle light and dark mode"
 	onclick={onToggle}
 >

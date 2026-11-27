@@ -498,7 +498,7 @@
 			<div
 				role="tablist"
 				aria-label="Task detail sections"
-				class="flex shrink-0 flex-wrap gap-1 border-b border-border px-5 pt-3 pb-2"
+				class="flex shrink-0 flex-wrap gap-4 border-b border-border px-5 pt-3"
 			>
 				{#each tabs as item, index (item.id)}
 					<button
@@ -510,10 +510,10 @@
 						tabindex={tab === item.id ? 0 : -1}
 						onclick={() => selectTab(item.id, false)}
 						onkeydown={(e) => onTabKey(e, index)}
-						class="flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {tab ===
+						class="-mb-px flex items-center gap-1.5 border-b-2 px-0.5 pb-2 font-mono text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 {tab ===
 						item.id
-							? 'bg-brand/10 text-foreground'
-							: 'text-muted-foreground hover:text-foreground'}"
+							? 'border-brand text-foreground'
+							: 'border-transparent text-muted-foreground hover:text-foreground'}"
 					>
 						{item.label}
 						{#if item.count !== null}
@@ -697,7 +697,7 @@
 									disabled={fieldBusy}
 									onclick={() => void toggleDone()}
 									class="grid size-6 place-items-center rounded border transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-50 {task.done
-										? 'border-brand bg-brand text-white'
+										? 'border-brand bg-brand text-primary-foreground'
 										: 'border-border text-transparent hover:border-brand/60 hover:text-brand/50'}"
 								>
 									<Check class="size-4" aria-hidden="true" />
@@ -793,7 +793,7 @@
 											disabled={!canEdit || subtaskBusy}
 											onclick={() => void toggleSubtask(subtask)}
 											class="grid size-4.5 shrink-0 place-items-center rounded border transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-50 {subtask.done
-												? 'border-brand bg-brand text-white'
+												? 'border-brand bg-brand text-primary-foreground'
 												: 'border-border text-transparent hover:border-brand/60 hover:text-brand/50'}"
 										>
 											<Check class="size-3" aria-hidden="true" />
@@ -811,7 +811,7 @@
 												aria-label="Delete {subtask.title}"
 												title="Delete checklist item"
 												disabled={subtaskBusy}
-												class="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-40"
+												class="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-40"
 												onclick={() => void removeSubtask(subtask)}
 											>
 												<X class="size-3.5" aria-hidden="true" />
@@ -852,7 +852,7 @@
 													type="button"
 													aria-label="Delete comment by {userLabel(comment.authorName)}"
 													title="Delete comment"
-													class="grid size-6 place-items-center rounded-full text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+													class="grid size-6 place-items-center rounded-md text-muted-foreground/60 transition-colors hover:text-danger focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
 													onclick={() => {
 														commentDeleteError = null;
 														commentTarget = comment;
@@ -977,7 +977,7 @@
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
-					class="h-auto rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 					onclick={(e) => {
 						if (deleting) e.preventDefault();
 					}}
@@ -1025,7 +1025,7 @@
 			{/if}
 			<div class="mt-4 flex items-center justify-end gap-2">
 				<AlertDialog.Cancel
-					class="h-auto rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+					class="h-auto rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
 					onclick={(e) => {
 						if (commentDeleting) e.preventDefault();
 					}}

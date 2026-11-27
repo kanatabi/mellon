@@ -344,7 +344,7 @@
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
-						class="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
+						class="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground active:scale-[0.98] disabled:opacity-40"
 						onclick={() => fileInput?.click()}
 						disabled={importing}
 					>
@@ -361,7 +361,7 @@
 					/>
 					<a
 						href="/posts/new"
-						class="flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
+						class="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand/90 active:scale-[0.98]"
 					>
 						<Plus class="size-4" /> New Post
 					</a>
@@ -419,7 +419,7 @@
 						<a
 							href={buildUrl({ status: chip.value })}
 							aria-current={active ? 'true' : undefined}
-							class="shrink-0 rounded-full border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
+							class="shrink-0 rounded-md border px-3 py-1 font-mono text-xs whitespace-nowrap transition-colors {active
 								? 'border-brand bg-brand/10 text-foreground'
 								: 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground'}"
 						>
@@ -429,7 +429,7 @@
 					{#if hasFilters}
 						<a
 							href="/posts"
-							class="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+							class="flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 font-mono text-xs whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
 						>
 							<X class="size-3" /> clear
 						</a>
@@ -451,7 +451,7 @@
 					<SlidersHorizontal class="size-4" />
 					{#if sheetCount}
 						<span
-							class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-white"
+							class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 font-mono text-[9px] text-primary-foreground"
 							>{sheetCount}</span
 						>
 					{/if}
@@ -573,7 +573,7 @@
 					{#if data.page > 1}
 						<a
 							href={buildUrl({ page: data.page - 1 })}
-							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							class="rounded-md border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 							>← prev</a
 						>
 					{:else}
@@ -583,7 +583,7 @@
 					{#if data.page < data.totalPages}
 						<a
 							href={buildUrl({ page: data.page + 1 })}
-							class="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
+							class="rounded-md border border-border px-3 py-1 text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
 							>next →</a
 						>
 					{:else}
@@ -663,7 +663,7 @@
 						aria-current={on ? 'true' : undefined}
 						aria-disabled={searching || undefined}
 						title={searching ? 'relevance order while searching' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
+						class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors {searching
 							? 'opacity-40'
 							: on
 								? 'border-brand bg-brand/10 text-foreground'
@@ -712,7 +712,7 @@
 					<a
 						href={buildUrl({ toggleTag: t.name })}
 						aria-current={on ? 'true' : undefined}
-						class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
+						class="flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 font-mono text-[11px] transition-colors {on
 							? 'border-brand bg-brand/10 text-foreground'
 							: 'border-border text-muted-foreground hover:text-foreground'}"
 					>
