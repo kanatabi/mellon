@@ -622,6 +622,15 @@ messages and empty states carry no decorative `;`. The semicolon lives only in t
 
 ### 11.4 Per-view anatomy
 
+- **The account surface (top bar)** — the identity PILL (avatar + username +
+  chevron on sm+; avatar only below) opens a grouped icon menu: identity
+  header (avatar, username, "Estate console"; scopes in a tooltip), ACCOUNT
+  (Settings, Security), PREFERENCES (Appearance, the in-place Theme segmented
+  control) and a danger-tinted Sign out. Later: Profile under ACCOUNT, and
+  Devices/OTP under Security — the structure has the slots; no fake
+  plan/billing/switch-account rows. DropdownMenu keeps Esc, roving focus,
+  typeahead and focus-return.
+
 - **The auth gate (`/login`, `/setup`)** — the shared `AuthShell` (2026-11-28):
   one card on `--chrome`, **form RIGHT / visual LEFT**; below lg the visual is
   hidden and only a thin aurora strip rides the card's top edge. The visual
