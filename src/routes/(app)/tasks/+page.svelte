@@ -16,6 +16,8 @@
 	import TaskDrawer from '#lib/components/tasks/TaskDrawer.svelte';
 	import TaskRow from '#lib/components/tasks/TaskRow.svelte';
 	import TaskStatsRow from '#lib/components/tasks/TaskStatsRow.svelte';
+	import { setPageCommands } from '#lib/page-commands.svelte.ts';
+	import { taskCommands } from '#lib/tasks/commands.ts';
 	import { flash } from '#lib/flash.svelte.ts';
 	import {
 		DEFAULT_TASK_SORT,
@@ -185,6 +187,39 @@
 		}
 	});
 
+	// The palette's tasks verbs (DESIGN §7): registered while this page is the
+	// mounted context, cleared on leave. The same store the editor uses — a
+	// 403 panel registers nothing, and a scope-less account never sees a verb
+	// it cannot run.
+	$effect(() => {
+		if (!principal || loadError || !workspace) {
+			setPageCommands([]);
+			return;
+		}
+		setPageCommands(
+			taskCommands({
+				view,
+				projectId,
+				sort,
+				projects,
+				tasks: visibleTasks,
+				canCreate,
+				inviteCount: invites.length,
+				setView: (next) => (view = next),
+				setProject: (next) => (projectId = next),
+				setSort: (next) => (sort = next),
+				openTask: (id) => (drawerId = id),
+				newTask: () => (composerOpen = true),
+				newProject: () => (newProjectOpen = true),
+				reviewInvites: () =>
+					document
+						.getElementById('task-invites')
+						?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+			})
+		);
+		return () => setPageCommands([]);
+	});
+
 	onMount(() => {
 		void loadInvites();
 	});
@@ -305,15 +340,17 @@
 	</header>
 
 	{#if !loadError && (invites.length > 0 || invitesLoadError || inviteActionError)}
-		<InviteBanner
-			{invites}
-			busyId={inviteBusyId}
-			error={inviteActionError}
-			loadError={invitesLoadError}
-			onretry={() => void loadInvites()}
-			onaccept={(invite) => void acceptInvite(invite)}
-			ondecline={(invite) => void declineInvite(invite)}
-		/>
+		<div id="task-invites">
+			<InviteBanner
+				{invites}
+				busyId={inviteBusyId}
+				error={inviteActionError}
+				loadError={invitesLoadError}
+				onretry={() => void loadInvites()}
+				onaccept={(invite) => void acceptInvite(invite)}
+				ondecline={(invite) => void declineInvite(invite)}
+			/>
+		</div>
 	{/if}
 
 	{#if loadError}
@@ -367,7 +404,7 @@
 			<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
 				<div class="flex shrink-0 flex-wrap items-center gap-2">
 					<div
-						class="flex rounded-full border border-border p-0.5"
+						class="flex rounded-md border border-border bg-muted p-0.5"
 						role="group"
 						aria-label="Task view"
 					>
@@ -376,9 +413,8 @@
 								type="button"
 								onclick={() => (view = option.id)}
 								aria-pressed={view === option.id}
-								class="rounded-full px-3 py-1 font-mono text-xs transition-colors {view ===
-								option.id
-									? 'bg-brand/10 text-foreground'
+								class="rounded-sm px-3 py-1 font-mono text-xs transition-colors {view === option.id
+									? 'bg-card text-foreground ring-1 ring-border'
 									: 'text-muted-foreground hover:text-foreground'}"
 							>
 								{option.label}
@@ -508,7 +544,7 @@
 									</h2>
 									{#if group.completed}
 										<span
-											class="rounded-full border border-dashed border-muted-foreground/40 px-1.5 py-0 font-mono text-[9px] text-muted-foreground/70"
+											class="rounded-sm border border-dashed border-muted-foreground/40 px-1.5 py-0 font-mono text-[9px] text-muted-foreground/70"
 										>
 											completed
 										</span>

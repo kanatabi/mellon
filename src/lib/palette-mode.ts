@@ -13,7 +13,7 @@
 export type PaletteMode = 'all' | 'commands' | 'content' | 'pages' | 'insert' | 'edit';
 
 /** Command groups (mirrors commands.ts — kept literal to avoid a cycle). */
-type Group = 'actions' | 'go to' | 'open recent' | 'posts' | 'photos' | 'tags';
+type Group = 'actions' | 'go to' | 'open recent' | 'posts' | 'photos' | 'tags' | 'tasks';
 
 const PREFIXES: Record<string, PaletteMode> = { '>': 'commands', '/': 'content', '#': 'pages' };
 

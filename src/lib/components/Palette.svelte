@@ -192,8 +192,17 @@
 				].filter((c) => acceptsGroup(mode, c.group))
 			: commands.filter((c) => acceptsGroup(mode, c.group));
 		// content first, then portal actions — searching "alpine" should find
-		// the photo, not the word "actions"
-		const order = { photos: 0, posts: 1, tags: 2, actions: 3, 'go to': 4, 'open recent': 5 };
+		// the photo, not the word "actions". Task rows sit beside content:
+		// they are the page's data, not a portal verb.
+		const order = {
+			photos: 0,
+			posts: 1,
+			tags: 2,
+			tasks: 3,
+			actions: 4,
+			'go to': 5,
+			'open recent': 6
+		};
 		return [...list].sort(
 			(a, b) => order[a.group] - order[b.group] || a.title.localeCompare(b.title)
 		);
@@ -206,7 +215,8 @@
 	const GROUP_HUE: Partial<Record<Cmd['group'], string>> = {
 		posts: 'var(--accent-blue)',
 		photos: 'var(--accent-teal)',
-		tags: 'var(--accent-slate)'
+		tags: 'var(--accent-slate)',
+		tasks: 'var(--accent-teal)'
 	};
 
 	/** The pill's inline style — cast hue at 12% wash, 30% edge (the nav-row
@@ -510,7 +520,7 @@
 							     echoes the nav. aria-hidden: the title speaks the meaning. -->
 							<span
 								aria-hidden="true"
-								class="shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase"
+								class="shrink-0 rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase"
 								style={groupPillStyle(cmd.group)}
 							>
 								{cmd.group}

@@ -9,7 +9,7 @@ import type { PaletteMode } from './palette-mode.ts';
 export interface Command {
 	id: string;
 	title: string;
-	group: 'go to' | 'actions' | 'open recent' | 'posts' | 'photos' | 'tags';
+	group: 'go to' | 'actions' | 'open recent' | 'posts' | 'photos' | 'tags' | 'tasks';
 	shortcut?: string;
 	/** Enter drills into these rows IN THE PALETTE instead of closing it —
 	 *  the submenu doctrine (§7). A parent with children is never `run`. */
@@ -57,14 +57,9 @@ const nav = (id: string, title: string, href: string, shortcut?: string): Comman
 });
 
 export const baseCommands: Command[] = [
-	nav('go.dashboard', 'Dashboard', '/', 'g d'),
-	nav('go.posts', 'Posts', '/posts', 'g p'),
-	nav('go.photos', 'Photos', '/photos'),
-	nav('go.tags', 'Tags', '/tags'),
-	nav('go.configs', 'Configs', '/configs'),
-	nav('go.vault', 'Vault · edit values', '/configs/vault'),
-	nav('go.compare', 'Compare versions', '/configs/compare'),
-	nav('go.users', 'Users · roles & access', '/settings/users'),
+	// Destinations are NOT duplicated here: the shell derives them from
+	// `destinations.ts` through the same `held()` gate as the rail (one truth,
+	// two consumers). What remains is genuinely global and scope-free.
 	nav('go.settings', 'Settings', '/settings'),
 	{
 		// Global import: the photos page treats ?upload=1 as "open the picker on

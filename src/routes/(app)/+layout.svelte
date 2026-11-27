@@ -1,30 +1,18 @@
 <script lang="ts">
 	import { navigating } from '$app/state';
-	import {
-		Command as CommandIcon,
-		FileText,
-		House,
-		Images,
-		GitCompareArrows,
-		LayoutGrid,
-		KeyRound,
-		ListTodo,
-		Menu,
-		Search,
-		Tag,
-		Users
-	} from 'lucide-svelte';
+	import { Command as CommandIcon, Menu, Search } from 'lucide-svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import Palette from '#lib/components/Palette.svelte';
 	import NotificationBell from '#lib/components/notifications/NotificationBell.svelte';
 	import UserMenu from '#lib/components/UserMenu.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { navRail } from '#lib/rails.svelte.ts';
 	import { writeVimCookie } from '#lib/session.ts';
 	import { stateToggle } from '#lib/command-kit.ts';
 	import { toggleMode, setTheme, themeState } from '#lib/theme-state.svelte.ts';
 	import { THEMES } from '#lib/theme-registry.ts';
 	import { baseCommands, recentCommands, type Command } from '#lib/commands.ts';
+	import { destinationCommands, visibleDestinationGroups } from '#lib/destinations.ts';
 	import { pageCommands } from '#lib/page-commands.svelte.ts';
 	import AppSidebar from './app-sidebar.svelte';
 	import type { LayoutProps } from './$types';
@@ -65,14 +53,21 @@
 		}
 	});
 
+	// The scope gate is shared with the rail: the destination table is the one
+	// truth, and the palette derives its `go to` rows from the SAME filtered
+	// groups. A row that answers 403 is never offered.
+	const held = (scope: string) => data.principal?.scopes?.includes(scope) ?? false;
+	const navGroups = $derived(visibleDestinationGroups(held));
+
 	const commands = $derived<Command[]>([
+		...destinationCommands(navGroups, (href) => void goto(href)),
 		...baseCommands,
 		{
 			id: 'action.new-post',
 			title: 'New post',
 			group: 'actions',
 			shortcut: 'n',
-			run: () => void import('$app/navigation').then(({ goto }) => goto('/posts/new'))
+			run: () => void goto('/posts/new')
 		},
 		// Global toggles: the hint column shows CURRENT STATE — the palette
 		// answers "what mode am I in?" before you flip it (owner call).
@@ -146,86 +141,6 @@
 		paletteOpen = true;
 	}
 
-	// Wayfinding cast (owner call 2026-11-08): one hue per destination, all at
-	// the same chroma/lightness band. IA 2026-11-11 (owner): three honest
-	// groups — Content, Control Plane, Admin (admins only; lumen enforces the
-	// 403 regardless; hiding a door that answers 403 is courtesy). Settings is
-	// NOT a destination group: it lives in the footer with the identity it
-	// edits — the account menu, since S2.8.
-	// the nav is SCOPE-AWARE (the RBAC spine): each destination declares
-	// its requirement; the rail renders only what the principal holds, and
-	// a group that ends up empty collapses away entirely. The same map
-	// backs the courtesy gates in each section's page server — one truth,
-	// two consumers (the rail + the palette read the same declared table).
-	interface ScopedNavGroup {
-		label: string;
-		/** The historical single-scope requirement. */
-		scope?: string;
-		/** ANY-OF requirement (the tasks trio): the group opens when the
-		 *  principal holds at least one — lumen enforces, the rail is a
-		 *  courtesy gate. */
-		scopes?: string[];
-		items: { href: string; icon: typeof House; label: string; hue: string }[];
-	}
-
-	const SCOPED_NAV: ScopedNavGroup[] = [
-		// the DASHBOARD is the home (the widget-home round): every
-		// authenticated user gets it — it renders widgets for whatever
-		// scopes the principal holds
-		{
-			label: 'Home',
-			items: [{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' }]
-		},
-		{
-			label: 'Tools',
-			// any of the three grants opens the workspace door; the page's
-			// own 403 stays the page's business (courtesy gate only).
-			scopes: ['tasks:create', 'tasks:update', 'tasks:manage'],
-			items: [{ href: '/tasks', icon: ListTodo, label: 'Tasks', hue: 'var(--accent-teal)' }]
-		},
-		{
-			label: 'Content',
-			scope: 'content:manage' as const,
-			items: [
-				{ href: '/posts', icon: FileText, label: 'Posts', hue: 'var(--accent-blue)' },
-				{ href: '/photos', icon: Images, label: 'Photos', hue: 'var(--accent-teal)' },
-				{ href: '/tags', icon: Tag, label: 'Tags', hue: 'var(--accent-slate)' }
-			]
-		},
-		{
-			label: 'Control plane',
-			scope: 'secrets:admin' as const,
-			items: [
-				{ href: '/configs', icon: LayoutGrid, label: 'Configs', hue: 'var(--accent-amber)' },
-				{ href: '/configs/vault', icon: KeyRound, label: 'Vault', hue: 'var(--accent-amber)' },
-				{
-					href: '/configs/compare',
-					icon: GitCompareArrows,
-					label: 'Compare',
-					hue: 'var(--accent-amber)'
-				}
-			]
-		}
-	];
-	const held = (scope: string) => data.principal?.scopes?.includes(scope) ?? false; // degradation rule: quiet, never 500
-	// Group visibility: no requirement = everyone; `scope` = that one scope;
-	// `scopes` = ANY of them (the tasks trio).
-	const groupHeld = (g: ScopedNavGroup) =>
-		g.scope !== undefined ? held(g.scope) : g.scopes !== undefined ? g.scopes.some(held) : true;
-	const navGroups = $derived([
-		...SCOPED_NAV.filter(groupHeld),
-		...(held('users:manage')
-			? [
-					{
-						label: 'Admin',
-						items: [
-							{ href: '/admin/users', icon: Users, label: 'Users', hue: 'var(--accent-teal)' }
-						]
-					}
-				]
-			: [])
-	]);
-
 	// ── The sidebar block wiring (S2, D6): the block's open state is the ONE
 	// source; navRail is the persistence. ⌘B and the footer toggle both arrive
 	// as absolute values through onOpenChange; this derived mirrors the store
@@ -252,7 +167,7 @@
 	<AppSidebar groups={navGroups} onMobileClose={() => burger?.focus()} />
 
 	<div class="flex min-h-0 min-w-0 flex-1 flex-col">
-		<!-- Top bar: three-zone flow grid (§11.1) — the centered ⌘K pill
+		<!-- Top bar: three-zone flow grid (§11.1) — the centered ⌘K field
 		     reserves its space in the middle zone (absolute centering doesn't
 		     truncate siblings). Breadcrumbs live IN-PAGE (owner call
 		     2026-11-17). The hamburger is the block's Trigger wearing mellon's
@@ -272,7 +187,7 @@
 			<button
 				type="button"
 				onclick={openPalette}
-				class="hidden w-80 max-w-[42vw] items-center justify-between gap-2 rounded-full border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:col-start-2 md:flex md:justify-self-center"
+				class="hidden w-80 max-w-[42vw] items-center justify-between gap-2 rounded-md border border-border bg-card/60 px-4 py-2 font-mono text-xs text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground md:col-start-2 md:flex md:justify-self-center"
 				aria-label="Open command palette"
 			>
 				<span class="flex items-center gap-2">
@@ -288,7 +203,7 @@
 					type="button"
 					onclick={openPalette}
 					aria-label="Search"
-					class="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted md:hidden"
+					class="flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted md:hidden"
 				>
 					<Search class="size-4" />
 				</button>
