@@ -55,6 +55,19 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 			principal = null;
 		}
 	}
+	// The bell's number, FAIL-SOFT (the app-center rule): a notifications
+	// outage must never 503 the portal or hide its chrome. The panel pulls
+	// its list on open; this is only the badge count the topbar renders.
+	// Lumen's reads are any-authenticated-user, so no scope gate belongs here.
+	let unreadCount = 0;
+	if (principal) {
+		try {
+			const count = await createApi(bearer).notificationsUnreadCount();
+			if (Number.isFinite(count) && count > 0) unreadCount = Math.floor(count);
+		} catch {
+			/* quiet degradation: no badge rather than an outage page */
+		}
+	}
 	let recent: RecentEntry[];
 	try {
 		recent = JSON.parse(cookies.get(RECENT_COOKIE) ?? '[]');
@@ -63,5 +76,5 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 	}
 	// Non-httpOnly preference cookie: the CodeMirror component reads it at init.
 	const vim = cookies.get('mellon_vim') === '1';
-	return { recent, vim, principal };
+	return { recent, vim, principal, unreadCount };
 };

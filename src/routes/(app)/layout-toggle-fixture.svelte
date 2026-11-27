@@ -19,6 +19,7 @@
 		},
 		recent: [],
 		vim: false,
+		unreadCount: 0,
 		autosaveSeconds: 60
 	};
 	const params = {};

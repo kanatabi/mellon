@@ -8,6 +8,7 @@
 		GitCompareArrows,
 		LayoutGrid,
 		KeyRound,
+		ListTodo,
 		Menu,
 		Search,
 		Tag,
@@ -15,6 +16,7 @@
 	} from 'lucide-svelte';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import Palette from '#lib/components/Palette.svelte';
+	import NotificationBell from '#lib/components/notifications/NotificationBell.svelte';
 	import UserMenu from '#lib/components/UserMenu.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { navRail } from '#lib/rails.svelte.ts';
@@ -155,13 +157,31 @@
 	// a group that ends up empty collapses away entirely. The same map
 	// backs the courtesy gates in each section's page server — one truth,
 	// two consumers (the rail + the palette read the same declared table).
-	const SCOPED_NAV = [
+	interface ScopedNavGroup {
+		label: string;
+		/** The historical single-scope requirement. */
+		scope?: string;
+		/** ANY-OF requirement (the tasks trio): the group opens when the
+		 *  principal holds at least one — lumen enforces, the rail is a
+		 *  courtesy gate. */
+		scopes?: string[];
+		items: { href: string; icon: typeof House; label: string; hue: string }[];
+	}
+
+	const SCOPED_NAV: ScopedNavGroup[] = [
 		// the DASHBOARD is the home (the widget-home round): every
 		// authenticated user gets it — it renders widgets for whatever
 		// scopes the principal holds
 		{
 			label: 'Home',
 			items: [{ href: '/', icon: House, label: 'Dashboard', hue: 'var(--brand)' }]
+		},
+		{
+			label: 'Tasks',
+			// any of the three grants opens the workspace door; the page's
+			// own 403 stays the page's business (courtesy gate only).
+			scopes: ['tasks:create', 'tasks:update', 'tasks:manage'],
+			items: [{ href: '/tasks', icon: ListTodo, label: 'Tasks', hue: 'var(--accent-teal)' }]
 		},
 		{
 			label: 'Content',
@@ -188,9 +208,12 @@
 		}
 	];
 	const held = (scope: string) => data.principal?.scopes?.includes(scope) ?? false; // degradation rule: quiet, never 500
+	// Group visibility: no requirement = everyone; `scope` = that one scope;
+	// `scopes` = ANY of them (the tasks trio).
+	const groupHeld = (g: ScopedNavGroup) =>
+		g.scope !== undefined ? held(g.scope) : g.scopes !== undefined ? g.scopes.some(held) : true;
 	const navGroups = $derived([
-		// the HOME group has no scope — it renders for everyone
-		...SCOPED_NAV.filter((g) => !('scope' in g) || held((g as { scope: string }).scope ?? '')),
+		...SCOPED_NAV.filter(groupHeld),
 		...(held('users:manage')
 			? [
 					{
@@ -270,6 +293,7 @@
 					<Search class="size-4" />
 				</button>
 				{#if data.principal}
+					<NotificationBell count={data.unreadCount} />
 					<UserMenu principal={data.principal} />
 				{/if}
 			</div>
