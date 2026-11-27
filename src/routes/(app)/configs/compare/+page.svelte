@@ -300,61 +300,59 @@
 		</div>
 	</div>
 
-	<!-- presentation + content + the display toggles -->
-	<div class="flex flex-col gap-2">
-		<div class="flex flex-wrap items-end gap-3">
-			<div class="flex flex-col gap-1">
-				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-					>view</span
-				>
-				<div
-					class="flex rounded-lg border border-border bg-muted p-0.5"
-					role="group"
-					aria-label="Presentation"
-				>
-					{#each PRESENTATIONS as p (p)}
-						<button
-							type="button"
-							onclick={() => (presentation = p)}
-							aria-pressed={presentation === p}
-							class="rounded-md px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
-							p
-								? 'bg-card text-foreground ring-1 ring-border'
-								: 'text-muted-foreground hover:text-foreground'}"
-						>
-							{p}
-						</button>
-					{/each}
-				</div>
-			</div>
-			<div class="flex flex-col gap-1">
-				<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
-					>content</span
-				>
-				<div
-					class="flex rounded-lg border border-border bg-muted p-0.5"
-					role="group"
-					aria-label="Content form"
-					title="Raw JSON diffs the serialized bytes; parsed diffs sorted KEY=value lines"
-				>
-					{#each CONTENTS as c (c)}
-						<button
-							type="button"
-							onclick={() => (content = c)}
-							aria-pressed={content === c}
-							disabled={presentation === 'table' && c === 'raw'}
-							class="rounded-md px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
-							c
-								? 'bg-card text-foreground ring-1 ring-border'
-								: 'text-muted-foreground hover:text-foreground'}"
-						>
-							{c === 'raw' ? 'Raw JSON' : 'Parsed'}
-						</button>
-					{/each}
-				</div>
+	<!-- presentation + content + the display toggles, one row; the toggles
+	     ride the right edge (they wrap under it on narrow screens). -->
+	<div class="flex flex-wrap items-end gap-3">
+		<div class="flex flex-col gap-1">
+			<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">view</span
+			>
+			<div
+				class="flex rounded-lg border border-border bg-muted p-0.5"
+				role="group"
+				aria-label="Presentation"
+			>
+				{#each PRESENTATIONS as p (p)}
+					<button
+						type="button"
+						onclick={() => (presentation = p)}
+						aria-pressed={presentation === p}
+						class="rounded-md px-3 py-1 font-mono text-xs capitalize transition-colors {presentation ===
+						p
+							? 'bg-card text-foreground ring-1 ring-border'
+							: 'text-muted-foreground hover:text-foreground'}"
+					>
+						{p}
+					</button>
+				{/each}
 			</div>
 		</div>
-		<div class="flex flex-wrap items-center gap-2">
+		<div class="flex flex-col gap-1">
+			<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase"
+				>content</span
+			>
+			<div
+				class="flex rounded-lg border border-border bg-muted p-0.5"
+				role="group"
+				aria-label="Content form"
+				title="Raw JSON diffs the serialized bytes; parsed diffs sorted KEY=value lines"
+			>
+				{#each CONTENTS as c (c)}
+					<button
+						type="button"
+						onclick={() => (content = c)}
+						aria-pressed={content === c}
+						disabled={presentation === 'table' && c === 'raw'}
+						class="rounded-md px-3 py-1 font-mono text-xs transition-colors disabled:opacity-40 {content ===
+						c
+							? 'bg-card text-foreground ring-1 ring-border'
+							: 'text-muted-foreground hover:text-foreground'}"
+					>
+						{c === 'raw' ? 'Raw JSON' : 'Parsed'}
+					</button>
+				{/each}
+			</div>
+		</div>
+		<div class="ml-auto flex flex-wrap items-center gap-2">
 			<Button
 				type="button"
 				onclick={() => (wrap = !wrap)}
