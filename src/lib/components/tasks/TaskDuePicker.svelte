@@ -59,11 +59,11 @@
 	<Popover.Trigger
 		{disabled}
 		aria-label={label}
-		class="group flex w-full items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-left transition-colors hover:border-muted-foreground focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+		class="group flex w-full items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-muted-foreground focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 	>
-		<CalendarDays class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+		<CalendarDays class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
 		<span
-			class="min-w-0 grow truncate font-mono text-xs {value
+			class="min-w-0 grow truncate font-mono text-sm {value
 				? 'text-foreground'
 				: 'text-muted-foreground'}"
 		>
