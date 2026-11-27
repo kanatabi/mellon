@@ -519,7 +519,7 @@
 								selectPath(app, first);
 							}}
 						>
-							<Select.Trigger aria-label="App namespace" class="w-full">
+							<Select.Trigger size="sm" aria-label="App namespace" class="w-full">
 								<Select.Value />
 							</Select.Trigger>
 							<Select.Content class="min-w-[220px]">

@@ -201,7 +201,7 @@
 						to: undefined
 					})}
 			>
-				<Select.Trigger aria-label="App namespace">
+				<Select.Trigger size="sm" aria-label="App namespace">
 					<Select.Value />
 				</Select.Trigger>
 				<Select.Content>
@@ -219,7 +219,7 @@
 				value={String(data.env)}
 				onValueChange={(env) => go({ env, from: undefined, to: undefined })}
 			>
-				<Select.Trigger aria-label="Environment">
+				<Select.Trigger size="sm" aria-label="Environment">
 					<Select.Value />
 				</Select.Trigger>
 				<Select.Content>
@@ -241,7 +241,7 @@
 				value={String(data.fromV)}
 				onValueChange={(from) => go({ from: Number(from) })}
 			>
-				<Select.Trigger aria-label="From version">
+				<Select.Trigger size="sm" aria-label="From version">
 					<Select.Value />
 				</Select.Trigger>
 				<Select.Content class="min-w-[340px]">
@@ -266,7 +266,7 @@
 				value={String(data.toV)}
 				onValueChange={(to) => go({ to: Number(to) })}
 			>
-				<Select.Trigger aria-label="To version">
+				<Select.Trigger size="sm" aria-label="To version">
 					<Select.Value />
 				</Select.Trigger>
 				<Select.Content class="min-w-[340px]">
