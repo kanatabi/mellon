@@ -1,6 +1,13 @@
 import type { Command } from '#lib/commands.ts';
 import type { TaskItem, TaskProject, TaskView } from '#lib/api/types.ts';
-import { TASK_SORTS, type TaskSort } from './list.ts';
+import {
+	TASK_SORTS,
+	type TaskAssigneeFilter,
+	type TaskAssigneeOption,
+	type TaskPriorityFilter,
+	type TaskSort,
+	type TaskStatusFilter
+} from './list.ts';
 
 /**
  * The tasks workspace's palette verbs — pure, node-tested.
@@ -22,6 +29,11 @@ export interface TaskCommandOpts {
 	view: TaskView;
 	projectId: string | null;
 	sort: TaskSort;
+	status: TaskStatusFilter;
+	assignee: TaskAssigneeFilter;
+	priority: TaskPriorityFilter;
+	assignees: readonly TaskAssigneeOption[];
+	filterActive: boolean;
 	projects: readonly TaskProject[];
 	/** The current view's tasks (already filtered/sorted by the page) — the
 	 *  palette rows are the SAME tasks the list shows. */
@@ -31,6 +43,10 @@ export interface TaskCommandOpts {
 	setView: (view: TaskView) => void;
 	setProject: (projectId: string | null) => void;
 	setSort: (sort: TaskSort) => void;
+	setStatus: (status: TaskStatusFilter) => void;
+	setAssignee: (assignee: TaskAssigneeFilter) => void;
+	setPriority: (priority: TaskPriorityFilter) => void;
+	clearFilters: () => void;
 	openTask: (taskId: string) => void;
 	newTask: () => void;
 	newProject: () => void;
@@ -42,6 +58,11 @@ export function taskCommands(opts: TaskCommandOpts): Command[] {
 		view,
 		projectId,
 		sort,
+		status,
+		assignee,
+		priority,
+		assignees,
+		filterActive,
 		projects,
 		tasks,
 		canCreate,
@@ -49,6 +70,10 @@ export function taskCommands(opts: TaskCommandOpts): Command[] {
 		setView,
 		setProject,
 		setSort,
+		setStatus,
+		setAssignee,
+		setPriority,
+		clearFilters,
 		openTask,
 		newTask,
 		newProject,
@@ -123,6 +148,68 @@ export function taskCommands(opts: TaskCommandOpts): Command[] {
 			run: () => setSort(option.value)
 		}))
 	});
+
+	rows.push({
+		id: 'task.filter.status',
+		title: 'Filter status',
+		group: 'actions',
+		children: [
+			{ value: 'all', label: 'Any status' },
+			{ value: 'open', label: 'Open' },
+			{ value: 'done', label: 'Done' }
+		].map((option) => ({
+			id: `task.filter.status.${option.value}`,
+			title: option.label,
+			group: 'actions' as const,
+			...(status === option.value ? { shortcut: '✓' } : {}),
+			run: () => setStatus(option.value as TaskStatusFilter)
+		}))
+	});
+
+	rows.push({
+		id: 'task.filter.assignee',
+		title: 'Filter assignee',
+		group: 'actions',
+		children: [
+			{ value: 'all', label: 'Anyone' },
+			{ value: 'unassigned', label: 'Unassigned' },
+			...assignees.map((option) => ({ value: option.id, label: option.label }))
+		].map((option) => ({
+			id: `task.filter.assignee.${option.value}`,
+			title: option.label,
+			group: 'actions' as const,
+			...(assignee === option.value ? { shortcut: '✓' } : {}),
+			run: () => setAssignee(option.value as TaskAssigneeFilter)
+		}))
+	});
+
+	rows.push({
+		id: 'task.filter.priority',
+		title: 'Filter priority',
+		group: 'actions',
+		children: [
+			{ value: 'all', label: 'Any priority' },
+			{ value: 'high', label: 'High' },
+			{ value: 'medium', label: 'Medium' },
+			{ value: 'low', label: 'Low' },
+			{ value: 'none', label: 'None' }
+		].map((option) => ({
+			id: `task.filter.priority.${option.value}`,
+			title: option.label,
+			group: 'actions' as const,
+			...(priority === option.value ? { shortcut: '✓' } : {}),
+			run: () => setPriority(option.value as TaskPriorityFilter)
+		}))
+	});
+
+	if (filterActive) {
+		rows.push({
+			id: 'task.filter.clear',
+			title: 'Clear task filters',
+			group: 'actions',
+			run: clearFilters
+		});
+	}
 
 	if (inviteCount > 0) {
 		rows.push({

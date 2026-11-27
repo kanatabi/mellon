@@ -16,15 +16,21 @@
 	import TaskDrawer from '#lib/components/tasks/TaskDrawer.svelte';
 	import TaskRow from '#lib/components/tasks/TaskRow.svelte';
 	import TaskStatsRow from '#lib/components/tasks/TaskStatsRow.svelte';
+	import TaskFilters from '#lib/components/tasks/TaskFilters.svelte';
 	import { setPageCommands } from '#lib/page-commands.svelte.ts';
 	import { taskCommands } from '#lib/tasks/commands.ts';
 	import { flash } from '#lib/flash.svelte.ts';
 	import {
 		DEFAULT_TASK_SORT,
+		assigneeOptions,
 		filterTasks,
 		groupTasksByProject,
 		sortTasks,
-		type TaskSort
+		taskFilterActive,
+		type TaskAssigneeFilter,
+		type TaskPriorityFilter,
+		type TaskSort,
+		type TaskStatusFilter
 	} from '#lib/tasks/list.ts';
 
 	/**
@@ -50,6 +56,9 @@
 	let view = $state<TaskView>('today');
 	let projectId = $state<string | null>(null);
 	let sort = $state<TaskSort>(DEFAULT_TASK_SORT);
+	let status = $state<TaskStatusFilter>('all');
+	let assignee = $state<TaskAssigneeFilter>('all');
+	let priority = $state<TaskPriorityFilter>('all');
 	let query = $state('');
 	let newProjectOpen = $state(false);
 
@@ -80,12 +89,20 @@
 	const adminProjectIds = $derived(
 		projects.filter((project) => project.role === 'admin').map((project) => project.id)
 	);
+	const assignees = $derived(assigneeOptions(tasks));
+	const filterActive = $derived(
+		taskFilterActive({ query: trimmedQuery, status, assignee, priority })
+	);
 	const sortedTasks = $derived(sortTasks(tasks, sort));
-	const visibleTasks = $derived(filterTasks(sortedTasks, trimmedQuery));
+	const visibleTasks = $derived(
+		filterTasks(sortedTasks, { query: trimmedQuery, status, assignee, priority })
+	);
 	const groups = $derived(groupTasksByProject(visibleTasks, projects));
 
 	const emptyMessage = $derived.by(() => {
 		if (trimmedQuery) return `nothing matches “${trimmedQuery}”`;
+		if (status !== 'all' || assignee !== 'all' || priority !== 'all')
+			return 'nothing matches these filters';
 		if (selectedProject) return `nothing in ${selectedProject.name} for this view`;
 		if (view === 'today') return 'nothing due today — the day is yours';
 		if (view === 'upcoming') return 'nothing upcoming';
@@ -112,6 +129,15 @@
 			// with zero results — it is gone; return to the whole workspace.
 			if (p && !next.projects.some((project) => project.id === p)) {
 				projectId = null;
+			}
+			// The same rule for an assignee filter: a person with no task in
+			// the new view is not a zero-result filter — the option is gone.
+			if (
+				assignee !== 'all' &&
+				assignee !== 'unassigned' &&
+				!next.tasks.some((task) => task.assignedTo === assignee)
+			) {
+				assignee = 'all';
 			}
 		} catch (e) {
 			if (gen !== loadGen) return;
@@ -169,6 +195,9 @@
 		void projectId;
 		void trimmedQuery;
 		void sort;
+		void status;
+		void assignee;
+		void priority;
 		if (listEl) listEl.scrollTop = 0;
 	});
 
@@ -201,6 +230,11 @@
 				view,
 				projectId,
 				sort,
+				status,
+				assignee,
+				priority,
+				assignees,
+				filterActive,
 				projects,
 				tasks: visibleTasks,
 				canCreate,
@@ -208,6 +242,10 @@
 				setView: (next) => (view = next),
 				setProject: (next) => (projectId = next),
 				setSort: (next) => (sort = next),
+				setStatus: (next) => (status = next),
+				setAssignee: (next) => (assignee = next),
+				setPriority: (next) => (priority = next),
+				clearFilters,
 				openTask: (id) => (drawerId = id),
 				newTask: () => (composerOpen = true),
 				newProject: () => (newProjectOpen = true),
@@ -223,6 +261,13 @@
 	onMount(() => {
 		void loadInvites();
 	});
+
+	function clearFilters() {
+		query = '';
+		status = 'all';
+		assignee = 'all';
+		priority = 'all';
+	}
 
 	function closeDrawer() {
 		drawerId = null;
@@ -389,14 +434,12 @@
 			<ProjectSidebar
 				{projects}
 				selectedId={projectId}
-				{sort}
 				bind:creating={newProjectOpen}
 				loading={loading && workspace === null}
 				{canCreate}
 				{canManage}
 				viewerId={principal?.id ?? ''}
 				onselect={(id) => (projectId = id)}
-				onsort={(next) => (sort = next)}
 				onChanged={() => void loadWorkspace(view, projectId, true)}
 				onDeleted={onProjectDeleted}
 			/>
@@ -449,7 +492,7 @@
 						{/if}
 					</div>
 
-					{#if trimmedQuery && workspace}
+					{#if filterActive && workspace}
 						<span class="font-mono text-[10px] text-muted-foreground">
 							{visibleTasks.length} of {tasks.length}
 						</span>
@@ -463,6 +506,20 @@
 						</span>
 					{/if}
 				</div>
+
+				<TaskFilters
+					{status}
+					{assignee}
+					{priority}
+					{sort}
+					{assignees}
+					active={filterActive}
+					onstatus={(next) => (status = next)}
+					onassignee={(next) => (assignee = next)}
+					onpriority={(next) => (priority = next)}
+					onsort={(next) => (sort = next)}
+					onclear={clearFilters}
+				/>
 
 				{#if refreshError}
 					<p class="font-mono text-[11px] break-words text-muted-foreground" role="status">

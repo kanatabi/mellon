@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { TaskItem, TaskProject } from '#lib/api/types.ts';
-import { filterTasks, groupTasksByProject, sortTasks } from './list.ts';
+import {
+	assigneeOptions,
+	filterTasks,
+	groupTasksByProject,
+	sortTasks,
+	taskFilterActive
+} from './list.ts';
 
 function project(id: string, name: string, over: Partial<TaskProject> = {}): TaskProject {
 	return {
@@ -188,24 +194,93 @@ describe('filterTasks', () => {
 	];
 
 	it('returns a copy for an empty query', () => {
-		const out = filterTasks(rows, '   ');
+		const out = filterTasks(rows, { query: '   ' });
 		expect(out).toHaveLength(3);
 		expect(out).not.toBe(rows);
 	});
 
 	it('is case-insensitive and searches title, project, assignee and notes', () => {
-		expect(filterTasks(rows, 'FIX').map((t) => t.id)).toEqual(['gate']);
-		expect(filterTasks(rows, 'studio').map((t) => t.id)).toEqual(['paint']);
-		expect(filterTasks(rows, 'SARAH').map((t) => t.id)).toEqual(['gate']);
-		expect(filterTasks(rows, 'hinge').map((t) => t.id)).toEqual(['gate']);
+		expect(filterTasks(rows, { query: 'FIX' }).map((t) => t.id)).toEqual(['gate']);
+		expect(filterTasks(rows, { query: 'studio' }).map((t) => t.id)).toEqual(['paint']);
+		expect(filterTasks(rows, { query: 'SARAH' }).map((t) => t.id)).toEqual(['gate']);
+		expect(filterTasks(rows, { query: 'hinge' }).map((t) => t.id)).toEqual(['gate']);
 	});
 
 	it('requires every whitespace-separated term', () => {
-		expect(filterTasks(rows, 'fix gate').map((t) => t.id)).toEqual(['gate']);
-		expect(filterTasks(rows, 'fix paint')).toEqual([]);
+		expect(filterTasks(rows, { query: 'fix gate' }).map((t) => t.id)).toEqual(['gate']);
+		expect(filterTasks(rows, { query: 'fix paint' })).toEqual([]);
 	});
 
 	it('returns an empty list when nothing matches', () => {
-		expect(filterTasks(rows, 'nothing')).toEqual([]);
+		expect(filterTasks(rows, { query: 'nothing' })).toEqual([]);
+	});
+});
+
+describe('the workspace filters', () => {
+	const rows = [
+		task({
+			id: 'a',
+			title: 'Alpha',
+			priority: 'high',
+			assignedTo: 'u-sarah',
+			assigneeName: 'sarah',
+			notes: 'roof'
+		}),
+		task({ id: 'b', title: 'Beta', priority: 'low' }),
+		task({
+			id: 'c',
+			title: 'Gamma',
+			done: true,
+			priority: 'medium',
+			assignedTo: 'u-tom',
+			assigneeName: 'tom'
+		})
+	];
+
+	it('status narrows to open or done', () => {
+		expect(filterTasks(rows, { status: 'open' }).map((t) => t.id)).toEqual(['a', 'b']);
+		expect(filterTasks(rows, { status: 'done' }).map((t) => t.id)).toEqual(['c']);
+		expect(filterTasks(rows, { status: 'all' })).toHaveLength(3);
+	});
+
+	it('priority narrows by the exact rank (none included)', () => {
+		expect(filterTasks(rows, { priority: 'high' }).map((t) => t.id)).toEqual(['a']);
+		expect(filterTasks(rows, { priority: 'none' })).toEqual([]);
+		expect(filterTasks(rows, { priority: 'medium' }).map((t) => t.id)).toEqual(['c']);
+	});
+
+	it('assignee filters by id and has the explicit unassigned door', () => {
+		expect(filterTasks(rows, { assignee: 'u-sarah' }).map((t) => t.id)).toEqual(['a']);
+		expect(filterTasks(rows, { assignee: 'unassigned' }).map((t) => t.id)).toEqual(['b']);
+	});
+
+	it('composes status + assignee + priority + query (AND)', () => {
+		expect(
+			filterTasks(rows, { query: 'roof', status: 'open', assignee: 'u-sarah', priority: 'high' })
+		).toHaveLength(1);
+		expect(
+			filterTasks(rows, { query: 'roof', status: 'done', assignee: 'u-sarah', priority: 'high' })
+		).toEqual([]);
+	});
+
+	it('derives the assignee vocabulary from the loaded rows', () => {
+		expect(assigneeOptions(rows)).toEqual([
+			{ id: 'u-sarah', label: 'sarah' },
+			{ id: 'u-tom', label: 'tom' }
+		]);
+		// duplicate assignees collapse; unassigned is not a person
+		expect(
+			assigneeOptions([...rows, task({ id: 'd', title: 'Delta', assignedTo: 'u-sarah' })])
+		).toHaveLength(2);
+		expect(assigneeOptions([task({ id: 'e', title: 'E' })])).toEqual([]);
+	});
+
+	it('knows when a filter is active (the Clear door)', () => {
+		expect(taskFilterActive({})).toBe(false);
+		expect(taskFilterActive({ query: '   ' })).toBe(false);
+		expect(taskFilterActive({ query: 'x' })).toBe(true);
+		expect(taskFilterActive({ status: 'open' })).toBe(true);
+		expect(taskFilterActive({ assignee: 'unassigned' })).toBe(true);
+		expect(taskFilterActive({ priority: 'high' })).toBe(true);
 	});
 });

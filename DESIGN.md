@@ -230,7 +230,8 @@ LONGEST-MATCH highlighting — nested hrefs light exactly one row.
   ONLY while the editor is mounted; leaving the page cannot leave stale commands behind.
   The photo detail page registers its own set (Save metadata ⌘S / Download / Delete…);
   the **tasks workspace** registers New task / New project / View / Project filter /
-  Sort / Review invitations / one row per visible task (flat, so typing a task title
+  Status / Assignee / Priority filters / Sort / Clear task filters / Review
+  invitations / one row per visible task (flat, so typing a task title
   lands in its drawer in one step) — gated by the tasks trio and the page's own
   workspace state (a 403 registers nothing).
   Contextual delete opens the confirm dialog, never deletes from the palette directly.
@@ -655,10 +656,13 @@ minSpan, body }` — **adding a widget = one folder + one registry line**
   panel naming the any-of scope trio, never a 500): the stats cards
   (open / due today / completed week / overdue — lumen computes them in
   the `X-Client-Timezone` zone the relay client sends), the My day /
-  Upcoming / All views, the projects SUB-SIDEBAR (role + counts, the
-  presentation-only SORT control, the admin settings door, the new-project
-  form) and the grouped list (checkbox-style toggle, priority badge,
-  assignee, due label; the row title opens the drawer). The **drawer** is
+  Upcoming / All views, the toolbar's FILTER ROW (status · assignee ·
+  priority + the sort control, all client-side over the loaded view; the
+  assignee vocabulary is the people the loaded rows show — a member with no
+  task in the view is deliberately absent), the projects SUB-SIDEBAR (role +
+  counts, the admin settings door, the new-project form) and the grouped
+  list (checkbox-style toggle, priority badge, assignee, due label; the row
+  title opens the drawer). The **drawer** is
   the existing right-side `Sheet`: details (inline title, explicit notes,
   auto-save priority/due/assignee, done, soft delete), checklist,
   comments (author/project-admin delete), activity. Project settings carry

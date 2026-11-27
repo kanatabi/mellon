@@ -1,26 +1,23 @@
 <script lang="ts">
 	import { MoreHorizontal, Plus } from 'lucide-svelte';
-	import * as Select from '#lib/components/ui/select/index.js';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 	import { client, errorText } from '#lib/api/client.ts';
 	import type { TaskProject } from '#lib/api/types.ts';
-	import { TASK_SORTS, type TaskSort } from '#lib/tasks/list.ts';
 	import { flash } from '#lib/flash.svelte.ts';
 	import ProjectSettingsDialog from './ProjectSettingsDialog.svelte';
 
 	/**
 	 * The projects sub-sidebar: the caller's memberships, the project
-	 * filter, the new-project door (tasks:create), the per-project settings
-	 * menu (tasks:manage + project admin), and the SORT control (C6 —
-	 * presentation only). Below lg the same block becomes a horizontal chip
-	 * strip above the list; the sort stays a real control in both shapes.
+	 * filter, the new-project door (tasks:create), and the per-project settings
+	 * menu (tasks:manage + project admin). Below lg the same block becomes a
+	 * horizontal chip strip above the list. The SORT control lives in the
+	 * toolbar's filter row now (2026-11-27) — one home, both shapes.
 	 */
 	interface Props {
 		projects: TaskProject[];
 		selectedId: string | null;
-		sort: TaskSort;
 		/** Bindable so an empty-state button can open the form. */
 		creating?: boolean;
 		/** The first workspace read is still in flight. */
@@ -30,7 +27,6 @@
 		/** The signed-in principal (the roster's "you" marker). */
 		viewerId: string;
 		onselect: (id: string | null) => void;
-		onsort: (sort: TaskSort) => void;
 		onChanged: () => void;
 		onDeleted: (id: string) => void;
 	}
@@ -38,14 +34,12 @@
 	let {
 		projects,
 		selectedId,
-		sort,
 		creating = $bindable(false),
 		loading,
 		canCreate,
 		canManage,
 		viewerId,
 		onselect,
-		onsort,
 		onChanged,
 		onDeleted
 	}: Props = $props();
@@ -254,30 +248,6 @@
 			no projects yet{canCreate ? ' — start one above' : ' — an admin can invite you to one'}
 		</p>
 	{/if}
-
-	<label class="flex flex-col gap-1 lg:mt-auto">
-		<span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-			sort tasks
-		</span>
-		<Select.Root
-			type="single"
-			items={TASK_SORTS}
-			value={sort}
-			onValueChange={(next) => onsort(next as TaskSort)}
-		>
-			<Select.Trigger aria-label="Sort tasks" class="w-full justify-between">
-				<Select.Value />
-			</Select.Trigger>
-			<Select.Content>
-				{#each TASK_SORTS as option (option.value)}
-					<Select.Item value={option.value} label={option.label} />
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		<span class="font-mono text-[9px] text-muted-foreground/50"
-			>presentation only — the view is lumen's</span
-		>
-	</label>
 </aside>
 
 {#if settingsProject}

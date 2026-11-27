@@ -44,6 +44,11 @@ function opts(over: Partial<TaskCommandOpts> = {}): TaskCommandOpts {
 		view: 'today',
 		projectId: null,
 		sort: 'due',
+		status: 'all',
+		assignee: 'all',
+		priority: 'all',
+		assignees: [{ id: 'u1', label: 'sarah' }],
+		filterActive: false,
 		projects: [project('p1', 'Home'), project('p2', 'Work')],
 		tasks: [
 			task({ id: 't1', title: 'Fix the roof' }),
@@ -54,6 +59,10 @@ function opts(over: Partial<TaskCommandOpts> = {}): TaskCommandOpts {
 		setView: vi.fn(),
 		setProject: vi.fn(),
 		setSort: vi.fn(),
+		setStatus: vi.fn(),
+		setAssignee: vi.fn(),
+		setPriority: vi.fn(),
+		clearFilters: vi.fn(),
 		openTask: vi.fn(),
 		newTask: vi.fn(),
 		newProject: vi.fn(),
@@ -74,6 +83,9 @@ describe('the tasks palette verbs', () => {
 				'task.view',
 				'task.project',
 				'task.sort',
+				'task.filter.status',
+				'task.filter.assignee',
+				'task.filter.priority',
 				'task.open.t1',
 				'task.open.t2'
 			])
@@ -142,5 +154,36 @@ describe('the tasks palette verbs', () => {
 		expect(t1?.group).toBe('tasks');
 		expect(t1?.shortcut).toBe('Home');
 		expect(t2?.shortcut).toBe('Work · done');
+	});
+});
+
+describe('the tasks palette filters', () => {
+	it('marks the current status/assignee/priority and routes picks', () => {
+		const o = opts({ status: 'open', assignee: 'u1', priority: 'high' });
+		const rows = taskCommands(o);
+		const status = byId(rows, 'task.filter.status');
+		const assignee = byId(rows, 'task.filter.assignee');
+		const priority = byId(rows, 'task.filter.priority');
+		expect(status?.children?.find((c) => c.id === 'task.filter.status.open')?.shortcut).toBe('✓');
+		expect(assignee?.children?.find((c) => c.id === 'task.filter.assignee.u1')?.shortcut).toBe('✓');
+		expect(priority?.children?.find((c) => c.id === 'task.filter.priority.high')?.shortcut).toBe(
+			'✓'
+		);
+		status?.children?.find((c) => c.id === 'task.filter.status.done')?.run?.();
+		assignee?.children?.find((c) => c.id === 'task.filter.assignee.unassigned')?.run?.();
+		priority?.children?.find((c) => c.id === 'task.filter.priority.none')?.run?.();
+		expect(o.setStatus).toHaveBeenCalledWith('done');
+		expect(o.setAssignee).toHaveBeenCalledWith('unassigned');
+		expect(o.setPriority).toHaveBeenCalledWith('none');
+	});
+
+	it('offers Clear only while a filter is active', () => {
+		expect(byId(taskCommands(opts({ filterActive: false })), 'task.filter.clear')).toBeUndefined();
+		expect(byId(taskCommands(opts({ filterActive: true })), 'task.filter.clear')).toBeTruthy();
+	});
+
+	it('carries the derived assignee vocabulary (Anyone + Unassigned + people)', () => {
+		const children = byId(taskCommands(opts()), 'task.filter.assignee')?.children ?? [];
+		expect(children.map((c) => c.title)).toEqual(['Anyone', 'Unassigned', 'sarah']);
 	});
 });
