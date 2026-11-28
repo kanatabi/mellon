@@ -429,20 +429,26 @@ export const client: AdminApi = {
 		}),
 
 	// ---- notifications (the bell; never the send door) ----
-	notifications: ({ unread, before, limit }: NotificationQuery = {}) => {
+	notifications: ({ unread, before, limit, env }: NotificationQuery = {}) => {
 		const params = new URLSearchParams();
 		if (unread !== undefined) params.set('unread', unread ? 'true' : 'false');
 		if (before) params.set('before', before);
 		if (limit !== undefined) params.set('limit', String(limit));
+		if (env) params.set('env', env);
 		const qs = params.toString();
 		return call<NotificationPage>(`/notifications${qs ? `?${qs}` : ''}`);
 	},
-	notificationsUnreadCount: () =>
-		call<{ count: number }>('/notifications/unread-count').then((r) => r.count),
+	notificationsUnreadCount: (env) =>
+		call<{ count: number }>(
+			`/notifications/unread-count${env ? `?env=${encodeURIComponent(env)}` : ''}`
+		).then((r) => r.count),
 	notificationMarkRead: (id) =>
 		call<void>(`/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }),
-	notificationsMarkAllRead: () =>
-		call<{ updated: number }>('/notifications/read-all', { method: 'POST' }).then((r) => r.updated)
+	notificationsMarkAllRead: (env) =>
+		call<{ updated: number }>(
+			`/notifications/read-all${env ? `?env=${encodeURIComponent(env)}` : ''}`,
+			{ method: 'POST' }
+		).then((r) => r.updated)
 };
 
 export async function preview(

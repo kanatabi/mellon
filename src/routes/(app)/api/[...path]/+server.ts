@@ -33,6 +33,9 @@ async function route(ctx: Ctx) {
 	const { params, url, request } = ctx;
 	const p = params.path.split('/').filter(Boolean);
 	const api = createApi(ctx.cookies.get(SESSION_COOKIE) ?? '');
+	// The shared bell is scoped to THIS console: the tenant comes from the
+	// deployment, never from the browser. Empty in dev = the global inbox.
+	const portalEnv = process.env.PORTAL_ENV ?? '';
 	const body = () => request.json();
 	const seg = p.join('/');
 
@@ -405,7 +408,8 @@ async function route(ctx: Ctx) {
 			await api.notifications({
 				unread: unread === null ? undefined : unread === 'true',
 				before,
-				limit: rawLimit === null ? undefined : Number(rawLimit)
+				limit: rawLimit === null ? undefined : Number(rawLimit),
+				env: portalEnv || undefined
 			})
 		);
 	}
@@ -415,7 +419,7 @@ async function route(ctx: Ctx) {
 		p[1] === 'unread-count' &&
 		request.method === 'GET'
 	) {
-		return json({ count: await api.notificationsUnreadCount() });
+		return json({ count: await api.notificationsUnreadCount(portalEnv || undefined) });
 	}
 	if (p[0] === 'notifications' && p.length === 3 && p[2] === 'read' && request.method === 'POST') {
 		await api.notificationMarkRead(p[1]);
@@ -427,7 +431,7 @@ async function route(ctx: Ctx) {
 		p[1] === 'read-all' &&
 		request.method === 'POST'
 	) {
-		return json({ updated: await api.notificationsMarkAllRead() });
+		return json({ updated: await api.notificationsMarkAllRead(portalEnv || undefined) });
 	}
 
 	return json({ error: 'no such route' }, { status: 404 });

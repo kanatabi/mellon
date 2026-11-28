@@ -27,6 +27,13 @@ export const variables = defineEnvVars({
 			'gets the staging service; same image as production, different env. ' +
 			'Path classes live in src/lib/api/routing.ts.'
 	},
+	PORTAL_ENV: {
+		schema: (value) => value,
+		description:
+			'This deployment’s tenant (staging | production), SERVER-SIDE ONLY. The ' +
+			'relay stamps it onto the shared notification bell so task links from the ' +
+			'OTHER environment never appear here. Unset in dev = one shared inbox.'
+	},
 	EDITOR_AUTOSAVE_SECONDS: {
 		schema: (value) => value,
 		description:

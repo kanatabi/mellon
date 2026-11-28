@@ -44,15 +44,6 @@ describe('route-class table — control plane (ADMIN_URL)', () => {
 		['pin lock', '/admin/bao/lumen/staging/pin'],
 		['app onboarding', '/admin/bao/apps'],
 		['env extend', '/admin/bao/mellon/envs'],
-		['task projects', '/admin/task-projects'],
-		['task project members', '/admin/task-projects/p1/members'],
-		['task invite revoke', '/admin/task-projects/p1/invites/i1'],
-		['tasks workspace', '/admin/tasks'],
-		['task detail', '/admin/tasks/t1'],
-		['task subtasks', '/admin/tasks/t1/subtasks/s1'],
-		['task invite inbox', '/admin/task-invites'],
-		['task invite accept', '/admin/task-invites/i1/accept'],
-		['task stats', '/admin/task-stats'],
 		['notifications list', '/admin/notifications'],
 		['notifications unread count', '/admin/notifications/unread-count'],
 		['notification read', '/admin/notifications/n1/read'],
@@ -77,7 +68,17 @@ describe('route-class table — CMS plane (CMS_URL)', () => {
 		['palette content door', '/admin/search'],
 		['public posts passthrough', '/api/posts'],
 		['public search passthrough', '/api/search/suggest'],
-		['feed passthrough', '/api/feed.xml']
+		['feed passthrough', '/api/feed.xml'],
+		['task projects', '/admin/task-projects'],
+		['task project members', '/admin/task-projects/p1/members'],
+		['task invite revoke', '/admin/task-projects/p1/invites/i1'],
+		['task people search', '/admin/task-projects/p1/people'],
+		['tasks workspace', '/admin/tasks'],
+		['task detail', '/admin/tasks/t1'],
+		['task subtasks', '/admin/tasks/t1/subtasks/s1'],
+		['task invite inbox', '/admin/task-invites'],
+		['task invite accept', '/admin/task-invites/i1/accept'],
+		['task stats', '/admin/task-stats']
 	])('%s routes to cms', (_name, path) => {
 		expect(upstreamFor(path)).toBe('cms');
 	});
@@ -111,8 +112,16 @@ describe('route-class table — discipline', () => {
 				if (a === b) continue;
 				expect(b.startsWith(`${a}/`)).toBe(false);
 			}
-			expect(upstreamFor(a)).toBe('admin');
 		}
+		for (const task of [
+			'/admin/task-projects',
+			'/admin/tasks',
+			'/admin/task-invites',
+			'/admin/task-stats'
+		]) {
+			expect(upstreamFor(task)).toBe('cms');
+		}
+		expect(upstreamFor('/admin/notifications')).toBe('admin');
 	});
 	it('unknown paths fail LOUDLY — no default-to-admin', () => {
 		let e: unknown = null;
@@ -252,7 +261,7 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		]);
 	});
 
-	it('tasks + notifications land on ADMIN_URL; the timezone header rides the two day reads', async () => {
+	it('tasks land on CMS_URL, notifications on ADMIN_URL; the timezone header rides the two day reads', async () => {
 		stub();
 		const a = api();
 		await a.tasksWorkspace({ view: 'today', projectId: 'p1', timezone: 'Asia/Jakarta' });
@@ -262,7 +271,8 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		await a.taskInviteeSearch('p1', '@sarah');
 		await a.notificationsUnreadCount();
 		expect(sent).toHaveLength(6);
-		for (const s of sent) expect(s.url.startsWith('http://admin.test/admin/')).toBe(true);
+		for (const s of sent.slice(0, 5)) expect(s.url.startsWith('http://cms.test/admin/')).toBe(true);
+		expect(sent[5].url.startsWith('http://admin.test/admin/')).toBe(true);
 		for (const s of sent) expect(s.auth).toBe('Bearer tok-1');
 		expect(sent.map((s) => new URL(s.url).pathname)).toEqual([
 			'/admin/tasks',
@@ -272,8 +282,8 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 			'/admin/task-projects/p1/people',
 			'/admin/notifications/unread-count'
 		]);
-		expect(sent[4].url).toBe('http://admin.test/admin/task-projects/p1/people?q=%40sarah');
-		expect(sent[0].url).toBe('http://admin.test/admin/tasks?view=today&project=p1');
+		expect(sent[4].url).toBe('http://cms.test/admin/task-projects/p1/people?q=%40sarah');
+		expect(sent[0].url).toBe('http://cms.test/admin/tasks?view=today&project=p1');
 		expect(sent[0].timezone).toBe('Asia/Jakarta');
 		expect(sent[1].timezone).toBe('Asia/Jakarta');
 		expect(sent[2].timezone).toBeUndefined(); // only the day reads carry it
@@ -287,7 +297,7 @@ describe('fetch-adapter — two stub bases, per route class', () => {
 		expect(JSON.parse(sent[0].body ?? 'null')).toEqual({ dueAt: null, assignedTo: null });
 		expect(JSON.parse(sent[1].body ?? 'null')).toEqual({ title: 'Fix the gate' });
 		expect(sent[0].method).toBe('PATCH');
-		expect(sent[0].url).toBe('http://admin.test/admin/tasks/t1');
+		expect(sent[0].url).toBe('http://cms.test/admin/tasks/t1');
 	});
 
 	it('posts + photos + tags + collections + search all land on CMS_URL, bearer rides', async () => {

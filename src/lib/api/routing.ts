@@ -5,13 +5,14 @@
  *
  *   ADMIN_URL — the CONTROL PLANE (lumen-admin, in-cluster, always). It
  *               holds the users: sessions, TOFU setup, user admin, the Bao
- *               secrets plane, and the tasks + notifications modules.
+ *               secrets plane, and the shared notification inbox.
  *               Content portals cannot mint or revoke identities; only this
  *               one can.
- *   CMS_URL   — this env's CONTENT lumen (posts/photos/tags/collections/
- *               media/search, and the public /api* passthroughs). dev
- *               default = the single binary on :8080, so plain `make dev`
- *               keeps working with zero extra wiring.
+ *   CMS_URL   — this env's APP + CONTENT lumen (posts/photos/tags/
+ *               collections/media/search, the public /api* passthroughs,
+ *               AND the tasks app — its tables live in this env's DB).
+ *               dev default = the single binary on :8080, so plain
+ *               `make dev` keeps working with zero extra wiring.
  *
  * The table keys on the lumen WIRE path (what the fetch-adapter ships),
  * segment-boundary aware: `/admin/session` matches `/admin/session/password`
@@ -87,28 +88,27 @@ export const ROUTE_TABLE: RouteClass[] = [
 		upstream: 'admin',
 		note: 'matrix/summary, vault read/write, pins, apps/envs, paths'
 	},
-	// the tasks + notifications modules (2026-11-27): both live on the
-	// admin plane with the users family — membership/identity is the room
-	// key, and the bell is per-user. The SEND door is not here: it is
-	// app-to-app and never rides the portal's relay.
+	// tasks (2026-11-29 app-plane ruling): the app serves on the cms plane,
+	// where its tables live; the admin plane is control + identity only.
+	// Notifications stay with the admin (one shared inbox for every app).
 	{
 		prefix: '/admin/task-projects',
-		upstream: 'admin',
+		upstream: 'cms',
 		note: 'tasks: projects, members, roles, invites (soft delete/completion flags)'
 	},
 	{
 		prefix: '/admin/tasks',
-		upstream: 'admin',
+		upstream: 'cms',
 		note: 'the tasks workspace: views, CRUD, toggle, subtasks, comments'
 	},
 	{
 		prefix: '/admin/task-invites',
-		upstream: 'admin',
+		upstream: 'cms',
 		note: "the caller's pending invite inbox (accept/decline)"
 	},
 	{
 		prefix: '/admin/task-stats',
-		upstream: 'admin',
+		upstream: 'cms',
 		note: 'timezone-aware stats rollup (X-Client-Timezone)'
 	},
 	{

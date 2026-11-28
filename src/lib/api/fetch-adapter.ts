@@ -587,26 +587,29 @@ export function createLumenApi(target: string | Upstreams, bearer: string): Admi
 			}),
 
 		// --- notifications (the bell; the send door is NOT a portal verb) ---
-		notifications: ({ unread, before, limit } = {}) =>
+		notifications: ({ unread, before, limit, env } = {}) =>
 			call<NotificationPage>('GET', '/admin/notifications', {
 				op: 'notifications.list',
 				query: q({
 					unread: unread === undefined ? undefined : unread ? 'true' : 'false',
 					before,
-					limit
+					limit,
+					env
 				})
 			}),
-		notificationsUnreadCount: () =>
+		notificationsUnreadCount: (env) =>
 			call<{ count: number }>('GET', '/admin/notifications/unread-count', {
-				op: 'notifications.count'
+				op: 'notifications.count',
+				query: q({ env })
 			}).then((r) => r.count),
 		notificationMarkRead: (id) =>
 			call<void>('POST', `/admin/notifications/${enc(id)}/read`, {
 				op: 'notifications.read'
 			}),
-		notificationsMarkAllRead: () =>
+		notificationsMarkAllRead: (env) =>
 			call<{ updated: number }>('POST', '/admin/notifications/read-all', {
-				op: 'notifications.read-all'
+				op: 'notifications.read-all',
+				query: q({ env })
 			}).then((r) => r.updated)
 	};
 }

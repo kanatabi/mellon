@@ -456,6 +456,8 @@ export interface NotificationQuery {
 	/** Opaque cursor from the previous page's `nextBefore`. */
 	before?: string;
 	limit?: number;
+	/** The console tenant (staging | production); the relay sets it. */
+	env?: string;
 }
 
 /** Newest first; `nextBefore` is set only when the page was FULL. */
@@ -706,8 +708,8 @@ export interface AdminApi {
 	// Reads/marks only. The SEND door is app-to-app (ONE shared in-cluster
 	// token) and deliberately not part of the portal's contract.
 	notifications(query?: NotificationQuery): Promise<NotificationPage>;
-	notificationsUnreadCount(): Promise<number>;
+	notificationsUnreadCount(env?: string): Promise<number>;
 	notificationMarkRead(id: string): Promise<void>;
 	/** Returns how many rows actually moved (a second call is honestly 0). */
-	notificationsMarkAllRead(): Promise<number>;
+	notificationsMarkAllRead(env?: string): Promise<number>;
 }

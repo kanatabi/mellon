@@ -701,9 +701,11 @@ minSpan, body }` — **adding a widget = one folder + one registry line**
     unpinned entries deleting under the placed-or-absent model).
 
 - **The tasks workspace (`/tasks`)** — the app-center's first real
-  application (2026-11-27, the tasks/notifications plan). CLIENT-rendered
-  through the relay (the layout gates auth; a 403 renders as a quiet
-  panel naming the any-of scope trio, never a 500): the stats cards
+  application (2026-11-27; served by this env's cms plane since the
+  2026-11-29 app-plane ruling — its tables are in the env DB, while the
+  shared bell stays on the admin plane). CLIENT-rendered through the relay
+  (the layout gates auth; a 403 renders as a quiet panel naming the any-of
+  scope trio, never a 500): the stats cards
   (open / due today / completed week / overdue — lumen computes them in
   the `X-Client-Timezone` zone the relay client sends), the My day /
   Upcoming / All views, the RIGHT RAIL (status · assignee · priority + sort
